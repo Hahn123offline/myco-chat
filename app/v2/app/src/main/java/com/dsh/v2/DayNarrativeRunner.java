@@ -129,6 +129,7 @@ public final class DayNarrativeRunner {
                     continue;
                 }
                 try {
+                    parsed = DayNarrativeBuilder.parse(r.text);
                     parsed = DayNarrativeBuilder.repair(parsed, events);
                     errors = DayNarrativeBuilder.validate(parsed, events, gaps,
                             !memories.isEmpty());
