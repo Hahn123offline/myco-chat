@@ -323,6 +323,7 @@ public final class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         setContentView(scroll);
+        handleDevIntent(getIntent());
 
         HostService.ensureRunning(this);
         if (Build.VERSION.SDK_INT >= 33) {
@@ -506,6 +507,44 @@ public final class MainActivity extends Activity {
         } catch (Throwable t) {
             modelStatus.setText("测试失败：" + t.getClass().getSimpleName());
         }
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleDevIntent(intent);
+    }
+
+    /** 开发钩子：MIUI 会丢 receiver 广播，adb 验证统一走 Activity。 */
+    private void handleDevIntent(Intent intent) {
+        if (intent == null) return;
+        final String action = intent.getStringExtra("dev_action");
+        if (action == null || action.isEmpty()) return;
+        final String day = intent.getStringExtra("day");
+        android.util.Log.i("DSHL2", "dev_action=" + action + " day=" + day);
+        new Thread(() -> {
+            try {
+                if ("run_day".equals(action)) {
+                    java.util.Calendar c = java.util.Calendar.getInstance();
+                    if (day != null && !day.isEmpty()) {
+                        String[] p = day.split("-");
+                        c.set(Integer.parseInt(p[0]), Integer.parseInt(p[1]) - 1,
+                                Integer.parseInt(p[2]), 0, 0, 0);
+                    } else {
+                        c.add(java.util.Calendar.DAY_OF_YEAR, -1);
+                    }
+                    DayNarrativeRunner.run(this, c, (ok, msg) ->
+                            android.util.Log.i("DSHL2", "dev run_day done=" + ok + " " + msg));
+                } else if ("project".equals(action)) {
+                    int e = MemoryProjector.projectEvents(this);
+                    MemoryProjector.projectTraceBlocks(this);
+                    int d = MemoryProjector.projectDays(this);
+                    android.util.Log.i("DSHL2", "dev project done events=" + e + " days=" + d);
+                }
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "dev_action failed " + action, t);
+            }
+        }, "dev-action").start();
     }
 
     private void render() {
