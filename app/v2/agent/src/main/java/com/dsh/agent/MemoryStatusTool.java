@@ -1,17 +1,14 @@
-package com.dsh.v2;
-
-import com.dsh.agent.AgentTool;
-import com.dsh.agent.ToolContext;
-import com.dsh.agent.ToolResult;
+package com.dsh.agent;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
-/** memory_status：块数/今天新增/来源/在场/最近/缺口。 */
+/** memory_status 工具：状态文本由宿主提供（缺口需要证据库，纯模块不碰文件）。 */
 public final class MemoryStatusTool implements AgentTool {
 
-    private final AndroidMemorySource source;
+    private final Supplier<String> status;
 
-    public MemoryStatusTool(AndroidMemorySource source) { this.source = source; }
+    public MemoryStatusTool(Supplier<String> status) { this.status = status; }
 
     @Override public String name() { return "memory_status"; }
 
@@ -24,10 +21,7 @@ public final class MemoryStatusTool implements AgentTool {
     }
 
     @Override public ToolResult execute(Map<String, Object> args, ToolContext ctx) {
-        try {
-            return ToolResult.ok(source.status());
-        } catch (Throwable t) {
-            return ToolResult.failed(t.getMessage());
-        }
+        try { return ToolResult.ok(status.get()); }
+        catch (Throwable t) { return ToolResult.failed(t.getMessage()); }
     }
 }

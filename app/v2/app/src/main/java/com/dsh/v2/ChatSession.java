@@ -51,9 +51,10 @@ public final class ChatSession {
         ChatProvenance provenance = new ChatProvenance();
         AndroidMemorySource memory = new AndroidMemorySource(ctx);
         ToolRegistry tools = new ToolRegistry();
-        tools.add(new RecallTool(memory, provenance, new AndroidMaskProvider(ctx)));
-        tools.add(new RememberTool(memory));
-        tools.add(new MemoryStatusTool(memory));
+        tools.add(new com.dsh.agent.RecallTool(memory, provenance,
+                new AndroidMaskProvider(ctx)));
+        tools.add(new com.dsh.agent.RememberTool(memory.store(), ID, text));
+        tools.add(new com.dsh.agent.MemoryStatusTool(memory::status));
 
         AgentEngine.Config cfg = new AgentEngine.Config();
         cfg.thinking = "enabled";

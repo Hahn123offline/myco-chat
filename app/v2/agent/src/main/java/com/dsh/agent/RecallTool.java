@@ -1,9 +1,6 @@
-package com.dsh.v2;
+package com.dsh.agent;
 
-import com.dsh.agent.AgentTool;
-import com.dsh.agent.ToolContext;
-import com.dsh.agent.ToolResult;
-import com.dsh.memory.DayRecall;
+import com.dsh.memory.MaskProvider;
 import com.dsh.memory.MemorySource;
 import com.dsh.memory.RecallCore;
 import com.dsh.memory.RecallHit;
@@ -13,19 +10,18 @@ import com.dsh.models.Json;
 import java.util.List;
 import java.util.Map;
 
-/** recall 的 Android 薄壳：解析参数 → RecallCore → 渲染。 */
+/** recall 工具纯逻辑：Android/PC 共用。 */
 public final class RecallTool implements AgentTool {
 
     private final MemorySource source;
-    private final ChatProvenance provenance;
-    private final com.dsh.memory.MaskProvider maskProvider;
+    private final Provenance provenance;
+    private final MaskProvider maskProvider;
 
-    public RecallTool(MemorySource source, ChatProvenance provenance) {
+    public RecallTool(MemorySource source, Provenance provenance) {
         this(source, provenance, null);
     }
 
-    public RecallTool(MemorySource source, ChatProvenance provenance,
-                      com.dsh.memory.MaskProvider maskProvider) {
+    public RecallTool(MemorySource source, Provenance provenance, MaskProvider maskProvider) {
         this.source = source;
         this.provenance = provenance;
         this.maskProvider = maskProvider;
@@ -55,18 +51,17 @@ public final class RecallTool implements AgentTool {
                 .level(Json.string(args.get("level")))
                 .limit(intArg(args.get("limit"), 8));
         if ("day".equals(q.level)) {
-            DayRecall d = RecallCore.day(source, q.from);
-            return ToolResult.ok(RecallCore.renderDay(d));
+            return ToolResult.ok(RecallCore.renderDay(RecallCore.day(source, q.from)));
         }
         List<RecallHit> hits = RecallCore.recall(source, q);
-        com.dsh.memory.RecallCore.Sanitized s = RecallCore.sanitize(hits, maskProvider);
-        for (String p : s.sources) if (!provenance.sources.contains(p)) provenance.sources.add(p);
+        RecallCore.Sanitized s = RecallCore.sanitize(hits, maskProvider);
+        for (String p : s.sources) if (!provenance.sources().contains(p)) provenance.sources().add(p);
         for (String p : s.strippedSources) {
-            if (!provenance.strippedSources.contains(p)) provenance.strippedSources.add(p);
+            if (!provenance.strippedSources().contains(p)) provenance.strippedSources().add(p);
         }
-        if (!hits.isEmpty()) provenance.recalled = true;
-        provenance.maskedMissing += s.maskedMissing;
-        if (s.maskStatus() != null) provenance.maskStatus = s.maskStatus();
+        if (!hits.isEmpty()) provenance.markRecalled();
+        provenance.addMaskedMissing(s.maskedMissing);
+        provenance.setMaskStatus(s.maskStatus());
         return ToolResult.ok(RecallCore.render(s.hits));
     }
 

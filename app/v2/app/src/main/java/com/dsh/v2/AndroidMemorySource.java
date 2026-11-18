@@ -67,6 +67,8 @@ public final class AndroidMemorySource implements MemorySource {
                 sessionId, 0, userMessage));
     }
 
+    public AndroidMemoryStore store() { return store; }
+
     public java.util.List<MemItem> blocksBetween(long from, long to) {
         java.util.List<MemItem> out = new java.util.ArrayList<>();
         for (MemItem m : store.query(new Query().window(from, to).limit(10000))) {

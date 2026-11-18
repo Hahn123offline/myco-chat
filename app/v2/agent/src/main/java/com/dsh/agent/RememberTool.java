@@ -1,8 +1,7 @@
-package com.dsh.v2;
+package com.dsh.agent;
 
-import com.dsh.agent.AgentTool;
-import com.dsh.agent.ToolContext;
-import com.dsh.agent.ToolResult;
+import com.dsh.memory.MemoryStore;
+import com.dsh.memory.MemoryWriter;
 import com.dsh.models.Json;
 
 import java.time.LocalDate;
@@ -11,12 +10,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** remember：用户主动要记/承诺时写一条 chat NOTE（key=null，present=true）。 */
+/** remember 工具纯逻辑：MemoryStore 由宿主实现。 */
 public final class RememberTool implements AgentTool {
 
-    private final AndroidMemorySource source;
+    private final MemoryStore store;
+    private final String sessionId;
+    private final String userMessage;
 
-    public RememberTool(AndroidMemorySource source) { this.source = source; }
+    public RememberTool(MemoryStore store, String sessionId, String userMessage) {
+        this.store = store;
+        this.sessionId = sessionId;
+        this.userMessage = userMessage;
+    }
 
     @Override public String name() { return "remember"; }
 
@@ -48,7 +53,10 @@ public final class RememberTool implements AgentTool {
             if (s != null && !s.isEmpty()) tags.add(s);
         }
         try {
-            long id = source.remember(text, kind, when, tags, "chat", "");
+            store.registerNamespace("chat", true);
+            store.registerNamespace("manual", true);
+            long id = store.put(MemoryWriter.remember(text, kind, when, tags,
+                    sessionId, 0, userMessage));
             return ToolResult.ok("已记住（id=" + id + "，namespace="
                     + ("manual".equalsIgnoreCase(kind) ? "manual" : "chat") + "）。");
         } catch (Throwable t) {
