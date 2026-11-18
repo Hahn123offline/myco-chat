@@ -71,6 +71,21 @@ public abstract class AbstractMemoryStore implements MemoryStore {
         updateRow(m);
     }
 
+    @Override public void supersede(long id, String retiredKey,
+                                     java.util.Map<String, Object> dataPatch) {
+        MemItem m = get(id);
+        if (m == null) throw new IllegalArgumentException("memory 不存在: " + id);
+        m.superseded = true;
+        if (retiredKey != null && !retiredKey.isEmpty()) m.key = retiredKey;
+        if (dataPatch != null && !dataPatch.isEmpty()) {
+            Map<String, Object> d = MemoryCodec.parseObject(m.data);
+            d.putAll(dataPatch);
+            m.data = MemoryCodec.objectJson(d);
+        }
+        m.updatedAt = System.currentTimeMillis();
+        updateRow(m);
+    }
+
     @Override public void remove(long id) {
         MemItem m = get(id);
         if (m == null) return;

@@ -152,6 +152,38 @@ public final class AndroidMemorySource implements MemorySource {
         }
     }
 
+    @Override public com.dsh.memory.DayDiagnostic diagnose(String day) {
+        try {
+            java.time.LocalDate d = java.time.LocalDate.parse(day);
+            long from = d.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            long to = d.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
+                    .toInstant().toEpochMilli();
+            TraceStore ts = new TraceStore(app);
+            java.util.List<com.dsh.trace.Trace> traces = ts.tracesBetween(from, to, null);
+            long covered = 0;
+            java.util.Map<String, Integer> pkgs = new java.util.LinkedHashMap<>();
+            for (com.dsh.trace.Trace t : traces) {
+                covered += Math.max(0, t.t1 - t.t0);
+                String p = t.pkg == null ? "(unknown)" : t.pkg;
+                pkgs.merge(p, 1, Integer::sum);
+            }
+            int events = 0;
+            for (MemItem m : store.query(new Query().window(from, to).limit(10000))) {
+                if ("event".equals(m.namespace)) events++;
+            }
+            int gaps = 0;
+            try {
+                gaps = com.dsh.trace.GapFinder.find(
+                        new java.util.ArrayList<>(), new java.util.ArrayList<>(),
+                        new java.util.ArrayList<>(), from, to).size();
+            } catch (Throwable ignored) { }
+            return new com.dsh.memory.DayDiagnostic(day, traces.size(), covered, pkgs,
+                    events, gaps);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     @Override public boolean evidenceAvailable(String shotRef) {
         if (shotRef == null || shotRef.isEmpty()) return true;
         java.io.File trace = new java.io.File(app.getFilesDir(), "trace");

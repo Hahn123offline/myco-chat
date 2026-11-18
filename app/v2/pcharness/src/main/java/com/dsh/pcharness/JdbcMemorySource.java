@@ -112,6 +112,11 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         try (JdbcMemoryStore s = open()) { s.patch(id, p); }
         catch (Exception e) { throw new RuntimeException(e); }
     }
+    @Override public void supersede(long id, String retiredKey,
+                                    java.util.Map<String, Object> dataPatch) {
+        try (JdbcMemoryStore s = open()) { s.supersede(id, retiredKey, dataPatch); }
+        catch (Exception e) { throw new RuntimeException(e); }
+    }
     @Override public void remove(long id) {
         try (JdbcMemoryStore s = open()) { s.remove(id); }
         catch (Exception e) { throw new RuntimeException(e); }
@@ -127,6 +132,42 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
     @Override public boolean namespaceRequiresEvidence(String ns) {
         try (JdbcMemoryStore s = open()) { return s.namespaceRequiresEvidence(ns); }
         catch (Exception e) { return false; }
+    }
+
+    @Override public com.dsh.memory.DayDiagnostic diagnose(String day) {
+        try {
+            java.time.LocalDate d = java.time.LocalDate.parse(day);
+            long from = d.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            long to = d.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
+                    .toInstant().toEpochMilli();
+            java.io.File mem = new java.io.File(db);
+            java.io.File ev = new java.io.File(mem.getParentFile(), "evidence.db");
+            int n = 0; long covered = 0;
+            java.util.Map<String, Integer> pkgs = new java.util.LinkedHashMap<>();
+            if (ev.exists()) {
+                try (java.sql.Connection c = java.sql.DriverManager.getConnection(
+                        "jdbc:sqlite:" + ev);
+                     java.sql.PreparedStatement ps = c.prepareStatement(
+                             "SELECT pkg,t0,t1 FROM traces WHERE t0>=? AND t0<?")) {
+                    ps.setLong(1, from); ps.setLong(2, to);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            n++;
+                            covered += Math.max(0, rs.getLong(3) - rs.getLong(2));
+                            String p = rs.getString(1) == null ? "(unknown)" : rs.getString(1);
+                            pkgs.merge(p, 1, Integer::sum);
+                        }
+                    }
+                }
+            }
+            int events = 0;
+            for (MemItem m : candidates(new RecallQuery().from(day).to(day).limit(10000))) {
+                if ("event".equals(m.namespace)) events++;
+            }
+            return new com.dsh.memory.DayDiagnostic(day, n, covered, pkgs, events, 0);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     @Override public boolean evidenceAvailable(String shotRef) {

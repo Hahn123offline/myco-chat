@@ -55,6 +55,9 @@ public final class ChatSession {
                 new AndroidMaskProvider(ctx)));
         tools.add(new com.dsh.agent.RememberTool(memory.store(), ID, text));
         tools.add(new com.dsh.agent.MemoryStatusTool(memory::status));
+        tools.add(new com.dsh.agent.DayOverviewTool(memory));
+        tools.add(new com.dsh.agent.CorrectTool(memory.store()));
+        tools.add(new com.dsh.agent.ForgetTool(memory.store()));
 
         AgentEngine.Config cfg = new AgentEngine.Config();
         cfg.thinking = "disabled";

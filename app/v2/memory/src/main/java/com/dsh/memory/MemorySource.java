@@ -14,4 +14,7 @@ public interface MemorySource {
 
     /** 该 shot_ref 的原始画面是否在本机；默认 true，证据库缺失时由实现返回 false。 */
     default boolean evidenceAvailable(String shotRef) { return true; }
+
+    /** 某天概况；null = 不支持。 */
+    default DayDiagnostic diagnose(String day) { return null; }
 }

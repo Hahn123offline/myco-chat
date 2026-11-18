@@ -61,6 +61,15 @@ public final class RecallTool implements AgentTool {
             return ToolResult.ok(RecallCore.renderDay(RecallCore.day(source, q.from)));
         }
         List<RecallHit> hits = RecallCore.recall(source, q);
+        if (hits.isEmpty()) {
+            String day = q.from != null && !q.from.isEmpty() ? q.from
+                    : java.time.LocalDate.now().toString();
+            try {
+                com.dsh.memory.DayDiagnostic d = source.diagnose(day);
+                if (d != null) return ToolResult.ok(d.render(q.query));
+            } catch (Throwable ignored) { }
+            return ToolResult.ok("没有找到记录。");
+        }
         RecallCore.Sanitized s = RecallCore.sanitize(hits, maskProvider);
         for (String p : s.sources) if (!provenance.sources().contains(p)) provenance.sources().add(p);
         for (String p : s.strippedSources) {

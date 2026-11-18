@@ -73,22 +73,23 @@ public final class JdbcMemoryStore extends AbstractMemoryStore implements AutoCl
 
     @Override protected void updateRow(MemItem m) {
         try (PreparedStatement ps = c.prepareStatement(
-                "UPDATE mem_items SET kind=?,text=?,data=?,detail_level=?,weight=?,recall_count=?,"
+                "UPDATE mem_items SET key=?,kind=?,text=?,data=?,detail_level=?,weight=?,recall_count=?,"
                         + "last_recalled_at=?,t0=?,t1=?,updated_at=?,evidence=?,superseded=? "
                         + "WHERE id=?")) {
-            ps.setString(1, m.kind == null ? Kind.BLOCK.name() : m.kind.name());
-            ps.setString(2, m.text);
-            ps.setString(3, m.data);
-            ps.setString(4, m.detailLevel == null ? "FULL" : m.detailLevel.name());
-            ps.setDouble(5, m.weight);
-            ps.setInt(6, m.recallCount);
-            ps.setLong(7, m.lastRecalledAt);
-            ps.setLong(8, m.t0);
-            ps.setLong(9, m.t1);
-            ps.setLong(10, m.updatedAt);
-            ps.setString(11, MemoryCodec.evidenceJson(m.evidence));
-            ps.setInt(12, m.superseded ? 1 : 0);
-            ps.setLong(13, m.id);
+            ps.setString(1, m.key);
+            ps.setString(2, m.kind == null ? Kind.BLOCK.name() : m.kind.name());
+            ps.setString(3, m.text);
+            ps.setString(4, m.data);
+            ps.setString(5, m.detailLevel == null ? "FULL" : m.detailLevel.name());
+            ps.setDouble(6, m.weight);
+            ps.setInt(7, m.recallCount);
+            ps.setLong(8, m.lastRecalledAt);
+            ps.setLong(9, m.t0);
+            ps.setLong(10, m.t1);
+            ps.setLong(11, m.updatedAt);
+            ps.setString(12, MemoryCodec.evidenceJson(m.evidence));
+            ps.setInt(13, m.superseded ? 1 : 0);
+            ps.setLong(14, m.id);
             ps.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -25,6 +25,31 @@ public final class MemoryCodec {
         return b.append(']').toString();
     }
 
+    public static java.util.Map<String, Object> parseObject(String json) {
+        if (json == null || json.trim().isEmpty()) return new LinkedHashMap<>();
+        try {
+            java.util.Map<String, Object> m = Json.asObject(Json.parse(json));
+            return m == null ? new LinkedHashMap<>() : new LinkedHashMap<>(m);
+        } catch (Throwable t) {
+            return new LinkedHashMap<>();
+        }
+    }
+
+    public static String objectJson(java.util.Map<String, Object> m) {
+        StringBuilder b = new StringBuilder("{");
+        boolean first = true;
+        if (m != null) for (java.util.Map.Entry<String, Object> e : m.entrySet()) {
+            if (!first) b.append(',');
+            first = false;
+            b.append(Json.quote(e.getKey())).append(':');
+            Object v = e.getValue();
+            if (v == null) b.append("null");
+            else if (v instanceof Number || v instanceof Boolean) b.append(v);
+            else b.append(Json.quote(String.valueOf(v)));
+        }
+        return b.append('}').toString();
+    }
+
     public static List<Evidence> parseEvidence(String json) {
         List<Evidence> out = new ArrayList<>();
         if (json == null || json.trim().isEmpty()) return out;

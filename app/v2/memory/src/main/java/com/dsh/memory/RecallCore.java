@@ -195,8 +195,8 @@ public final class RecallCore {
         if (hits == null || hits.isEmpty()) return "没有找到记录。";
         StringBuilder b = new StringBuilder("找到 " + hits.size() + " 条：\n");
         for (RecallHit h : hits) {
-            b.append("\n[").append(fmt(h.t0)).append("] ")
-                    .append(h.pkg).append(" · ").append(h.pageTitle).append('\n');
+            b.append("\n[id=").append(h.itemId).append("] [").append(fmt(h.t0))
+                    .append("] ").append(h.pkg).append(" · ").append(h.pageTitle).append('\n');
             if (h.detailLevel == DetailLevel.IMAGE_ONLY) {
                 b.append("  只有截图，没有识别到文字\n");
             } else {

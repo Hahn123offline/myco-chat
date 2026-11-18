@@ -68,6 +68,9 @@ public final class ChatConsole {
         tools.add(new RecallTool(source, prov, masker, recalls::add));
         tools.add(new RememberTool(source, "chat", () -> currentUser[0]));
         tools.add(new MemoryStatusTool(source::status));
+        tools.add(new com.dsh.agent.DayOverviewTool(source));
+        tools.add(new com.dsh.agent.CorrectTool(source));
+        tools.add(new com.dsh.agent.ForgetTool(source));
         com.dsh.models.ModelRouter router = new com.dsh.models.ModelRouter(
                 java.util.Collections.singletonList(provider), false, gate, null);
         LlmCaller caller = req -> {

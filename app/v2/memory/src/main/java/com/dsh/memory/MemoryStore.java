@@ -10,6 +10,8 @@ public interface MemoryStore {
     void boost(long id, double delta, double cap);
     void patch(long id, java.util.Map<String, Object> dataPatch);
     void remove(long id);
+    /** 软删/纠正：superseded=1，可换 key（释放唯一索引），可合并 data 字段。 */
+    void supersede(long id, String retiredKey, java.util.Map<String, Object> dataPatch);
 
     void registerNamespace(String namespace, boolean requireEvidence);
     boolean isNamespaceRegistered(String namespace);

@@ -147,6 +147,10 @@ public final class AndroidMemoryStore implements com.dsh.memory.MemoryStore {
     @Override public List<MemItem> query(Query q) { return impl.query(q); }
     @Override public void boost(long id, double delta, double cap) { impl.boost(id, delta, cap); }
     @Override public void patch(long id, java.util.Map<String, Object> p) { impl.patch(id, p); }
+    @Override public void supersede(long id, String retiredKey,
+                                    java.util.Map<String, Object> dataPatch) {
+        impl.supersede(id, retiredKey, dataPatch);
+    }
     @Override public void remove(long id) { impl.remove(id); }
     @Override public void registerNamespace(String ns, boolean req) { impl.registerNamespace(ns, req); }
     @Override public boolean isNamespaceRegistered(String ns) { return impl.isNamespaceRegistered(ns); }
