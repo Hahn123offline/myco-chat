@@ -194,5 +194,8 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
-    </application>
+            <receiver android:name=".ProjectReceiver" android:exported="true">
+            <intent-filter><action android:name="com.dsh.v2.PROJECT"/></intent-filter>
+        </receiver>
+</application>
 </manifest>
