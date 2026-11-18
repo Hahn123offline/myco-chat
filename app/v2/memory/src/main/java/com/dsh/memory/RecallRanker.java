@@ -63,6 +63,7 @@ public final class RecallRanker {
 
     public static double decay(long ageDays, String namespace) {
         if (MemoryPolicy.NS_MANUAL.equals(namespace)) return 1.0; // 不衰减
+        if ("event".equals(namespace)) return Math.exp(-Math.max(0, ageDays) / 60.0);
         return Math.exp(-Math.max(0, ageDays) / 180.0);
     }
 

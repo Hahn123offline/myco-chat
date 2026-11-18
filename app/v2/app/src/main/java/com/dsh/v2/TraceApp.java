@@ -42,6 +42,7 @@ public final class TraceApp extends Application {
         // 记忆库单一大 helper：先建出空表，迁移在后续小步接
         DbMigrator.migrateIfNeeded(this);
         MemoryDb.checkMigrationState(this);
+        if (MemoryDb.migrationWarning.isEmpty()) MemoryProjector.projectEvents(this);
         File base = getFilesDir();
         File hostDir = new File(base, "host");
         if (!hostDir.exists()) hostDir.mkdirs();

@@ -26,6 +26,8 @@ public final class AndroidMemorySource implements MemorySource {
         store.registerNamespace("trace", true);
         store.registerNamespace("manual", true);
         store.registerNamespace("chat", true);
+        store.registerNamespace("day", true);
+        store.registerNamespace("event", true);
         days = new DayNarrativeStore(ctx);
     }
 
@@ -40,6 +42,8 @@ public final class AndroidMemorySource implements MemorySource {
                 s.registerNamespace("trace", true);
                 s.registerNamespace("manual", true);
                 s.registerNamespace("chat", true);
+                s.registerNamespace("day", true);
+                s.registerNamespace("event", true);
                 java.util.List<MemItem> all = s.query(
                         new Query().includeSuperseded(false).limit(10000));
                 java.util.List<String> texts = new java.util.ArrayList<>();
