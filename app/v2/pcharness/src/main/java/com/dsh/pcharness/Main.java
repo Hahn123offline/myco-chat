@@ -663,14 +663,14 @@ public final class Main {
         String firstError = "";
         String prompt = DayNarrativeBuilder.userPrompt(date, events, gaps, memories,
                 "材料 " + events.size() + " 事件/" + memories.size() + " 条在场记忆");
-        OpenAiCompatProvider provider = new OpenAiCompatProvider(
-                "deepseek", base, key, model, 180_000,
-                Collections.singleton(Capability.JSON), 128_000, CostClass.CHEAP,
-                new UrlConnectionTransport());
         java.io.File outFile = new java.io.File(out);
         String auditPath = new java.io.File(outFile.getParentFile() == null
                 ? "." : outFile.getParentFile().getPath(), "egress.log").getPath();
         EgressGate gate = new EgressGate(new Guard(), new FileAuditSink(auditPath));
+        OpenAiCompatProvider provider = new OpenAiCompatProvider(
+                "deepseek", base, key, model, 180_000,
+                Collections.singleton(Capability.JSON), 128_000, CostClass.CHEAP,
+                new UrlConnectionTransport(), gate, null);
         DayNarrativeBuilder.Parsed parsed = null;
         for (int attempt = 0; attempt < 2; attempt++) {
             String user = prompt + (lastErrors.isEmpty() ? ""

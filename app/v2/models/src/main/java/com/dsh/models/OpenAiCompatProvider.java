@@ -19,10 +19,21 @@ public class OpenAiCompatProvider implements ModelProvider {
     private final int maxContext;
     private final CostClass costClass;
     private final HttpTransport http;
+    private final com.dsh.egress.EgressGate gate;
+    private final UsageSink usage;
 
     public OpenAiCompatProvider(String id, String baseUrl, String apiKey, String model,
                                 int timeoutMs, java.util.Set<Capability> caps,
                                 int maxContext, CostClass costClass, HttpTransport http) {
+        this(id, baseUrl, apiKey, model, timeoutMs, caps, maxContext, costClass, http,
+                null, null);
+    }
+
+    /** 云端 provider 必须带 gate；不带 gate 的实例 complete() 直接安全拒绝。 */
+    public OpenAiCompatProvider(String id, String baseUrl, String apiKey, String model,
+                                int timeoutMs, java.util.Set<Capability> caps,
+                                int maxContext, CostClass costClass, HttpTransport http,
+                                com.dsh.egress.EgressGate gate, UsageSink usage) {
         this.id = id;
         this.baseUrl = normalizeBaseUrl(baseUrl);
         this.apiKey = apiKey == null ? "" : apiKey.trim();
@@ -33,6 +44,8 @@ public class OpenAiCompatProvider implements ModelProvider {
         this.maxContext = maxContext;
         this.costClass = costClass == null ? CostClass.CHEAP : costClass;
         this.http = http;
+        this.gate = gate;
+        this.usage = usage;
     }
 
     @Override public String id() { return id; }
@@ -42,6 +55,14 @@ public class OpenAiCompatProvider implements ModelProvider {
     @Override public CostClass costClass() { return costClass; }
 
     @Override public ModelResponse complete(ModelRequest req) throws Exception {
+        if (gate == null) {
+            return ModelResponse.error("安全拒绝：云端 provider 缺少 EgressGate", id);
+        }
+        com.dsh.egress.EgressResult gr = gate.checkProvenance("provider", req.systemPrompt,
+                req.userPrompt, com.dsh.egress.EgressTier.WHITE, id, true,
+                req.sources, req.strippedSources, req.stage, req.excludedBlocks,
+                req.appPolicy, req.maskedSpans, req.maskedKinds, req.maskStatus);
+        if (!gr.allowed) return ModelResponse.error("egress: " + gr.reason, id);
         if (model.isEmpty()) return ModelResponse.error("provider " + id + " 未配置 model", id);
         String body = OpenAiChatCodec.buildRequest(model, req);
         Map<String, String> headers = new LinkedHashMap<>();

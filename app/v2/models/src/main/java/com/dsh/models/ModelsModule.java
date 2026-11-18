@@ -67,7 +67,7 @@ public final class ModelsModule implements Module {
             }
             String key = keys == null ? "" : keys.keyFor(def.name);
             providers.add(new OpenAiCompatProvider(def.name, def.baseUrl, key, def.model,
-                    def.timeoutMs, def.caps, def.maxContext, def.costClass, http));
+                    def.timeoutMs, def.caps, def.maxContext, def.costClass, http, gate, usage));
         }
         router = new ModelRouter(providers, mc.allowGrayCloud, gate, usage);
         config = mc;

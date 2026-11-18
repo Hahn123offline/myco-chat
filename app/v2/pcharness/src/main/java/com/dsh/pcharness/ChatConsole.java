@@ -47,11 +47,15 @@ public final class ChatConsole {
             System.out.println("API key 未配置");
             return;
         }
+        String audit = Main.workspacePath(Main.arg(args, "--audit",
+                "app/v2/pcharness/out/chat-egress.log"));
+        com.dsh.egress.EgressGate gate = new com.dsh.egress.EgressGate(
+                new com.dsh.guard.Guard(), new FileAuditSink(audit));
         OpenAiCompatProvider provider = new OpenAiCompatProvider("deepseek",
                 Main.arg(args, "--base", "https://api.deepseek.com"),
                 key, Main.arg(args, "--model", "deepseek-chat"), 180_000,
                 Collections.singleton(Capability.JSON), 128_000, CostClass.CHEAP,
-                new UrlConnectionTransport());
+                new UrlConnectionTransport(), gate, null);
         JdbcMemorySource source = new JdbcMemorySource(mem);
         JdbcAgentStore store = new JdbcAgentStore(mem);
         PcProvenance prov = new PcProvenance();
@@ -61,9 +65,14 @@ public final class ChatConsole {
         tools.add(new RecallTool(source, prov, masker));
         tools.add(new RememberTool(source, "chat", ""));
         tools.add(new MemoryStatusTool(source::status));
+        com.dsh.models.ModelRouter router = new com.dsh.models.ModelRouter(
+                java.util.Collections.singletonList(provider), false, gate, null);
         LlmCaller caller = req -> {
-            try { return provider.complete(req); }
-            catch (Exception e) { throw new RuntimeException(e); }
+            try {
+                return router.execute(new SimpleTask("chat",
+                        Collections.singleton(Capability.JSON), Quality.GOOD,
+                        com.dsh.egress.EgressTier.WHITE), req);
+            } catch (Exception e) { throw new RuntimeException(e); }
         };
         String sim = readSim();
         AgentEngine.Config cfg = new AgentEngine.Config();
