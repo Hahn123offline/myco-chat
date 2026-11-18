@@ -48,11 +48,20 @@ public final class DbMigrator {
             if (newDbFile.exists()) newDbFile.delete();
             return;
         }
-        // 成功：旧库 rename 成 .migrated.bak，不删
-        for (File f : new File[]{chains, day, agent, oldMemory, evidence}) {
+        // 成功：旧记忆库 rename 成 .migrated.bak；旧 trace.db 直接变成 evidence.db
+        File evidenceTarget = new File(trace, "evidence.db");
+        for (File f : new File[]{chains, day, agent, oldMemory}) {
             if (f != null && f.exists()) {
                 File bak = new File(f.getParentFile(), f.getName() + ".migrated.bak");
                 if (!bak.exists()) f.renameTo(bak);
+            }
+        }
+        if (evidence != null && evidence.exists()) {
+            if (evidence.equals(oldTrace) && !evidenceTarget.exists()) {
+                evidence.renameTo(evidenceTarget);
+            } else {
+                File bak = new File(evidence.getParentFile(), evidence.getName() + ".migrated.bak");
+                if (!bak.exists()) evidence.renameTo(bak);
             }
         }
         MemoryDb.migrationWarning = "";
