@@ -19,7 +19,7 @@ import java.util.Calendar;
  */
 public final class TraceStore extends SQLiteOpenHelper {
 
-    public static final String DB_NAME = "trace.db";
+    public static final String DB_NAME = "evidence.db";
     public static final int DB_VER = 6;
     public static final String TABLE = "traces";
     public static final String ELEMENTS = "page_elements";
@@ -34,7 +34,11 @@ public final class TraceStore extends SQLiteOpenHelper {
     private TraceStore(Context app, File dir) {
         super(app, new File(dir, DB_NAME).getAbsolutePath(), null, DB_VER);
         if (!dir.exists()) dir.mkdirs();
-        this.dbFile = new File(dir, DB_NAME);
+        // 旧库迁移：trace.db → evidence.db（只 rename，不动内容）
+        File old = new File(dir, "trace.db");
+        File now = new File(dir, DB_NAME);
+        if (old.exists() && !now.exists()) old.renameTo(now);
+        this.dbFile = now;
     }
 
     public File dbFile() { return dbFile; }
