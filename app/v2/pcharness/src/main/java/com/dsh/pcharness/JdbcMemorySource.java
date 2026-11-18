@@ -134,6 +134,30 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         catch (Exception e) { return false; }
     }
 
+    @Override public com.dsh.memory.BlockRef readBlock(long id) {
+        try {
+            java.io.File ev = new java.io.File(new java.io.File(db).getParentFile(),
+                    "evidence.db");
+            if (!ev.exists()) return null;
+            try (java.sql.Connection c = java.sql.DriverManager.getConnection(
+                    "jdbc:sqlite:" + ev);
+                 java.sql.PreparedStatement ps = c.prepareStatement(
+                         "SELECT id,t0,t1,pkg,text,masked_text,shot_ref,page_id "
+                                 + "FROM traces WHERE id=?")) {
+                ps.setLong(1, id);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) return null;
+                    com.dsh.memory.BlockRef r = new com.dsh.memory.BlockRef();
+                    r.id = rs.getLong(1); r.t0 = rs.getLong(2); r.t1 = rs.getLong(3);
+                    r.pkg = rs.getString(4); r.text = rs.getString(5);
+                    r.maskedText = rs.getString(6); r.shotRef = rs.getString(7);
+                    r.pageId = rs.getString(8);
+                    return r;
+                }
+            }
+        } catch (Throwable t) { return null; }
+    }
+
     @Override public com.dsh.memory.DayDiagnostic diagnose(String day) {
         try {
             java.time.LocalDate d = java.time.LocalDate.parse(day);

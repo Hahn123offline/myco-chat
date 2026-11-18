@@ -152,6 +152,20 @@ public final class AndroidMemorySource implements MemorySource {
         }
     }
 
+    @Override public com.dsh.memory.BlockRef readBlock(long id) {
+        try {
+            java.util.List<com.dsh.trace.Trace> xs = new TraceStore(app)
+                    .tracesByIds(java.util.Collections.singletonList(id));
+            if (xs.isEmpty()) return null;
+            com.dsh.trace.Trace t = xs.get(0);
+            com.dsh.memory.BlockRef r = new com.dsh.memory.BlockRef();
+            r.id = t.id; r.text = t.text; r.maskedText = t.maskedText;
+            r.pkg = t.pkg; r.t0 = t.t0; r.t1 = t.t1;
+            r.shotRef = t.shotRef; r.pageId = t.pageId;
+            return r;
+        } catch (Throwable t) { return null; }
+    }
+
     @Override public com.dsh.memory.DayDiagnostic diagnose(String day) {
         try {
             java.time.LocalDate d = java.time.LocalDate.parse(day);

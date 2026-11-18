@@ -69,6 +69,7 @@ public final class ChatConsole {
         tools.add(new RememberTool(source, "chat", () -> currentUser[0]));
         tools.add(new MemoryStatusTool(source::status));
         tools.add(new com.dsh.agent.DayOverviewTool(source));
+        tools.add(new com.dsh.agent.ReadBlockTool(source));
         tools.add(new com.dsh.agent.CorrectTool(source));
         tools.add(new com.dsh.agent.ForgetTool(source));
         com.dsh.models.ModelRouter router = new com.dsh.models.ModelRouter(

@@ -36,7 +36,7 @@ public final class Fidelity {
         long to = d.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
         List<String> lines = new ArrayList<>();
         int nBody = 0, nQ = 0, qFound = 0, qMissing = 0;
-        int nNum = 0, numFound = 0, numNorm = 0, numMissing = 0;
+        int nNum = 0, numFound = 0, numNorm = 0, numMissing = 0, numTime = 0;
         List<String> missing = new ArrayList<>();
         try (Connection mc = DriverManager.getConnection("jdbc:sqlite:" + mem);
              Connection ec = DriverManager.getConnection("jdbc:sqlite:" + ev)) {
@@ -69,6 +69,7 @@ public final class Fidelity {
                             if (raw.length() < 2) continue;
                             nNum++;
                             String base = raw.replace(",", "").replace(".", "");
+                            if (isTimeDerived(body, nm.start(), nm.end())) { numTime++; continue; }
                             if (normOrig.contains(base)) numFound++;
                             else if (normOrig.contains(normalizeUnit(raw))) numNorm++;
                             else {
@@ -90,8 +91,9 @@ public final class Fidelity {
         lines.add("");
         lines.add("- 有 body 的事件：" + nBody);
         lines.add("- 引号片段：" + nQ + "，原文可溯 " + qFound + "，找不到 " + qMissing);
-        lines.add("- 数字：" + nNum + "，原文可溯 " + numFound + "，归一化后命中 " + numNorm
-                + "，**完全找不到 " + numMissing + "**");
+        lines.add("- 数字：" + nNum + "，时间派生（不算缺失） " + numTime
+                + "，原文可溯 " + numFound + "，归一化后命中 " + numNorm
+                + "，**内容数字找不到 " + numMissing + "**");
         lines.add("");
         lines.add("## 找不到的片段（疑似编造 / OCR 对不上）");
         lines.add("");
@@ -120,6 +122,12 @@ public final class Fidelity {
             }
         } catch (Throwable ignored) { }
         return b.toString();
+    }
+
+    private static boolean isTimeDerived(String body, int start, int end) {
+        int a = Math.max(0, start - 4), b = Math.min(body.length(), end + 2);
+        String w = body.substring(a, b);
+        return w.contains(":");
     }
 
     private static String normalize(String s) {

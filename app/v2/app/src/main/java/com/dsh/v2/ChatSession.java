@@ -56,6 +56,7 @@ public final class ChatSession {
         tools.add(new com.dsh.agent.RememberTool(memory.store(), ID, text));
         tools.add(new com.dsh.agent.MemoryStatusTool(memory::status));
         tools.add(new com.dsh.agent.DayOverviewTool(memory));
+        tools.add(new com.dsh.agent.ReadBlockTool(memory));
         tools.add(new com.dsh.agent.CorrectTool(memory.store()));
         tools.add(new com.dsh.agent.ForgetTool(memory.store()));
 

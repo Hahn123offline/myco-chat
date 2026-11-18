@@ -17,4 +17,7 @@ public interface MemorySource {
 
     /** 某天概况；null = 不支持。 */
     default DayDiagnostic diagnose(String day) { return null; }
+
+    /** 按块 id 取原始文本/截图指针；null = 不支持或不存在。 */
+    default BlockRef readBlock(long id) { return null; }
 }
