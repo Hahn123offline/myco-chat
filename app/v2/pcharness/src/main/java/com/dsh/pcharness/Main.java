@@ -46,6 +46,8 @@ public final class Main {
         if ("day".equals(args[0])) day(args);
         else if ("recall".equals(args[0])) recall(args);
         else if ("migrate-db".equals(args[0])) migrateDb(args);
+        else if ("chat".equals(args[0])) ChatConsole.run(args);
+        else if ("dump".equals(args[0])) ChatConsole.dump(args);
         else if ("migrate-memory".equals(args[0])) migrateMemory(args);
         else if ("pipeline".equals(args[0])) {
             System.err.println("pipeline 子命令尚未实现（L0→L1→L2 桌面路径下一阶段）");
@@ -53,7 +55,7 @@ public final class Main {
         } else usage();
     }
 
-    private static String readApiKey() {
+    static String readApiKey() {
         String env = System.getenv("DSH_API_KEY");
         if (env != null && !env.trim().isEmpty()) return env.trim();
         String[] paths = {"E:\\11-15\\.secrets\\deepseek.key", ".secrets/deepseek.key",
@@ -82,14 +84,14 @@ public final class Main {
         System.exit(2);
     }
 
-    private static String workspacePath(String s) {
+    static String workspacePath(String s) {
         Path p = Paths.get(s);
         if (p.isAbsolute()) return p.toString();
         // harness 的工作目录通常是 app/v2/pcharness 或 app/v2；相对路径按 <workspace> 解析
         return Paths.get("E:\\11-15").resolve(p).normalize().toString();
     }
 
-    private static String arg(String[] a, String key, String def) {
+    static String arg(String[] a, String key, String def) {
         for (int i = 0; i + 1 < a.length; i++) if (key.equals(a[i])) return a[i + 1];
         return def;
     }

@@ -13,7 +13,7 @@ import java.sql.ResultSet;
 import java.util.List;
 
 /** 桌面 memory.db 的 MemorySource。 */
-public final class JdbcMemorySource implements MemorySource {
+public final class JdbcMemorySource implements MemorySource, com.dsh.memory.MemoryStore {
 
     private final String db;
     private List<MemItem> allCache;
@@ -92,6 +92,41 @@ public final class JdbcMemorySource implements MemorySource {
             recent += com.dsh.memory.MemoryStatus.recentLine(all.get(i));
         }
         return com.dsh.memory.MemoryStatus.format(all, today, 0, 0, 0, recent);
+    }
+
+    private JdbcMemoryStore open() throws Exception { return new JdbcMemoryStore(db); }
+
+    @Override public long put(com.dsh.memory.MemItem item) {
+        try (JdbcMemoryStore s = open()) { return s.put(item); }
+        catch (Exception e) { throw new RuntimeException(e); }
+    }
+    @Override public java.util.List<com.dsh.memory.MemItem> query(com.dsh.memory.Query q) {
+        try (JdbcMemoryStore s = open()) { return s.query(q); }
+        catch (Exception e) { throw new RuntimeException(e); }
+    }
+    @Override public void boost(long id, double delta, double cap) {
+        try (JdbcMemoryStore s = open()) { s.boost(id, delta, cap); }
+        catch (Exception e) { throw new RuntimeException(e); }
+    }
+    @Override public void patch(long id, java.util.Map<String, Object> p) {
+        try (JdbcMemoryStore s = open()) { s.patch(id, p); }
+        catch (Exception e) { throw new RuntimeException(e); }
+    }
+    @Override public void remove(long id) {
+        try (JdbcMemoryStore s = open()) { s.remove(id); }
+        catch (Exception e) { throw new RuntimeException(e); }
+    }
+    @Override public void registerNamespace(String ns, boolean req) {
+        try (JdbcMemoryStore s = open()) { s.registerNamespace(ns, req); }
+        catch (Exception e) { throw new RuntimeException(e); }
+    }
+    @Override public boolean isNamespaceRegistered(String ns) {
+        try (JdbcMemoryStore s = open()) { return s.isNamespaceRegistered(ns); }
+        catch (Exception e) { return false; }
+    }
+    @Override public boolean namespaceRequiresEvidence(String ns) {
+        try (JdbcMemoryStore s = open()) { return s.namespaceRequiresEvidence(ns); }
+        catch (Exception e) { return false; }
     }
 
     @Override public boolean evidenceAvailable(String shotRef) {

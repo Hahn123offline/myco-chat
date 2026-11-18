@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** 桌面 SQLite store，SQL 来自 :memory 的 MemorySchema。 */
-public final class JdbcMemoryStore extends AbstractMemoryStore {
+public final class JdbcMemoryStore extends AbstractMemoryStore implements AutoCloseable {
 
     private final Connection c;
 

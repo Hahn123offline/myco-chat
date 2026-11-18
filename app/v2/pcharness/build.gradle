@@ -15,6 +15,7 @@ dependencies {
     implementation project(":models")
     implementation project(":egress")
     implementation project(":memory")
+    implementation project(":agent")
     implementation project(":trace")
     implementation project(":masker")
     runtimeOnly "org.xerial:sqlite-jdbc:3.46.1.3"
