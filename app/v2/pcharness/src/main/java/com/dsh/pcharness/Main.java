@@ -45,6 +45,7 @@ public final class Main {
         if (args.length == 0) usage();
         if ("day".equals(args[0])) day(args);
         else if ("recall".equals(args[0])) recall(args);
+        else if ("migrate-db".equals(args[0])) migrateDb(args);
         else if ("migrate-memory".equals(args[0])) migrateMemory(args);
         else if ("pipeline".equals(args[0])) {
             System.err.println("pipeline 子命令尚未实现（L0→L1→L2 桌面路径下一阶段）");
@@ -162,6 +163,51 @@ public final class Main {
             }
         }
         return p;
+    }
+
+
+    private static void migrateDb(String[] args) throws Exception {
+        String mem = workspacePath(arg(args, "--mem", "raw/v2/memory.db"));
+        String chains = workspacePath(arg(args, "--chains", "raw/v2/chains.db"));
+        String trace = workspacePath(arg(args, "--trace", "raw/v2/trace.db"));
+        Class.forName("org.sqlite.JDBC");
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + mem);
+             Statement st = c.createStatement()) {
+            st.execute("CREATE TABLE IF NOT EXISTS chains(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "l0_index INTEGER,title TEXT,session_ids TEXT,block_ids TEXT,t0 INTEGER,t1 INTEGER,"
+                    + "n_blocks INTEGER,status TEXT,body TEXT,key_block_ids TEXT,provisional INTEGER DEFAULT 0,"
+                    + "created_at INTEGER,dedup_key TEXT,chunk_key TEXT,parent_id INTEGER DEFAULT 0,"
+                    + "child_ids TEXT,level INTEGER DEFAULT 0,merge_why TEXT,text_source TEXT,"
+                    + "outcome TEXT DEFAULT 'unknown',gap_declared INTEGER DEFAULT 1,"
+                    + "over_length INTEGER DEFAULT 0,short_body INTEGER DEFAULT 0)");
+            st.execute("CREATE TABLE IF NOT EXISTS l0_chunks(chunk_key TEXT PRIMARY KEY,t0 INTEGER,"
+                    + "t1 INTEGER,block_ids TEXT,status TEXT,updated_at INTEGER)");
+            st.execute("CREATE TABLE IF NOT EXISTS merge_judgments(a_id INTEGER,b_id INTEGER,"
+                    + "verdict TEXT,a_body_sha1 TEXT,b_body_sha1 TEXT,at INTEGER,PRIMARY KEY(a_id,b_id))");
+            st.execute("CREATE TABLE IF NOT EXISTS pipeline_runs(id TEXT PRIMARY KEY,status TEXT,"
+                    + "started_at INTEGER,finished_at INTEGER,hours INTEGER,block_from INTEGER,"
+                    + "block_to INTEGER,l0_chunks INTEGER,chains INTEGER,bodies INTEGER,"
+                    + "prompt_tokens INTEGER,completion_tokens INTEGER,cache_hit INTEGER,error TEXT)");
+            st.execute("ATTACH DATABASE '" + chains.replace("'", "''") + "' AS src");
+            for (String t : new String[]{"chains", "l0_chunks", "merge_judgments", "pipeline_runs"}) {
+                int s = 0, d = 0;
+                try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM src." + t)) {
+                    if (rs.next()) s = rs.getInt(1);
+                } catch (Throwable ignored) { continue; }
+                st.executeUpdate("INSERT OR IGNORE INTO main." + t + " SELECT * FROM src." + t);
+                try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM main." + t)) {
+                    if (rs.next()) d = rs.getInt(1);
+                }
+                System.out.println("migrate " + t + " src=" + s + " dst=" + d);
+                if (s != d) throw new IllegalStateException(t + " 行数不一致 " + s + "/" + d);
+            }
+            st.execute("DETACH DATABASE src");
+        }
+        java.io.File old = new java.io.File(trace);
+        java.io.File ev = new java.io.File(trace.replace("trace.db", "evidence.db"));
+        if (old.exists() && !ev.exists()) old.renameTo(ev);
+        System.out.println("migrate-db done mem=" + mem
+                + " evidence=" + ev.getAbsolutePath());
     }
 
     private static void recall(String[] args) throws Exception {
@@ -521,7 +567,7 @@ public final class Main {
 
     private static void day(String[] args) throws Exception {
         String date = arg(args, "--date", "2026-11-17");
-        String db = workspacePath(arg(args, "--db", "raw/v2/chains.db"));
+        String db = workspacePath(arg(args, "--db", "raw/v2/memory.db"));
         String traceDb = ensureEvidence(workspacePath(arg(args, "--trace", "raw/v2/evidence.db")));
         String out = workspacePath(arg(args, "--out", "raw/v2/day_narratives.db"));
         String memDb = workspacePath(arg(args, "--mem", "raw/v2/memory.db"));

@@ -23,7 +23,8 @@ public final class MemoryDb extends SQLiteOpenHelper {
             File dir = new File(app.getFilesDir(), "trace");
             boolean old = new File(dir, "chains.db").exists()
                     || new File(dir, "agent.db").exists()
-                    || new File(dir, "day_narrative.db").exists();
+                    || new File(dir, "day_narrative.db").exists()
+                    || new File(dir, "memory.db").exists();
             if (!old) return;
             android.database.sqlite.SQLiteDatabase db = get(app).getReadableDatabase();
             int n = 0;
@@ -40,6 +41,13 @@ public final class MemoryDb extends SQLiteOpenHelper {
             migrationWarning = "迁移状态检查失败: " + t.getMessage();
             android.util.Log.e("DSHL2", migrationWarning, t);
         }
+    }
+
+    public static synchronized void reset() {
+        if (instance != null) {
+            try { instance.close(); } catch (Throwable ignored) { }
+        }
+        instance = null;
     }
 
     public static MemoryDb get(Context app) {
