@@ -150,6 +150,34 @@ public final class ChatConsole {
                             + date.replace("'", "''") + "'")) {
                 if (rs.next()) System.out.println("day_narrative=" + rs.getString(1));
             }
+            System.out.println("最近 5 条 memory：");
+            try (ResultSet rs = c.createStatement().executeQuery(
+                    "SELECT namespace,text,t0,evidence FROM mem_items ORDER BY id DESC LIMIT 5")) {
+                while (rs.next()) {
+                    String ev = rs.getString(4) == null ? "" : rs.getString(4);
+                    boolean present = ev.contains("\"chat\"") || ev.contains("\"manual\"");
+                    System.out.println("  " + rs.getString(1) + " | present=" + present
+                            + " | " + new java.util.Date(rs.getLong(3)) + " | "
+                            + shorten(rs.getString(2)));
+                }
+            }
+        }
+        String audit = Main.workspacePath(Main.arg(args, "--audit",
+                "app/v2/pcharness/out/chat-egress.log"));
+        int derived = 0, masked = 0, blocked = 0, total = 0;
+        try {
+            for (String line : java.nio.file.Files.readAllLines(java.nio.file.Paths.get(audit))) {
+                if (line.contains("\"task\":\"provider\"")) {
+                    total++;
+                    if (line.contains("\"stage\":\"DERIVED\"")) derived++;
+                    if (line.contains("\"stage\":\"MASKED\"")) masked++;
+                    if (line.contains("\"allowed\":false")) blocked++;
+                }
+            }
+            System.out.println("egress：provider 记录=" + total + " DERIVED=" + derived
+                    + " MASKED=" + masked + " blocked=" + blocked);
+        } catch (Throwable t) {
+            System.out.println("egress 审计不可读: " + t.getMessage());
         }
         try (Connection e = DriverManager.getConnection("jdbc:sqlite:" + evidence)) {
             for (String t : new String[]{"traces", "page_elements"}) {
@@ -191,6 +219,12 @@ public final class ChatConsole {
                     java.nio.file.StandardOpenOption.APPEND);
         } catch (Throwable ignored) { }
         usage[0] = usage[1] = usage[2] = 0;
+    }
+
+    private static String shorten(String s) {
+        if (s == null) return "";
+        String x = s.replace('\n', ' ');
+        return x.length() <= 40 ? x : x.substring(0, 40) + "…";
     }
 
     private static String readSim() {
