@@ -14,6 +14,7 @@ public final class ProjectReceiver extends BroadcastReceiver {
         new Thread(() -> {
             int events = MemoryProjector.projectEvents(app);
             MemoryProjector.projectTraceBlocks(app);
+            MemoryProjector.projectDays(app);
             android.util.Log.i("DSHL2", "project broadcast: events=" + events);
             // TODO: 每日一次可接 WorkManager/闹钟；本轮只保留手动广播
         }, "project").start();

@@ -12,6 +12,64 @@ public final class MemoryProjector {
 
     private MemoryProjector() { }
 
+    /** 3：day_narratives → namespace=day, kind=DAY；不依赖证据库，幂等。 */
+    public static int projectDays(Context app) {
+        SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
+        int n = 0;
+        try (Cursor c = db.rawQuery("SELECT day,narrative,mainlines,open_threads,gaps,"
+                + "repaired,index_partial FROM day_narratives", null)) {
+            while (c.moveToNext()) {
+                String day = c.getString(0);
+                if (day == null || day.isEmpty()) continue;
+                String mainlines = c.getString(2);
+                String summary;
+                if (mainlines != null && mainlines.length() > 2) {
+                    summary = mainlines;
+                } else {
+                    String narr = c.getString(1);
+                    summary = narr == null ? "" : narr;
+                }
+                if (summary.length() > 800) summary = summary.substring(0, 800);
+                long t0;
+                try { t0 = java.time.LocalDate.parse(day).atStartOfDay(
+                        java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(); }
+                catch (Throwable t) { t0 = System.currentTimeMillis(); }
+                long t1 = t0 + 86_400_000L - 1;
+                ContentValues v = new ContentValues();
+                v.put("namespace", "day");
+                v.put("kind", "DAY");
+                v.put("key", "day:" + day);
+                v.put("text", summary);
+                v.put("data", "{\"narrative\":" + Json.quote(c.getString(1))
+                        + ",\"mainlines\":" + safeJson(mainlines)
+                        + ",\"open_threads\":" + safeJson(c.getString(3))
+                        + ",\"gaps\":" + safeJson(c.getString(4))
+                        + ",\"repaired\":" + (c.getInt(5) != 0)
+                        + ",\"index_partial\":" + c.getInt(6) + "}");
+                v.put("detail_level", "FULL");
+                v.put("weight", 1.0);
+                v.put("recall_count", 0);
+                v.put("last_recalled_at", 0);
+                v.put("t0", t0);
+                v.put("t1", t1);
+                v.put("created_at", System.currentTimeMillis());
+                v.put("updated_at", System.currentTimeMillis());
+                v.put("evidence", "[{\"type\":\"trace\",\"ref\":\"day:" + day
+                        + "\",\"t\":" + t0 + "}]");
+                v.put("superseded", 0);
+                long r = db.insertWithOnConflict("mem_items", null, v,
+                        SQLiteDatabase.CONFLICT_IGNORE);
+                if (r >= 0) n++;
+            }
+        }
+        android.util.Log.i("DSHL2", "project days: " + n);
+        return n;
+    }
+
+    private static String safeJson(String s) {
+        return s == null || s.trim().isEmpty() ? "[]" : s;
+    }
+
     /** 2b：done chains 的 key_block_ids → namespace=trace；证据缺失只计数。 */
     public static void projectTraceBlocks(Context app) {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();

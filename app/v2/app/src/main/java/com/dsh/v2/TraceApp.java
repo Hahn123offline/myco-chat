@@ -45,6 +45,7 @@ public final class TraceApp extends Application {
         if (MemoryDb.migrationWarning.isEmpty()) {
             MemoryProjector.projectEvents(this);
             MemoryProjector.projectTraceBlocks(this);
+            MemoryProjector.projectDays(this);
         }
         File base = getFilesDir();
         File hostDir = new File(base, "host");
