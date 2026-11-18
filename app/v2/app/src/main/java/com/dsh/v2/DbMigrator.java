@@ -74,6 +74,10 @@ public final class DbMigrator {
         }
         try {
             for (String t : tables) {
+                if ("chains".equals(t)) {
+                    try { db.execSQL("ALTER TABLE src.chains ADD COLUMN covered_ms INTEGER DEFAULT 0"); }
+                    catch (Throwable ignored) { }
+                }
                 int s = count(db, "src." + t);
                 if (s < 0) continue; // 源库没有此表
                 db.execSQL("INSERT OR IGNORE INTO main." + t + " SELECT * FROM src." + t);

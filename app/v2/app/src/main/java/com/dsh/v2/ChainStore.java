@@ -91,7 +91,7 @@ public final class ChainStore {
                 "parent_id INTEGER DEFAULT 0, child_ids TEXT, level INTEGER DEFAULT 0," +
                 "merge_why TEXT, text_source TEXT, outcome TEXT DEFAULT 'unknown'," +
                 "gap_declared INTEGER DEFAULT 1, over_length INTEGER DEFAULT 0," +
-                "short_body INTEGER DEFAULT 0)");
+                "short_body INTEGER DEFAULT 0, covered_ms INTEGER DEFAULT 0)");
     }
 
     private static void createAux(SQLiteDatabase db) {
@@ -476,7 +476,7 @@ public final class ChainStore {
     /** L3：当天所有完成的事件（level=0，status=done）。 */
     public synchronized List<ChainRow> doneEventsBetween(long from, long to) {
         return queryRows("SELECT id,title,body,t0,t1,n_blocks,block_ids,key_block_ids," +
-                        "parent_id,level FROM " + TABLE +
+                        "parent_id,level,covered_ms FROM " + TABLE +
                         " WHERE level=0 AND status='done' AND t0>=? AND t0<=? ORDER BY t0,id",
                 new String[]{String.valueOf(from), String.valueOf(to)});
     }
@@ -757,9 +757,17 @@ public final class ChainStore {
         public final String keyBlockIds;
         public final long parentId;
         public final int level;
+        public final long coveredMs;
 
         ChainRow(long id, String title, String body, long t0, long t1, int nBlocks,
                  String blockIds, String keyBlockIds, long parentId, int level) {
+            this(id, title, body, t0, t1, nBlocks, blockIds, keyBlockIds, parentId,
+                    level, 0);
+        }
+
+        ChainRow(long id, String title, String body, long t0, long t1, int nBlocks,
+                 String blockIds, String keyBlockIds, long parentId, int level,
+                 long coveredMs) {
             this.id = id;
             this.title = title == null ? "" : title;
             this.body = body == null ? "" : body;
@@ -770,33 +778,34 @@ public final class ChainStore {
             this.keyBlockIds = keyBlockIds == null ? "" : keyBlockIds;
             this.parentId = parentId;
             this.level = level;
+            this.coveredMs = coveredMs;
         }
     }
 
     public synchronized List<ChainRow> childrenForChunk(String chunkKey) {
         return queryRows("SELECT id,title,body,t0,t1,n_blocks,block_ids,key_block_ids,"
-                        + "parent_id,level FROM " + TABLE
+                        + "parent_id,level,covered_ms FROM " + TABLE
                         + " WHERE chunk_key=? AND level=0 AND status='done' ORDER BY id",
                 new String[]{chunkKey});
     }
 
     public synchronized List<ChainRow> parentsForChunk(String chunkKey) {
         return queryRows("SELECT id,title,body,t0,t1,n_blocks,block_ids,key_block_ids,"
-                        + "parent_id,level FROM " + TABLE
+                        + "parent_id,level,covered_ms FROM " + TABLE
                         + " WHERE chunk_key=? AND level=1 ORDER BY id",
                 new String[]{chunkKey});
     }
 
     public synchronized List<ChainRow> childrenOfParent(long parentId) {
         return queryRows("SELECT id,title,body,t0,t1,n_blocks,block_ids,key_block_ids,"
-                        + "parent_id,level FROM " + TABLE
+                        + "parent_id,level,covered_ms FROM " + TABLE
                         + " WHERE parent_id=? AND level=0 ORDER BY t0,id",
                 new String[]{String.valueOf(parentId)});
     }
 
     public synchronized List<ChainRow> parents() {
         return queryRows("SELECT id,title,body,t0,t1,n_blocks,block_ids,key_block_ids,"
-                        + "parent_id,level FROM " + TABLE
+                        + "parent_id,level,covered_ms FROM " + TABLE
                         + " WHERE level=1 ORDER BY id", new String[]{});
     }
 
@@ -811,7 +820,7 @@ public final class ChainStore {
     private static ChainRow row(Cursor c) {
         return new ChainRow(c.getLong(0), c.getString(1), c.getString(2),
                 c.getLong(3), c.getLong(4), c.getInt(5), c.getString(6),
-                c.getString(7), c.getLong(8), c.getInt(9));
+                c.getString(7), c.getLong(8), c.getInt(9), c.getLong(10));
     }
 
     /** 创建父链（dedup=union block ids）；已存在返回 -1。 */

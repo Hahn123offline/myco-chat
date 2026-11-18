@@ -46,6 +46,7 @@ public final class TraceApp extends Application {
             MemoryProjector.projectEvents(this);
             MemoryProjector.projectTraceBlocks(this);
             MemoryProjector.projectDays(this);
+            ChainCoverage.backfill(this);
         }
         File base = getFilesDir();
         File hostDir = new File(base, "host");

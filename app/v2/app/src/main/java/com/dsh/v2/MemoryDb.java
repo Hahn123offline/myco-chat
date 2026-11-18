@@ -12,7 +12,7 @@ import java.io.File;
 public final class MemoryDb extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "memory.db";
-    public static final int DB_VER = 10;
+    public static final int DB_VER = 11;
 
     private static volatile MemoryDb instance;
     /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
@@ -74,6 +74,10 @@ public final class MemoryDb extends SQLiteOpenHelper {
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
         createAll(db);
+        if (oldV < 11) {
+            try { db.execSQL("ALTER TABLE chains ADD COLUMN covered_ms INTEGER DEFAULT 0"); }
+            catch (Throwable ignored) { }
+        }
     }
 
     /** 幂等建表；各 store 可复用。 */
@@ -91,7 +95,7 @@ public final class MemoryDb extends SQLiteOpenHelper {
                 "parent_id INTEGER DEFAULT 0, child_ids TEXT, level INTEGER DEFAULT 0," +
                 "merge_why TEXT, text_source TEXT, outcome TEXT DEFAULT 'unknown'," +
                 "gap_declared INTEGER DEFAULT 1, over_length INTEGER DEFAULT 0," +
-                "short_body INTEGER DEFAULT 0)");
+                "short_body INTEGER DEFAULT 0, covered_ms INTEGER DEFAULT 0)");
         db.execSQL("CREATE TABLE IF NOT EXISTS pipeline_runs(" +
                 "id TEXT PRIMARY KEY, status TEXT, started_at INTEGER, finished_at INTEGER," +
                 "hours INTEGER, block_from INTEGER, block_to INTEGER," +
