@@ -103,9 +103,15 @@ public final class ChatActivity extends Activity {
         } catch (Throwable t) { return payload == null ? "" : payload; }
     }
 
+    private static String plain(String text) {
+        if (text == null) return "";
+        return text.replace("**", "").replace("__", "")
+                .replaceAll("(?m)^#{1,6}\\s*", "");
+    }
+
     private void addBubble(String text, boolean user) {
         TextView t = new TextView(this);
-        t.setText(text);
+        t.setText(plain(text));
         t.setTextSize(15);
         t.setPadding(24, 16, 24, 16);
         t.setBackgroundColor(user ? 0xFFDCEBFF : 0xFFF2F2F2);

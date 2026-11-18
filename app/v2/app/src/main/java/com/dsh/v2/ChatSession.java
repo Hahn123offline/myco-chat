@@ -57,7 +57,7 @@ public final class ChatSession {
         tools.add(new com.dsh.agent.MemoryStatusTool(memory::status));
 
         AgentEngine.Config cfg = new AgentEngine.Config();
-        cfg.thinking = "enabled";
+        cfg.thinking = "disabled";
         cfg.sources = provenance.sources;
         cfg.strippedSources = provenance.strippedSources;
         cfg.stageSupplier = provenance;
