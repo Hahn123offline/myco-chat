@@ -29,6 +29,13 @@ public final class JdbcMemoryStore extends AbstractMemoryStore implements AutoCl
             s.execute(MemorySchema.CREATE_INDEX_NS);
             try { s.execute(MemorySchema.ALTER_DETAIL); } catch (Exception ignored) { }
         }
+        // 每次打开都注册已知 namespace（AbstractMemoryStore 的注册表是进程内实例态）
+        registerNamespace("trace", true);
+        registerNamespace("manual", true);
+        registerNamespace("chat", true);
+        registerNamespace("day", true);
+        registerNamespace("event", true);
+        registerNamespace("compaction", false);
     }
 
     public void close() throws Exception { c.close(); }

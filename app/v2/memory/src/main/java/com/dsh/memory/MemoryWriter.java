@@ -13,6 +13,12 @@ public final class MemoryWriter {
     public static MemItem remember(String text, String kind, Long when,
                                    List<String> tags, String sessionId, int turn,
                                    String userMessage) {
+        return remember(text, kind, when, tags, sessionId, turn, userMessage, "");
+    }
+
+    public static MemItem remember(String text, String kind, Long when,
+                                   List<String> tags, String sessionId, int turn,
+                                   String userMessage, String summary) {
         if (text == null || text.trim().isEmpty()) {
             throw new IllegalArgumentException("text 为空");
         }
@@ -22,7 +28,7 @@ public final class MemoryWriter {
         String ns = "manual".equals(k) ? MemoryPolicy.NS_MANUAL : "chat";
         long now = System.currentTimeMillis();
         long t = when != null ? when : now;
-        MemItem m = new MemItem(ns, Kind.NOTE, null, text.trim(), data(sessionId, turn, tags, userMessage));
+        MemItem m = new MemItem(ns, Kind.NOTE, null, text.trim(), data(sessionId, turn, tags, userMessage, summary));
         m.evidence = Collections.singletonList(new Evidence("chat",
                 (sessionId == null ? "chat" : sessionId) + "#" + turn, now));
         m.weight = 1.5;
@@ -34,7 +40,8 @@ public final class MemoryWriter {
         return m;
     }
 
-    private static String data(String sessionId, int turn, List<String> tags, String userMessage) {
+    private static String data(String sessionId, int turn, List<String> tags,
+                               String userMessage, String summary) {
         StringBuilder b = new StringBuilder("{");
         b.append("\"session_id\":").append(Json.quote(sessionId == null ? "chat" : sessionId));
         b.append(",\"turn\":").append(turn);
@@ -44,6 +51,9 @@ public final class MemoryWriter {
             b.append(Json.quote(tags.get(i)));
         }
         b.append("],\"user_message\":").append(Json.quote(userMessage == null ? "" : userMessage));
+        if (summary != null && !summary.isEmpty()) {
+            b.append(",\"summary\":").append(Json.quote(summary));
+        }
         return b.append('}').toString();
     }
 }

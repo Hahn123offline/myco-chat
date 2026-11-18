@@ -103,7 +103,7 @@ public final class ChatConsole {
         if (ask != null) {
             ChatLoop.run(host, ask, (ok, msg) -> {
                 System.out.println(msg);
-                if (!quiet) trace(host, prov, recalls, usage);
+                if (!quiet) trace(host, prov, recalls, usage, audit);
             });
             return;
         }
@@ -119,7 +119,7 @@ public final class ChatConsole {
             long t0 = System.currentTimeMillis();
             ChatLoop.run(host, line, (ok, msg) -> {
                 System.out.println(msg);
-                if (!quiet) trace(host, prov, recalls, usage);
+                if (!quiet) trace(host, prov, recalls, usage, audit);
             });
         }
     }
@@ -161,7 +161,7 @@ public final class ChatConsole {
     }
 
     private static void trace(ChatHost host, PcProvenance prov, List<String> recalls,
-                              long[] usage) {
+                              long[] usage, String audit) {
         for (String r : recalls) System.out.println("[recall] " + r);
         recalls.clear();
         System.out.println("[egress] stage=" + prov.stage() + " sources=" + prov.sources()
@@ -176,6 +176,17 @@ public final class ChatConsole {
         System.out.println("[cost] prompt_tokens=" + usage[0] + " completion_tokens="
                 + usage[1] + " latency_ms=" + usage[2]
                 + " est_cny=" + String.format("%.4f", cny));
+        try {
+            java.nio.file.Files.write(java.nio.file.Paths.get(audit),
+                    ("{\"task\":\"chat.turn.summary\",\"stage\":\"" + prov.stage()
+                            + "\",\"sourcesCount\":" + prov.sources.size()
+                            + ",\"strippedCount\":" + prov.stripped.size()
+                            + ",\"prompt_tokens\":" + usage[0]
+                            + ",\"completion_tokens\":" + usage[1] + "}\n")
+                            .getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.APPEND);
+        } catch (Throwable ignored) { }
         usage[0] = usage[1] = usage[2] = 0;
     }
 

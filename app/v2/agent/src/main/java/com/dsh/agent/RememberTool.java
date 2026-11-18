@@ -55,13 +55,31 @@ public final class RememberTool implements AgentTool {
         try {
             store.registerNamespace("chat", true);
             store.registerNamespace("manual", true);
-            long id = store.put(MemoryWriter.remember(text, kind, when, tags,
-                    sessionId, 0, userMessage));
+            String original = explicitOriginal(userMessage);
+            String finalText = original.isEmpty() ? text : original;
+            String summary = original.isEmpty() ? "" : text;
+            long id = store.put(MemoryWriter.remember(finalText, kind, when, tags,
+                    sessionId, 0, userMessage, summary));
             return ToolResult.ok("已记住（id=" + id + "，namespace="
                     + ("manual".equalsIgnoreCase(kind) ? "manual" : "chat") + "）。");
         } catch (Throwable t) {
             return ToolResult.failed(t.getMessage());
         }
+    }
+
+    /** 用户明确说“记一下/记住”时，text 保留用户原话（去掉命令词）。 */
+    private static String explicitOriginal(String userMessage) {
+        if (userMessage == null) return "";
+        String s = userMessage.trim();
+        String[] prefixes = {"帮我记一下", "记一下", "记住这个", "记住", "记下"};
+        for (String p : prefixes) {
+            if (s.startsWith(p)) {
+                s = s.substring(p.length()).trim();
+                s = s.replaceFirst("^[：:，, ]+", "");
+                return s;
+            }
+        }
+        return "";
     }
 
     private static Long parseWhen(String s) {

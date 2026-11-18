@@ -166,7 +166,9 @@ public final class RecallCore {
                         : masker.maskedTextFor(h.itemId, h.pkg, h.t0, h.t0, h.text);
                 if (masked != null && masked.usable()) {
                     out.add(h.withMask(masked.text, masked.mode));
-                    if (!sources.contains(h.pkg)) sources.add(h.pkg);
+                    if (h.pkg != null && !h.pkg.isEmpty() && !sources.contains(h.pkg)) {
+                        sources.add(h.pkg);
+                    }
                     success++;
                     if (masked.mode == MaskMode.FULL) full++;
                     else if (masked.mode == MaskMode.TEXT_ONLY) textOnly++;
@@ -177,7 +179,9 @@ public final class RecallCore {
                 }
             } else {
                 out.add(h);
-                if (!sources.contains(h.pkg)) sources.add(h.pkg);
+                if (h.pkg != null && !h.pkg.isEmpty() && !sources.contains(h.pkg)) {
+                    sources.add(h.pkg);
+                }
             }
         }
         return new Sanitized(out, sources, stripped, missing, success, full, textOnly, blocked);
