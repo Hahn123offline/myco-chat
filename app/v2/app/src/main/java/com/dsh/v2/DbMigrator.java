@@ -25,7 +25,7 @@ public final class DbMigrator {
         File oldTrace = new File(trace, "trace.db");
         if (!evidence.exists() && oldTrace.exists()) evidence = oldTrace;
         boolean any = chains.exists() || day.exists() || agent.exists()
-                || oldMemory.exists() || evidence.exists();
+                || oldMemory.exists();
         if (!any) return;
 
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
@@ -56,13 +56,9 @@ public final class DbMigrator {
                 if (!bak.exists()) f.renameTo(bak);
             }
         }
-        if (evidence != null && evidence.exists()) {
-            if (evidence.equals(oldTrace) && !evidenceTarget.exists()) {
-                evidence.renameTo(evidenceTarget);
-            } else {
-                File bak = new File(evidence.getParentFile(), evidence.getName() + ".migrated.bak");
-                if (!bak.exists()) evidence.renameTo(bak);
-            }
+        if (evidence != null && evidence.equals(oldTrace) && evidence.exists()
+                && !evidenceTarget.exists()) {
+            evidence.renameTo(evidenceTarget);
         }
         MemoryDb.migrationWarning = "";
         Log.i(TAG, "db migration done: " + newDbFile.getAbsolutePath());
