@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  出网策略：默认禁止明文 HTTP（云端请用 https），只对本机推理端点放行明文。
+
+  为什么必须放行 loopback：本地 llama-server 默认就是 http://127.0.0.1:8080。
+  Android targetSdk ≥ 28 默认禁止 cleartext，不放行的话本地模型调用会直接失败。
+  范围只给 127.0.0.1 / localhost，不给任意 http:// 云端地址开后门。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

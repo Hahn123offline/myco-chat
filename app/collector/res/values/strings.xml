@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_desc">记录你在应用间的注意轨迹，仅本地保存，用于回忆与定位。</string>
+    <string name="app_name">DSH Collector</string>
+</resources>

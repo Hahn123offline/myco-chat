@@ -1,0 +1,340 @@
+{
+  "version": 2,
+  "families": [
+    {
+      "name": "A",
+      "probes": [
+        {
+          "query": "那个写着微信扫一扫代理错误的浏览器页面",
+          "expected_ids": [
+            877,
+            885,
+            886
+          ],
+          "expected_terms": [
+            "微信扫一扫",
+            "代理错误"
+          ],
+          "why": "877 是百度搜索“微信扫一扫代理错误”，885/886 是同一次排查的 ChatGPT 页面。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "讲布儒斯特角公式的那个DeepSeek页面",
+          "expected_ids": [
+            736,
+            737,
+            744
+          ],
+          "expected_terms": [
+            "布儒斯特角公式"
+          ],
+          "why": "736 打开“布儒斯特角公式”，737/744 是同一组推导与 PPT 讨论。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "Clash仪表盘显示10.37.50.134的那一屏",
+          "expected_ids": [
+            696
+          ],
+          "expected_terms": [
+            "10.37.50.134",
+            "仪表盘"
+          ],
+          "why": "696 的 Clash 仪表盘里出现内网 IP 10.37.50.134，唯一命中。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "英雄联盟S16到达使用时长限制的页面",
+          "expected_ids": [
+            928
+          ],
+          "expected_terms": [
+            "英雄联盟S16",
+            "到达限制"
+          ],
+          "why": "928 显示“英雄联盟S16 到达限制 今日使用时长”。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "考研最后30天冲刺的广告视频",
+          "expected_ids": [
+            1061
+          ],
+          "expected_terms": [
+            "最后30天",
+            "考研"
+          ],
+          "why": "1061 是“最后30天逼自己学完这些”考研广告视频。",
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "B",
+      "probes": [
+        {
+          "query": "那天我在浏览器搜微信扫一扫代理错误",
+          "expected_ids": [
+            877
+          ],
+          "expected_terms": [
+            "微信扫一扫",
+            "代理错误"
+          ],
+          "why": "877 是浏览器搜索“微信扫一扫代理错误”的结果页。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "我在DeepSeek问极限补作业那道第5题",
+          "expected_ids": [
+            238,
+            239
+          ],
+          "expected_terms": [
+            "极限补作业"
+          ],
+          "why": "238/239 是 DeepSeek 里“极限补作业”时问第5题的对话；改用独特短语是因为“概率论”df=55，不可唯一指认。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "我在ChatGPT里问微信内置浏览器是不是坏了",
+          "expected_ids": [
+            911,
+            886
+          ],
+          "expected_terms": [
+            "微信内置浏览器",
+            "内置浏览器"
+          ],
+          "why": "911 在 ChatGPT 里讨论微信内置浏览器/小程序是否异常；886 是同一排查的错误页。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "我在设置里翻已下载的应用那个页面",
+          "expected_ids": [
+            840,
+            674
+          ],
+          "expected_terms": [
+            "已下载的应用"
+          ],
+          "why": "840/674 都是设置“已下载的应用”页面，只是时间不同。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "我在QQ群里看到零杯群主发的预览图",
+          "expected_ids": [
+            138,
+            742
+          ],
+          "expected_terms": [
+            "零杯",
+            "预览"
+          ],
+          "why": "138 是零杯群里的模型预览/坐姿图；742 是同一群聊天。",
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "C",
+      "probes": [
+        {
+          "query": "晚上在ChatGPT问微信内置浏览器报错",
+          "expected_ids": [
+            911,
+            886
+          ],
+          "expected_terms": [
+            "微信内置浏览器",
+            "内置浏览器"
+          ],
+          "why": "11-17 晚间 ChatGPT 的微信内置浏览器排查；911/886 同一条线。",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "10点53分那个布儒斯特角公式",
+          "expected_ids": [
+            736
+          ],
+          "expected_terms": [
+            "布儒斯特角公式"
+          ],
+          "why": "736 出现在 11-17 10:53，DeepSeek 布儒斯特角公式。",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "18:40在浏览器搜微信扫一扫",
+          "expected_ids": [
+            877
+          ],
+          "expected_terms": [
+            "微信扫一扫"
+          ],
+          "why": "877 出现在 11-17 18:40，浏览器搜索“微信扫一扫代理错误”。",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "20:28英雄联盟S16时长限制",
+          "expected_ids": [
+            928
+          ],
+          "expected_terms": [
+            "英雄联盟S16",
+            "到达限制"
+          ],
+          "why": "928 出现在 11-17 20:28，S16 使用时长限制。",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "23:27那个考研视频",
+          "expected_ids": [
+            1061
+          ],
+          "expected_terms": [
+            "考研",
+            "最后30天"
+          ],
+          "why": "1061 出现在 11-17 23:27，考研冲刺广告。",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "D",
+      "probes": [
+        {
+          "query": "那个代理报错的通知出现在哪一屏",
+          "expected_ids": [
+            877,
+            885,
+            886,
+            911
+          ],
+          "expected_terms": [
+            "微信扫一扫"
+          ],
+          "why": "877 是浏览器“微信扫一扫代理错误”结果；用“微信扫一扫”df=1 保证可判定。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "微信内置浏览器报错提示在哪看到的",
+          "expected_ids": [
+            911,
+            886,
+            885
+          ],
+          "expected_terms": [
+            "PROXY"
+          ],
+          "why": "886 是 PROXY_CONNECTION_FAILED 报错页，用 PROXY 保证 b 通过。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "Clash节点配置页面在哪",
+          "expected_ids": [
+            893,
+            696
+          ],
+          "expected_terms": [
+            "Clash",
+            "节点"
+          ],
+          "why": "893 是 Clash 用户代理/节点配置页；696 是 Clash 仪表盘。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "学习通概率论作业提醒在哪",
+          "expected_ids": [
+            920
+          ],
+          "expected_terms": [
+            "学习通",
+            "概率论"
+          ],
+          "why": "920 是学习通《概率论与数理统计A》作业提醒页。",
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "英雄联盟S16时长限制弹窗在哪",
+          "expected_ids": [
+            928
+          ],
+          "expected_terms": [
+            "英雄联盟S16",
+            "到达限制"
+          ],
+          "why": "928 是 S16 到达使用时长限制的弹窗。",
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "E",
+      "probes": [
+        {
+          "query": "上周买了个显卡",
+          "expected_ids": [],
+          "expected_terms": [
+            "显卡"
+          ],
+          "why": "语料里“显卡”仅在数码视频推荐中出现，没有购买显卡的记录。",
+          "expect_none": true,
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "去上海出差",
+          "expected_ids": [],
+          "expected_terms": [
+            "上海"
+          ],
+          "why": "没有出差/上海行程记录。",
+          "expect_none": true,
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "量子计算机的股票代码",
+          "expected_ids": [],
+          "expected_terms": [
+            "量子计算机",
+            "股票代码"
+          ],
+          "why": "没有量子计算/股票内容；仅有“量子”物理字样。",
+          "expect_none": true,
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "打开过Photoshop修图",
+          "expected_ids": [],
+          "expected_terms": [
+            "Photoshop",
+            "修图"
+          ],
+          "why": "没有 Photoshop 使用记录。",
+          "expect_none": true,
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "昨天去健身房",
+          "expected_ids": [],
+          "expected_terms": [
+            "健身房"
+          ],
+          "why": "没有健身房记录。",
+          "expect_none": true,
+          "expected_day": "2026-11-17"
+        }
+      ]
+    }
+  ]
+}

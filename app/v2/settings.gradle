@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "dsh-v2"
+
+include(":core", ":guard", ":trace", ":usage", ":egress", ":models", ":agent", ":masker", ":memory", ":pcharness", ":app")

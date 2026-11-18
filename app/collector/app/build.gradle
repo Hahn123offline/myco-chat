@@ -1,0 +1,61 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.dsh.collector"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.dsh.collector"
+        minSdk 30
+        targetSdk 35
+        versionCode 2
+        versionName "0.2"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile "../AndroidManifest.xml"
+            res.srcDirs = ["../res"]
+        }
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("../debug.keystore")
+            storePassword "android"
+            keyAlias "dsh"
+            keyPassword "android"
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+
+dependencies {
+    implementation "com.google.mlkit:text-recognition-chinese:16.0.1"
+    implementation project(":host-api")
+    implementation project(":host-core")
+    implementation project(":module-usagetrace")
+    implementation project(":module-redaction")
+    implementation project(":module-memory")
+    implementation project(":module-models")
+    implementation project(":module-enrich")
+}

@@ -1,0 +1,338 @@
+{
+  "version": 1,
+  "note": "真实 11-16/11-17 memory.db；expected_ids 为真实命中应包含的块 id",
+  "families": [
+    {
+      "name": "A",
+      "label": "主题词",
+      "probes": [
+        {
+          "query": "概率论",
+          "expected_ids": [
+            238,
+            239,
+            240,
+            241,
+            242,
+            243
+          ],
+          "core_terms": [
+            "概率论"
+          ],
+          "expected_terms": [
+            "概率论"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "布儒斯特角",
+          "expected_ids": [
+            736,
+            737,
+            744,
+            747,
+            749,
+            776,
+            777
+          ],
+          "core_terms": [
+            "布儒斯特角"
+          ],
+          "expected_terms": [
+            "布儒斯特角"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "Clash",
+          "expected_ids": [
+            696,
+            886,
+            893,
+            899,
+            900,
+            901,
+            903,
+            904
+          ],
+          "core_terms": [
+            "Clash",
+            "clash"
+          ],
+          "expected_terms": [
+            "Clash",
+            "clash"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "零杯",
+          "expected_ids": [
+            138,
+            139,
+            184,
+            185,
+            186,
+            306
+          ],
+          "core_terms": [
+            "零杯"
+          ],
+          "expected_terms": [
+            "零杯"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "偏振",
+          "expected_ids": [
+            742,
+            744,
+            749,
+            750,
+            868,
+            907,
+            968,
+            1087
+          ],
+          "core_terms": [
+            "偏振"
+          ],
+          "expected_terms": [
+            "偏振"
+          ],
+          "expected_day": "2026-11-17"
+        }
+      ],
+      "criterion": "topk_text_contains_core_term"
+    },
+    {
+      "name": "B",
+      "label": "自然语句",
+      "probes": [
+        {
+          "query": "那天代理连不上我去哪查的",
+          "expected_ids": [
+            877,
+            885,
+            886,
+            893,
+            899,
+            900
+          ],
+          "expected_terms": [
+            "那天代理连不上我去哪查的"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "我是不是看到过一个关于偏振的视频",
+          "expected_ids": [
+            742,
+            744,
+            749,
+            750,
+            907
+          ],
+          "expected_terms": [
+            "我是不是看到过一个关于偏振的视频"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "我下午在设置里改了什么",
+          "expected_ids": [
+            82,
+            93,
+            94,
+            99,
+            127,
+            422,
+            425,
+            426
+          ],
+          "expected_terms": [
+            "我下午在设置里改了什么"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "微信扫码报错怎么弄的",
+          "expected_ids": [
+            877,
+            885,
+            886
+          ],
+          "expected_terms": [
+            "微信扫码报错怎么弄的"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "概率论作业第几题",
+          "expected_ids": [
+            238,
+            239,
+            240,
+            241,
+            242,
+            243
+          ],
+          "expected_terms": [
+            "概率论作业第几题"
+          ],
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "C",
+      "label": "时间+主题",
+      "probes": [
+        {
+          "query": "布儒斯特角",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_ids": [
+            736,
+            737,
+            744,
+            747,
+            749,
+            776,
+            777
+          ],
+          "core_terms": [
+            "布儒斯特角"
+          ],
+          "expected_terms": [
+            "布儒斯特角"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "代理错误",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_ids": [
+            877,
+            885,
+            886,
+            893,
+            899,
+            900
+          ],
+          "core_terms": [
+            "代理错误",
+            "代理",
+            "ERR_PROXY"
+          ],
+          "expected_terms": [
+            "代理错误",
+            "代理",
+            "ERR_PROXY"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "概率论",
+          "from": "2026-11-16",
+          "to": "2026-11-16",
+          "expected_ids": [
+            238,
+            239,
+            240,
+            241,
+            242,
+            243
+          ],
+          "core_terms": [
+            "概率论"
+          ],
+          "expected_terms": [
+            "概率论"
+          ],
+          "expected_day": "2026-11-16"
+        }
+      ],
+      "criterion": "topk_text_contains_core_term"
+    },
+    {
+      "name": "D",
+      "label": "印证型",
+      "probes": [
+        {
+          "query": "我到底有没有打开过 Clash",
+          "expected_ids": [
+            696,
+            886,
+            893,
+            899
+          ],
+          "expected_terms": [
+            "我到底有没有打开过 Clash"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "那个代理报错的通知在哪一屏",
+          "expected_ids": [
+            877,
+            885,
+            886,
+            893
+          ],
+          "expected_terms": [
+            "那个代理报错的通知在哪一屏"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "概率论第5题在哪看到的",
+          "expected_ids": [
+            238,
+            239,
+            240,
+            241,
+            242,
+            243
+          ],
+          "expected_terms": [
+            "概率论第5题在哪看到的"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "微信扫码错误出现在哪个页面",
+          "expected_ids": [
+            877,
+            885,
+            886
+          ],
+          "expected_terms": [
+            "微信扫码错误出现在哪个页面"
+          ],
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "E",
+      "label": "负例",
+      "probes": [
+        {
+          "query": "量子计算机的股票代码",
+          "expect_none": true
+        },
+        {
+          "query": "上周去北京出差",
+          "expect_none": true
+        },
+        {
+          "query": "火星探测器发射时间",
+          "expect_none": true
+        }
+      ]
+    }
+  ]
+}

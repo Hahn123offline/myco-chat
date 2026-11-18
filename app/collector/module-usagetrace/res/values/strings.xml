@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="trace_a11y_desc">记录你在应用之间的注意轨迹（本地保存），用于你之后的回忆与定位。</string>
+</resources>

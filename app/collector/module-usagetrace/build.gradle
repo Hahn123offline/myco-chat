@@ -1,0 +1,25 @@
+plugins {
+    id "com.android.library"
+}
+
+android {
+    namespace "com.dsh.usagetrace"
+    compileSdk 35
+    defaultConfig { minSdk 30 }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        main {
+            manifest.srcFile "AndroidManifest.xml"
+            res.srcDirs = ["res"]
+        }
+    }
+}
+
+dependencies {
+    api project(":host-api")
+    implementation "com.google.mlkit:text-recognition-chinese:16.0.1"
+    testImplementation "junit:junit:4.13.2"
+}

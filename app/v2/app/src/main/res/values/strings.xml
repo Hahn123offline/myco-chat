@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_description">记录你主动浏览过的页面（整屏文本 + 一张代表帧），本地保存；只有通过死线检查的内容才允许上云。可随时在系统设置里关闭。</string>
+</resources>

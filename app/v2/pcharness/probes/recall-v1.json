@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "held_out": true,
+  "families": [
+    {
+      "name": "A",
+      "label": "主题词",
+      "probes": [
+        {
+          "query": "英雄联盟S16",
+          "expected_ids": [
+            928,
+            874,
+            852,
+            851,
+            850,
+            830
+          ],
+          "expected_terms": [
+            "英雄联盟S16"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "美团",
+          "expected_ids": [
+            1083,
+            1081,
+            1067,
+            1053,
+            947,
+            930
+          ],
+          "expected_terms": [
+            "美团"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "考研",
+          "expected_ids": [
+            1061,
+            1060
+          ],
+          "expected_terms": [
+            "考研"
+          ],
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "B",
+      "label": "自然语句",
+      "probes": [
+        {
+          "query": "我是不是看过一个考研视频",
+          "expected_ids": [
+            1061,
+            1060
+          ],
+          "expected_terms": [
+            "我是不是看过一个考研视频"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "昨天晚上那个美团付款",
+          "expected_ids": [
+            1083,
+            1081,
+            1067
+          ],
+          "expected_terms": [
+            "昨天晚上那个美团付款"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "英雄联盟时长限制怎么弄的",
+          "expected_ids": [
+            928,
+            874,
+            852,
+            830
+          ],
+          "expected_terms": [
+            "英雄联盟时长限制怎么弄的"
+          ],
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "C",
+      "label": "时间+主题",
+      "probes": [
+        {
+          "query": "美团",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_ids": [
+            1083,
+            1081,
+            930
+          ],
+          "expected_terms": [
+            "美团"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "小红书",
+          "from": "2026-11-17",
+          "to": "2026-11-17",
+          "expected_ids": [
+            840,
+            781,
+            674
+          ],
+          "expected_terms": [
+            "小红书"
+          ],
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "D",
+      "label": "印证型",
+      "probes": [
+        {
+          "query": "我到底有没有打开过美团",
+          "expected_ids": [
+            1083,
+            1081,
+            1067
+          ],
+          "expected_terms": [
+            "我到底有没有打开过美团"
+          ],
+          "expected_day": "2026-11-17"
+        },
+        {
+          "query": "英雄联盟S16出现在哪一屏",
+          "expected_ids": [
+            928,
+            874,
+            852,
+            830
+          ],
+          "expected_terms": [
+            "英雄联盟S16出现在哪一屏"
+          ],
+          "expected_day": "2026-11-17"
+        }
+      ]
+    },
+    {
+      "name": "E",
+      "label": "负例",
+      "probes": [
+        {
+          "query": "去上海出差",
+          "expect_none": true
+        },
+        {
+          "query": "上周买了个显卡",
+          "expect_none": true
+        }
+      ]
+    }
+  ]
+}
