@@ -51,9 +51,10 @@ public final class AgentEngine {
         public String thinking = "enabled";
         public String terminalTool;          // null = 普通 agent；L2 用 submit_description
         public boolean requireTerminalTool = false;
-        public int maxTranscriptMessages = 40;
         /** 压缩摘要落点；null 时只压不落库（测试/无记忆环境）。 */
         public Compaction.Sink compactionSink;
+        /** 最新压缩摘要（跨轮注回上下文）。 */
+        public java.util.function.Supplier<String> compactionSummarySupplier;
         /** 外部取消：设置 true 后引擎在下一个边界失败退出。 */
         public java.util.concurrent.atomic.AtomicBoolean cancel;
     }
@@ -121,7 +122,8 @@ public final class AgentEngine {
             List<ChatMessage> transcript;
             try {
                 transcript = new TranscriptBuilder(store, sessionId, systemPrompt, artifacts,
-                        cfg.maxTranscriptMessages).build();
+                        cfg.compactionSummarySupplier == null ? ""
+                                : cfg.compactionSummarySupplier.get()).build();
             } catch (Throwable t) {
                 // 本地转录非法：绝不发云端，错误精确记录在本地
                 store.append(sessionId, "error",

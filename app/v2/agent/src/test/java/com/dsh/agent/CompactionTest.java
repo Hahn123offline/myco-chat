@@ -49,4 +49,20 @@ public class CompactionTest {
         assertTrue(r.error.contains("summarize-fail"));
         assertEquals(in, r.messages);
     }
+    @Test public void 压缩后的摘要可在下一轮装配注回() {
+        String[] saved = new String[1];
+        Compaction.Result r = Compaction.maybe(history(30),
+                req -> com.dsh.models.ModelResponse.ok("我回忆：代理问题", "m", "p"),
+                (summary, dropped) -> saved[0] = summary);
+        assertTrue(r.ok);
+        assertFalse(r.skipped);
+        MemoryAgentStore store = new MemoryAgentStore();
+        store.append("s", "user", "继续");
+        List<ChatMessage> out = new TranscriptBuilder(store, "s", "sys",
+                new java.util.HashMap<>(), saved[0]).build();
+        assertTrue(out.get(1).content.contains("【早前对话的压缩摘要】"));
+        assertTrue(out.get(1).content.contains("代理问题"));
+        assertEquals("", TranscriptValidator.check(out));
+    }
+
 }

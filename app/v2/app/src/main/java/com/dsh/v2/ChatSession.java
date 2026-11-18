@@ -65,6 +65,12 @@ public final class ChatSession {
         cfg.stageSupplier = provenance;
         cfg.maskStatusSupplier = () -> provenance.maskStatus;
         cfg.appPolicy = "DERIVED";
+        cfg.compactionSummarySupplier = () -> {
+            AndroidMemoryStore ms = new AndroidMemoryStore(ctx);
+            java.util.List<com.dsh.memory.MemItem> xs = ms.query(
+                    new com.dsh.memory.Query().namespace("compaction").limit(1000));
+            return xs.isEmpty() ? "" : xs.get(xs.size() - 1).text;
+        };
         cfg.compactionSink = (summary, dropped) -> {
             AndroidMemoryStore ms = new AndroidMemoryStore(ctx);
             ms.registerNamespace("compaction", false);

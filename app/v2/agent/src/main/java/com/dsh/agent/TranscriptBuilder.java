@@ -20,26 +20,25 @@ import java.util.Map;
  */
 public final class TranscriptBuilder {
 
-    private static final int MAX_TRANSCRIPT = 40;
-    private final int maxTranscript;
-
     private final AgentStore store;
     private final String sessionId;
     private final String systemPrompt;
     private final Map<Long, byte[]> artifacts;
 
+    private final String compactionSummary;
+
     public TranscriptBuilder(AgentStore store, String sessionId, String systemPrompt,
                              Map<Long, byte[]> artifacts) {
-        this(store, sessionId, systemPrompt, artifacts, MAX_TRANSCRIPT);
+        this(store, sessionId, systemPrompt, artifacts, "");
     }
 
     public TranscriptBuilder(AgentStore store, String sessionId, String systemPrompt,
-                             Map<Long, byte[]> artifacts, int maxTranscript) {
+                             Map<Long, byte[]> artifacts, String compactionSummary) {
         this.store = store;
         this.sessionId = sessionId;
         this.systemPrompt = systemPrompt == null ? "" : systemPrompt;
         this.artifacts = artifacts == null ? new HashMap<>() : artifacts;
-        this.maxTranscript = Math.max(4, maxTranscript);
+        this.compactionSummary = compactionSummary == null ? "" : compactionSummary;
     }
 
     public List<ChatMessage> build() {
@@ -102,64 +101,13 @@ public final class TranscriptBuilder {
                 }
             }
         }
-        List<ChatMessage> trimmed = trimByGroups(full, maxTranscript);
-        TranscriptValidator.assertLegal(trimmed);
-        return trimmed;
-    }
-
-    /**
-     * 裁剪以组为单位：system + 初始 user 固定保留；之后每个 assistant 起一组，
-     * 一组包含它的全部 tool 结果与图片，从最老的组开始丢。
-     */
-    private static List<ChatMessage> trimByGroups(List<ChatMessage> in, int maxTranscript) {
-        if (in.size() <= maxTranscript) return in;
-        int sysCount = (!in.isEmpty() && "system".equals(in.get(0).role)) ? 1 : 0;
-        int pinned = 0;
-        int idx = sysCount;
-        if (idx < in.size() && "user".equals(in.get(idx).role)) {
-            pinned = 1;
-            idx++;
+        // ICL compaction：最新摘要注回系统提示词之后、对话之前。
+        if (!compactionSummary.isEmpty()) {
+            int at = (!full.isEmpty() && "system".equals(full.get(0).role)) ? 1 : 0;
+            full.add(at, ChatMessage.user("【早前对话的压缩摘要】\n" + compactionSummary));
         }
-        List<int[]> groups = new ArrayList<>();
-        int start = idx;
-        int i = idx;
-        while (i < in.size()) {
-            if ("assistant".equals(in.get(i).role)) {
-                int j = i + 1;
-                while (j < in.size() && !"assistant".equals(in.get(j).role)) j++;
-                groups.add(new int[]{start, j});
-                start = j;
-                i = j;
-            } else {
-                i++;
-            }
-        }
-        if (start < in.size()) groups.add(new int[]{start, in.size()});
-        int total = sysCount + pinned;
-        for (int[] g : groups) total += g[1] - g[0];
-        int keepFrom = 0;
-        while (total > maxTranscript && keepFrom < groups.size() - 1) {
-            total -= groups.get(keepFrom)[1] - groups.get(keepFrom)[0];
-            keepFrom++;
-        }
-        // 给占位符预留 1 条，确保最终不超过 maxTranscript
-        if (keepFrom > 0 && total >= maxTranscript && keepFrom < groups.size() - 1) {
-            total -= groups.get(keepFrom)[1] - groups.get(keepFrom)[0];
-            keepFrom++;
-        }
-        List<ChatMessage> out = new ArrayList<>();
-        for (int k = 0; k < sysCount + pinned; k++) out.add(in.get(k));
-        if (keepFrom < groups.size()) {
-            int s = groups.get(keepFrom)[0];
-            int removed = s - (sysCount + pinned);
-            if (removed > 0) {
-                // 只能插在新一组对话开始前，不能插进 tool 组中间
-                out.add(ChatMessage.user("（已省略 " + removed
-                        + " 条较早的对话，以控制上下文长度）"));
-            }
-            out.addAll(in.subList(s, in.size()));
-        }
-        return out;
+        TranscriptValidator.assertLegal(full);
+        return full;
     }
 
     private static ToolResult.Status parseStatus(String s) {

@@ -66,7 +66,7 @@ public class TranscriptBuilderTest {
                     "{\"tool_call_id\":\"c" + i + "\",\"status\":\"OK\",\"summary\":\"x\"}");
         }
         List<ChatMessage> msgs = new TranscriptBuilder(store, "s", "sys", null).build();
-        assertTrue(msgs.size() <= 40);
+        assertTrue("旧40条截断已移除", msgs.size() > 40);
         for (int i = 0; i < msgs.size(); i++) {
             if ("tool".equals(msgs.get(i).role)) {
                 assertTrue("tool 前必须是 assistant 或另一个 tool",
