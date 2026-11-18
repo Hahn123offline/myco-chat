@@ -265,4 +265,27 @@ public class GuardTest {
         for (int i = 0; i < n; i++) b.append(s);
         return b.toString();
     }
+    @Test public void 时间戳十三位不能当卡号() {
+        assertFalse(guard.check("1794886766452").isBlocked());
+        assertFalse(guard.check("shot=shots/shot_1794912080550.jpg").isBlocked());
+        assertFalse(guard.check("{\"t0\":1794910158279}").isBlocked());
+    }
+
+    @Test public void 十三位卡号必须有卡上下文() {
+        String card = withLuhn("411111111111");
+        assertEquals(13, card.length());
+        assertTrue(Guard.luhnValid(card));
+        assertFalse(guard.check(card).isBlocked());
+        assertEquals(Action.BLOCK, guard.check("卡号 " + card).action);
+        assertEquals(Action.BLOCK, guard.check("尾号：" + card).action);
+    }
+
+    @Test public void 十六和十九位卡号仍无条件拦截() {
+        assertEquals(Action.BLOCK, guard.check("4111111111111111").action);
+        assertEquals(Action.BLOCK, guard.check("4111 1111 1111 1111").action);
+        String c19 = withLuhn("622202123456789012");
+        assertEquals(19, c19.length());
+        assertEquals(Action.BLOCK, guard.check(c19).action);
+    }
+
 }

@@ -56,6 +56,7 @@ public final class Guard {
     private static final Pattern SMS_CTX = Pattern.compile("验证码|校验码|动态码|口令");
     private static final Pattern CVC_CTX = Pattern.compile("CVC|CVV|安全码|背面",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    private static final Pattern CARD_CTX = Pattern.compile("卡号|银行卡|信用卡|储蓄卡|尾号|账号");
 
     private static final Pattern DIGITS_EXACT_6 = Pattern.compile("(?<!\\d)(\\d{6})(?!\\d)");
     private static final Pattern DIGITS_4_TO_6 = Pattern.compile("(?<!\\d)(\\d{4,6})(?!\\d)");
@@ -64,6 +65,7 @@ public final class Guard {
     private static final int PAY_WINDOW = 30;
     private static final int SMS_WINDOW = 15;
     private static final int CVC_WINDOW = 15;
+    private static final int CARD_CTX_WINDOW = 30;
 
     private static final int[] GB_WEIGHTS = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
     private static final char[] GB_CHECK = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
@@ -130,13 +132,24 @@ public final class Guard {
         Matcher m = CARD.matcher(text);
         while (m.find()) {
             String digits = m.group(1).replace(" ", "").replace("-", "");
-            if (digits.length() < 13 || digits.length() > 19) continue;
+            int len = digits.length();
+            if (len < 13 || len > 19) continue;
             if (digits.charAt(0) == '0') continue;
             if (allSameDigit(digits)) continue;
             if (!luhnValid(digits)) continue;
+            // 13/15 位与毫秒时间戳形态无法区分：必须有卡上下文才判卡号
+            if ((len == 13 || len == 15) && !hasCardContext(text, m.start(1), m.end(1))) {
+                continue;
+            }
             out.add(new Hit(K_BANK_CARD, Action.BLOCK, m.start(1), m.end(1), null));
         }
         return out;
+    }
+
+    private static boolean hasCardContext(String text, int start, int end) {
+        int from = Math.max(0, start - CARD_CTX_WINDOW);
+        int to = Math.min(text.length(), end + CARD_CTX_WINDOW);
+        return CARD_CTX.matcher(text.substring(from, to)).find();
     }
 
     private static List<Hit> scanIds(String text) {

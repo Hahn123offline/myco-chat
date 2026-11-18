@@ -61,11 +61,12 @@ public final class ChatConsole {
         PcProvenance prov = new PcProvenance();
         final List<String> recalls = new ArrayList<>();
         final long[] usage = new long[3]; // prompt, completion, latency
+        final String[] currentUser = {""};
         ToolRegistry tools = new ToolRegistry();
         com.dsh.memory.MaskProvider masker = null;
         try { masker = new JdbcMaskProvider(evidence); } catch (Throwable ignored) { }
         tools.add(new RecallTool(source, prov, masker, recalls::add));
-        tools.add(new RememberTool(source, "chat", ""));
+        tools.add(new RememberTool(source, "chat", () -> currentUser[0]));
         tools.add(new MemoryStatusTool(source::status));
         com.dsh.models.ModelRouter router = new com.dsh.models.ModelRouter(
                 java.util.Collections.singletonList(provider), false, gate, null);
@@ -101,6 +102,7 @@ public final class ChatConsole {
         };
 
         if (ask != null) {
+            currentUser[0] = ask;
             ChatLoop.run(host, ask, (ok, msg) -> {
                 System.out.println(msg);
                 if (!quiet) trace(host, prov, recalls, usage, audit);
@@ -116,6 +118,7 @@ public final class ChatConsole {
             String line = sc.nextLine();
             if (line == null || line.trim().isEmpty()) continue;
             if ("exit".equalsIgnoreCase(line.trim())) break;
+            currentUser[0] = line;
             long t0 = System.currentTimeMillis();
             ChatLoop.run(host, line, (ok, msg) -> {
                 System.out.println(msg);

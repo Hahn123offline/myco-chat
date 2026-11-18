@@ -16,11 +16,21 @@ public final class RememberTool implements AgentTool {
     private final MemoryStore store;
     private final String sessionId;
     private final String userMessage;
+    private final java.util.function.Supplier<String> userSupplier;
 
     public RememberTool(MemoryStore store, String sessionId, String userMessage) {
         this.store = store;
         this.sessionId = sessionId;
         this.userMessage = userMessage;
+        this.userSupplier = null;
+    }
+
+    public RememberTool(MemoryStore store, String sessionId,
+                        java.util.function.Supplier<String> userSupplier) {
+        this.store = store;
+        this.sessionId = sessionId;
+        this.userMessage = "";
+        this.userSupplier = userSupplier;
     }
 
     @Override public String name() { return "remember"; }
@@ -55,11 +65,12 @@ public final class RememberTool implements AgentTool {
         try {
             store.registerNamespace("chat", true);
             store.registerNamespace("manual", true);
-            String original = explicitOriginal(userMessage);
+            String um = userSupplier == null ? userMessage : userSupplier.get();
+        String original = explicitOriginal(um);
             String finalText = original.isEmpty() ? text : original;
             String summary = original.isEmpty() ? "" : text;
             long id = store.put(MemoryWriter.remember(finalText, kind, when, tags,
-                    sessionId, 0, userMessage, summary));
+                    sessionId, 0, um, summary));
             return ToolResult.ok("已记住（id=" + id + "，namespace="
                     + ("manual".equalsIgnoreCase(kind) ? "manual" : "chat") + "）。");
         } catch (Throwable t) {
