@@ -44,3 +44,11 @@
 *.pyc
 .DS_Store
 Thumbs.db
+# 可视化产物（可重新生成）
+/viz/index.html
+/viz/shots/
+/viz/*_out.txt
+/raw/v2/device/evidence.db
+/viz/_*.py
+/viz/_*.txt
+/viz/_testshot*

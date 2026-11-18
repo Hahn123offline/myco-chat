@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手机痕迹记忆 · 可视化检查</title>
+<style>
+  :root{
+    --ink:#111827; --ink2:#374151; --ink3:#6b7280; --line:#e5e7eb;
+    --bg:#ffffff; --bg2:#f8fafc; --accent:#4d6bfe;
+    --gap-no:#9f1239; --gap-app:#0369a1; --gap-off:#b45309;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  #err{display:none;background:#fef2f2;border:2px solid #dc2626;color:#991b1b;
+    padding:10px 14px;margin:8px 16px;border-radius:8px;font-weight:600;white-space:pre-wrap}
+  header{padding:13px 20px 4px}
+  h1{margin:0;font-size:23px;letter-spacing:.3px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  h1 .date{font-size:19px;font-weight:700;color:#fff;background:var(--ink);
+    padding:1px 10px;border-radius:6px;letter-spacing:.5px}
+  h1 .sub{font-size:12.5px;font-weight:400;color:var(--ink3)}
+  .kpis{display:flex;flex-wrap:wrap;gap:8px;padding:10px 20px 4px}
+  .kpi{background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:6px 12px;min-width:92px}
+  .kpi .v{font-size:19px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+  .kpi .k{font-size:11.5px;color:var(--ink3);margin-top:1px;white-space:nowrap}
+  .kpi.warn{background:#fff7ed;border-color:#fed7aa}.kpi.warn .v{color:#b45309}
+  .kpi.gapk{background:#fff1f2;border-color:#fecdd3}.kpi.gapk .v{color:var(--gap-no)}
+  .legend{border-top:1px dashed var(--line);border-bottom:1px solid var(--line);
+    padding:8px 20px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;background:#fcfdff}
+  .lg{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .lg .ttl{font-size:11.5px;color:var(--ink3);font-weight:700;letter-spacing:.4px;margin-right:2px}
+  .app{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;
+    background:#fff;border:1px solid var(--line);border-radius:20px;padding:1px 8px 1px 4px}
+  .app i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .app b{font-weight:600}.app span{color:var(--ink3);font-size:11px}
+  .sym{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink2)}
+  .sym .box{width:20px;height:11px;border-radius:2px;display:inline-block;flex:none}
+  main{display:flex;align-items:flex-start}
+  #chartwrap{flex:1 1 auto;min-width:0;padding:8px 4px 0 6px;position:relative}
+  #chart{display:block;width:100%;user-select:none}
+  aside#detail{flex:0 0 420px;max-width:420px;border-left:1px solid var(--line);
+    padding:12px 16px 40px;background:#fcfdff;min-height:520px;max-height:calc(100vh - 40px);
+    overflow-y:auto;position:sticky;top:0}
+  aside#detail h2{font-size:16.5px;margin:0 0 6px}
+  aside#detail h3{font-size:13.5px;margin:15px 0 6px;color:var(--ink2);
+    border-bottom:1px solid var(--line);padding-bottom:4px}
+  .empty{color:var(--ink3);font-size:13.5px;padding:16px 2px;line-height:1.85}
+  .meta{font-size:12px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:5px 11px;margin-bottom:9px}
+  .badges{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0 3px}
+  .badge{font-size:11px;padding:1px 7px;border-radius:20px;background:#eef2ff;color:#3730a3;font-weight:600}
+  .badge.guard{background:#fee2e2;color:#991b1b}
+  .badge.key{background:#fef3c7;color:#92400e}
+  .badge.mem{background:#e0f2fe;color:#075985}
+  .badge.same{background:#ecfdf5;color:#065f46}
+  .badge.diff{background:#fef2f2;color:#991b1b}
+  .diff{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .diff .col{background:#fff;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .diff .hd{font-size:11px;font-weight:700;color:var(--ink3);padding:3px 7px;
+    background:#f1f5f9;border-bottom:1px solid var(--line)}
+  .diff pre{margin:0;padding:7px;font-size:12px;line-height:1.6;white-space:pre-wrap;
+    word-break:break-all;max-height:280px;overflow:auto;
+    font-family:"Cascadia Mono",Consolas,"Microsoft YaHei UI",monospace}
+  .diff del{background:#fecaca;color:#7f1d1d;text-decoration:none;border-radius:2px}
+  .diff ins{background:#bbf7d0;color:#14532d;text-decoration:none;border-radius:2px}
+  table.el{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.el th{text-align:left;color:var(--ink3);font-weight:700;padding:3px 4px;
+    border-bottom:1px solid var(--line);background:#fcfdff}
+  table.el td{padding:2px 4px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+  table.el td.t{word-break:break-all}
+  table.el td.n{color:var(--ink3);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .shot{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#f1f5f9}
+  .shot img{display:block;width:100%;height:auto}
+  .ph{padding:24px 10px;text-align:center;color:var(--ink3);font-size:12px;background:
+    repeating-linear-gradient(45deg,#f8fafc,#f8fafc 8px,#f1f5f9 8px,#f1f5f9 16px)}
+  .body{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;
+    font-size:13px;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow:auto}
+  .list{display:flex;flex-direction:column;gap:6px}
+  .li{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:6px;padding:5px 8px;font-size:12px}
+  .li.hot{border-left-color:var(--gap-no)}
+  .li b{font-size:12.5px}
+  .li .x{color:var(--ink2);margin-top:2px;line-height:1.6}
+  .lnk{display:inline-block;font-size:11px;padding:0 5px;margin:2px 2px 0 0;border-radius:4px;
+    background:#eef2ff;color:#3730a3;cursor:pointer;font-weight:600;border:1px solid #c7d2fe}
+  .lnk:hover{background:#e0e7ff}
+  .tip{position:fixed;pointer-events:none;background:rgba(17,24,39,.96);color:#fff;
+    font-size:12.5px;padding:7px 10px;border-radius:7px;z-index:99;max-width:390px;
+    line-height:1.55;display:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .tip .k{color:#9ca3af}
+  #notes{padding:2px 20px 10px;border-top:1px solid var(--line);margin-top:2px}
+  .nrow{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:3px 0;font-size:12.5px;color:var(--ink2)}
+  .nrow .tag{font-weight:700;color:#111827;font-size:11.5px;background:#f1f5f9;
+    border-radius:4px;padding:0 6px;flex:none}
+  .nrow .dim{color:var(--ink3)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0 2px}
+  .chip{font-size:11.5px;border-radius:16px;padding:2px 9px;cursor:pointer;border:1px solid;
+    display:inline-flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums}
+  .chip b{font-weight:700}
+  .chip.no{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+  .chip.ap{background:#f0f9ff;border-color:#bae6fd;color:#0369a1}
+  .chip.of{background:#fffbeb;border-color:#fde68a;color:#b45309}
+  .chip:hover{filter:brightness(.96)}
+  footer{border-top:1px solid var(--line);padding:9px 20px 24px;font-size:11.5px;color:var(--ink3);
+    display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  footer b{color:var(--ink2)}
+  .gutter{font-size:13.5px;font-weight:700;fill:#111827}
+  .gsub{font-size:11.5px;fill:#9ca3af}
+  .axis-t{font-size:12.5px;fill:#6b7280;font-variant-numeric:tabular-nums}
+  .gap-lab{font-size:12.5px;font-weight:700;fill:#9f1239;pointer-events:none}
+  .gap-lab2{font-size:11.5px;fill:#b91c1c;pointer-events:none}
+  .gap-lab-app{font-size:12px;font-weight:700;fill:#0369a1;pointer-events:none}
+  .halo{paint-order:stroke;stroke:#fff;stroke-width:2.5px;stroke-linejoin:round}
+  .chainrect{cursor:pointer}
+  .chainrect:hover{stroke:#111827 !important;stroke-width:1.8px !important}
+  .tr:hover{stroke:#111827;stroke-width:1px}
+  .l3bar{cursor:pointer}
+  @media (max-width:1180px){
+    main{flex-direction:column}
+    aside#detail{flex:1 1 auto;max-width:100%;width:100%;border-left:none;
+      border-top:1px solid var(--line);position:static;max-height:none}
+  }
+</style>
+</head>
+<body>
+<div id="err"></div>
+<header>
+  <h1>手机痕迹记忆 · 可视化检查
+    <span class="date" id="h-date"></span>
+    <span class="sub" id="h-sub"></span>
+  </h1>
+</header>
+<div class="kpis" id="kpis"></div>
+<div class="legend" id="legend"></div>
+<main>
+  <section id="chartwrap">
+    <svg id="chart"></svg>
+    <div class="tip" id="tip"></div>
+  </section>
+  <aside id="detail"></aside>
+</main>
+<div id="notes"></div>
+<footer id="foot"></footer>
+
+<script>
+"use strict";
+window.__errCount = 0;
+window.onerror = function(msg, src, line, col){
+  window.__errCount++;
+  var e = document.getElementById('err');
+  e.style.display = 'block';
+  e.textContent = 'JS 错误: ' + msg + '  @' + line + ':' + col;
+  return false;
+};
+const D = /*__PAYLOAD__*/null;
+
+(function(){
+if(!D){ document.getElementById('err').style.display='block';
+  document.getElementById('err').textContent='没有数据 payload'; return; }
+
+const DAY = 86400000, D0 = D.meta.day_start;
+const NS = 'http://www.w3.org/2000/svg';
+const S = D.stats, TR = D.traces, GAPS = D.gaps, MINORS = D.minorGaps, CH = D.chains;
+const APPMIN = D.appMinor || [];
+const APP_C = {}; D.apps.forEach(a => APP_C[a.pkg] = a.color);
+const CH_BY_ID = {}; CH.forEach(c => CH_BY_ID[c.id] = c);
+const CH_BY_BLOCK = {};
+CH.forEach(c => { (c.blk || []).forEach(id => { if(!CH_BY_BLOCK[id]) CH_BY_BLOCK[id] = c.id; }); });
+const TR_BY_ID = {}; TR.forEach(t => TR_BY_ID[t.id] = t);
+
+/* ---------------- 通用 ---------------- */
+function E(tag, at, parent){
+  const n = document.createElementNS(NS, tag);
+  for(const k in at){ const v = at[k]; if(v !== undefined && v !== null) n.setAttribute(k, v); }
+  if(parent) parent.appendChild(n);
+  return n;
+}
+function esc(s){ return String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function hm(ms){ const d = new Date(ms); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function hmG(ms){ return ms >= D0 + DAY ? '24:00' : hm(ms); }
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function dur(ms){
+  const s = Math.round(ms / 1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+  if(h && m) return h + '小时' + m + '分';
+  if(h) return h + '小时';
+  if(m) return m + '分' + (s%60 ? (s%60)+'秒' : '');
+  return s + '秒';
+}
+function durShort(ms){
+  const s = Math.round(ms/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+  if(h && m) return h + 'h' + m + 'm';
+  if(h) return h + 'h';
+  if(m) return m + 'm';
+  return s + 's';
+}
+function clamp(v,a,b){ return v < a ? a : (v > b ? b : v); }
+
+/* ---------------- 布局 ---------------- */
+const PAD = {l: 84, r: 18};
+const P_CURVE = {y: 6,   h: 106};
+const P_L1    = {y: 128, h: 186};
+const P_L2    = {y: 322, h: 154};
+const P_L3    = {y: 486, h: 40};
+const AXIS_Y  = 542, SVG_H = 566;
+
+let W = 1200, X0 = PAD.l, X1 = 1180;
+function xOf(ms){ return X0 + (ms - D0) / DAY * (X1 - X0); }
+function wOf(ms){ return ms / DAY * (X1 - X0); }
+function hourX(h){ return xOf(D0 + h * 3600000); }
+
+/* ---------------- 车道打包 ---------------- */
+function pack(items){
+  const lanes = [];
+  const out = [];
+  items.forEach(it => {
+    let idx = -1;
+    for(let i=0;i<lanes.length;i++){ if(lanes[i] <= it.a){ idx = i; break; } }
+    if(idx < 0){ lanes.push(it.b); idx = lanes.length - 1; }
+    else { lanes[idx] = Math.max(lanes[idx], it.b); }
+    it.lane = idx;
+    out.push(it);
+  });
+  return {items: out, n: Math.max(1, lanes.length)};
+}
+
+/* ---------------- 曲线工具 ---------------- */
+const NB = 288, BIN = DAY / NB;
+function binize(rows, t0f, wf){
+  const b = new Float64Array(NB);
+  rows.forEach(r => {
+    const i = Math.floor((t0f(r) - D0) / BIN);
+    if(i >= 0 && i < NB) b[i] += wf(r);
+  });
+  return b;
+}
+function smooth(b, sigma){
+  const rad = Math.ceil(sigma * 3), k = [];
+  let ks = 0;
+  for(let i=-rad;i<=rad;i++){ const v = Math.exp(-(i*i)/(2*sigma*sigma)); k.push(v); ks += v; }
+  const out = new Float64Array(b.length);
+  for(let i=0;i<b.length;i++){
+    let s = 0;
+    for(let j=-rad;j<=rad;j++){
+      const x = i + j;
+      if(x >= 0 && x < b.length) s += b[x] * k[j + rad];
+    }
+    out[i] = s / ks;
+  }
+  return out;
+}
+function maxOf(a){ let m = 0; for(let i=0;i<a.length;i++) if(a[i] > m) m = a[i]; return m || 1; }
+
+/* ---------------- 渲染 ---------------- */
+const svg = document.getElementById('chart');
+const tip = document.getElementById('tip');
+let selKind = null, selId = null;
+let laneN = 1;
+
+function measure(){
+  const wrap = document.getElementById('chartwrap');
+  W = Math.max(720, wrap.clientWidth - 8);
+  X0 = PAD.l; X1 = W - PAD.r;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + SVG_H);
+  svg.setAttribute('height', SVG_H);
+}
+
+function render(){
+  measure();
+  svg.textContent = '';
+  const defs = E('defs', {}, svg);
+  const hp = E('pattern', {id:'hatch', width:6, height:6, patternUnits:'userSpaceOnUse',
+                           patternTransform:'rotate(45)'}, defs);
+  E('line', {x1:0,y1:0,x2:0,y2:6, stroke:'#0369a1', 'stroke-width':1.3, opacity:.75}, hp);
+
+  E('rect', {x:X0, y:P_CURVE.y, width:X1-X0, height:P_L3.y+P_L3.h-P_CURVE.y,
+             fill:'#ffffff'}, svg);
+  drawGrid();
+  drawGapBands();
+  drawL1();
+  drawL2();
+  drawL3();
+  drawGapEdges();
+  drawGapLabels();
+  drawCurves();
+  drawAxis();
+  drawGutter();
+  if(selKind === 'b' && TR_BY_ID[selId]) drawFocus('b', TR_BY_ID[selId]);
+  if(selKind === 'e' && CH_BY_ID[selId]) drawFocus('e', CH_BY_ID[selId]);
+}
+
+function drawGrid(){
+  const g = E('g', {}, svg);
+  for(let h=0; h<=24; h++){
+    const x = hourX(h), major = h % 3 === 0;
+    E('line', {x1:x, y1:P_L1.y, x2:x, y2:P_L3.y + P_L3.h,
+               stroke: major ? '#e2e8f0' : '#f4f7fa', 'stroke-width':1}, g);
+    E('line', {x1:x, y1:P_CURVE.y, x2:x, y2:P_CURVE.y + P_CURVE.h,
+               stroke: major ? '#f1f5f9' : '#fafcfe', 'stroke-width':1}, g);
+  }
+  E('line', {x1:X0, y1:P_CURVE.y + P_CURVE.h, x2:X1, y2:P_CURVE.y + P_CURVE.h,
+             stroke:'#e5e7eb', 'stroke-width':1}, g);
+}
+
+function drawAxis(){
+  const g = E('g', {}, svg);
+  for(let h=0; h<=24; h++){
+    const t = E('text', {x:hourX(h), y:AXIS_Y, 'text-anchor':'middle', class:'axis-t'}, g);
+    t.textContent = h === 24 ? '24' : pad(h);
+  }
+  const t2 = E('text', {x:X0, y:AXIS_Y + 16, class:'gsub'}, g);
+  t2.textContent = D.meta.date + '  ·  横轴 = 一天 24 小时';
+}
+
+function drawGutter(){
+  const g = E('g', {}, svg);
+  [['曲线', P_CURVE.y + 12, '密度 / weight'],
+   ['L1 痕迹', P_L1.y + 15, '每条一块'],
+   ['L2 事件', P_L2.y + 15, 'block 数=高度'],
+   ['L3 日叙事', P_L3.y + 15, '全天一条']].forEach(r => {
+    const t = E('text', {x:PAD.l - 10, y:r[1], 'text-anchor':'end', class:'gutter'}, g);
+    t.textContent = r[0];
+    const t2 = E('text', {x:PAD.l - 10, y:r[1] + 13, 'text-anchor':'end', class:'gsub'}, g);
+    t2.textContent = r[2];
+  });
+}
+
+/* ---- 缺口 ---- */
+function drawGapBands(){
+  const g = E('g', {}, svg);
+  // 次缺口: L1 底部细刻度
+  MINORS.forEach(gp => {
+    const x = xOf(gp.a), w = Math.max(1, wOf(gp.b - gp.a));
+    const r = E('rect', {x:x, y:P_L1.y + P_L1.h - 5, width:w, height:3,
+      fill:'#9f1239', opacity:.30}, g);
+    r.__gap = gp; r.setAttribute('data-k','g');
+  });
+  APPMIN.forEach(gp => {
+    const x = xOf(gp.a), w = Math.max(1, wOf(gp.b - gp.a));
+    const r = E('rect', {x:x, y:P_L1.y + P_L1.h - 9, width:w, height:3,
+      fill:'#0369a1', opacity:.40}, g);
+    r.__gap = gp; r.setAttribute('data-k','g');
+  });
+  // 主缺口
+  GAPS.forEach(gp => {
+    const x = xOf(gp.a), w = Math.max(2, wOf(gp.b - gp.a));
+    const appOnly = gp.r === 'app_only', off = gp.r === 'recording_off';
+    const y = appOnly ? P_L1.y : P_L1.y - 7;
+    const h = appOnly ? P_L1.h : (P_L3.y + P_L3.h) - (P_L1.y - 7);
+    const r = E('rect', {x:x, y:y, width:w, height:h,
+      fill: appOnly ? 'url(#hatch)' : (off ? 'url(#hatch)' : '#9f1239'),
+      opacity: appOnly ? .30 : (off ? .22 : .085)}, g);
+    r.__gap = gp; r.setAttribute('data-k','g');
+    if(appOnly || off){
+      E('rect', {x:x, y:P_L1.y + 2, width:w, height:2.6,
+                 fill: appOnly ? '#0369a1' : '#b45309', opacity:.55}, g);
+    }
+  });
+}
+
+function drawGapEdges(){
+  const g = E('g', {class:'gapedges'}, svg);
+  GAPS.forEach(gp => {
+    if(gp.r === 'app_only') return;
+    const xa = xOf(gp.a), xb = xOf(gp.b);
+    [xa, xb].forEach(x => {
+      E('line', {x1:x, y1:P_L1.y - 7, x2:x, y2:P_L3.y + P_L3.h,
+                 stroke:'#9f1239', 'stroke-width':1.1, 'stroke-dasharray':'4 3', opacity:.45}, g);
+    });
+    E('rect', {x:xa, y:P_L1.y - 7, width:Math.max(2, xb - xa), height:3.4,
+               fill:'#9f1239', opacity:.6}, g);
+  });
+}
+
+function drawGapLabels(){
+  const g = E('g', {class:'gaplabels'}, svg);
+  const cy = P_L1.y + P_L1.h / 2;
+  const SHORT = {no_record:'没有记录', app_only:'只有应用', recording_off:'已关闭记录'};
+  GAPS.forEach(gp => {
+    const xa = xOf(gp.a), xb = xOf(gp.b), w = xb - xa, cx = (xa + xb) / 2;
+    const txt = D.gapText[gp.r] || gp.x;
+    const tspan = hmG(gp.a) + '–' + hmG(gp.b) + ' · ' + durShort(gp.d);
+    const isApp = gp.r === 'app_only';
+    const cls = isApp ? 'gap-lab-app' : 'gap-lab';
+    if(w >= 190){
+      const t1 = E('text', {x:cx, y:cy - 5, 'text-anchor':'middle', class:cls}, g);
+      t1.textContent = txt;
+      const t2 = E('text', {x:cx, y:cy + 12, 'text-anchor':'middle', class:'gap-lab2'}, g);
+      t2.textContent = tspan;
+    } else if(w >= 62){
+      // 中文竖排会糊, 中等宽度也走横排: 短文案 + 时长
+      const t1 = E('text', {x:cx, y:cy - 3, 'text-anchor':'middle', class:cls}, g);
+      t1.textContent = SHORT[gp.r] || txt;
+      const t2 = E('text', {x:cx, y:cy + 12, 'text-anchor':'middle', class:'gap-lab2'}, g);
+      t2.textContent = durShort(gp.d);
+    } else {
+      // 只有窄带才竖排, 而且只用 ASCII, 保证清晰
+      const t1 = E('text', {x:cx, y:cy, 'text-anchor':'middle', class:cls,
+                            transform:'rotate(-90 ' + cx + ' ' + cy + ')'}, g);
+      t1.textContent = hmG(gp.a) + '–' + hmG(gp.b) + ' ' + durShort(gp.d);
+    }
+  });
+}
+
+/* ---- 曲线 ---- */
+function drawCurves(){
+  const g = E('g', {}, svg);
+  const y0 = P_CURVE.y, h = P_CURVE.h - 12;
+  const att = smooth(binize(TR, r=>r.a, r=>r.d), 2.6);
+  const amax = maxOf(att);
+  const pts = [];
+  for(let i=0;i<NB;i++){
+    const x = X0 + (i + .5) * (X1 - X0) / NB;
+    pts.push([x, y0 + h - (att[i] / amax) * h]);
+  }
+  const line = 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L');
+  E('path', {d: line + 'L' + X1 + ',' + (y0 + h) + 'L' + X0 + ',' + (y0 + h) + 'Z',
+             fill:'#4d6bfe', opacity:.15}, g);
+  E('path', {d: line, fill:'none', stroke:'#4d6bfe', 'stroke-width':1.7, opacity:.95}, g);
+
+  if(D.items && D.items.length){
+    const mi = smooth(binize(D.items, r=>r.a, r=>1), 2.2);
+    const mmax = maxOf(mi);
+    const p2 = [];
+    for(let i=0;i<NB;i++){
+      const x = X0 + (i + .5) * (X1 - X0) / NB;
+      p2.push([x, y0 + h - (mi[i] / mmax) * h * .9]);
+    }
+    E('path', {d:'M' + p2.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L'),
+               fill:'none', stroke:'#0f766e', 'stroke-width':1.3,
+               'stroke-dasharray':'5 3', opacity:.9}, g);
+  }
+  // weight 参考线
+  const wv = D.stats.weights.filter(v => v.indexOf('.') >= 0);
+  if(wv.length === 1){
+    const wy = y0 + h * (1 - clamp(parseFloat(wv[0]) / 1.0, 0, 1) * .30);
+    E('line', {x1:X0, y1:wy, x2:X1, y2:wy, stroke:'#b45309', 'stroke-width':1,
+               'stroke-dasharray':'2 5', opacity:.5}, g);
+    const wt = E('text', {x:X0 + 5, y:wy - 3, class:'gsub halo', fill:'#b45309'}, g);
+    wt.textContent = 'weight ' + wv[0];
+  }
+}
+
+/* ---- L1 ---- */
+function drawL1(){
+  const pk = pack(TR.map(t => ({a:t.a, b:t.b, t:t})).sort((p,q) => p.a - q.a));
+  const n = pk.n;
+  laneN = n;
+  const per = (P_L1.h - 8) / n;
+  const lh = Math.min(34, per);
+  const g = E('g', {class:'l1'}, svg);
+  // 车道底纹
+  for(let i=0;i<n;i++){
+    if(i % 2 === 0) continue;
+    E('rect', {x:X0, y:P_L1.y + 4 + i * per, width:X1 - X0, height:per,
+               fill:'#fafbfc'}, g);
+  }
+  pk.items.forEach(o => {
+    const t = o.t;
+    const x = xOf(t.a), w = Math.max(1.7, wOf(t.b - t.a));
+    const usage = t.s === 'usage';
+    const y = P_L1.y + 4 + o.lane * per + (usage ? 3 : 0);
+    const hh = Math.max(3, lh - (usage ? 7 : 2));
+    const r = E('rect', {x:x, y:y, width:w, height:hh, rx:.8,
+      fill: APP_C[t.p] || '#94a3b8', class:'tr', 'data-k':'b', 'data-i':t.q,
+      opacity: usage ? .92 : 1}, g);
+    r.__t = t;
+    if(t.h) E('rect', {x:x, y:y - 2.6, width:Math.max(2.8, w), height:2.6, fill:'#dc2626'}, g);
+    if(t.m) E('rect', {x:x, y:y + hh - 2.4, width:Math.max(1.7, w), height:2.4,
+                       fill:'#111827', opacity:.8}, g);
+  });
+  for(let i=1;i<n;i++){
+    E('line', {x1:X0, y1:P_L1.y + 4 + i * per, x2:X1, y2:P_L1.y + 4 + i * per,
+               stroke:'#eef2f6', 'stroke-width':1}, g);
+  }
+}
+
+/* ---- L2 ---- */
+function chainH(n){ return 7 + 25 * Math.log(1 + n) / Math.log(56); }
+
+function drawL2(){
+  const g = E('g', {class:'l2'}, svg);
+  const par = CH.filter(c => c.lvl === 1).sort((a,b) => a.a - b.a);
+  const main = CH.filter(c => c.lvl === 0 && !c.sup).sort((a,b) => a.a - b.a);
+  const sup  = CH.filter(c => c.sup).sort((a,b) => a.a - b.a);
+
+  let rowA = 0;
+  if(par.length){
+    const pk = pack(par);
+    const lanes = Math.min(3, pk.n);
+    const laneH = 7;
+    rowA = lanes * laneH + 3;
+    pk.items.forEach(c => {
+      const x = xOf(c.a), w = Math.max(2, wOf(c.b - c.a));
+      const y = P_L2.y + (c.lane % lanes) * laneH;
+      const r = E('rect', {x:x, y:y, width:w, height:6, rx:1.5,
+        fill:'#cbd5e1', stroke:'#475569', 'stroke-width':.7, opacity:.75,
+        class:'chainrect', 'data-k':'e', 'data-i':c.id}, g);
+      r.__c = c;
+    });
+  }
+
+  const top = P_L2.y + rowA + 4;
+  const bottomRes = sup.length ? 15 : 0;
+  const avail = P_L2.h - rowA - 4 - bottomRes - 2;
+  const pk2 = pack(main);
+  const laneH = Math.min(52, avail / pk2.n);
+  pk2.items.forEach(c => {
+    const x = xOf(c.a), w = Math.max(2.4, wOf(c.b - c.a));
+    const h = chainH(c.n);
+    const y = top + c.lane * laneH + (laneH - h);
+    const col = APP_C[c.pk || ''] || '#4d6bfe';
+    const r = E('rect', {x:x, y:y, width:w, height:h, rx:2.5,
+      fill: col, opacity:.52, stroke: c.sess ? '#1e293b' : '#64748b',
+      'stroke-width': c.sess ? 1.2 : 1, class:'chainrect', 'data-k':'e', 'data-i':c.id}, g);
+    r.__c = c;
+    if(!c.sess){ r.setAttribute('stroke-dasharray', '4 2'); }
+    if(c.prov){ r.setAttribute('stroke-dasharray', '2 2'); }
+    if(w > 88 && laneH > 26){
+      const maxc = Math.floor((w - 8) / 10.5);
+      if(maxc >= 4){
+        const t = E('text', {x:x + 4, y:y + h - 5, class:'gsub', fill:'#1f2937',
+                             'pointer-events':'none', opacity:.92}, g);
+        const s = c.t.length > maxc ? c.t.slice(0, maxc) + '…' : c.t;
+        t.textContent = s;
+      }
+    }
+  });
+
+  if(sup.length){
+    const yBase = P_L2.y + P_L2.h - bottomRes + 3;
+    sup.forEach(c => {
+      const x = xOf(c.a), w = Math.max(1.6, wOf(c.b - c.a));
+      const r = E('rect', {x:x, y:yBase, width:w, height:9, rx:1.5,
+        fill:'none', stroke:'#9ca3af', 'stroke-width':1, 'stroke-dasharray':'3 2',
+        opacity:.8, class:'chainrect', 'data-k':'e', 'data-i':c.id}, g);
+      r.__c = c;
+    });
+  }
+}
+
+/* ---- L3 ---- */
+function drawL3(){
+  const g = E('g', {class:'l3'}, svg);
+  const y = P_L3.y, h = P_L3.h;
+  const day = D.day;
+  E('rect', {x:X0, y:y, width:X1-X0, height:h, rx:3,
+    fill: day ? '#eef2ff' : '#f8fafc', stroke: day ? '#c7d2fe' : '#e5e7eb',
+    'stroke-width':1, class:'l3bar', 'data-k':'d'}, g);
+  if(!day){
+    const t = E('text', {x:(X0+X1)/2, y:y + h/2 + 4, 'text-anchor':'middle', class:'gsub'}, g);
+    t.textContent = '这一天没有日叙事（day_narratives 无记录）';
+    return;
+  }
+  const ML_C = ['#4d6bfe', '#0f766e', '#b45309', '#7c3aed', '#be123c', '#0369a1'];
+  (day.ml || []).forEach((m, i) => {
+    const ids = (m.event_ids || []).filter(id => CH_BY_ID[id]);
+    if(!ids.length) return;
+    let a = Infinity, b = -Infinity;
+    ids.forEach(id => { a = Math.min(a, CH_BY_ID[id].a); b = Math.max(b, CH_BY_ID[id].b); });
+    const x = xOf(a), w = Math.max(2, wOf(b - a));
+    E('rect', {x:x, y:y + 4 + i * 6.6, width:w, height:4.6, rx:1.5,
+               fill: ML_C[i % ML_C.length], opacity:.9}, g).__ml = m;
+  });
+  (day.un || []).forEach(id => {
+    const c = CH_BY_ID[id];
+    if(!c) return;
+    E('rect', {x:xOf(c.a), y:y + h - 4.5, width:2.6, height:4.5,
+               fill:'#dc2626', opacity:.9}, g);
+  });
+  const cap = E('text', {x:X0 + 6, y:y + 12, class:'gsub'}, g);
+  cap.textContent = '点这条看全文 · ' + (day.ml || []).length + ' mainline · ' +
+                    (day.un || []).length + ' 事件未提及';
+}
+
+/* ---------------- 交互 ---------------- */
+function showTip(html, ev){
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  const off = 14;
+  let x = ev.clientX + off, y = ev.clientY + off;
+  const r = tip.getBoundingClientRect();
+  if(x + r.width > window.innerWidth - 8) x = ev.clientX - r.width - off;
+  if(y + r.height > window.innerHeight - 8) y = ev.clientY - r.height - off;
+  tip.style.left = Math.max(4, x) + 'px';
+  tip.style.top = Math.max(4, y) + 'px';
+}
+function hideTip(){ tip.style.display = 'none'; }
+
+function blockTip(t){
+  const ch = CH_BY_BLOCK[t.id];
+  let s = '<b>' + hm(t.a) + ' – ' + hm(t.b) + '</b> · 停留 ' + dur(t.d) + '<br>';
+  s += '<span class="k">应用</span> ' + esc(t.l) + ' <span class="k">' + esc(t.p) + '</span><br>';
+  if(t.ti) s += '<span class="k">页面</span> ' + esc(t.ti) + '<br>';
+  s += '<span class="k">来源</span> ' + (t.s === 'a11y' ? '画面 a11y' : '仅应用 usage');
+  if(t.k) s += ' · <b>关键块</b>';
+  if(t.m) s += ' · <b>已进入记忆</b>';
+  if(t.h) s += '<br><b style="color:#fca5a5">死线命中: ' + esc(t.h) + '</b>';
+  if(t.el) s += '<br><span class="k">页面元素</span> ' + t.el + ' 个';
+  if(ch) s += '<br><span class="k">事件</span> #' + ch;
+  s += '<br><span class="k">点击 → 原文 / 脱敏 / 元素 / 截图</span>';
+  return s;
+}
+function chainTip(c){
+  let s = '<b>事件 #' + c.id + ' ' + esc(c.t) + '</b><br>';
+  s += hm(c.a) + ' – ' + hm(c.b) + ' · ' + dur(c.b - c.b0) + '<br>';
+  s += '<span class="k">块数</span> ' + c.n + ' · <span class="k">层级</span> L' + (c.lvl + 1) +
+       ' · <span class="k">状态</span> ' + esc(c.st);
+  s += '<br>' + (c.sess ? '有 agent 会话参与' : '纯痕迹链（无会话）');
+  if(c.sup) s += '<br><b style="color:#f87171">已被合并取代 superseded</b>';
+  s += '<br><span class="k">点击 → body 全文</span>';
+  return s;
+}
+function gapTip(gp){
+  const col = gp.r === 'app_only' ? '#7dd3fc' : '#fda4af';
+  let s = '<b style="color:' + col + '">' + esc(D.gapText[gp.r] || '缺口') + '</b><br>';
+  s += '<b>' + hmG(gp.a) + ' – ' + hmG(gp.b) + '</b> · ' + dur(gp.d) + '<br>';
+  s += '<span class="k">reason</span> ' + esc(gp.r) + ' · <span class="k">来源</span> ' +
+       (gp.s === 'db' ? 'trace_gaps 表' : '按覆盖度反推');
+  return s;
+}
+
+svg.addEventListener('mousemove', ev => {
+  const el = ev.target.closest ? ev.target.closest('[data-k]') : null;
+  if(!el){ hideTip(); return; }
+  const k = el.getAttribute('data-k');
+  if(k === 'b'){ if(el.__t) showTip(blockTip(el.__t), ev); }
+  else if(k === 'e'){ if(el.__c) showTip(chainTip(el.__c), ev); }
+  else if(k === 'g'){ if(el.__gap) showTip(gapTip(el.__gap), ev); }
+  else if(k === 'd'){
+    const d = D.day;
+    showTip('<b>L3 日叙事</b><br>' + (d ? esc((d.ml||[]).length + ' 条 mainline · ' +
+      (d.ot||[]).length + ' 条 open thread · ' + (d.gp||[]).length + ' 条缺口') : '无') +
+      '<br><span class="k">点击 → 全文</span>', ev);
+  }
+});
+svg.addEventListener('mouseleave', hideTip);
+
+svg.addEventListener('click', ev => {
+  const el = ev.target.closest ? ev.target.closest('[data-k]') : null;
+  if(!el) return;
+  const k = el.getAttribute('data-k');
+  if(k === 'b'){ if(el.__t) showBlock(el.__t); }
+  else if(k === 'e'){ if(el.__c) showEvent(el.__c.id); }
+  else if(k === 'd'){ showDay(); }
+  else if(k === 'g'){ if(el.__gap) showGap(el.__gap); }
+});
+
+/* ---------------- 详情 ---------------- */
+const detail = document.getElementById('detail');
+
+function detailEmpty(){
+  detail.innerHTML = '<div class="empty">' +
+    '<b>点一下图里的色块：</b><br>' +
+    '· <b>L1 痕迹块</b> → 原文 / 脱敏后并排对照、页面元素、截图<br>' +
+    '· <b>L2 事件块</b> → 事件 body 全文、关键块、子链<br>' +
+    '· <b>L3 日叙事条</b> → 日叙事全文、mainline、open threads、缺口<br>' +
+    '· <b>缺口色带</b> → 原因、时长、来源<br><br>' +
+    '<span style="font-size:12px">缺口：<b style="color:#9f1239">红</b>=完全没有记录；' +
+    '<b style="color:#0369a1">蓝斜纹</b>=只有应用记录没有画面。</span></div>';
+}
+
+function diffOps(a, b){
+  a = a || ''; b = b || '';
+  let s = 0;
+  const lim = Math.min(a.length, b.length);
+  while(s < lim && a[s] === b[s]) s++;
+  let ea = a.length, eb = b.length;
+  while(ea > s && eb > s && a[ea-1] === b[eb-1]){ ea--; eb--; }
+  const pre = a.slice(0, s), suf = a.slice(ea);
+  const ma = a.slice(s, ea), mb = b.slice(s, eb);
+  const ops = [{op:'=', s:pre}];
+  if(ma.length * mb.length > 1600000 || !ma || !mb){
+    if(ma) ops.push({op:'-', s:ma});
+    if(mb) ops.push({op:'+', s:mb});
+  } else {
+    const n = ma.length, m = mb.length, w = m + 1;
+    const dp = new Int32Array((n+1) * w);
+    for(let i=n-1;i>=0;i--){
+      for(let j=m-1;j>=0;j--){
+        dp[i*w+j] = ma[i] === mb[j] ? dp[(i+1)*w+(j+1)] + 1
+          : Math.max(dp[(i+1)*w+j], dp[i*w+(j+1)]);
+      }
+    }
+    let i = 0, j = 0, run = '';
+    while(i < n && j < m){
+      if(ma[i] === mb[j]){ run += ma[i]; i++; j++; }
+      else if(dp[(i+1)*w+j] >= dp[i*w+(j+1)]){
+        if(run){ ops.push({op:'=', s:run}); run=''; }
+        let buf = ma[i]; i++;
+        while(i < n && j < m && ma[i] !== mb[j] && dp[(i+1)*w+j] >= dp[i*w+(j+1)]){ buf += ma[i]; i++; }
+        ops.push({op:'-', s:buf});
+      } else {
+        if(run){ ops.push({op:'=', s:run}); run=''; }
+        let buf = mb[j]; j++;
+        while(i < n && j < m && ma[i] !== mb[j] && dp[(i+1)*w+j] < dp[i*w+(j+1)]){ buf += mb[j]; j++; }
+        ops.push({op:'+', s:buf});
+      }
+    }
+    if(run) ops.push({op:'=', s:run});
+    if(i < n) ops.push({op:'-', s:ma.slice(i)});
+    if(j < m) ops.push({op:'+', s:mb.slice(j)});
+  }
+  if(suf) ops.push({op:'=', s:suf});
+  return ops;
+}
+
+function renderDiff(a, b){
+  const ops = diffOps(a, b);
+  let L = '', R = '', nd = 0, ni = 0;
+  ops.forEach(o => {
+    if(o.op === '='){ L += esc(o.s); R += esc(o.s); }
+    else if(o.op === '-'){ L += '<del>' + esc(o.s) + '</del>'; nd++; }
+    else { R += '<ins>' + esc(o.s) + '</ins>'; ni++; }
+  });
+  return {L:L, R:R, nd:nd, ni:ni};
+}
+
+function shotBlock(imgPath, note){
+  if(!imgPath) return '<div class="shot"><div class="ph">' + esc(note) + '</div></div>';
+  return '<div class="shot"><img src="' + esc(imgPath) + '" alt="截图" ' +
+    'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';">' +
+    '<div class="ph" style="display:none">截图文件缺失，已降级为占位</div></div>';
+}
+
+function showBlock(t){
+  selKind = 'b'; selId = t.id;
+  const d = D.det[String(t.id)] || {x:'', m:'', e:[], pg:'', ac:'', pt:''};
+  const badges = [];
+  if(t.k) badges.push('<span class="badge key">关键块</span>');
+  if(t.m) badges.push('<span class="badge mem">已进入记忆 · weight ' + (d.wt || '1.00') +
+                      ' / recall ' + (d.rc === '' || d.rc === undefined ? 0 : d.rc) + '</span>');
+  if(t.h) badges.push('<span class="badge guard">死线命中: ' + esc(t.h) + '</span>');
+  if(d.sweep === 'same') badges.push('<span class="badge same">脱敏后与原文一致</span>');
+  else if(d.sweep === 'empty') badges.push('<span class="badge diff">masked_text 为空</span>');
+  else if(d.sweep === 'diff') badges.push('<span class="badge diff">脱敏改动了内容</span>');
+
+  const h2span = (t.b - t.a) < 120000
+    ? new Date(t.a).toLocaleTimeString('zh-CN', {hour12: false})
+    : hm(t.a) + ' – ' + hm(t.b);
+  let h = '<h2>' + h2span + ' · ' + esc(t.l) + '</h2>';
+  h += '<div class="meta"><span>停留 <b>' + dur(t.d) + '</b></span>' +
+       '<span>' + (t.a < D0 + 86400000 && (t.b - t.a) < 120000
+                   ? 't0 <b>' + new Date(t.a).toLocaleTimeString('zh-CN', {hour12: false}) + '</b>'
+                   : '时长 <b>' + dur(t.b - t.a) + '</b>') + '</span>' +
+       '<span>来源 <b>' + (t.s === 'a11y' ? '画面 a11y' : '仅应用 usage') + '</b></span>' +
+       '<span>trace <b>#' + t.id + '</b></span>' +
+       (d.lv ? '<span>detail_level <b>' + esc(d.lv) + '</b></span>' : '') +
+       (d.ev ? '<span>evidence <b>' + esc(d.ev) + '</b></span>' : '') + '</div>';
+  if(badges.length) h += '<div class="badges">' + badges.join('') + '</div>';
+
+  h += '<h3>页面</h3><div class="body" style="max-height:110px">' +
+       '<b>page_title</b>: ' + esc(d.pt || '（空）') + '<br>' +
+       '<b>activity</b>: ' + esc(d.ac || '（空）') + '<br>' +
+       '<b>page_id</b>: ' + esc(d.pg || '（空）') + '</div>';
+
+  h += '<h3>原文 vs 脱敏后</h3>';
+  if(!d.x && !d.m){
+    h += '<div class="body" style="max-height:60px;color:#9ca3af">这一块没有文本（只有 usage 记录）</div>';
+  } else {
+    const dd = renderDiff(d.x || '', d.m || '');
+    h += '<div class="meta">差异：删 ' + dd.nd + ' 段 / 增 ' + dd.ni + ' 段' +
+         (dd.nd + dd.ni === 0 ? '（两串完全相同）' : '') + '</div>';
+    h += '<div class="diff"><div class="col"><div class="hd">原文 text（' + (d.x || '').length +
+         ' 字）</div><pre>' + (dd.L || '（空）') + '</pre></div>' +
+         '<div class="col"><div class="hd">脱敏 masked_text（' + (d.m || '').length +
+         ' 字）</div><pre>' + (dd.R || '（空）') + '</pre></div></div>';
+  }
+
+  h += '<h3>页面元素 · ' + d.e.length + ' 个（按 y 排序）</h3>';
+  if(!d.e.length){
+    h += '<div class="body" style="max-height:80px;color:#9ca3af">该时刻附近没有 page_elements 快照。' +
+         (S.n_elems ? '元素库只覆盖 ' + hm(S.snap_lo) + '–' + hm(S.snap_hi) + '。' : '') + '</div>';
+  } else {
+    h += '<table class="el"><thead><tr><th>文本</th><th>role</th><th>x / y</th></tr></thead><tbody>';
+    d.e.forEach(e => {
+      h += '<tr><td class="t">' + esc((e[0] || '').slice(0, 120)) + '</td>' +
+           '<td class="n">' + esc(e[1]) + '</td>' +
+           '<td class="n">' + Math.round(e[2]) + '/' + Math.round(e[3]) + '</td></tr>';
+    });
+    h += '</tbody></table>';
+  }
+
+  h += '<h3>截图</h3>' + shotBlock(t.img, '这一块没有本地截图（--shots key 只拉关键块）');
+
+  const ch = CH_BY_BLOCK[t.id];
+  if(ch) h += '<h3>所属事件</h3><div><span class="lnk" onclick="window.__showEvent(' + ch +
+              ')">事件 #' + ch + '</span></div>';
+
+  detail.innerHTML = h;
+  detail.scrollTop = 0;
+  drawFocus('b', t);
+}
+
+function showEvent(id){
+  selKind = 'e'; selId = id;
+  const c = CH_BY_ID[id];
+  if(!c){ detailEmpty(); return; }
+  let h = '<h2>事件 #' + c.id + ' ' + esc(c.t) + '</h2>';
+  h += '<div class="meta"><span>' + hm(c.a) + ' – ' + hm(c.b) + '</span>' +
+       '<span>时长 <b>' + dur(c.b - c.b0) + '</b></span>' +
+       '<span>块数 <b>' + c.n + '</b></span>' +
+       '<span>层级 <b>L' + (c.lvl + 1) + '</b></span>' +
+       '<span>状态 <b>' + esc(c.st) + '</b></span></div>';
+  const bg = [];
+  if(c.sup) bg.push('<span class="badge guard">已被合并取代 superseded</span>');
+  if(c.prov) bg.push('<span class="badge key">provisional 临时</span>');
+  bg.push(c.sess ? '<span class="badge">有 agent 会话参与</span>'
+                 : '<span class="badge diff">纯痕迹链（无会话）</span>');
+  bg.push('<span class="badge same">evidence 仅 trace</span>');
+  if(c.out && c.out !== 'unknown') bg.push('<span class="badge">outcome ' + esc(c.out) + '</span>');
+  h += '<div class="badges">' + bg.join('') + '</div>';
+
+  h += '<h3>body 全文</h3><div class="body">' + (esc(c.body) || '（空）') + '</div>';
+
+  if(c.key && c.key.length){
+    h += '<h3>关键块 · ' + c.key.length + ' 个</h3><div>';
+    c.key.slice(0, 40).forEach(id => {
+      h += '<span class="lnk" onclick="window.__showBlockById(' + id + ')">#' + id + '</span>';
+    });
+    h += '</div>';
+  }
+  if(c.kids && c.kids.length){
+    h += '<h3>子链 · ' + c.kids.length + ' 条</h3><div>';
+    c.kids.forEach(id => {
+      h += '<span class="lnk" onclick="window.__showEvent(' + id + ')">#' + id + '</span>';
+    });
+    h += '</div>';
+  }
+  if(c.lvl === 1){
+    const child = CH.filter(x => x.lvl === 0 && x.a >= c.a && x.b <= c.b);
+    h += '<h3>覆盖的子链 · ' + child.length + ' 条</h3><div class="list">';
+    child.slice(0, 12).forEach(x => {
+      h += '<div class="li"><b>' + esc(x.t) + '</b>　<span style="color:#6b7280;font-size:11px">' +
+           hm(x.a) + '–' + hm(x.b) + ' · ' + x.n + ' 块</span></div>';
+    });
+    h += '</div>';
+  }
+  detail.innerHTML = h;
+  detail.scrollTop = 0;
+  drawFocus('e', c);
+}
+
+function showGap(gp){
+  selKind = null;
+  let h = '<h2 style="color:' + (gp.r === 'app_only' ? '#0369a1' : '#9f1239') + '">' +
+          esc(D.gapText[gp.r] || '缺口') + '</h2>';
+  h += '<div class="meta"><span>' + hmG(gp.a) + ' – ' + hmG(gp.b) + '</span>' +
+       '<span>时长 <b>' + dur(gp.d) + '</b></span>' +
+       '<span>reason <b>' + esc(gp.r) + '</b></span>' +
+       '<span>来源 <b>' + (gp.s === 'db' ? 'trace_gaps 表' : '按覆盖度反推') + '</b></span></div>';
+  h += '<h3>这说明什么</h3><div class="body">' +
+    (gp.r === 'no_record'
+      ? '这段时间里 traces 表没有任何一行——既没有画面（a11y），也没有应用使用（usage）。\n' +
+        '记忆模型对它的表述只能是「没有记录，我不知道为什么」，这是诚实的空洞，不是遗忘。'
+      : gp.r === 'app_only'
+      ? '这段时间有 usage 记录（知道你在用哪个 app），但没有 a11y 画面/文本，也没有截图。\n' +
+        '所以只有「应用 + 时长」，没有「看到了什么」。'
+      : 'trace_gaps 表里登记为 recording_off——记录器被关掉了。') + '</div>';
+  const inGap = CH.filter(c => c.a >= gp.a && c.b <= gp.b);
+  if(inGap.length){
+    h += '<h3>落在这一段里的事件 · ' + inGap.length + ' 条</h3><div>';
+    inGap.forEach(c => h += '<span class="lnk" onclick="window.__showEvent(' + c.id + ')">#' + c.id +
+      ' ' + esc(c.t.slice(0, 10)) + '</span>');
+    h += '</div>';
+  }
+  detail.innerHTML = h;
+  detail.scrollTop = 0;
+}
+
+function showDay(){
+  selKind = 'd'; selId = 0;
+  const day = D.day;
+  if(!day){ detail.innerHTML = '<div class="empty">这一天没有日叙事记录。</div>'; return; }
+  let h = '<h2>L3 日叙事 · ' + esc(D.meta.date) + '</h2>';
+  h += '<div class="meta"><span>mainline <b>' + (day.ml||[]).length + '</b></span>' +
+       '<span>open threads <b>' + (day.ot||[]).length + '</b></span>' +
+       '<span>缺口 <b>' + (day.gp||[]).length + '</b></span>' +
+       '<span>未提及事件 <b>' + (day.un||[]).length + '</b></span>' +
+       '<span>model <b>' + esc(day.model) + '</b></span></div>';
+
+  h += '<h3>日叙事全文</h3><div class="body" style="max-height:300px">' + esc(day.text) + '</div>';
+
+  h += '<h3>mainlines · ' + (day.ml||[]).length + ' 条</h3><div class="list">';
+  (day.ml || []).forEach(m => {
+    const ids = m.event_ids || [];
+    h += '<div class="li"><b>' + esc(m.title) + '</b>' +
+         (m.time_hint ? '　<span style="color:#6b7280;font-size:11px">' + esc(m.time_hint) + '</span>' : '') +
+         '<div class="x">' + esc((m.text || '').slice(0, 320)) + '</div><div>' +
+         ids.slice(0, 24).map(id => '<span class="lnk" onclick="window.__showEvent(' + id + ')">#' +
+           id + '</span>').join('') + (ids.length > 24 ? ' …' : '') + '</div></div>';
+  });
+  h += '</div>';
+
+  h += '<h3>open threads · ' + (day.ot||[]).length + ' 条</h3><div class="list">';
+  (day.ot || []).forEach(m => {
+    h += '<div class="li"><div class="x">' + esc(m.text) + '</div><div>' +
+      (m.event_ids || []).map(id => '<span class="lnk" onclick="window.__showEvent(' + id + ')">#' +
+        id + '</span>').join('') + '</div></div>';
+  });
+  h += '</div>';
+
+  h += '<h3>gaps · 日叙事自己声明的缺口</h3><div class="list">';
+  (day.gp || []).forEach(g => { h += '<div class="li hot"><div class="x">' + esc(g) + '</div></div>'; });
+  h += '</div>';
+
+  h += '<h3>未被日叙事提到的事件 · ' + (day.un||[]).length + ' 个</h3><div>';
+  (day.un || []).forEach(id => {
+    const c = CH_BY_ID[id];
+    h += '<span class="lnk" title="' + esc(c ? c.t : '') + '" onclick="window.__showEvent(' + id + ')">#' +
+      id + (c ? ' ' + esc(c.t.slice(0, 8)) : '') + '</span>';
+  });
+  h += '</div>';
+
+  detail.innerHTML = h;
+  detail.scrollTop = 0;
+}
+
+window.__showEvent = showEvent;
+window.__showBlockById = function(id){ if(TR_BY_ID[id]) showBlock(TR_BY_ID[id]); };
+window.__showDay = showDay;
+
+/* ---------------- 选中高亮 ---------------- */
+function drawFocus(kind, obj){
+  svg.querySelectorAll('.sel-ring').forEach(n => n.remove());
+  if(!obj) return;
+  const g = E('g', {class:'sel-ring'}, svg);
+  if(kind === 'e'){
+    const x = xOf(obj.a), w = Math.max(3, wOf(obj.b - obj.a));
+    E('rect', {x:x - 1, y:P_L2.y - 2, width:w + 2, height:P_L2.h + 4,
+               fill:'#4d6bfe', opacity:.06}, g);
+    E('rect', {x:x, y:P_L2.y - 2, width:w, height:P_L2.h + 4, fill:'none',
+               stroke:'#4d6bfe', 'stroke-width':1.4, 'stroke-dasharray':'3 2'}, g);
+  } else if(kind === 'b'){
+    const x = xOf(obj.a), w = Math.max(3, wOf(obj.b - obj.a));
+    E('rect', {x:x, y:P_L1.y + 1, width:w, height:P_L1.h - 2, fill:'#4d6bfe', opacity:.10}, g);
+    E('rect', {x:x, y:P_L1.y + 1, width:w, height:P_L1.h - 2, fill:'none',
+               stroke:'#4d6bfe', 'stroke-width':1.5}, g);
+  }
+}
+
+/* ---------------- KPI / 图例 / 注释 ---------------- */
+function renderKpis(){
+  const k = [
+    ['痕迹数', S.n_traces, '画面 ' + S.n_a11y + ' / 仅应用 ' + S.n_usage],
+    ['事件数', S.n_chains, 'L0 ' + S.n_l0 + ' / L1 ' + S.n_l1c + ' / 被合并 ' + S.n_sup],
+    ['有画面时长', (S.cover_ms / 3.6e6).toFixed(2) + 'h', '停留合计 ' + (S.dwell_ms / 3.6e6).toFixed(2) + 'h'],
+    ['缺口总时长', dur(S.gap_major_ms), S.n_gap_major + ' 段 ≥' + (D.meta.gap_major_min || 20) + ' 分钟'],
+    ['零碎缺口', S.n_gap_minor + ' 段', dur(S.gap_minor_ms) + ' · 另有 ' + S.n_app_minor + ' 段无画面'],
+    ['记忆项', S.n_items, 'trace ' + S.n_items_trace + ' / event ' + S.n_items_event +
+      ' / chat ' + S.n_items_chat + ' / day ' + S.n_items_day],
+    ['应用', S.n_apps + ' 个', '切换 ' + S.switches + ' 次'],
+    ['中位停留', (S.median_dwell / 1000).toFixed(0) + 's', '碎片化指标'],
+    ['页面元素', S.n_elems.toLocaleString(), S.n_snaps.toLocaleString() + ' 快照 / ' + S.n_blocks_with_elems + ' 块'],
+    ['截图', S.n_shots_local + ' 张', '当天有图 ' + S.n_shots_total],
+    ['死线命中', S.n_guard + ' 次', 'bank_card / payment_password'],
+    ['agent 在场', S.n_presence + ' 条', '翻记录 ' + (S.n_items - S.n_presence) + ' 条'],
+  ];
+  document.getElementById('kpis').innerHTML = k.map(x => {
+    const cls = x[0] === '缺口总时长' ? 'kpi gapk' : (x[0] === '死线命中' && S.n_guard ? 'kpi warn' : 'kpi');
+    const v = typeof x[1] === 'number' ? x[1].toLocaleString() : x[1];
+    return '<div class="' + cls + '"><div class="v">' + esc(v) + '</div>' +
+           '<div class="k">' + esc(x[0]) + ' · ' + esc(x[2]) + '</div></div>';
+  }).join('');
+}
+
+function renderLegend(){
+  const apps = D.apps.map(a =>
+    '<span class="app" title="' + esc(a.pkg) + '"><i style="background:' + a.color + '"></i>' +
+    '<b>' + esc(a.label) + '</b><span>' + Math.round(a.dwell / 1000) + 's</span></span>').join('');
+  const cnt = r => (r === 'app_only' ? GAPS.filter(g => g.r === r).length
+                                  : GAPS.filter(g => g.r === r).length);
+  const gaps = ['no_record', 'app_only', 'recording_off'].map(r => {
+    const col = r === 'app_only' ? '#0369a1' : (r === 'recording_off' ? '#b45309' : '#9f1239');
+    return '<span class="sym"><span class="box" style="background:' + col + ';opacity:.28;border:1px dashed ' +
+      col + '"></span>' + esc(D.gapText[r]) + ' <span class="dim" style="color:#9ca3af">(' +
+      cnt(r) + ')</span></span>';
+  }).join('');
+  document.getElementById('legend').innerHTML =
+    '<div class="lg"><span class="ttl">应用</span>' + apps + '</div>' +
+    '<div class="lg"><span class="ttl">缺口</span>' + gaps + '</div>' +
+    '<div class="lg"><span class="ttl">块</span>' +
+      '<span class="sym"><span class="box" style="background:#4d6bfe;height:13px"></span>有画面 a11y</span>' +
+      '<span class="sym"><span class="box" style="background:#4d6bfe;height:7px"></span>仅应用 usage</span>' +
+      '<span class="sym"><span class="box" style="background:#111827;height:3px;width:13px"></span>已进入记忆</span>' +
+      '<span class="sym"><span class="box" style="background:#dc2626;height:3px;width:13px"></span>死线命中</span>' +
+      '<span class="sym"><span class="box" style="border:1.5px solid #4d6bfe;height:9px;width:15px"></span>有会话</span>' +
+      '<span class="sym"><span class="box" style="border:1.2px dashed #64748b;height:9px;width:15px"></span>纯痕迹链</span>' +
+    '</div>';
+}
+
+function renderNotes(){
+  const out = [];
+  out.push('<div class="nrow"><span class="tag">曲线</span>' +
+    '<span>实心蓝 = 痕迹密度（按 dwell 加权）</span>' +
+    '<span class="dim">青虚线 = 记忆项密度（mem_items 落入时间 bin 的条数）</span>' +
+    '<span class="dim">橙点线 = weight 参考（' + (S.weights.length === 1 ? '恒为 ' + S.weights[0] : '见数据') +
+    '，recall 最大 ' + S.recall_max + '）</span></div>');
+  out.push('<div class="nrow"><span class="tag">L1</span>' +
+    '<span>车道 ' + laneN + ' 条（同一时刻挤不下自动下移）</span>' +
+    '<span class="dim">细条 = 只有 usage 没有画面</span>' +
+    '<span class="dim">块底黑线 = 这一块进了 mem_items</span>' +
+    '<span class="dim">块顶红线 = 死线命中</span></div>');
+  out.push('<div class="nrow"><span class="tag">L2</span>' +
+    '<span>色块高度 = n_blocks（1→55）</span>' +
+    '<span class="dim">蓝实线 = 有 agent 会话（session_ids）</span>' +
+    '<span class="dim">灰虚线 = 纯痕迹链</span>' +
+    '<span class="dim">底部虚框 = 被合并取代的 superseded 链</span></div>');
+  out.push('<div class="nrow"><span class="tag">L3</span>' +
+    '<span>彩色段 = ' + ((D.day && D.day.ml) || []).length + ' 条 mainline 引用的时间跨度</span>' +
+    '<span class="dim">底部红刻度 = 日叙事没提到的 ' + ((D.day && D.day.un) || []).length + ' 个事件</span></div>');
+  const chips = GAPS.map((g, i) =>
+    '<span class="chip ' + (g.r === 'app_only' ? 'ap' : (g.r === 'recording_off' ? 'of' : 'no')) +
+    '" onclick="window.__jumpGap(' + i + ')" title="' + esc(D.gapText[g.r]) + '">' +
+    '<b>' + hm(g.a) + '–' + hm(g.b) + '</b><span>' + durShort(g.d) + '</span>' +
+    '<span style="opacity:.8">' + esc(D.gapText[g.r].slice(0, 6)) + '…</span></span>').join('');
+  out.push('<div class="nrow" style="align-items:center"><span class="tag">缺口一览</span>' +
+    '<span class="dim">点色带或下面的胶囊看详情 · 共 ' + GAPS.length + ' 段主缺口 / ' +
+    MINORS.length + ' 段零碎缺口</span></div><div class="chips">' + chips + '</div>');
+  document.getElementById('notes').innerHTML = out.join('');
+}
+
+window.__jumpGap = function(i){ if(GAPS[i]) showGap(GAPS[i]); };
+
+/* ---------------- 启动 ---------------- */
+function boot(){
+  document.getElementById('h-date').textContent = D.meta.date;
+  document.getElementById('h-sub').textContent =
+    '单文件离线 · ' + D.meta.db.mem + ' + ' + D.meta.db.evi + ' · 生成 ' + D.meta.generated;
+  renderKpis();
+  renderLegend();
+  render();
+  renderNotes();
+  detailEmpty();
+  document.getElementById('foot').innerHTML =
+    '<span><b>数据自检</b>（可与 sqlite 直接对照）</span>' +
+    '<span>traces <b>' + S.n_traces + '</b></span>' +
+    '<span>gaps 主 <b>' + S.n_gap_major + '</b> / 次 <b>' + S.n_gap_minor + '</b></span>' +
+    '<span>chains <b>' + S.n_chains + '</b></span>' +
+    '<span>mem_items <b>' + S.n_items + '</b> ' + esc(JSON.stringify(S.ns)) + '</span>' +
+    '<span>page_elements <b>' + S.n_elems.toLocaleString() + '</b></span>' +
+    '<span>截图走相对路径 shots/，缺失自动降级占位</span>';
+}
+window.addEventListener('resize', (() => {
+  let t = null;
+  return function(){
+    clearTimeout(t);
+    t = setTimeout(function(){
+      render();
+      renderNotes();
+      if(selKind === 'b' && TR_BY_ID[selId]) showBlock(TR_BY_ID[selId]);
+      else if(selKind === 'e') showEvent(selId);
+      else if(selKind === 'd') showDay();
+    }, 150);
+  };
+})());
+
+boot();
+})();
+</script>
+</body>
+</html>
+
