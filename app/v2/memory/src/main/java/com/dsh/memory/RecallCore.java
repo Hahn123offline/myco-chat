@@ -76,6 +76,8 @@ public final class RecallCore {
             hit.t1 = m.t1;
             Object cm = data.get("covered_ms");
             hit.coveredMs = cm instanceof Number ? ((Number) cm).longValue() : 0;
+            Object kb = data.get("key_block_ids");
+            if (kb instanceof String) hit.blockIds = (String) kb;
             hits.add(hit);
         }
         hits.sort(Comparator.comparingDouble((RecallHit h) -> h.score).reversed()
@@ -205,6 +207,10 @@ public final class RecallCore {
             if ("event".equals(h.namespace) && h.coveredMs > 0) {
                 long gap = (h.t1 - h.t0) - h.coveredMs;
                 if (gap > 20 * 60_000L) {
+                    if (!h.blockIds.isEmpty()) {
+                        b.append("  （块 id：").append(h.blockIds)
+                                .append("，核对细节可看原图）\n");
+                    }
                     b.append("  （该事件时间跨度 ").append((h.t1 - h.t0) / 60_000)
                             .append(" 分钟，其中约 ").append(gap / 60_000)
                             .append(" 分钟无记录）\n");

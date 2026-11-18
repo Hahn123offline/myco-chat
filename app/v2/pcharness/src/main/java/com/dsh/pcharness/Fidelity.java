@@ -111,13 +111,17 @@ public final class Fidelity {
         StringBuilder b = new StringBuilder();
         if (csv == null) return "";
         try (PreparedStatement ps = ev.prepareStatement(
-                "SELECT text FROM traces WHERE id=?")) {
+                "SELECT text,page_title,activity,pkg FROM traces WHERE id=?")) {
             for (String s : csv.split(",")) {
                 long id;
                 try { id = Long.parseLong(s.trim()); } catch (Throwable ignored) { continue; }
                 ps.setLong(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) if (rs.getString(1) != null) b.append(rs.getString(1)).append('\n');
+                    while (rs.next()) {
+                        for (int i = 1; i <= 4; i++) {
+                            if (rs.getString(i) != null) b.append(rs.getString(i)).append('\n');
+                        }
+                    }
                 }
             }
         } catch (Throwable ignored) { }

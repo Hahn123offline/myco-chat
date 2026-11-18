@@ -24,6 +24,7 @@ public final class RecallHit {
     public boolean evidenceAvailable = true;
     public long t1;
     public long coveredMs;
+    public String blockIds = "";
 
     public RecallHit(long itemId, double score, double sim, double weight, double decay,
                      boolean present, DetailLevel detailLevel, String namespace, String text,
