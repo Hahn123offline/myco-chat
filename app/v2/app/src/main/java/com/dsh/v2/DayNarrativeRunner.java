@@ -53,6 +53,11 @@ public final class DayNarrativeRunner {
             String dayKey = String.format("%04d-%02d-%02d",
                     start.get(Calendar.YEAR), start.get(Calendar.MONTH) + 1,
                     start.get(Calendar.DAY_OF_MONTH));
+            if (!new java.io.File(new java.io.File(ctx.getFilesDir(), "trace"),
+                    "evidence.db").exists()) {
+                if (cb != null) cb.onDone(false, "历史证据缺失，无法重算");
+                return;
+            }
             ChainStore chains = new ChainStore(ctx);
             List<ChainStore.ChainRow> rows = chains.doneEventsBetween(
                     start.getTimeInMillis(), end.getTimeInMillis());

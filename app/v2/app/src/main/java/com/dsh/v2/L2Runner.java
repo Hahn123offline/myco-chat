@@ -43,6 +43,11 @@ public final class L2Runner {
             boolean ok = false;
             String msg;
             try {
+                if (!new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
+                        "evidence.db").exists()) {
+                    if (cb != null) cb.onDone(false, "历史证据缺失，无法重算");
+                    return;
+                }
                 TraceStore traceStore = new TraceStore(app.getApplicationContext());
                 List<Trace> traces = traceStore.recentA11y(Math.max(1, Math.min(count, 16)));
                 if (traces.isEmpty()) {

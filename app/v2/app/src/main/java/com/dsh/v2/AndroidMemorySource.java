@@ -123,7 +123,11 @@ public final class AndroidMemorySource implements MemorySource {
                 else unknown++;
             }
         } catch (Throwable ignored) { }
-        return com.dsh.memory.MemoryStatus.format(all, today, closed, appOnly, unknown, recent);
+        boolean ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
+                "evidence.db").exists();
+        return com.dsh.memory.MemoryStatus.format(all, today, closed, appOnly, unknown, recent)
+                + (ev ? "" : "\n（其中 " + (closed + appOnly + unknown)
+                + " 段的历史证据已不在本机）");
     }
 
     @Override public List<MemItem> candidates(RecallQuery q) {
@@ -144,6 +148,13 @@ public final class AndroidMemorySource implements MemorySource {
         } catch (Throwable t) {
             return null;
         }
+    }
+
+    @Override public boolean evidenceAvailable(String shotRef) {
+        if (shotRef == null || shotRef.isEmpty()) return true;
+        java.io.File trace = new java.io.File(app.getFilesDir(), "trace");
+        if (!new java.io.File(trace, "evidence.db").exists()) return false;
+        return new java.io.File(trace, shotRef).exists();
     }
 
     @Override public DayRecall day(String day) {

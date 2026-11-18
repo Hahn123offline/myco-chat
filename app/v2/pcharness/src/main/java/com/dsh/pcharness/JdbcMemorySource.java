@@ -94,6 +94,13 @@ public final class JdbcMemorySource implements MemorySource {
         return com.dsh.memory.MemoryStatus.format(all, today, 0, 0, 0, recent);
     }
 
+    @Override public boolean evidenceAvailable(String shotRef) {
+        if (shotRef == null || shotRef.isEmpty()) return true;
+        java.io.File mem = new java.io.File(db);
+        java.io.File ev = new java.io.File(mem.getParentFile(), "evidence.db");
+        return ev.exists();
+    }
+
     @Override public DayRecall day(String day) {
         try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + db);
              PreparedStatement ps = c.prepareStatement(

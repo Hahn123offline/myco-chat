@@ -21,6 +21,7 @@ public final class RecallHit {
     /** 评测/日志用：IDF 覆盖度与命中最大 IDF。 */
     public double coverage;
     public double maxIdf;
+    public boolean evidenceAvailable = true;
 
     public RecallHit(long itemId, double score, double sim, double weight, double decay,
                      boolean present, DetailLevel detailLevel, String namespace, String text,

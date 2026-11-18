@@ -72,6 +72,7 @@ public final class RecallCore {
                     str(data.get("page_title")), m.t0, str(data.get("masked_text")));
             hit.coverage = cov.coverage;
             hit.maxIdf = cov.maxIdf;
+            hit.evidenceAvailable = source.evidenceAvailable(hit.shotRef);
             hits.add(hit);
         }
         hits.sort(Comparator.comparingDouble((RecallHit h) -> h.score).reversed()
@@ -197,9 +198,13 @@ public final class RecallCore {
             if (h.manual()) b.append("  （你当时特意让我记住这个）\n");
             else if (h.present) b.append("  （那会儿我们在聊这个）\n");
             else b.append("  （我翻记录看到的，那会儿我没在看）\n");
-            b.append("  pointer: pkg=").append(h.pkg)
-                    .append(" page=").append(h.pageId)
-                    .append(" shot=").append(h.shotRef).append('\n');
+            if (h.shotRef != null && !h.shotRef.isEmpty() && !h.evidenceAvailable) {
+                b.append("  （原始画面不在这台设备上）\n");
+            } else {
+                b.append("  pointer: pkg=").append(h.pkg)
+                        .append(" page=").append(h.pageId)
+                        .append(" shot=").append(h.shotRef).append('\n');
+            }
         }
         return b.toString();
     }
