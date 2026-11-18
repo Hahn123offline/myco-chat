@@ -57,6 +57,7 @@ public final class ChatSession {
         tools.add(new com.dsh.agent.MemoryStatusTool(memory::status));
         tools.add(new com.dsh.agent.DayOverviewTool(memory));
         tools.add(new com.dsh.agent.ReadBlockTool(memory));
+        tools.add(new com.dsh.agent.ReadFrameTool(memory, provenance));
         tools.add(new com.dsh.agent.CorrectTool(memory.store()));
         tools.add(new com.dsh.agent.ForgetTool(memory.store()));
 
@@ -67,6 +68,7 @@ public final class ChatSession {
         cfg.stageSupplier = provenance;
         cfg.maskStatusSupplier = () -> provenance.maskStatus;
         cfg.appPolicy = "DERIVED";
+        cfg.maxImages = 3;
         cfg.compactionSummarySupplier = () -> {
             AndroidMemoryStore ms = new AndroidMemoryStore(ctx);
             java.util.List<com.dsh.memory.MemItem> xs = ms.query(

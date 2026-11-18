@@ -134,6 +134,18 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         catch (Exception e) { return false; }
     }
 
+    @Override public com.dsh.memory.FrameRef readFrame(long blockId) {
+        return com.dsh.memory.FrameRef.blocked("PC 宿主没有掩码图管道，拒绝看图");
+    }
+
+    @Override public byte[] readShot(String shotRef) {
+        try {
+            java.io.File f = new java.io.File(new java.io.File(db).getParentFile(), shotRef);
+            if (!f.exists()) return null;
+            return java.nio.file.Files.readAllBytes(f.toPath());
+        } catch (Throwable t) { return null; }
+    }
+
     @Override public com.dsh.memory.BlockRef readBlock(long id) {
         try {
             java.io.File ev = new java.io.File(new java.io.File(db).getParentFile(),

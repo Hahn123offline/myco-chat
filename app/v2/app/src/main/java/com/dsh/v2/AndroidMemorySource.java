@@ -152,6 +152,50 @@ public final class AndroidMemorySource implements MemorySource {
         }
     }
 
+    @Override public com.dsh.memory.FrameRef readFrame(long blockId) {
+        try {
+            java.util.List<com.dsh.trace.Trace> xs = new TraceStore(app)
+                    .tracesByIds(java.util.Collections.singletonList(blockId));
+            if (xs.isEmpty()) return com.dsh.memory.FrameRef.error("块不存在: " + blockId);
+            com.dsh.trace.Trace t = xs.get(0);
+            com.dsh.egress.AppExclusionPolicy.Level level =
+                    com.dsh.egress.AppExclusionPolicy.level(t.pkg);
+            if (level == com.dsh.egress.AppExclusionPolicy.Level.NEVER_CLOUD) {
+                return com.dsh.memory.FrameRef.blocked("这块属于敏感应用，不能看图");
+            }
+            AndroidBlockSource src = new AndroidBlockSource(app, "chat-frame",
+                    java.util.Collections.singletonList(t));
+            if (src.requiresMasking()) {
+                return com.dsh.memory.FrameRef.blocked("掩码失败，拒绝发送原图");
+            }
+            byte[] jpeg = src.frame("chat-frame", blockId, 1600);
+            if (jpeg == null || jpeg.length == 0) {
+                return com.dsh.memory.FrameRef.blocked("拿不到掩码图，拒绝退回原图");
+            }
+            return com.dsh.memory.FrameRef.ok(jpeg);
+        } catch (Throwable e) {
+            return com.dsh.memory.FrameRef.error(e.getMessage());
+        }
+    }
+
+    @Override public byte[] readShot(String shotRef) {
+        try {
+            java.io.File f = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
+                    shotRef);
+            if (!f.exists()) return null;
+            byte[] b = new byte[(int) f.length()];
+            try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+                int off = 0;
+                while (off < b.length) {
+                    int n = in.read(b, off, b.length - off);
+                    if (n <= 0) break;
+                    off += n;
+                }
+            }
+            return b;
+        } catch (Throwable t) { return null; }
+    }
+
     @Override public com.dsh.memory.BlockRef readBlock(long id) {
         try {
             java.util.List<com.dsh.trace.Trace> xs = new TraceStore(app)

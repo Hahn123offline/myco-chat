@@ -20,4 +20,10 @@ public interface MemorySource {
 
     /** 按块 id 取原始文本/截图指针；null = 不支持或不存在。 */
     default BlockRef readBlock(long id) { return null; }
+
+    /** 按截图指针读 JPEG；null = 不可用。 */
+    default byte[] readShot(String shotRef) { return null; }
+
+    /** 已经是掩码/策略处理后的可上云图片；null = 不支持。 */
+    default FrameRef readFrame(long blockId) { return null; }
 }
