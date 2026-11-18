@@ -105,4 +105,13 @@ public class DayNarrativeBuilderTest {
                 new ArrayList<>()).stream().anyMatch(x -> x.startsWith("C2:")));
     }
 
+    @Test public void 事件gap大于20分钟在输入里附注() {
+        DayNarrativeBuilder.Event e = new DayNarrativeBuilder.Event(1, "t", "b",
+                BASE, BASE + 60 * 60_000L, 5, "unknown");
+        e.coveredMs = 10 * 60_000L;
+        String prompt = DayNarrativeBuilder.userPrompt("d", java.util.Collections.singletonList(e),
+                new ArrayList<>());
+        assertTrue(prompt.contains("分钟无记录"));
+    }
+
 }

@@ -43,6 +43,8 @@ public final class DayNarrativeBuilder {
         public final String title, body, outcome;
         public final long t0, t1;
         public final int blocks;
+        /** 块区间并集；0 = 未知。 */
+        public long coveredMs;
         public Event(long id, String title, String body, long t0, long t1, int blocks,
                      String outcome) {
             this.id = id; this.title = title == null ? "" : title;
@@ -135,9 +137,21 @@ public final class DayNarrativeBuilder {
             b.append("id=").append(e.id)
                     .append(" 时间=").append(fmt(e.t0)).append('-').append(fmt(e.t1))
                     .append(" 块数=").append(e.blocks)
+                    .append(" span_min=").append((e.t1 - e.t0) / 60_000)
+                    .append(" covered_min=").append(e.coveredMs / 60_000)
+                    .append(" gap_min=").append(Math.max(0,
+                            (e.t1 - e.t0 - Math.max(0, e.coveredMs)) / 60_000))
                     .append(" outcome=").append(e.outcome)
                     .append(" 标题=").append(e.title).append('\n')
-                    .append(e.body).append("\n\n");
+                    .append(e.body);
+            long span = e.t1 - e.t0;
+            long gap = span - Math.max(0, e.coveredMs);
+            if (e.coveredMs > 0 && gap > 20 * 60_000L) {
+                b.append("\n（该事件时间跨度 ").append(span / 60_000)
+                        .append(" 分钟，其中约 ").append(gap / 60_000)
+                        .append(" 分钟无记录）");
+            }
+            b.append("\n\n");
         }
         b.append("\n聊天/手动记忆（namespace=chat/manual，当天）：")
                 .append(memories == null ? 0 : memories.size()).append(" 条\n");

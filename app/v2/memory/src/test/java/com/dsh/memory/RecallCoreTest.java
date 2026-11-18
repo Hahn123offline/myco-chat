@@ -75,4 +75,16 @@ public class RecallCoreTest {
         assertTrue(s.contains("日叙事"));
         assertTrue(s.contains("main"));
     }
+    @Test public void event块gap大于20分钟时渲染附注() {
+        long base = System.currentTimeMillis();
+        MemItem m = item(9, DetailLevel.FULL, "排查代理", "event");
+        m.t0 = base;
+        m.t1 = base + 60 * 60_000L;
+        m.data = "{\"covered_ms\":600000}";
+        List<RecallHit> hits = RecallCore.recall(source(Collections.singletonList(m)),
+                new RecallQuery().query("").from("2000-01-01").to("2100-01-01"));
+        String text = RecallCore.render(hits);
+        assertTrue(text.contains("分钟无记录"));
+    }
+
 }

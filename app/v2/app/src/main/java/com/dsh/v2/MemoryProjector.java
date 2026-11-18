@@ -144,7 +144,7 @@ public final class MemoryProjector {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
         int n = 0;
         try (Cursor c = db.rawQuery("SELECT id,title,body,t0,t1,n_blocks,outcome,"
-                + "key_block_ids,text_source FROM chains WHERE status='done'", null)) {
+                + "key_block_ids,text_source,covered_ms FROM chains WHERE status='done'", null)) {
             while (c.moveToNext()) {
                 long id = c.getLong(0);
                 String title = c.getString(1);
@@ -158,7 +158,8 @@ public final class MemoryProjector {
                         + ",\"n_blocks\":" + c.getInt(5) + ",\"outcome\":"
                         + Json.quote(c.getString(6))
                         + ",\"key_block_ids\":" + Json.quote(c.getString(7))
-                        + ",\"text_source\":" + Json.quote(c.getString(8)) + "}");
+                        + ",\"text_source\":" + Json.quote(c.getString(8))
+                        + ",\"covered_ms\":" + c.getLong(9) + "}");
                 v.put("detail_level", "FULL");
                 v.put("weight", 1.0);
                 v.put("recall_count", 0);
@@ -173,6 +174,8 @@ public final class MemoryProjector {
                 long r = db.insertWithOnConflict("mem_items", null, v,
                         SQLiteDatabase.CONFLICT_IGNORE);
                 if (r >= 0) n++;
+                else db.update("mem_items", v, "namespace='event' AND key=?",
+                        new String[]{"chain:" + id});
             }
         }
         android.util.Log.i("DSHL2", "project events: chains=" + n);

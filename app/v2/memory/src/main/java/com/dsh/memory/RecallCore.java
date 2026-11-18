@@ -73,6 +73,9 @@ public final class RecallCore {
             hit.coverage = cov.coverage;
             hit.maxIdf = cov.maxIdf;
             hit.evidenceAvailable = source.evidenceAvailable(hit.shotRef);
+            hit.t1 = m.t1;
+            Object cm = data.get("covered_ms");
+            hit.coveredMs = cm instanceof Number ? ((Number) cm).longValue() : 0;
             hits.add(hit);
         }
         hits.sort(Comparator.comparingDouble((RecallHit h) -> h.score).reversed()
@@ -198,6 +201,14 @@ public final class RecallCore {
                 b.append("  只有截图，没有识别到文字\n");
             } else {
                 b.append("  ").append(shorten(h.text)).append('\n');
+            }
+            if ("event".equals(h.namespace) && h.coveredMs > 0) {
+                long gap = (h.t1 - h.t0) - h.coveredMs;
+                if (gap > 20 * 60_000L) {
+                    b.append("  （该事件时间跨度 ").append((h.t1 - h.t0) / 60_000)
+                            .append(" 分钟，其中约 ").append(gap / 60_000)
+                            .append(" 分钟无记录）\n");
+                }
             }
             if (h.manual()) b.append("  （你当时特意让我记住这个）\n");
             else if (h.present) b.append("  （那会儿我们在聊这个）\n");

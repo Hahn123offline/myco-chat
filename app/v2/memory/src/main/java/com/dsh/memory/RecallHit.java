@@ -22,6 +22,8 @@ public final class RecallHit {
     public double coverage;
     public double maxIdf;
     public boolean evidenceAvailable = true;
+    public long t1;
+    public long coveredMs;
 
     public RecallHit(long itemId, double score, double sim, double weight, double decay,
                      boolean present, DetailLevel detailLevel, String namespace, String text,

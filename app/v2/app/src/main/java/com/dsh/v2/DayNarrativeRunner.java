@@ -72,8 +72,10 @@ public final class DayNarrativeRunner {
             StringBuilder hashInput = new StringBuilder();
             for (ChainStore.ChainRow r : rows) {
                 String oc = outcome(chains, r.id);
-                events.add(new DayNarrativeBuilder.Event(r.id, r.title, r.body, r.t0, r.t1,
-                        r.nBlocks, oc));
+                DayNarrativeBuilder.Event ev = new DayNarrativeBuilder.Event(r.id, r.title,
+                        r.body, r.t0, r.t1, r.nBlocks, oc);
+                ev.coveredMs = r.coveredMs;
+                events.add(ev);
                 if (ids.length() > 0) ids.append(',');
                 ids.append(r.id);
                 for (String pkg : sourceStore.pkgsForCsv(r.blockIds)) {
