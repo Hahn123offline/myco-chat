@@ -535,6 +535,20 @@ public final class MainActivity extends Activity {
                     }
                     DayNarrativeRunner.run(this, c, (ok, msg) ->
                             android.util.Log.i("DSHL2", "dev run_day done=" + ok + " " + msg));
+                } else if ("chat_ask".equals(action)) {
+                    String q = intent.getStringExtra("q");
+                    if (q == null || q.trim().isEmpty()) q = "你好";
+                    final String question = q;
+                    android.util.Log.i("DSHL2", "chat_ask q=" + question);
+                    appendHostLog("chat_ask q=" + question);
+                    final long t0 = System.currentTimeMillis();
+                    ChatSession.send(this, question, (ok, message) -> {
+                        long ms = System.currentTimeMillis() - t0;
+                        String head = "chat_answer ok=" + ok + " ms=" + ms + "\n";
+                        android.util.Log.i("DSHL2", "chat_answer ok=" + ok + " ms=" + ms);
+                        android.util.Log.i("DSHL2", "chat_answer " + (message == null ? "" : message));
+                        appendHostLog(head + (message == null ? "" : message));
+                    });
                 } else if ("project".equals(action)) {
                     int e = MemoryProjector.projectEvents(this);
                     MemoryProjector.projectTraceBlocks(this);
@@ -545,6 +559,17 @@ public final class MainActivity extends Activity {
                 android.util.Log.e("DSHL2", "dev_action failed " + action, t);
             }
         }, "dev-action").start();
+    }
+
+    private void appendHostLog(String text) {
+        try {
+            java.io.File dir = new java.io.File(getFilesDir(), "host/log");
+            if (!dir.exists()) dir.mkdirs();
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(
+                    new java.io.File(dir, "host.log"), true)) {
+                out.write((text + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        } catch (Throwable ignored) { }
     }
 
     private void render() {
