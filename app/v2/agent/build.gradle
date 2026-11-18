@@ -8,6 +8,7 @@ java {
 }
 
 dependencies {
+    implementation project(":memory")
     implementation project(":core")
     implementation project(":models")
     implementation project(":egress")

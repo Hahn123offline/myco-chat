@@ -3,6 +3,7 @@ package com.dsh.v2;
 import android.content.Context;
 
 import com.dsh.agent.AgentEngine;
+import com.dsh.agent.ChatHost;
 import com.dsh.agent.AgentStore;
 import com.dsh.agent.LlmCaller;
 import com.dsh.agent.ToolRegistry;
@@ -47,9 +48,6 @@ public final class ChatSession {
             return;
         }
         AgentDbStore db = new AgentDbStore(ctx);
-        db.ensureSession(ID, "chat", "", "single=1");
-        db.append(ID, "user", text);
-
         ChatProvenance provenance = new ChatProvenance();
         AndroidMemorySource memory = new AndroidMemorySource(ctx);
         ToolRegistry tools = new ToolRegistry();
@@ -58,7 +56,6 @@ public final class ChatSession {
         tools.add(new MemoryStatusTool(memory));
 
         AgentEngine.Config cfg = new AgentEngine.Config();
-        
         cfg.thinking = "enabled";
         cfg.sources = provenance.sources;
         cfg.strippedSources = provenance.strippedSources;
@@ -88,11 +85,21 @@ public final class ChatSession {
         LlmCaller caller = req -> TraceApp.get(ctx).modelsModule().router().execute(
                 new SimpleTask("chat", java.util.Collections.singleton(Capability.JSON),
                         Quality.GOOD, EgressTier.WHITE), req);
-        AgentEngine.Result r = new AgentEngine(db).run(ID,
-                systemPrompt(ctx), "", tools, caller, cfg);
-        db.updateStatus(ID, r.done ? "active" : "failed", r.turns);
-        if (!r.error.isEmpty() && cb != null) cb.onDone(false, r.error);
-        else if (cb != null) cb.onDone(true, r.finalText);
+        ChatHost host = new ChatHost() {
+            @Override public String sessionId() { return ID; }
+            @Override public String systemPrompt() { return ChatSession.systemPrompt(ctx); }
+            @Override public AgentStore store() { return db; }
+            @Override public ToolRegistry tools() { return tools; }
+            @Override public LlmCaller caller() { return caller; }
+            @Override public AgentEngine.Config config() { return cfg; }
+            @Override public void beforeRun() { db.ensureSession(ID, "chat", "", "single=1"); }
+            @Override public void afterRun(AgentEngine.Result r) {
+                db.updateStatus(ID, r.done ? "active" : "failed", r.turns);
+            }
+        };
+        com.dsh.agent.ChatLoop.run(host, text, (ok, msg) -> {
+            if (cb != null) cb.onDone(ok, msg);
+        });
     }
 
     public static String systemPrompt(Context ctx) {
