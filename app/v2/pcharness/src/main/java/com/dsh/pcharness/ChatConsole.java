@@ -59,19 +59,25 @@ public final class ChatConsole {
         JdbcMemorySource source = new JdbcMemorySource(mem);
         JdbcAgentStore store = new JdbcAgentStore(mem);
         PcProvenance prov = new PcProvenance();
+        final List<String> recalls = new ArrayList<>();
+        final long[] usage = new long[3]; // prompt, completion, latency
         ToolRegistry tools = new ToolRegistry();
         com.dsh.memory.MaskProvider masker = null;
         try { masker = new JdbcMaskProvider(evidence); } catch (Throwable ignored) { }
-        tools.add(new RecallTool(source, prov, masker));
+        tools.add(new RecallTool(source, prov, masker, recalls::add));
         tools.add(new RememberTool(source, "chat", ""));
         tools.add(new MemoryStatusTool(source::status));
         com.dsh.models.ModelRouter router = new com.dsh.models.ModelRouter(
                 java.util.Collections.singletonList(provider), false, gate, null);
         LlmCaller caller = req -> {
             try {
-                return router.execute(new SimpleTask("chat",
+                com.dsh.models.ModelResponse r = router.execute(new SimpleTask("chat",
                         Collections.singleton(Capability.JSON), Quality.GOOD,
                         com.dsh.egress.EgressTier.WHITE), req);
+                usage[0] += r.promptTokens;
+                usage[1] += r.completionTokens;
+                usage[2] += r.latencyMs;
+                return r;
             } catch (Exception e) { throw new RuntimeException(e); }
         };
         String sim = readSim();
@@ -97,7 +103,7 @@ public final class ChatConsole {
         if (ask != null) {
             ChatLoop.run(host, ask, (ok, msg) -> {
                 System.out.println(msg);
-                if (!quiet) System.out.println("[turn] ok=" + ok);
+                if (!quiet) trace(host, prov, recalls, usage);
             });
             return;
         }
@@ -113,12 +119,7 @@ public final class ChatConsole {
             long t0 = System.currentTimeMillis();
             ChatLoop.run(host, line, (ok, msg) -> {
                 System.out.println(msg);
-                if (!quiet) {
-                    System.out.println("[turn] ok=" + ok + " ms="
-                            + (System.currentTimeMillis() - t0)
-                            + " stage=" + prov.stage()
-                            + " sources=" + prov.sources());
-                }
+                if (!quiet) trace(host, prov, recalls, usage);
             });
         }
     }
@@ -157,6 +158,25 @@ public final class ChatConsole {
         } catch (Throwable t) {
             System.out.println("  evidence 缺失/不可读: " + t.getMessage());
         }
+    }
+
+    private static void trace(ChatHost host, PcProvenance prov, List<String> recalls,
+                              long[] usage) {
+        for (String r : recalls) System.out.println("[recall] " + r);
+        recalls.clear();
+        System.out.println("[egress] stage=" + prov.stage() + " sources=" + prov.sources()
+                + " stripped=" + prov.stripped);
+        int msgs = host.store().events(host.sessionId()).size();
+        int chars = 0;
+        for (com.dsh.agent.AgentEvent e : host.store().events(host.sessionId())) {
+            chars += e.payload == null ? 0 : e.payload.length();
+        }
+        System.out.println("[context] transcript=" + msgs + " msgs, est_chars=" + chars);
+        double cny = usage[0] / 1_000_000.0 * 1.0 + usage[1] / 1_000_000.0 * 4.0;
+        System.out.println("[cost] prompt_tokens=" + usage[0] + " completion_tokens="
+                + usage[1] + " latency_ms=" + usage[2]
+                + " est_cny=" + String.format("%.4f", cny));
+        usage[0] = usage[1] = usage[2] = 0;
     }
 
     private static String readSim() {

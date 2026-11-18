@@ -16,15 +16,22 @@ public final class RecallTool implements AgentTool {
     private final MemorySource source;
     private final Provenance provenance;
     private final MaskProvider maskProvider;
+    private final java.util.function.Consumer<String> trace;
 
     public RecallTool(MemorySource source, Provenance provenance) {
-        this(source, provenance, null);
+        this(source, provenance, null, null);
     }
 
     public RecallTool(MemorySource source, Provenance provenance, MaskProvider maskProvider) {
+        this(source, provenance, maskProvider, null);
+    }
+
+    public RecallTool(MemorySource source, Provenance provenance, MaskProvider maskProvider,
+                      java.util.function.Consumer<String> trace) {
         this.source = source;
         this.provenance = provenance;
         this.maskProvider = maskProvider;
+        this.trace = trace;
     }
 
     @Override public String name() { return "recall"; }
@@ -62,6 +69,13 @@ public final class RecallTool implements AgentTool {
         if (!hits.isEmpty()) provenance.markRecalled();
         provenance.addMaskedMissing(s.maskedMissing);
         provenance.setMaskStatus(s.maskStatus());
+        if (trace != null) {
+            String top = s.hits.isEmpty() ? "none"
+                    : s.hits.get(0).namespace + "/" + s.hits.get(0).detailLevel + " "
+                    + "id=" + s.hits.get(0).itemId + " score=" + String.format("%.2f", s.hits.get(0).score)
+                    + " present=" + s.hits.get(0).present;
+            trace.accept("query=\"" + q.query + "\" → " + s.hits.size() + " hits, top=" + top);
+        }
         return ToolResult.ok(RecallCore.render(s.hits));
     }
 
