@@ -26,6 +26,9 @@ public final class TraceStore extends SQLiteOpenHelper {
     public static final String GAPS = "trace_gaps";
 
     private final File dbFile;
+    private final android.content.Context app;
+    public static final java.util.concurrent.atomic.AtomicLong GAP_WRITE_FAILURES =
+            new java.util.concurrent.atomic.AtomicLong();
 
     public TraceStore(Context app) {
         this(app, new File(app.getFilesDir(), "trace"));
@@ -39,6 +42,7 @@ public final class TraceStore extends SQLiteOpenHelper {
         File now = new File(dir, DB_NAME);
         if (old.exists() && !now.exists()) old.renameTo(now);
         this.dbFile = now;
+        this.app = app.getApplicationContext();
     }
 
     public File dbFile() { return dbFile; }
@@ -114,14 +118,25 @@ public final class TraceStore extends SQLiteOpenHelper {
         v.put("t0", t0);
         v.put("reason", reason);
         v.put("closed", 0);
-        return getWritableDatabase().insert(GAPS, null, v);
+        try {
+            return MemoryDb.get(app).getWritableDatabase().insert(GAPS, null, v);
+        } catch (Throwable t) {
+            GAP_WRITE_FAILURES.incrementAndGet();
+            android.util.Log.e("DSHL2", "trace_gaps 写记忆库失败", t);
+            return -1;
+        }
     }
 
     public void closeOpenGaps(long t1) {
         ContentValues v = new ContentValues();
         v.put("t1", t1);
         v.put("closed", 1);
-        getWritableDatabase().update(GAPS, v, "closed=0", null);
+        try {
+            MemoryDb.get(app).getWritableDatabase().update(GAPS, v, "closed=0", null);
+        } catch (Throwable t) {
+            GAP_WRITE_FAILURES.incrementAndGet();
+            android.util.Log.e("DSHL2", "trace_gaps 关闭失败", t);
+        }
     }
 
     public long lastTraceT1() {
@@ -133,7 +148,7 @@ public final class TraceStore extends SQLiteOpenHelper {
 
     public java.util.List<GapRow> gapsBetween(long from, long to) {
         java.util.List<GapRow> out = new java.util.ArrayList<>();
-        Cursor c = getReadableDatabase().rawQuery(
+        Cursor c = MemoryDb.get(app).getReadableDatabase().rawQuery(
                 "SELECT t0,t1,reason,closed FROM " + GAPS
                         + " WHERE (t1 IS NULL OR t1>=?) AND t0<=? ORDER BY t0",
                 new String[]{String.valueOf(from), String.valueOf(to)});

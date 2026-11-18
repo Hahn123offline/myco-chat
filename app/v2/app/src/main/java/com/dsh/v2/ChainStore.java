@@ -18,7 +18,19 @@ import java.util.Map;
 /**
  * chains / pipeline_runs：幂等键 + 执行租约 + L0 chunk 幂等。
  */
-public final class ChainStore extends SQLiteOpenHelper {
+public final class ChainStore {
+    private final MemoryDb memoryDb;
+
+    public android.database.sqlite.SQLiteDatabase getWritableDatabase() {
+        return memoryDb.getWritableDatabase();
+    }
+
+    public android.database.sqlite.SQLiteDatabase getReadableDatabase() {
+        return memoryDb.getReadableDatabase();
+    }
+
+    public void close() { }
+
 
     public static final String TAG = "DSHL2";
     public static final String DB_NAME = "chains.db";
@@ -28,18 +40,15 @@ public final class ChainStore extends SQLiteOpenHelper {
     public static final long LEASE_MS = 2 * 3600_000L;
 
     public ChainStore(Context app) {
-        super(app, new File(new File(app.getFilesDir(), "trace"), DB_NAME).getAbsolutePath(),
-                null, DB_VER);
-        File dir = new File(app.getFilesDir(), "trace");
-        if (!dir.exists()) dir.mkdirs();
+        memoryDb = MemoryDb.get(app);
     }
 
-    @Override public void onCreate(SQLiteDatabase db) {
+    public void onCreate(SQLiteDatabase db) {
         createChains(db);
         createAux(db);
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
+    public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
         if (oldV < 2) {
             db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN dedup_key TEXT");
             db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN chunk_key TEXT");

@@ -14,6 +14,43 @@ public final class MemoryDb extends SQLiteOpenHelper {
     public static final String DB_NAME = "memory.db";
     public static final int DB_VER = 10;
 
+    private static volatile MemoryDb instance;
+    /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
+    public static volatile String migrationWarning = "";
+
+    public static void checkMigrationState(Context app) {
+        try {
+            File dir = new File(app.getFilesDir(), "trace");
+            boolean old = new File(dir, "chains.db").exists()
+                    || new File(dir, "agent.db").exists()
+                    || new File(dir, "day_narrative.db").exists();
+            if (!old) return;
+            android.database.sqlite.SQLiteDatabase db = get(app).getReadableDatabase();
+            int n = 0;
+            for (String t : new String[]{"chains", "agent_sessions", "day_narratives", "mem_items"}) {
+                android.database.Cursor c = db.rawQuery("SELECT COUNT(*) FROM " + t, null);
+                if (c.moveToFirst()) n += c.getInt(0);
+                c.close();
+            }
+            if (n == 0) {
+                migrationWarning = "迁移未完成：旧库还在但记忆库为空";
+                android.util.Log.e("DSHL2", migrationWarning);
+            }
+        } catch (Throwable t) {
+            migrationWarning = "迁移状态检查失败: " + t.getMessage();
+            android.util.Log.e("DSHL2", migrationWarning, t);
+        }
+    }
+
+    public static MemoryDb get(Context app) {
+        if (instance == null) {
+            synchronized (MemoryDb.class) {
+                if (instance == null) instance = new MemoryDb(app.getApplicationContext());
+            }
+        }
+        return instance;
+    }
+
     public MemoryDb(Context app) {
         super(app, new File(new File(app.getFilesDir(), "host"), DB_NAME).getAbsolutePath(),
                 null, DB_VER);

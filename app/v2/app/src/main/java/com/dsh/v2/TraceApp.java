@@ -41,6 +41,7 @@ public final class TraceApp extends Application {
         AppExclusionStore.load(this);
         // 记忆库单一大 helper：先建出空表，迁移在后续小步接
         new MemoryDb(this).getWritableDatabase();
+        MemoryDb.checkMigrationState(this);
         File base = getFilesDir();
         File hostDir = new File(base, "host");
         if (!hostDir.exists()) hostDir.mkdirs();

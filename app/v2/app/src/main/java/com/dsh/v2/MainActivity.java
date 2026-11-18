@@ -559,6 +559,8 @@ public final class MainActivity extends Activity {
                 + "\n\n" + readable
                 + (stats.isEmpty() ? "" : "\n\n" + stats)
                 + "\n\n" + AndroidMemorySource.recallState()
+                + (MemoryDb.migrationWarning.isEmpty() ? ""
+                    : "\n⚠ " + MemoryDb.migrationWarning + "（DEGRADED）")
                 + (usageStats.isEmpty() ? "" : "\n" + usageStats));
     }
 

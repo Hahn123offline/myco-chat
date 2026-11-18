@@ -7,18 +7,29 @@ import android.database.sqlite.SQLiteOpenHelper;
 import java.io.File;
 
 /** day_narratives 存储：day 主键，重跑覆盖。 */
-public final class DayNarrativeStore extends SQLiteOpenHelper {
+public final class DayNarrativeStore {
+    private final MemoryDb memoryDb;
+
+    public android.database.sqlite.SQLiteDatabase getWritableDatabase() {
+        return memoryDb.getWritableDatabase();
+    }
+
+    public android.database.sqlite.SQLiteDatabase getReadableDatabase() {
+        return memoryDb.getReadableDatabase();
+    }
+
+    public void close() { }
+
 
     public static final String DB_NAME = "day_narrative.db";
     public static final int DB_VER = 3;
     public static final String TABLE = "day_narratives";
 
     public DayNarrativeStore(Context app) {
-        super(app, new File(new File(app.getFilesDir(), "trace"), DB_NAME).getAbsolutePath(),
-                null, DB_VER);
+        memoryDb = MemoryDb.get(app);
     }
 
-    @Override public void onCreate(SQLiteDatabase db) {
+    public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + "(" +
                 "day TEXT PRIMARY KEY, narrative TEXT, segments TEXT, mainlines TEXT," +
                 "open_threads TEXT, gaps TEXT, unmentioned_event_ids TEXT," +
@@ -28,7 +39,7 @@ public final class DayNarrativeStore extends SQLiteOpenHelper {
                 "repaired INTEGER DEFAULT 0)");
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
+    public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
         if (oldV < 2) {
             db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN mainlines TEXT");
         }

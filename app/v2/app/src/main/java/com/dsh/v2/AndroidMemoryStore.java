@@ -17,14 +17,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Android 侧的 memory store；SQL 全部来自 :memory/MemorySchema。 */
-public final class AndroidMemoryStore extends SQLiteOpenHelper implements com.dsh.memory.MemoryStore {
+public final class AndroidMemoryStore implements com.dsh.memory.MemoryStore {
+    private final MemoryDb memoryDb;
+
+    public android.database.sqlite.SQLiteDatabase getWritableDatabase() {
+        return memoryDb.getWritableDatabase();
+    }
+
+    public android.database.sqlite.SQLiteDatabase getReadableDatabase() {
+        return memoryDb.getReadableDatabase();
+    }
+
+    public void close() { }
+
 
     public static final String DB_NAME = "memory.db";
     private final Store impl;
 
     public AndroidMemoryStore(Context app) {
-        super(app, new File(new File(app.getFilesDir(), "trace"), DB_NAME).getAbsolutePath(),
-                null, 2);
+        memoryDb = MemoryDb.get(app);
         impl = new Store();
     }
 
@@ -77,13 +88,13 @@ public final class AndroidMemoryStore extends SQLiteOpenHelper implements com.ds
         }
     }
 
-    @Override public void onCreate(SQLiteDatabase db) {
+    public void onCreate(SQLiteDatabase db) {
         db.execSQL(MemorySchema.CREATE_TABLE);
         db.execSQL(MemorySchema.CREATE_UNIQUE_KEY);
         db.execSQL(MemorySchema.CREATE_INDEX_NS);
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
+    public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
         if (oldV < 2) db.execSQL(MemorySchema.ALTER_DETAIL);
     }
 

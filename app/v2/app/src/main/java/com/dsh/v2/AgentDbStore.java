@@ -20,7 +20,19 @@ import java.util.List;
  * :agent 的 SQLite 事件存储：files/trace/agent.db。
  * 两层：agent_sessions（状态）+ agent_events（append-only 真源）。
  */
-public final class AgentDbStore extends SQLiteOpenHelper implements AgentStore {
+public final class AgentDbStore implements AgentStore {
+    private final MemoryDb memoryDb;
+
+    public android.database.sqlite.SQLiteDatabase getWritableDatabase() {
+        return memoryDb.getWritableDatabase();
+    }
+
+    public android.database.sqlite.SQLiteDatabase getReadableDatabase() {
+        return memoryDb.getReadableDatabase();
+    }
+
+    public void close() { }
+
 
     public static final String DB_NAME = "agent.db";
     public static final int DB_VER = 1;
@@ -30,16 +42,13 @@ public final class AgentDbStore extends SQLiteOpenHelper implements AgentStore {
     private final File dbFile;
 
     public AgentDbStore(Context app) {
-        super(app, new File(new File(app.getFilesDir(), "trace"), DB_NAME).getAbsolutePath(),
-                null, DB_VER);
-        File dir = new File(app.getFilesDir(), "trace");
-        if (!dir.exists()) dir.mkdirs();
-        this.dbFile = new File(dir, DB_NAME);
+        memoryDb = MemoryDb.get(app);
+        this.dbFile = new File(new File(app.getFilesDir(), "host"), "memory.db");
     }
 
     public File dbFile() { return dbFile; }
 
-    @Override public void onCreate(SQLiteDatabase db) {
+    public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + SESSIONS + "(" +
                 "id TEXT PRIMARY KEY, kind TEXT, created_at INTEGER, updated_at INTEGER," +
                 "status TEXT, turn_count INTEGER NOT NULL DEFAULT 0," +
@@ -50,7 +59,7 @@ public final class AgentDbStore extends SQLiteOpenHelper implements AgentStore {
         db.execSQL("CREATE INDEX idx_events_session ON " + EVENTS + "(session_id, seq)");
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
+    public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
         // v1 尚无迁移
     }
 

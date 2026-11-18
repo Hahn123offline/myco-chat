@@ -148,6 +148,22 @@ public final class Main {
         return com.dsh.trace.GapFinder.find(spans, content, known, from, to);
     }
 
+
+    /** 离线旧数据兼容：evidence.db 不存在时从 trace.db 复制，不改原文件。 */
+    private static String ensureEvidence(String p) {
+        java.io.File f = new java.io.File(p);
+        if (f.exists()) return p;
+        String alt = p.endsWith("evidence.db")
+                ? p.substring(0, p.length() - "evidence.db".length()) + "trace.db" : "";
+        if (!alt.isEmpty()) {
+            java.io.File old = new java.io.File(alt);
+            if (old.exists()) {
+                try { java.nio.file.Files.copy(old.toPath(), f.toPath()); } catch (Throwable ignored) { }
+            }
+        }
+        return p;
+    }
+
     private static void recall(String[] args) throws Exception {
         String db = workspacePath(arg(args, "--db", "raw/v2/memory.db"));
         JdbcMemorySource source = new JdbcMemorySource(db);
@@ -438,7 +454,7 @@ public final class Main {
     }
 
     private static void migrateMemory(String[] args) throws Exception {
-        String trace = workspacePath(arg(args, "--trace", "raw/v2/trace.db"));
+        String trace = ensureEvidence(workspacePath(arg(args, "--trace", "raw/v2/evidence.db")));
         String out = workspacePath(arg(args, "--out", "raw/v2/memory.db"));
         Class.forName("org.sqlite.JDBC");
         JdbcMemoryStore store = new JdbcMemoryStore(out);
@@ -506,7 +522,7 @@ public final class Main {
     private static void day(String[] args) throws Exception {
         String date = arg(args, "--date", "2026-11-17");
         String db = workspacePath(arg(args, "--db", "raw/v2/chains.db"));
-        String traceDb = workspacePath(arg(args, "--trace", "raw/v2/trace.db"));
+        String traceDb = ensureEvidence(workspacePath(arg(args, "--trace", "raw/v2/evidence.db")));
         String out = workspacePath(arg(args, "--out", "raw/v2/day_narratives.db"));
         String memDb = workspacePath(arg(args, "--mem", "raw/v2/memory.db"));
         String base = arg(args, "--base", "https://api.deepseek.com");
