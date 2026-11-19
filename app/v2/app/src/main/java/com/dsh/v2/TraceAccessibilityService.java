@@ -75,6 +75,12 @@ public final class TraceAccessibilityService extends AccessibilityService {
     private long lastShotAt = 0;
     private long eventCount = 0;
     private long lastEventAtMs = 0;
+    private volatile long lastRootAt = 0;
+    private volatile String lastRootPkg = "";
+    private static final java.util.Set<String> HARD_SKIP = new java.util.HashSet<>(
+            java.util.Arrays.asList("com.dsh.v2", "com.android.systemui",
+                    "com.android.inputmethod.latin", "com.sohu.inputmethod.sogou",
+                    "com.baidu.input", "com.iflytek.inputmethod"));
     private static volatile TraceAccessibilityService instance;
 
     /** 供 TraceModule 在 trace-worker 上请求"补一张代表帧" */
@@ -125,6 +131,20 @@ public final class TraceAccessibilityService extends AccessibilityService {
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
+        long started = SystemClock.uptimeMillis();
+        try {
+            handleEvent(event);
+        } finally {
+            long ms = SystemClock.uptimeMillis() - started;
+            if (ms > 16) {
+                Log.w(TAG, "event slow type=" + (event == null ? -1 : event.getEventType())
+                        + " pkg=" + (event == null || event.getPackageName() == null ? ""
+                        : event.getPackageName()) + " ms=" + ms);
+            }
+        }
+    }
+
+    private void handleEvent(AccessibilityEvent event) {
         A11yHealth.onEvent();
         eventCount++;
         lastEventAtMs = System.currentTimeMillis();
@@ -138,11 +158,35 @@ public final class TraceAccessibilityService extends AccessibilityService {
         try {
             int type = event.getEventType();
             TraceModule m0 = TraceRuntime.get();
-            // 通知/时钟状态事件只当心跳，绝不更新页面身份
+            CharSequence ep0 = event.getPackageName();
+            String evPkg = ep0 == null ? "" : ep0.toString();
+            // 廉价前置过滤：输入法/自身/系统 UI 只当心跳，绝不做树遍历
+            if (HARD_SKIP.contains(evPkg)) {
+                if (m0 != null) m0.onSkippedHeartbeat(System.currentTimeMillis(), evPkg, currentActivity);
+                return;
+            }
+            if (m0 != null && m0.shouldSkip(evPkg)) {
+                m0.onSkippedHeartbeat(System.currentTimeMillis(), evPkg, currentActivity);
+                return;
+            }
+            // 通知/时钟状态事件只当心跳
             if (type == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
                 if (m0 != null) m0.onSkippedHeartbeat(System.currentTimeMillis(), "", currentActivity);
                 return;
             }
+            // 文本变化（每次按键）永不做树遍历
+            if (type == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
+                if (m0 != null) m0.onSkippedHeartbeat(System.currentTimeMillis(), evPkg, currentActivity);
+                return;
+            }
+            long nowEv = SystemClock.uptimeMillis();
+            if (type != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+                    && nowEv - lastRootAt < 300 && evPkg.equals(lastRootPkg)) {
+                if (m0 != null) m0.onSkippedHeartbeat(nowEv, evPkg, currentActivity);
+                return;
+            }
+            lastRootAt = nowEv;
+            lastRootPkg = evPkg;
             AccessibilityNodeInfo active = activeRoot();
             String pkg = rootPkg(active);
             if (pkg.isEmpty()) {
