@@ -138,6 +138,48 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         return com.dsh.memory.FrameRef.blocked("PC 宿主没有掩码图管道，拒绝看图");
     }
 
+    @Override public java.util.List<com.dsh.memory.LineItem> lines(
+            com.dsh.memory.RecallQuery q) {
+        java.util.List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT id,object_key,pkg,time,text,block_id,"
+                + "shot_ref,line_no,y_top FROM lines WHERE 1=1");
+        java.util.List<Object> args = new java.util.ArrayList<>();
+        if (q != null && q.object != null && !q.object.isEmpty()) {
+            sql.append(" AND (object_key=? OR object_key LIKE ?)");
+            args.add(q.object); args.add("%" + q.object + "%");
+        }
+        if (q != null && q.from != null && !q.from.isEmpty()) {
+            sql.append(" AND time>=?");
+            args.add(dayStart(q.from));
+        }
+        if (q != null && q.to != null && !q.to.isEmpty()) {
+            sql.append(" AND time<?");
+            args.add(dayStart(q.to) + 86400000L);
+        }
+        sql.append(" ORDER BY time LIMIT 5000");
+        try (java.sql.Connection c = java.sql.DriverManager.getConnection("jdbc:sqlite:" + db);
+             java.sql.PreparedStatement ps = c.prepareStatement(sql.toString())) {
+            for (int i = 0; i < args.size(); i++) ps.setObject(i + 1, args.get(i));
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.dsh.memory.LineItem l = new com.dsh.memory.LineItem();
+                    l.id = rs.getLong(1); l.objectKey = rs.getString(2); l.pkg = rs.getString(3);
+                    l.time = rs.getLong(4); l.text = rs.getString(5); l.blockId = rs.getLong(6);
+                    l.shotRef = rs.getString(7); l.lineNo = rs.getInt(8); l.yTop = rs.getInt(9);
+                    out.add(l);
+                }
+            }
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
+    private static long dayStart(String day) {
+        try {
+            return java.time.LocalDate.parse(day).atStartOfDay(
+                    java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        } catch (Throwable t) { return 0; }
+    }
+
     @Override public byte[] readShot(String shotRef) {
         try {
             java.io.File f = new java.io.File(new java.io.File(db).getParentFile(), shotRef);

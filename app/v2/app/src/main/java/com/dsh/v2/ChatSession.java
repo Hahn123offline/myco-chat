@@ -55,7 +55,6 @@ public final class ChatSession {
                 new AndroidMaskProvider(ctx)));
         tools.add(new com.dsh.agent.RememberTool(memory.store(), ID, text));
         tools.add(new com.dsh.agent.MemoryStatusTool(memory::status));
-        tools.add(new com.dsh.agent.DayOverviewTool(memory));
         tools.add(new com.dsh.agent.ReadBlockTool(memory));
         tools.add(new com.dsh.agent.ReadFrameTool(memory, provenance));
         tools.add(new com.dsh.agent.CorrectTool(memory.store()));

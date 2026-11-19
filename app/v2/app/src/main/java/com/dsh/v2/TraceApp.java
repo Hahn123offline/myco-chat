@@ -46,6 +46,11 @@ public final class TraceApp extends Application {
             MemoryProjector.projectEvents(this);
             MemoryProjector.projectTraceBlocks(this);
             MemoryProjector.projectDays(this);
+            final android.content.Context ctx = this;
+            new Thread(() -> {
+                try { Thread.sleep(15000); } catch (Throwable ignored) { }
+                MemoryProjector.projectLines(ctx);
+            }, "line-projector").start();
             ChainCoverage.backfill(this);
         }
         File base = getFilesDir();

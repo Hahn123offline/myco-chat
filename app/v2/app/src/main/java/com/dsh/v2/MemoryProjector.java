@@ -66,6 +66,76 @@ public final class MemoryProjector {
         return n;
     }
 
+
+    /** 行视图：evidence.traces/page_elements → lines（只存文本+指针，幂等）。 */
+    public static int projectLines(Context app) {
+        SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
+        java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
+                "evidence.db");
+        if (!ev.exists()) return 0;
+        long maxBlock = 0;
+        try (Cursor c = db.rawQuery("SELECT COALESCE(MAX(block_id),0) FROM lines", null)) {
+            if (c.moveToFirst()) maxBlock = c.getLong(0);
+        }
+        SQLiteDatabase edb = null;
+        int n = 0;
+        android.util.Log.i("DSHL2", "project lines start maxBlock=" + maxBlock);
+        try {
+            edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
+                    SQLiteDatabase.OPEN_READONLY);
+            try (Cursor t = edb.rawQuery("SELECT id,t0,pkg,page_title,object_key,shot_ref "
+                    + "FROM traces WHERE id>? AND shot_ref IS NOT NULL AND shot_ref!='' "
+                    + "ORDER BY id DESC LIMIT 500", new String[]{String.valueOf(maxBlock)})) {
+                while (t.moveToNext()) {
+                    db.beginTransaction();
+                    long id = t.getLong(0);
+                    long time = t.getLong(1);
+                    String pkg = t.getString(2);
+                    String title = t.getString(3);
+                    String ok = t.getString(4);
+                    String shot = t.getString(5);
+                    if (ok == null || ok.isEmpty()) {
+                        ok = (pkg == null ? "" : pkg) + "/" + (title == null ? "" : title);
+                    }
+                    try (Cursor e = edb.rawQuery(
+                            "SELECT text,top,source FROM page_elements WHERE shot_ref=? "
+                                    + "ORDER BY top,left", new String[]{shot})) {
+                        int lineNo = 0;
+                        while (e.moveToNext()) {
+                            String text = e.getString(0);
+                            if (text == null || text.trim().isEmpty()) continue;
+                            String src = e.getString(2);
+                            if (!"A11Y".equals(src) && !"BOTH".equals(src)
+                                    && !"OCR".equals(src)) continue;
+                            ContentValues v = new ContentValues();
+                            v.put("object_key", ok);
+                            v.put("pkg", pkg);
+                            v.put("time", time);
+                            v.put("text", text.trim());
+                            v.put("block_id", id);
+                            v.put("shot_ref", shot);
+                            v.put("line_no", lineNo++);
+                            v.put("y_top", e.getInt(1));
+                            v.put("created_at", System.currentTimeMillis());
+                            long r = db.insertWithOnConflict("lines", null, v,
+                                    SQLiteDatabase.CONFLICT_IGNORE);
+                            if (r >= 0) n++;
+                        }
+                    }
+                    db.setTransactionSuccessful();
+                    db.endTransaction();
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "project lines failed", t);
+        } finally {
+            try { db.endTransaction(); } catch (Throwable ignored) { }
+            if (edb != null) try { edb.close(); } catch (Throwable ignored) { }
+        }
+        android.util.Log.i("DSHL2", "project lines: " + n + " maxBlock=" + maxBlock);
+        return n;
+    }
+
     private static String safeJson(String s) {
         return s == null || s.trim().isEmpty() ? "[]" : s;
     }

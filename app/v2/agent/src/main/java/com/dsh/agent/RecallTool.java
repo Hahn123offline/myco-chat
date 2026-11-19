@@ -37,8 +37,8 @@ public final class RecallTool implements AgentTool {
     @Override public String name() { return "recall"; }
 
     @Override public String description() {
-        return "检索记忆。query 关键词；from/to yyyy-MM-dd；pkg 包名；"
-                + "level=block|day；limit。返回带 pkg/page/shot pointer 的文本。";
+        return "统一检索入口。query=内容（行级 BM25）；object=对象累积视图（群/视频等）；"
+                + "from/to yyyy-MM-dd 时间；pkg 包名；level=block|day；limit。";
     }
 
     @Override public String parametersJson() {
@@ -46,6 +46,7 @@ public final class RecallTool implements AgentTool {
                 + "\"query\":{\"type\":\"string\"},\"from\":{\"type\":\"string\"},"
                 + "\"to\":{\"type\":\"string\"},\"pkg\":{\"type\":\"string\"},"
                 + "\"level\":{\"type\":\"string\",\"enum\":[\"block\",\"day\"]},"
+                + "\"object\":{\"type\":\"string\"},"
                 + "\"limit\":{\"type\":\"integer\"}},\"required\":[]}";
     }
 
@@ -56,9 +57,37 @@ public final class RecallTool implements AgentTool {
                 .to(Json.string(args.get("to")))
                 .pkg(Json.string(args.get("pkg")))
                 .level(Json.string(args.get("level")))
+                .object(Json.string(args.get("object")))
                 .limit(intArg(args.get("limit"), 8));
         if ("day".equals(q.level)) {
             return ToolResult.ok(RecallCore.renderDay(RecallCore.day(source, q.from)));
+        }
+        // 对象视图 / 行级内容视图：同一批 lines 的两种切法
+        List<com.dsh.memory.LineItem> lines = source.lines(q);
+        if (q.object != null && !q.object.isEmpty()) {
+            if (lines.isEmpty()) {
+                return ToolResult.ok("对象「" + q.object + "」没有行记录（可能尚未投影 lines，或不在本机）。");
+            }
+            return ToolResult.ok(renderLines(lines, q.limit));
+        }
+        if (q.query != null && !q.query.isEmpty() && !lines.isEmpty()) {
+            List<com.dsh.memory.LineItem> hits = com.dsh.memory.LineSearch.search(
+                    lines, q.query, q.limit);
+            if (!hits.isEmpty()) {
+                if (provenance != null) {
+                    for (com.dsh.memory.LineItem h : hits) {
+                        if (h.pkg != null && !h.pkg.isEmpty()
+                                && !provenance.sources().contains(h.pkg)
+                                && !provenance.strippedSources().contains(h.pkg)) {
+                            provenance.sources().add(h.pkg);
+                        }
+                    }
+                    provenance.markRecalled();
+                }
+                if (trace != null) trace.accept("lines query=\"" + q.query
+                        + "\" → " + hits.size() + " hits");
+                return ToolResult.ok(renderLines(hits, q.limit));
+            }
         }
         List<RecallHit> hits = RecallCore.recall(source, q);
         if (hits.isEmpty()) {
@@ -71,13 +100,15 @@ public final class RecallTool implements AgentTool {
             return ToolResult.ok("没有找到记录。");
         }
         RecallCore.Sanitized s = RecallCore.sanitize(hits, maskProvider);
-        for (String p : s.sources) if (!provenance.sources().contains(p)) provenance.sources().add(p);
-        for (String p : s.strippedSources) {
-            if (!provenance.strippedSources().contains(p)) provenance.strippedSources().add(p);
+        if (provenance != null) {
+            for (String p : s.sources) if (!provenance.sources().contains(p)) provenance.sources().add(p);
+            for (String p : s.strippedSources) {
+                if (!provenance.strippedSources().contains(p)) provenance.strippedSources().add(p);
+            }
+            if (!hits.isEmpty()) provenance.markRecalled();
+            provenance.addMaskedMissing(s.maskedMissing);
+            provenance.setMaskStatus(s.maskStatus());
         }
-        if (!hits.isEmpty()) provenance.markRecalled();
-        provenance.addMaskedMissing(s.maskedMissing);
-        provenance.setMaskStatus(s.maskStatus());
         if (trace != null) {
             String top = s.hits.isEmpty() ? "none"
                     : s.hits.get(0).namespace + "/" + s.hits.get(0).detailLevel + " "
@@ -86,6 +117,30 @@ public final class RecallTool implements AgentTool {
             trace.accept("query=\"" + q.query + "\" → " + s.hits.size() + " hits, top=" + top);
         }
         return ToolResult.ok(RecallCore.render(s.hits));
+    }
+
+    static String renderLines(List<com.dsh.memory.LineItem> lines, int limit) {
+        StringBuilder b = new StringBuilder("命中 ").append(lines.size()).append(" 行：\n");
+        java.util.Set<String> objs = new java.util.LinkedHashSet<>();
+        for (com.dsh.memory.LineItem l : lines) {
+            if (l.objectKey != null && !l.objectKey.isEmpty()) objs.add(l.objectKey);
+        }
+        if (!objs.isEmpty()) b.append("对象：").append(String.join("、", objs)).append('\n');
+        int n = 0;
+        for (com.dsh.memory.LineItem l : lines) {
+            if (n++ >= limit) break;
+            b.append("  ").append(fmt(l.time)).append(' ')
+                    .append(l.text == null ? "" : l.text).append("  [block ")
+                    .append(l.blockId).append(']');
+            if (l.shotRef != null && !l.shotRef.isEmpty()) b.append(" [有截图]");
+            b.append('\n');
+        }
+        return b.toString();
+    }
+
+    private static String fmt(long ms) {
+        return new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA)
+                .format(new java.util.Date(ms));
     }
 
     private static int intArg(Object o, int def) {

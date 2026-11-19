@@ -26,4 +26,7 @@ public interface MemorySource {
 
     /** 已经是掩码/策略处理后的可上云图片；null = 不支持。 */
     default FrameRef readFrame(long blockId) { return null; }
+
+    /** 行级观察；按 object/from/to 过滤。 */
+    default List<LineItem> lines(RecallQuery q) { return java.util.Collections.emptyList(); }
 }

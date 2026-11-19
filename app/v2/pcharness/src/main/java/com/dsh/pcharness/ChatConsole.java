@@ -68,7 +68,6 @@ public final class ChatConsole {
         tools.add(new RecallTool(source, prov, masker, recalls::add));
         tools.add(new RememberTool(source, "chat", () -> currentUser[0]));
         tools.add(new MemoryStatusTool(source::status));
-        tools.add(new com.dsh.agent.DayOverviewTool(source));
         tools.add(new com.dsh.agent.ReadBlockTool(source));
         tools.add(new com.dsh.agent.ReadFrameTool(source, prov));
         tools.add(new com.dsh.agent.CorrectTool(source));

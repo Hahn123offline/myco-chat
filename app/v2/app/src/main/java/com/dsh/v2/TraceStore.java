@@ -65,6 +65,7 @@ public final class TraceStore extends SQLiteOpenHelper {
                 "left INTEGER, top INTEGER, right INTEGER, bottom INTEGER," +
                 "role TEXT, source TEXT, confidence REAL, signals TEXT)");
         db.execSQL("CREATE INDEX idx_elem_t0 ON " + ELEMENTS + "(t0)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_elem_shot ON " + ELEMENTS + "(shot_ref)");
         db.execSQL("CREATE TABLE " + GAPS + "(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, t0 INTEGER NOT NULL, t1 INTEGER," +
                 "reason TEXT NOT NULL, closed INTEGER NOT NULL DEFAULT 0)");

@@ -178,6 +178,45 @@ public final class AndroidMemorySource implements MemorySource {
         }
     }
 
+    @Override public java.util.List<com.dsh.memory.LineItem> lines(
+            com.dsh.memory.RecallQuery q) {
+        java.util.List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT id,object_key,pkg,time,text,block_id,"
+                + "shot_ref,line_no,y_top FROM lines WHERE 1=1");
+        java.util.List<String> args = new java.util.ArrayList<>();
+        if (q != null && q.object != null && !q.object.isEmpty()) {
+            sql.append(" AND (object_key=? OR object_key LIKE ?)");
+            args.add(q.object); args.add("%" + q.object + "%");
+        }
+        if (q != null && q.from != null && !q.from.isEmpty()) {
+            sql.append(" AND time>=?");
+            args.add(String.valueOf(dayStart(q.from)));
+        }
+        if (q != null && q.to != null && !q.to.isEmpty()) {
+            sql.append(" AND time<?");
+            args.add(String.valueOf(dayStart(q.to) + 86400000L));
+        }
+        sql.append(" ORDER BY time LIMIT 5000");
+        try (android.database.Cursor c = MemoryDb.get(app).getReadableDatabase()
+                .rawQuery(sql.toString(), args.toArray(new String[0]))) {
+            while (c.moveToNext()) {
+                com.dsh.memory.LineItem l = new com.dsh.memory.LineItem();
+                l.id = c.getLong(0); l.objectKey = c.getString(1); l.pkg = c.getString(2);
+                l.time = c.getLong(3); l.text = c.getString(4); l.blockId = c.getLong(5);
+                l.shotRef = c.getString(6); l.lineNo = c.getInt(7); l.yTop = c.getInt(8);
+                out.add(l);
+            }
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
+    private static long dayStart(String day) {
+        try {
+            return java.time.LocalDate.parse(day).atStartOfDay(
+                    java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        } catch (Throwable t) { return 0; }
+    }
+
     @Override public byte[] readShot(String shotRef) {
         try {
             java.io.File f = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
