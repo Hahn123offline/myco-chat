@@ -394,6 +394,10 @@ public final class TraceModule implements Module {
                 }
             }
         }
+        boolean hasText = trace.text != null && !trace.text.trim().isEmpty();
+        boolean hasShot = trace.shotRef != null && !trace.shotRef.isEmpty();
+        trace.evidence = hasText && hasShot ? "BOTH" : hasText ? "TEXT"
+                : hasShot ? "SHOT" : "NONE";
         try {
             store.insert(trace);
             long n = tracesSaved.incrementAndGet();

@@ -29,4 +29,7 @@ public interface MemorySource {
 
     /** 行级观察；按 object/from/to 过滤。 */
     default List<LineItem> lines(RecallQuery q) { return java.util.Collections.emptyList(); }
+
+    /** 某时间窗的 trace 数；用于区分「没有痕迹」与「有痕迹无文本」。 */
+    default int traceCount(String from, String to) { return 0; }
 }

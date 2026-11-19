@@ -178,6 +178,14 @@ public final class AndroidMemorySource implements MemorySource {
         }
     }
 
+    @Override public int traceCount(String from, String to) {
+        try {
+            long a = from == null || from.isEmpty() ? 0 : parseMs(from);
+            long b = to == null || to.isEmpty() ? Long.MAX_VALUE : parseMs(to);
+            return new TraceStore(app).countBetween(a, b);
+        } catch (Throwable t) { return 0; }
+    }
+
     @Override public java.util.List<com.dsh.memory.LineItem> lines(
             com.dsh.memory.RecallQuery q) {
         java.util.List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();

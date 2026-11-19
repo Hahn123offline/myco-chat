@@ -87,6 +87,12 @@ public final class RecallTool implements AgentTool {
                 ".*(上午|下午|中午|晚上|凌晨|白天|昨天|今天|昨晚|今早).*");
         if ((q.query == null || q.query.isEmpty() || timeWord)
                 && (q.from != null && !q.from.isEmpty() || q.to != null && !q.to.isEmpty())) {
+            if (lines.isEmpty()) {
+                int tc = source.traceCount(q.from, q.to);
+                if (tc == 0) return ToolResult.ok("这段时间没有痕迹：没有采集到任何记录。");
+                return ToolResult.ok("有 " + tc + " 条痕迹，但没有可检索的 CONTENT 行；"
+                        + "可能只有截图/无文本块，可先用 read_frame(block_id) 看原图。");
+            }
             return ToolResult.ok(renderTimeView(lines, q.limit));
         }
         if (q.query != null && !q.query.isEmpty() && !lines.isEmpty()) {
@@ -110,6 +116,15 @@ public final class RecallTool implements AgentTool {
                         + "\" → " + hits.size() + " hits");
                 return ToolResult.ok(renderLines(hits, q.limit));
             }
+        }
+        if (lines.isEmpty() && (q.from != null && !q.from.isEmpty()
+                || q.to != null && !q.to.isEmpty())) {
+            int tc = source.traceCount(q.from, q.to);
+            if (tc > 0) {
+                return ToolResult.ok("有 " + tc + " 条痕迹，但没有可检索的 CONTENT 行；"
+                        + "可能只有截图/无文本块，可先用 read_frame(block_id) 看原图。");
+            }
+            return ToolResult.ok("这段时间没有痕迹：没有采集到任何记录。");
         }
         List<RecallHit> hits = RecallCore.recall(source, q);
         if (hits.isEmpty()) {

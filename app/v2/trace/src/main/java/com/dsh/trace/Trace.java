@@ -19,6 +19,8 @@ public final class Trace {
     public String pageTitle;
     /** 稳定对象键：<pkg>/<标题>；列表页/无标题时为空。 */
     public String objectKey;
+    /** 证据状态：BOTH/TEXT/SHOT/NONE。 */
+    public String evidence;
     /** 整屏 OCR 原文，截断 2000 字（本地存原文） */
     public String text;
     /** 截图引用（不透明字符串，如 "shots/xxx.jpg"） */

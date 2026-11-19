@@ -20,7 +20,7 @@ import java.util.Calendar;
 public final class TraceStore extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "evidence.db";
-    public static final int DB_VER = 7;
+    public static final int DB_VER = 8;
     public static final String TABLE = "traces";
     public static final String ELEMENTS = "page_elements";
     public static final String GAPS = "trace_gaps";
@@ -57,7 +57,7 @@ public final class TraceStore extends SQLiteOpenHelper {
                 "text TEXT, shot_ref TEXT," +
                 "guard INTEGER NOT NULL DEFAULT 0, guard_hit TEXT," +
                 "cloud_at INTEGER NOT NULL DEFAULT 0, label TEXT, masked_text TEXT," +
-                "source TEXT NOT NULL DEFAULT 'a11y')");
+                "source TEXT NOT NULL DEFAULT 'a11y', evidence TEXT)");
         db.execSQL("CREATE INDEX idx_t0 ON " + TABLE + "(t0)");
         db.execSQL("CREATE TABLE " + ELEMENTS + "(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -84,6 +84,10 @@ public final class TraceStore extends SQLiteOpenHelper {
         }
         if (oldV < 7) {
             try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN object_key TEXT"); }
+            catch (Throwable ignored) { }
+        }
+        if (oldV < 8) {
+            try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN evidence TEXT"); }
             catch (Throwable ignored) { }
         }
         if (oldV < 4) {
@@ -144,6 +148,14 @@ public final class TraceStore extends SQLiteOpenHelper {
         }
     }
 
+    public int countBetween(long from, long to) {
+        Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM " + TABLE
+                + " WHERE t1>? AND t0<?", new String[]{String.valueOf(from), String.valueOf(to)});
+        int n = c.moveToFirst() ? c.getInt(0) : 0;
+        c.close();
+        return n;
+    }
+
     public long lastTraceT1() {
         Cursor c = getReadableDatabase().rawQuery("SELECT MAX(t1) FROM " + TABLE, null);
         long v = c.moveToFirst() ? c.getLong(0) : 0;
@@ -189,6 +201,7 @@ public final class TraceStore extends SQLiteOpenHelper {
             }
         }
         v.put("object_key", t.objectKey);
+        v.put("evidence", t.evidence);
         v.put("text", t.text);
         v.put("shot_ref", t.shotRef);
         v.put("guard", t.guard);
