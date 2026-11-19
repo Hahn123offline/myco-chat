@@ -167,6 +167,10 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
             sql.append(" AND (object_key=? OR object_key LIKE ?)");
             args.add(q.object); args.add("%" + q.object + "%");
         }
+        if (q != null && q.pkg != null && !q.pkg.isEmpty()) {
+            sql.append(" AND pkg=?");
+            args.add(q.pkg);
+        }
         if (q != null && q.from != null && !q.from.isEmpty()) {
             sql.append(" AND time>=?");
             args.add(parseMs(q.from));

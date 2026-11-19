@@ -166,46 +166,138 @@ public final class RecallTool implements AgentTool {
         return out;
     }
 
+    private static final long SEG_GAP_MS = 20 * 60_000L;
+    private static final int MAX_SEGMENTS = 30;
+
     static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit) {
         return renderTimeView(lines, limit, 0, "", "");
+    }
+
+    private static final class Seg {
+        long start, end;
+        final java.util.List<com.dsh.memory.LineItem> xs = new java.util.ArrayList<>();
+    }
+
+    private static java.util.List<Seg> segments(java.util.List<com.dsh.memory.LineItem> xs) {
+        java.util.List<Seg> out = new java.util.ArrayList<>();
+        java.util.List<com.dsh.memory.LineItem> sorted = new java.util.ArrayList<>(xs);
+        sorted.sort((a, b) -> Long.compare(a.time, b.time));
+        for (com.dsh.memory.LineItem l : sorted) {
+            Seg s = out.isEmpty() ? null : out.get(out.size() - 1);
+            if (s == null || l.time - s.end > SEG_GAP_MS) {
+                s = new Seg(); s.start = l.time; s.end = l.time; out.add(s);
+            }
+            s.xs.add(l);
+            s.end = Math.max(s.end, l.time);
+        }
+        return out;
+    }
+
+    private static long[] rangeMs(String from, String to, java.util.List<com.dsh.memory.LineItem> lines) {
+        long a = Long.MAX_VALUE, b = Long.MIN_VALUE;
+        if (from != null && !from.isEmpty()) a = parseMs(from);
+        if (to != null && !to.isEmpty()) b = parseMs(to);
+        for (com.dsh.memory.LineItem l : lines) {
+            if (l.time < a) a = l.time;
+            if (l.time > b) b = l.time;
+        }
+        return new long[]{a, b};
+    }
+
+    private static long parseMs(String s) {
+        try {
+            String t = s.trim().replace(' ', 'T');
+            if (t.length() > 10) {
+                return java.time.LocalDateTime.parse(t.substring(0, 16))
+                        .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            }
+            return java.time.LocalDate.parse(t).atStartOfDay(
+                    java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        } catch (Throwable t) { return 0; }
     }
 
     static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit,
                                  int traces, String from, String to) {
         if (lines.isEmpty()) return "这段时间没有可检索的 CONTENT 行。";
+        long[] r = rangeMs(from, to, lines);
+        long rangeStart = r[0] == Long.MAX_VALUE ? lines.get(0).time : r[0];
+        long rangeEnd = r[1] == Long.MIN_VALUE ? lines.get(0).time : r[1];
+        java.util.List<Seg> all = segments(lines);
+        java.util.List<Seg> shown = all.size() > MAX_SEGMENTS
+                ? new java.util.ArrayList<>(all.subList(0, MAX_SEGMENTS)) : all;
+        int omitted = all.size() - shown.size();
+        StringBuilder b = new StringBuilder();
+        b.append("【覆盖】").append(fmt(rangeStart)).append("–").append(fmt(rangeEnd)).append("\n");
+        b.append("  有记录段：");
+        long covered = 0;
+        for (int i = 0; i < shown.size(); i++) {
+            Seg s = shown.get(i);
+            covered += s.end - s.start;
+            if (i > 0) b.append("｜");
+            b.append(fmt(s.start)).append("–").append(fmt(s.end))
+                    .append("（").append(s.xs.size()).append(" 行）");
+        }
+        if (shown.isEmpty()) b.append("无");
+        b.append("\n  无记录段：");
+        long cursor = rangeStart;
+        java.util.List<long[]> gaps = new java.util.ArrayList<>();
+        for (Seg s : shown) {
+            if (s.start > cursor) gaps.add(new long[]{cursor, s.start});
+            cursor = Math.max(cursor, s.end);
+        }
+        if (rangeEnd > cursor) gaps.add(new long[]{cursor, rangeEnd});
+        for (int i = 0; i < gaps.size(); i++) {
+            if (i > 0) b.append("｜");
+            long[] g = gaps.get(i);
+            b.append(fmt(g[0])).append("–").append(fmt(g[1]));
+        }
+        if (gaps.isEmpty()) b.append("无");
+        b.append("\n  合计：有记录 ").append(shown.size()).append(" 段 ")
+                .append(covered / 60_000).append("min / 无记录 ")
+                .append(gaps.size()).append(" 段\n");
+        if (traces > 0) b.append("  trace 数：").append(traces).append("\n");
+        if (omitted > 0) {
+            b.append("【截断】按 ").append(MAX_SEGMENTS).append(" 段上限裁到 ")
+                    .append(shown.size()).append(" 段；还有 ").append(omitted)
+                    .append(" 段未显示。收窄：给 from/to 或指定 object。\n");
+        } else {
+            b.append("【完整】本时间段共 ").append(shown.size())
+                    .append(" 段，已全部列出；不要重复查询同一范围。\n");
+        }
+        // R2：对象生命周期 + 段
         java.util.Map<String, java.util.List<com.dsh.memory.LineItem>> byObj =
                 new java.util.LinkedHashMap<>();
         for (com.dsh.memory.LineItem l : lines) {
             String k = l.objectKey == null || l.objectKey.isEmpty() ? l.pkg : l.objectKey;
             byObj.computeIfAbsent(k, x -> new java.util.ArrayList<>()).add(l);
         }
-        long minT = Long.MAX_VALUE, maxT = Long.MIN_VALUE;
-        for (com.dsh.memory.LineItem l : lines) {
-            minT = Math.min(minT, l.time); maxT = Math.max(maxT, l.time);
-        }
-        StringBuilder b = new StringBuilder("1) 覆盖：痕迹 ").append(traces)
-                .append(" / CONTENT ").append(lines.size()).append(" 行 / 对象 ")
-                .append(byObj.size()).append(" / 时段 ").append(from).append("–").append(to)
-                .append("（实际 ").append(fmt(minT)).append("–").append(fmt(maxT)).append("）\n");
-        if (traces > 0) b.append("3) 缺口：有痕迹；如某对象只有截图会在此列出。\n");
-        else b.append("3) 缺口：该时段无痕迹。\n");
-        b.append("2) 内容：\n");
-        int objs = 0;
+        b.append("【对象】\n");
+        int objCount = 0;
         for (java.util.Map.Entry<String, java.util.List<com.dsh.memory.LineItem>> e
                 : byObj.entrySet()) {
-            if (objs++ >= 8) break;
+            if (objCount++ >= 8) { b.append("  （对象已截断）\n"); break; }
             java.util.List<com.dsh.memory.LineItem> xs = e.getValue();
             xs.sort((a, c) -> Long.compare(a.time, c.time));
-            b.append("## ").append(e.getKey()).append(" (").append(xs.size()).append(" 行)\n");
-            int n = 0;
-            for (com.dsh.memory.LineItem l : xs) {
-                if (n++ >= 6 || n > limit) break;
-                b.append("  ").append(fmt(l.time)).append(' ')
-                        .append(l.text == null ? "" : l.text).append("  [block ")
-                        .append(l.blockId).append("]\n");
+            java.util.List<Seg> os = segments(xs);
+            b.append("  ").append(e.getKey()).append("：first=").append(fmt(xs.get(0).time))
+                    .append(" last=").append(fmt(xs.get(xs.size() - 1).time))
+                    .append(" ").append(os.size()).append(" 段 ").append(xs.size()).append(" 行\n");
+            int segShow = 0;
+            for (Seg s : os) {
+                if (segShow++ >= 5) { b.append("    …段已截断\n"); break; }
+                b.append("    段 ").append(fmt(s.start)).append("–").append(fmt(s.end))
+                        .append("（").append(s.xs.size()).append(" 行）：");
+                int n = 0;
+                for (com.dsh.memory.LineItem l : s.xs) {
+                    if (n++ >= 3) break;
+                    b.append(l.text == null ? "" : l.text).append("；");
+                }
+                b.append("\n");
             }
         }
-        b.append("4) 下钻：read_block(block_id) 看原 OCR；read_frame(block_id) 看原图。\n");
+        b.append("【不知道时】这段无记录可以：①换时间段 ②看前后对象活动 ③按 app 查活跃段；"
+                + "如果有痕迹无文本，用 read_block/read_frame 看原图。\n");
+        b.append("【下钻】read_block(block_id) / read_frame(block_id)。\n");
         return b.toString();
     }
 
