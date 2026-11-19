@@ -26,6 +26,16 @@ public class LineSearchTest {
         assertEquals("QQ/零杯", hits.get(0).objectKey);
     }
 
+    @Test public void 精确0命中时fuzzy兜底() {
+        List<LineItem> lines = Arrays.asList(
+                line(1L, "QQ/零杯", "析射定律和折射定律", 11),
+                line(2L, "QQ/零杯", "完全无关的内容", 12));
+        List<LineItem> hits = LineSearch.fuzzy(lines, "反射定律", 8);
+        assertEquals(1, hits.size());
+        assertEquals(11, hits.get(0).blockId);
+        assertEquals("fuzzy", hits.get(0).match);
+    }
+
     @Test public void 中文bigram检索() {
         List<LineItem> lines = Arrays.asList(
                 line(1L, "QQ/零杯", "倒在自我验收的路上了", 1),

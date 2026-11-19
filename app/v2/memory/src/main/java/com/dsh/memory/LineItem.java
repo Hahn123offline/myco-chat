@@ -13,4 +13,5 @@ public final class LineItem {
     public int yTop;
     public double score;
     public String kind = "CONTENT";
+    public String match = "exact";
 }

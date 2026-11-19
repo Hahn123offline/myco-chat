@@ -76,6 +76,9 @@ public final class RecallTool implements AgentTool {
         if (q.query != null && !q.query.isEmpty() && !lines.isEmpty()) {
             List<com.dsh.memory.LineItem> hits = com.dsh.memory.LineSearch.search(
                     lines, q.query, q.limit);
+            if (hits.isEmpty()) {
+                hits = com.dsh.memory.LineSearch.fuzzy(lines, q.query, q.limit);
+            }
             if (!hits.isEmpty()) {
                 if (provenance != null) {
                     for (com.dsh.memory.LineItem h : hits) {
@@ -145,6 +148,7 @@ public final class RecallTool implements AgentTool {
             b.append("  ").append(fmt(l.time)).append(' ')
                     .append(l.text == null ? "" : l.text).append("  [block ")
                     .append(l.blockId).append(']');
+            if ("fuzzy".equals(l.match)) b.append(" [match=fuzzy]");
             if (l.shotRef != null && !l.shotRef.isEmpty()) b.append(" [有截图]");
             b.append('\n');
         }

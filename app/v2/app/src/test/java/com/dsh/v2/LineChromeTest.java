@@ -12,7 +12,12 @@ public class LineChromeTest {
     }
 
     @Test public void 正文行是CONTENT() {
-        assertEquals("CONTENT", MemoryProjector.classify("先把整条路跑通", 1000, "零杯（）"));
+        assertEquals("CONTENT", MemoryProjector.classify("我们先把整条路跑通，再谈别的细节吧", 1000, "零杯（）"));
+    }
+
+    @Test public void 过短无标点是CHROME() {
+        assertEquals("CHROME", MemoryProjector.classify("确实慢", 1000, ""));
+        assertEquals("CHROME", MemoryProjector.classify("全店479人在拼", 1000, ""));
     }
 
     @Test public void 纯符号键盘行是CHROME() {

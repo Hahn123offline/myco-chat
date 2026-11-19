@@ -227,6 +227,12 @@ public final class MemoryProjector {
             char ch = t.charAt(i);
             if (ch >= 0x4e00 && ch <= 0x9fff) cjk++;
         }
+        boolean punct = t.matches("(?s).*[，。！？、；：,.!?;:].*");
+        if (cjk < 6 && !asciiWord) return "CHROME";
+        if (t.length() < 8 && !punct) return "CHROME";
+        if (!punct && t.length() < 16) return "CHROME";
+        if (t.matches("(?s).*(包邮|券|拼单|秒杀|￥|¥|\\d+人在拼|立即抢购|加入购物车).*"))
+            return "CHROME";
         if (!asciiWord && cjk < 2) return "CHROME";
         if (title != null && !title.isEmpty() && t.equals(title)) return "TITLE";
         if (y < 300 && (t.matches("^\\d{1,2}:\\d{2}.*")

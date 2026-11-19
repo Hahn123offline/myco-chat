@@ -44,6 +44,41 @@ public final class LineSearch {
         return out.size() > limit ? new ArrayList<>(out.subList(0, limit)) : out;
     }
 
+    /** 精确命中为 0 时的汉字 2-gram 兜底（重叠≥0.6）。 */
+    public static List<LineItem> fuzzy(List<LineItem> lines, String query, int limit) {
+        List<LineItem> out = new ArrayList<>();
+        if (lines == null || query == null) return out;
+        java.util.Set<String> qg = cjkBigrams(query);
+        if (qg.isEmpty()) return out;
+        for (LineItem l : lines) {
+            java.util.Set<String> lg = cjkBigrams(l.text);
+            if (lg.isEmpty()) continue;
+            int inter = 0;
+            for (String g : qg) if (lg.contains(g)) inter++;
+            double ratio = inter / (double) qg.size();
+            if (ratio >= 0.6) {
+                l.score = ratio;
+                l.match = "fuzzy";
+                out.add(l);
+            }
+        }
+        out.sort((a, b) -> Double.compare(b.score, a.score));
+        return out.size() > limit ? new ArrayList<>(out.subList(0, limit)) : out;
+    }
+
+    static java.util.Set<String> cjkBigrams(String s) {
+        java.util.Set<String> out = new java.util.LinkedHashSet<>();
+        if (s == null) return out;
+        StringBuilder cjk = new StringBuilder();
+        for (int i = 0; i <= s.length(); i++) {
+            char c = i == s.length() ? 0 : s.charAt(i);
+            if (c >= 0x4e00 && c <= 0x9fff) { cjk.append(c); continue; }
+            for (int j = 0; j + 2 <= cjk.length(); j++) out.add(cjk.substring(j, j + 2));
+            cjk.setLength(0);
+        }
+        return out;
+    }
+
     static List<String> terms(String q) {
         List<String> out = new ArrayList<>();
         StringBuilder en = new StringBuilder();
