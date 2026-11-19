@@ -10,8 +10,9 @@ import java.util.List;
 /** 无障碍树 → PageElement（bbox + role + 提名）；不做敏感判决。 */
 public final class PageParser {
 
-    public static final int MAX_NODES = 300;
-    public static final int MAX_ELEMENTS = 120;
+    // 访问上限只防病态树；元素配额只算"有文本"的节点，容器不占配额。
+    public static final int MAX_NODES = 1500;
+    public static final int MAX_ELEMENTS = 300;
 
     public static final class OcrLine {
         public final String text;
@@ -78,10 +79,10 @@ public final class PageParser {
         long t0 = System.currentTimeMillis();
         List<PageElement> out = new ArrayList<>();
         List<TitleCandidate> titleCandidates = new ArrayList<>();
+        if (root == null) return new Result("", out, System.currentTimeMillis() - t0);
         Rect rootBounds = new Rect();
         root.getBoundsInScreen(rootBounds);
         String pageTitle = "";
-        if (root == null) return new Result("", out, System.currentTimeMillis() - t0);
         ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
         queue.add(root);
         int visited = 0, idx = 0;
