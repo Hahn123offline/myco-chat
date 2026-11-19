@@ -65,6 +65,9 @@ public final class TraceAccessibilityService extends AccessibilityService {
     private volatile long lastPageT0 = 0;
     private volatile String lastPagePkg = "";
     private volatile PageParser.Result lastPageResult;
+    private volatile long shotPageT0;
+    private volatile String shotPagePkg = "";
+    private volatile PageParser.Result shotPageResult;
     private final long[] parseSamples = new long[100];
     private final int[] elementSamples = new int[100];
     private int parseSampleIdx;
@@ -173,6 +176,9 @@ public final class TraceAccessibilityService extends AccessibilityService {
             long pageNow = System.currentTimeMillis();
             lastPageT0 = pageNow;
             lastPagePkg = pkg;
+            shotPageT0 = pageNow;
+            shotPagePkg = pkg;
+            shotPageResult = lastPageResult;
             PageParser.Result pr = lastPageResult;
             if (pr != null) {
                 parseSamples[parseSampleIdx % parseSamples.length] = pr.elapsedMs;
@@ -367,8 +373,8 @@ public final class TraceAccessibilityService extends AccessibilityService {
                                                 ln.getText(), r.left, r.top, r.right, r.bottom));
                                     }
                                 }
-                                PageParser.Result pr = lastPageResult;
-                                m.onOcrLines(lastPageT0, lastPagePkg,
+                                PageParser.Result pr = shotPageResult;
+                                m.onOcrLines(shotPageT0, shotPagePkg,
                                         pr == null ? "" : pr.pageTitle, shotRef,
                                         pr == null ? null : pr.elements, lines);
                             } catch (Throwable ignored) { }

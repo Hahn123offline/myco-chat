@@ -20,7 +20,7 @@ import java.util.Calendar;
 public final class TraceStore extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "evidence.db";
-    public static final int DB_VER = 6;
+    public static final int DB_VER = 7;
     public static final String TABLE = "traces";
     public static final String ELEMENTS = "page_elements";
     public static final String GAPS = "trace_gaps";
@@ -53,7 +53,7 @@ public final class TraceStore extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE " + TABLE + "(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "t0 INTEGER NOT NULL, t1 INTEGER NOT NULL, dwell_ms INTEGER NOT NULL," +
-                "pkg TEXT, activity TEXT, page_id TEXT, page_title TEXT," +
+                "pkg TEXT, activity TEXT, page_id TEXT, page_title TEXT, object_key TEXT," +
                 "text TEXT, shot_ref TEXT," +
                 "guard INTEGER NOT NULL DEFAULT 0, guard_hit TEXT," +
                 "cloud_at INTEGER NOT NULL DEFAULT 0, label TEXT, masked_text TEXT," +
@@ -80,6 +80,10 @@ public final class TraceStore extends SQLiteOpenHelper {
         // v3：title 降为字段（不参与 pageId 身份）
         if (oldV < 3) {
             db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN page_title TEXT");
+        }
+        if (oldV < 7) {
+            try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN object_key TEXT"); }
+            catch (Throwable ignored) { }
         }
         if (oldV < 4) {
             db.execSQL("CREATE TABLE IF NOT EXISTS " + ELEMENTS + "(" +
@@ -168,6 +172,13 @@ public final class TraceStore extends SQLiteOpenHelper {
         v.put("activity", t.activity);
         v.put("page_id", t.pageId);
         v.put("page_title", t.pageTitle);
+        if (t.objectKey == null || t.objectKey.isEmpty()) {
+            if (t.pkg != null && !t.pkg.isEmpty() && t.pageTitle != null
+                    && !t.pageTitle.isEmpty()) {
+                t.objectKey = t.pkg + "/" + t.pageTitle;
+            }
+        }
+        v.put("object_key", t.objectKey);
         v.put("text", t.text);
         v.put("shot_ref", t.shotRef);
         v.put("guard", t.guard);
