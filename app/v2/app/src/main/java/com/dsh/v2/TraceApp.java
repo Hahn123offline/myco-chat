@@ -51,6 +51,10 @@ public final class TraceApp extends Application {
                 try { Thread.sleep(15000); } catch (Throwable ignored) { }
                 MemoryProjector.projectLines(ctx);
             }, "line-projector").start();
+            new Thread(() -> {
+                try { Thread.sleep(25000); } catch (Throwable ignored) { }
+                TraceModule.backfillEmptyText(ctx);
+            }, "ocr-empty-backfill").start();
             ChainCoverage.backfill(this);
         }
         File base = getFilesDir();

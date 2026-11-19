@@ -87,13 +87,13 @@ public final class RecallTool implements AgentTool {
                 ".*(上午|下午|中午|晚上|凌晨|白天|昨天|今天|昨晚|今早).*");
         if ((q.query == null || q.query.isEmpty() || timeWord)
                 && (q.from != null && !q.from.isEmpty() || q.to != null && !q.to.isEmpty())) {
+            int tc = source.traceCount(q.from, q.to);
             if (lines.isEmpty()) {
-                int tc = source.traceCount(q.from, q.to);
                 if (tc == 0) return ToolResult.ok("这段时间没有痕迹：没有采集到任何记录。");
                 return ToolResult.ok("有 " + tc + " 条痕迹，但没有可检索的 CONTENT 行；"
                         + "可能只有截图/无文本块，可先用 read_frame(block_id) 看原图。");
             }
-            return ToolResult.ok(renderTimeView(lines, q.limit));
+            return ToolResult.ok(renderTimeView(lines, q.limit, tc, q.from, q.to));
         }
         if (q.query != null && !q.query.isEmpty() && !lines.isEmpty()) {
             List<com.dsh.memory.LineItem> hits = com.dsh.memory.LineSearch.search(
@@ -167,6 +167,11 @@ public final class RecallTool implements AgentTool {
     }
 
     static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit) {
+        return renderTimeView(lines, limit, 0, "", "");
+    }
+
+    static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit,
+                                 int traces, String from, String to) {
         if (lines.isEmpty()) return "这段时间没有可检索的 CONTENT 行。";
         java.util.Map<String, java.util.List<com.dsh.memory.LineItem>> byObj =
                 new java.util.LinkedHashMap<>();
@@ -174,8 +179,17 @@ public final class RecallTool implements AgentTool {
             String k = l.objectKey == null || l.objectKey.isEmpty() ? l.pkg : l.objectKey;
             byObj.computeIfAbsent(k, x -> new java.util.ArrayList<>()).add(l);
         }
-        StringBuilder b = new StringBuilder("时间视图：").append(lines.size()).append(" 行 / ")
-                .append(byObj.size()).append(" 个对象\n");
+        long minT = Long.MAX_VALUE, maxT = Long.MIN_VALUE;
+        for (com.dsh.memory.LineItem l : lines) {
+            minT = Math.min(minT, l.time); maxT = Math.max(maxT, l.time);
+        }
+        StringBuilder b = new StringBuilder("1) 覆盖：痕迹 ").append(traces)
+                .append(" / CONTENT ").append(lines.size()).append(" 行 / 对象 ")
+                .append(byObj.size()).append(" / 时段 ").append(from).append("–").append(to)
+                .append("（实际 ").append(fmt(minT)).append("–").append(fmt(maxT)).append("）\n");
+        if (traces > 0) b.append("3) 缺口：有痕迹；如某对象只有截图会在此列出。\n");
+        else b.append("3) 缺口：该时段无痕迹。\n");
+        b.append("2) 内容：\n");
         int objs = 0;
         for (java.util.Map.Entry<String, java.util.List<com.dsh.memory.LineItem>> e
                 : byObj.entrySet()) {
@@ -191,6 +205,7 @@ public final class RecallTool implements AgentTool {
                         .append(l.blockId).append("]\n");
             }
         }
+        b.append("4) 下钻：read_block(block_id) 看原 OCR；read_frame(block_id) 看原图。\n");
         return b.toString();
     }
 

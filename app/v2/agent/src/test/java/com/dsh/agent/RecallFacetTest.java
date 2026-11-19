@@ -68,7 +68,7 @@ public class RecallFacetTest {
         a.put("to", "2023-11-14");
         ToolResult r = call(a);
         assertTrue(r.isOk());
-        assertTrue(r.summary.contains("时间视图"));
+        assertTrue(r.summary.contains("1) 覆盖"));
         assertTrue(r.summary.contains("com.tencent.mobileqq/零杯"));
     }
 

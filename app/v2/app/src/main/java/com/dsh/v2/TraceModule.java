@@ -2,6 +2,7 @@ package com.dsh.v2;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Context;
+import android.database.Cursor;
 import android.os.PowerManager;
 
 import com.dsh.core.Capability;
@@ -58,6 +59,9 @@ public final class TraceModule implements Module {
     private final AtomicLong shotFailInvalidDisplay = new AtomicLong();
     private final AtomicLong shotFailNoAccess = new AtomicLong();
     private final AtomicLong shotFailOther = new AtomicLong();
+    private final AtomicLong evidenceNone = new AtomicLong();
+    private final AtomicLong forcedShotOk = new AtomicLong();
+    private final AtomicLong forcedShotFail = new AtomicLong();
     private final AtomicLong shotRetryOk = new AtomicLong();
     private final AtomicLong shotRetryFail = new AtomicLong();
     private volatile long lastEventAt = 0;
@@ -357,6 +361,34 @@ public final class TraceModule implements Module {
                     + " t0=" + trace.t0);
             return;
         }
+        boolean hasText = trace.text != null && !trace.text.trim().isEmpty();
+        boolean hasShot = trace.shotRef != null && !trace.shotRef.isEmpty();
+        // 只在「即将变成 NONE」时强制补一帧；不无脑每块截图。
+        if (!hasText && !hasShot) {
+            TraceAccessibilityService svc = TraceAccessibilityService.instance();
+            if (svc != null) {
+                TraceAccessibilityService.Shot shot = svc.captureOnce(3_000L);
+                if (shot != null) {
+                    forcedShotOk.incrementAndGet();
+                    trace.shotRef = shot.shotRef;
+                    if (shot.text != null && !shot.text.trim().isEmpty()) {
+                        trace.text = shot.text.length() > TraceAccumulator.MAX_TEXT_CHARS
+                                ? shot.text.substring(0, TraceAccumulator.MAX_TEXT_CHARS)
+                                : shot.text;
+                        GuardResult gr = new Guard().check(trace.text);
+                        trace.guard = gr.isBlocked() ? 1 : 0;
+                        trace.guardHit = gr.blockedKind;
+                        trace.maskedText = gr.maskedText;
+                    }
+                    hasText = trace.text != null && !trace.text.trim().isEmpty();
+                    hasShot = true;
+                } else {
+                    forcedShotFail.incrementAndGet();
+                }
+            } else {
+                forcedShotFail.incrementAndGet();
+            }
+        }
         // shot=null：代表帧没拿到（常见 takeScreenshot INTERVAL_TIME_SHORT）。
         // 延后 2s（避开最小间隔）再补一次截图+OCR，然后才落盘；代价是这条痕迹延迟。
         if (trace.shotRef == null) {
@@ -394,10 +426,11 @@ public final class TraceModule implements Module {
                 }
             }
         }
-        boolean hasText = trace.text != null && !trace.text.trim().isEmpty();
-        boolean hasShot = trace.shotRef != null && !trace.shotRef.isEmpty();
+        hasText = trace.text != null && !trace.text.trim().isEmpty();
+        hasShot = trace.shotRef != null && !trace.shotRef.isEmpty();
         trace.evidence = hasText && hasShot ? "BOTH" : hasText ? "TEXT"
                 : hasShot ? "SHOT" : "NONE";
+        if ("NONE".equals(trace.evidence)) evidenceNone.incrementAndGet();
         try {
             store.insert(trace);
             long n = tracesSaved.incrementAndGet();
@@ -410,6 +443,37 @@ public final class TraceModule implements Module {
                     + " ocr_failed=" + ocrFailed.get());
         } catch (Throwable e) {
             log.e(ID, "persist failed (" + e.getClass().getSimpleName() + ")", e);
+        }
+    }
+
+    /** 启动后台回填：有图无文的旧块补 OCR（67 条级别）。 */
+    public static void backfillEmptyText(Context app) {
+        try {
+            TraceStore store = new TraceStore(app);
+            java.util.List<long[]> ids = store.tracesWithEmptyText();
+            int ok = 0, fail = 0;
+            for (long[] row : ids) {
+                String shot;
+                try (Cursor c = store.getReadableDatabase().rawQuery(
+                        "SELECT shot_ref FROM " + TraceStore.TABLE + " WHERE id=?",
+                        new String[]{String.valueOf(row[0])})) {
+                    if (!c.moveToFirst()) continue;
+                    shot = c.getString(0);
+                }
+                String text = OcrBackfill.resolve(app, shot, 5_000L);
+                if (text == null || text.trim().isEmpty()) { fail++; continue; }
+                if (text.length() > TraceAccumulator.MAX_TEXT_CHARS) {
+                    text = text.substring(0, TraceAccumulator.MAX_TEXT_CHARS);
+                }
+                com.dsh.guard.GuardResult gr = new com.dsh.guard.Guard().check(text);
+                store.updateText(row[0], text, gr.isBlocked() ? 1 : 0, gr.blockedKind,
+                        gr.maskedText, "TEXT");
+                ok++;
+            }
+            android.util.Log.i("DSHL2", "ocr backfill empty: total=" + ids.size()
+                    + " ok=" + ok + " fail=" + fail);
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "ocr backfill empty failed", t);
         }
     }
 
@@ -576,6 +640,9 @@ public final class TraceModule implements Module {
                 + " ocr_failed=" + ocrFailed.get()
                 + " ocr_backfill_ok=" + ocrBackfillOk.get()
                 + " ocr_primary_ok=" + ocrPrimaryOk.get()
+                + " evidence_none=" + evidenceNone.get()
+                + " forced_shot_ok=" + forcedShotOk.get()
+                + " forced_shot_fail=" + forcedShotFail.get()
                 + " shot_fail_interval=" + shotFailInterval.get()
                 + " shot_fail_invalid_display=" + shotFailInvalidDisplay.get()
                 + " shot_fail_no_access=" + shotFailNoAccess.get()

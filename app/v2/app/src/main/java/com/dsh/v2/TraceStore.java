@@ -148,6 +148,27 @@ public final class TraceStore extends SQLiteOpenHelper {
         }
     }
 
+    public java.util.List<long[]> tracesWithEmptyText() {
+        java.util.List<long[]> out = new java.util.ArrayList<>();
+        Cursor c = getReadableDatabase().rawQuery("SELECT id,shot_ref FROM " + TABLE
+                + " WHERE (text IS NULL OR text='') AND shot_ref IS NOT NULL AND shot_ref!=''",
+                null);
+        while (c.moveToNext()) out.add(new long[]{c.getLong(0)});
+        c.close();
+        return out;
+    }
+
+    public void updateText(long id, String text, int guard, String guardHit, String masked,
+                           String evidence) {
+        ContentValues v = new ContentValues();
+        v.put("text", text == null ? "" : text);
+        v.put("guard", guard);
+        v.put("guard_hit", guardHit);
+        v.put("masked_text", masked);
+        v.put("evidence", evidence);
+        getWritableDatabase().update(TABLE, v, "id=?", new String[]{String.valueOf(id)});
+    }
+
     public int countBetween(long from, long to) {
         Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM " + TABLE
                 + " WHERE t1>? AND t0<?", new String[]{String.valueOf(from), String.valueOf(to)});
