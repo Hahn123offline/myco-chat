@@ -61,6 +61,15 @@ public final class RecallTool implements AgentTool {
                 .level(Json.string(args.get("level")))
                 .object(Json.string(args.get("object")))
                 .limit(intArg(args.get("limit"), 8));
+        if (q.query != null && !q.query.isEmpty()) {
+            com.dsh.memory.QueryTime.Range tr = com.dsh.memory.QueryTime.parse(
+                    q.query, java.time.LocalDate.now());
+            if (tr != null) {
+                q.from = iso(tr.from);
+                q.to = iso(tr.to);
+                q.query = null;   // 纯时间视图
+            }
+        }
         if ("day".equals(q.level)) {
             return ToolResult.ok(RecallCore.renderDay(RecallCore.day(source, q.from)));
         }
@@ -188,6 +197,11 @@ public final class RecallTool implements AgentTool {
             b.append('\n');
         }
         return b.toString();
+    }
+
+    private static String iso(long ms) {
+        return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.CHINA)
+                .format(new java.util.Date(ms));
     }
 
     private static String fmt(long ms) {

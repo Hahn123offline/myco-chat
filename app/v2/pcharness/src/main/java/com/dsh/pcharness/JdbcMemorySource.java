@@ -150,11 +150,11 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         }
         if (q != null && q.from != null && !q.from.isEmpty()) {
             sql.append(" AND time>=?");
-            args.add(dayStart(q.from));
+            args.add(parseMs(q.from));
         }
         if (q != null && q.to != null && !q.to.isEmpty()) {
             sql.append(" AND time<?");
-            args.add(dayStart(q.to) + 86400000L);
+            args.add(hasTime(q.to) ? parseMs(q.to) : parseMs(q.to) + 86400000L);
         }
         sql.append(" ORDER BY time LIMIT 5000");
         try (java.sql.Connection c = java.sql.DriverManager.getConnection("jdbc:sqlite:" + db);
@@ -174,10 +174,18 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         return out;
     }
 
-    private static long dayStart(String day) {
+    private static boolean hasTime(String s) {
+        return s != null && s.matches(".*\\d{1,2}:\\d{2}.*");
+    }
+
+    private static long parseMs(String s) {
         try {
-            String d = day.length() > 10 ? day.substring(0, 10) : day;
-            return java.time.LocalDate.parse(d).atStartOfDay(
+            String t = s.trim().replace(' ', 'T');
+            if (t.length() > 10) {
+                return java.time.LocalDateTime.parse(t.substring(0, 16))
+                        .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            }
+            return java.time.LocalDate.parse(t).atStartOfDay(
                     java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
         } catch (Throwable t) { return 0; }
     }
