@@ -78,6 +78,9 @@ for name, pkg, shot in screens:
             oo = max(1, (r[3] - r[1]) * (r[4] - r[2]))
             if not (0.25 <= ao / oo <= 3.0):
                 new.append(r); continue
+            lo = min(len(best[0]), len(r[0])); hi = max(len(best[0]), len(r[0]))
+            if lo * 2 < hi:
+                new.append(r); continue
             nr = (best[0], r[1], r[2], r[3], r[4], "BOTH", 1.0)
             if best[0] != r[0]:
                 changed.append((name, r[0], best[0], bestr))

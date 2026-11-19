@@ -178,6 +178,12 @@ public final class PageParser {
                 }
                 if (best >= 0 && bestRatio > 0.6) {
                     PageElement e = out.get(best);
+                    int lo = Math.min(e.text.length(), l.text.length());
+                    int hi = Math.max(e.text.length(), l.text.length());
+                    if (lo * 2 < hi) best = -1;   // 文本长度差 2 倍：不是同一段，别替换
+                }
+                if (best >= 0 && bestRatio > 0.6) {
+                    PageElement e = out.get(best);
                     PageElement merged = new PageElement(e.id, e.text, l.left, l.top,
                             l.right, l.bottom, e.role, PageElement.Source.BOTH, 1.0,
                             DangerSignals.nominate(e.text, e.role, pageTitle));
