@@ -20,6 +20,11 @@ public class LineChromeTest {
         assertEquals("CHROME", MemoryProjector.classify("全店479人在拼", 1000, ""));
     }
 
+    @Test public void 乱码构成判CHROME() {
+        assertEquals("CHROME", MemoryProjector.classify("动sal.没93]:1", 1000, ""));
+        assertEquals("CHROME", MemoryProjector.classify("21.1 4G", 1000, ""));
+    }
+
     @Test public void 纯符号键盘行是CHROME() {
         assertEquals("CHROME", MemoryProjector.classify("W E R T Y", 1100, ""));
     }

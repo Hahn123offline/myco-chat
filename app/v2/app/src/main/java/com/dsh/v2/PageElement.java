@@ -35,6 +35,11 @@ public final class PageElement {
     public int width() { return Math.max(0, right - left); }
     public int height() { return Math.max(0, bottom - top); }
 
+    public PageElement withText(String newText) {
+        return new PageElement(id, newText, left, top, right, bottom, role, source,
+                confidence, signals);
+    }
+
     public PageElement withSource(Source s, double conf, List<String> extraSignals) {
         List<String> sig = new ArrayList<>(signals);
         if (extraSignals != null) sig.addAll(extraSignals);

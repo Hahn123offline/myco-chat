@@ -167,6 +167,25 @@ public final class PageParser {
                 }
             }
             if (!matched) {
+                // 同位置重叠 >60%：A11Y 文本更干净，采用 A11Y 文本（位置仍用 OCR bbox）
+                int best = -1;
+                double bestRatio = 0;
+                for (int i = 0; i < out.size(); i++) {
+                    PageElement e = out.get(i);
+                    if (e.source == PageElement.Source.OCR) continue;
+                    double r = overlapRatio(l, e);
+                    if (r > bestRatio) { bestRatio = r; best = i; }
+                }
+                if (best >= 0 && bestRatio > 0.6) {
+                    PageElement e = out.get(best);
+                    PageElement merged = new PageElement(e.id, e.text, l.left, l.top,
+                            l.right, l.bottom, e.role, PageElement.Source.BOTH, 1.0,
+                            DangerSignals.nominate(e.text, e.role, pageTitle));
+                    out.set(best, merged);
+                    matched = true;
+                }
+            }
+            if (!matched) {
                 PageElement.Role role = PageElement.Role.PARAGRAPH;
                 out.add(new PageElement("o" + (idx++), l.text, l.left, l.top, l.right, l.bottom,
                         role, PageElement.Source.OCR, 0.8,
@@ -174,6 +193,14 @@ public final class PageParser {
             }
         }
         return out;
+    }
+
+    private static double overlapRatio(OcrLine l, PageElement e) {
+        int x1 = Math.max(l.left, e.left), y1 = Math.max(l.top, e.top);
+        int x2 = Math.min(l.right, e.right), y2 = Math.min(l.bottom, e.bottom);
+        int inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+        int ocrArea = Math.max(1, (l.right - l.left) * (l.bottom - l.top));
+        return inter / (double) ocrArea;
     }
 
     private static String norm(String s) {

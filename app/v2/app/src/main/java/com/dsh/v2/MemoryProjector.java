@@ -160,6 +160,21 @@ public final class MemoryProjector {
         return n;
     }
 
+    private static boolean fragmented(String t) {
+        int switches = 0, run = 0;
+        boolean lastCjk = false, first = true;
+        for (int i = 0; i < t.length(); i++) {
+            char ch = t.charAt(i);
+            boolean cjk = ch >= 0x4e00 && ch <= 0x9fff;
+            if (!cjk && !Character.isLetterOrDigit(ch)) continue;
+            if (first) { lastCjk = cjk; first = false; run = 1; continue; }
+            if (cjk == lastCjk) { run++; continue; }
+            if (run <= 1) switches++;
+            run = 1; lastCjk = cjk;
+        }
+        return switches >= 3;
+    }
+
     /** 同 pkg 内出现于 >35% 屏的文本视为 chrome。 */
     private static void markFrequencyChrome(SQLiteDatabase db) {
         try {
@@ -273,11 +288,26 @@ public final class MemoryProjector {
             if (ch >= 0x4e00 && ch <= 0x9fff) cjk++;
         }
         boolean punct = t.matches("(?s).*[，。！？、；：,.!?;:].*");
+        int words = 0;
+        java.util.regex.Matcher wm = java.util.regex.Pattern
+                .compile("[A-Za-z]{2,}").matcher(t);
+        while (wm.find()) words++;
+        int symDigit = 0;
+        for (int i = 0; i < t.length(); i++) {
+            char ch = t.charAt(i);
+            if (Character.isDigit(ch) || (!Character.isLetterOrDigit(ch)
+                    && ch != ' ' && ch != '\t')) symDigit++;
+        }
         if (cjk < 6 && !asciiWord) return "CHROME";
         if (t.length() < 8 && !punct) return "CHROME";
         if (!punct && t.length() < 16) return "CHROME";
         if (t.matches("(?s).*(包邮|券|拼单|秒杀|￥|¥|\\d+人在拼|立即抢购|加入购物车).*"))
             return "CHROME";
+        // 乱码构成判据：不是长度，而是汉字/英文词/符号数字的构成
+        if (cjk < 4 && words < 2) return "CHROME";
+        if (t.length() > 0 && symDigit * 100 / t.length() > 40) return "CHROME";
+        if (!punct && t.indexOf(' ') < 0 && t.length() > 20) return "CHROME";
+        if (fragmented(t)) return "CHROME";
         if (!asciiWord && cjk < 2) return "CHROME";
         if (title != null && !title.isEmpty() && t.equals(title)) return "TITLE";
         if (y < 300 && (t.matches("^\\d{1,2}:\\d{2}.*")
