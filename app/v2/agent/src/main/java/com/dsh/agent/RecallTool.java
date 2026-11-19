@@ -160,8 +160,7 @@ public final class RecallTool implements AgentTool {
             List<com.dsh.memory.LineItem> xs) {
         List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
         for (com.dsh.memory.LineItem l : xs) {
-            if ("CONTENT".equals(l.kind) || "TITLE".equals(l.kind)
-                    || "SYSTEM".equals(l.kind)) out.add(l);
+            if ("CONTENT".equals(l.kind)) out.add(l);
         }
         return out;
     }
@@ -254,7 +253,7 @@ public final class RecallTool implements AgentTool {
         if (gaps.isEmpty()) b.append("无");
         b.append("\n  合计：有记录 ").append(shown.size()).append(" 段 ")
                 .append(covered / 60_000).append("min / 无记录 ")
-                .append(gaps.size()).append(" 段\n");
+                .append(gaps.size()).append(" 段 / 内容 ").append(lines.size()).append(" 行\n");
         if (traces > 0) b.append("  trace 数：").append(traces).append("\n");
         if (omitted > 0) {
             b.append("【截断】按 ").append(MAX_SEGMENTS).append(" 段上限裁到 ")

@@ -197,8 +197,9 @@ public final class AndroidMemorySource implements MemorySource {
             args.add(q.object); args.add("%" + q.object + "%");
         }
         if (q != null && q.pkg != null && !q.pkg.isEmpty()) {
-            sql.append(" AND pkg=?");
+            sql.append(" AND (pkg=? OR pkg LIKE ?)");
             args.add(q.pkg);
+            args.add("%" + q.pkg + "%");
         }
         if (q != null && q.from != null && !q.from.isEmpty()) {
             sql.append(" AND time>=?");
