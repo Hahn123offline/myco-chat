@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityWindowInfo;
 
 import com.dsh.trace.FrameSharpness;
 import com.dsh.trace.HsvCutDetector;
@@ -136,8 +137,18 @@ public final class TraceAccessibilityService extends AccessibilityService {
         if (event == null) return;
         try {
             int type = event.getEventType();
-            CharSequence pkgCs = event.getPackageName();
-            String pkg = pkgCs == null ? "" : pkgCs.toString();
+            TraceModule m0 = TraceRuntime.get();
+            // 通知/时钟状态事件只当心跳，绝不更新页面身份
+            if (type == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
+                if (m0 != null) m0.onSkippedHeartbeat(System.currentTimeMillis(), "", currentActivity);
+                return;
+            }
+            AccessibilityNodeInfo active = activeRoot();
+            String pkg = rootPkg(active);
+            if (pkg.isEmpty()) {
+                CharSequence pkgCs = event.getPackageName();
+                pkg = pkgCs == null ? "" : pkgCs.toString();
+            }
             if (pkg.isEmpty()) {
                 if (eventCount == 1 || eventCount % 50 == 0) {
                     Log.i(TAG, "event#" + eventCount + " pkg=<empty> dropped");
@@ -168,11 +179,14 @@ public final class TraceAccessibilityService extends AccessibilityService {
             }
 
             if (type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                CharSequence cls = event.getClassName();
-                if (cls != null && !cls.toString().isEmpty()) currentActivity = cls.toString();
+                CharSequence ep = event.getPackageName();
+                if (ep != null && ep.toString().equals(pkg)) {
+                    CharSequence cls = event.getClassName();
+                    if (cls != null && !cls.toString().isEmpty()) currentActivity = cls.toString();
+                }
             }
 
-            String[] st = extractStructure();
+            String[] st = extractStructure(active);
             long pageNow = System.currentTimeMillis();
             lastPageT0 = pageNow;
             lastPagePkg = pkg;
@@ -240,14 +254,42 @@ public final class TraceAccessibilityService extends AccessibilityService {
         handler.postDelayed(pendingInteractionShot, wait);
     }
 
+    /** 活动窗口的根节点：优先 TYPE_APPLICATION 且面积最大的窗口，避开状态栏/时钟/通知。 */
+    private AccessibilityNodeInfo activeRoot() {
+        try {
+            List<AccessibilityWindowInfo> wins = getWindows();
+            AccessibilityNodeInfo best = null;
+            long bestArea = -1;
+            if (wins != null) {
+                for (AccessibilityWindowInfo w : wins) {
+                    if (w == null) continue;
+                    AccessibilityNodeInfo r = w.getRoot();
+                    if (r == null) continue;
+                    if (w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) continue;
+                    android.graphics.Rect b = new android.graphics.Rect();
+                    r.getBoundsInScreen(b);
+                    long area = (long) Math.max(0, b.width()) * Math.max(0, b.height());
+                    if (area > bestArea) { bestArea = area; best = r; }
+                }
+            }
+            if (best != null) return best;
+        } catch (Throwable ignored) { }
+        return getRootInActiveWindow();
+    }
+
+    private static String rootPkg(AccessibilityNodeInfo root) {
+        if (root == null || root.getPackageName() == null) return "";
+        return root.getPackageName().toString();
+    }
+
     /**
      * 结构遍历（固定 BFS 顺序）：
      *  - 标题：第一个 isHeading 文本节点（保留 title 级）
      *  - 稳定文本：前 N=8 个有用文本节点（过滤纯数字/纯标点/长度<2），用 \u0001 拼接
      * **只取文本，不取可点击性**（task-19：可点击文本会随推荐位/计数变化）。
      */
-    private String[] extractStructure() {
-        PageParser.Result pr = PageParser.parse(getRootInActiveWindow());
+    private String[] extractStructure(AccessibilityNodeInfo root) {
+        PageParser.Result pr = PageParser.parse(root);
         lastPageResult = pr;
         String title = pr.pageTitle == null ? "" : pr.pageTitle;
         List<String> texts = new ArrayList<>();
