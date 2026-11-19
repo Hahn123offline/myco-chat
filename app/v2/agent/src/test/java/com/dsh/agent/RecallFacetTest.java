@@ -73,6 +73,23 @@ public class RecallFacetTest {
         assertTrue(r.summary.contains("【完整】"));
     }
 
+    @Test public void 稀疏记录并入大空段() {
+        java.util.List<LineItem> xs = new java.util.ArrayList<>();
+        long base = 1_700_000_000_000L;
+        for (int i = 0; i < 20; i++) xs.add(lineAt(base + i * 1000L, "正文" + i));
+        xs.add(lineAt(base + 101 * 60_000L, "闲鱼：附近有人急出"));
+        for (int i = 0; i < 20; i++) xs.add(lineAt(base + 202 * 60_000L + i * 1000L, "晚上正文" + i));
+        String out = RecallTool.renderTimeView(xs, 50, 100, "2023-11-14 00:00", "2023-11-14 23:59");
+        assertTrue(out, out.contains("孤立记录"));
+        assertTrue(out, out.contains("已全部列出"));
+    }
+
+    private static LineItem lineAt(long t, String text) {
+        LineItem l = new LineItem();
+        l.time = t; l.text = text; l.kind = "CONTENT"; l.blockId = 1;
+        l.objectKey = "x"; l.pkg = "com.x"; return l;
+    }
+
     @Test public void includeChrome才返回状态栏行() {
         Map<String, Object> a = new HashMap<>();
         a.put("object", "零杯");

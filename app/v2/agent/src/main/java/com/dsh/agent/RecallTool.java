@@ -166,6 +166,9 @@ public final class RecallTool implements AgentTool {
     }
 
     private static final long SEG_GAP_MS = 20 * 60_000L;
+    /** 空段里只隔着一小段稀疏记录时，把它并进空段：<5min 且 <10 行，避免一条一秒记录切断大空段。 */
+    private static final long SPARSE_SEG_MS = 5 * 60_000L;
+    private static final int SPARSE_SEG_LINES = 10;
     private static final int MAX_SEGMENTS = 30;
 
     static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit) {
@@ -222,9 +225,18 @@ public final class RecallTool implements AgentTool {
         long rangeStart = r[0] == Long.MAX_VALUE ? lines.get(0).time : r[0];
         long rangeEnd = r[1] == Long.MIN_VALUE ? lines.get(0).time : r[1];
         java.util.List<Seg> all = segments(lines);
-        java.util.List<Seg> shown = all.size() > MAX_SEGMENTS
+        java.util.List<Seg> shownRaw = all.size() > MAX_SEGMENTS
                 ? new java.util.ArrayList<>(all.subList(0, MAX_SEGMENTS)) : all;
-        int omitted = all.size() - shown.size();
+        int omitted = all.size() - shownRaw.size();
+        java.util.List<Seg> shown = new java.util.ArrayList<>();
+        java.util.List<Seg> sparse = new java.util.ArrayList<>();
+        for (Seg s : shownRaw) {
+            if (s.end - s.start <= SPARSE_SEG_MS && s.xs.size() < SPARSE_SEG_LINES) {
+                sparse.add(s);
+            } else {
+                shown.add(s);
+            }
+        }
         StringBuilder b = new StringBuilder();
         b.append("【覆盖】").append(fmt(rangeStart)).append("–").append(fmt(rangeEnd)).append("\n");
         b.append("  有记录段：");
@@ -249,19 +261,38 @@ public final class RecallTool implements AgentTool {
             if (i > 0) b.append("｜");
             long[] g = gaps.get(i);
             b.append(fmt(g[0])).append("–").append(fmt(g[1]));
+            java.util.List<Seg> inside = new java.util.ArrayList<>();
+            for (Seg s : sparse) {
+                if (s.start >= g[0] && s.end <= g[1]) inside.add(s);
+            }
+            if (!inside.isEmpty()) {
+                b.append("（其中 ");
+                for (int j = 0; j < inside.size(); j++) {
+                    if (j > 0) b.append("、");
+                    Seg sp = inside.get(j);
+                    b.append(fmt(sp.start));
+                    if (sp.end > sp.start) b.append("–").append(fmt(sp.end));
+                    b.append(" 有 ").append(sp.xs.size()).append(" 条孤立记录：")
+                            .append(sp.xs.get(0).text == null ? "" : sp.xs.get(0).text);
+                    if (sp.xs.get(0).text != null && sp.xs.get(0).text.length() > 20) {
+                        b.setLength(b.length());
+                    }
+                }
+                b.append("）");
+            }
         }
         if (gaps.isEmpty()) b.append("无");
         b.append("\n  合计：有记录 ").append(shown.size()).append(" 段 ")
                 .append(covered / 60_000).append("min / 无记录 ")
                 .append(gaps.size()).append(" 段 / 内容 ").append(lines.size()).append(" 行\n");
-        if (traces > 0) b.append("  trace 数：").append(traces).append("\n");
         if (omitted > 0) {
             b.append("【截断】按 ").append(MAX_SEGMENTS).append(" 段上限裁到 ")
                     .append(shown.size()).append(" 段；还有 ").append(omitted)
                     .append(" 段未显示。收窄：给 from/to 或指定 object。\n");
         } else {
             b.append("【完整】本时间段共 ").append(shown.size())
-                    .append(" 段，已全部列出；不要重复查询同一范围。\n");
+                    .append(" 段（含 ").append(sparse.size())
+                    .append(" 条稀疏记录并入空段），已全部列出；不要重复查询同一范围。\n");
         }
         // R2：对象生命周期 + 段
         java.util.Map<String, java.util.List<com.dsh.memory.LineItem>> byObj =
