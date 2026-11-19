@@ -35,9 +35,51 @@ public final class PageParser {
 
     private PageParser() { }
 
+    public static final class TitleCandidate {
+        public final String text;
+        public final int left, top, right, bottom;
+        public final PageElement.Role role;
+        public TitleCandidate(String text, int l, int t, int r, int b, PageElement.Role role) {
+            this.text = text; this.left = l; this.top = t; this.right = r;
+            this.bottom = b; this.role = role;
+        }
+    }
+
+    private static final java.util.regex.Pattern TITLE_NOISE = java.util.regex.Pattern.compile(
+            "^(返回.*|聊天设置|听筒模式|设置|搜索|取消|更多|发送|语音|相册|拍照|表情|"
+                    + "更多功能|消息|频道|联系人|动态|QQ|微信|现在|昨天|星期.|"
+                    + "\\(\\d+\\)|\\d{1,2}:\\d{2}|\\d+条新消息|.*, ,.*)$");
+
+    /** 从同屏节点推断标题栏：顶部区 + 水平居中 + BUTTON/PARAGRAPH，排除导航/工具栏。 */
+    public static String inferTitle(List<TitleCandidate> nodes, int screenWidth) {
+        if (nodes == null || nodes.isEmpty()) return "";
+        int w = Math.max(1, screenWidth);
+        TitleCandidate best = null;
+        double bestScore = 1e9;
+        for (TitleCandidate n : nodes) {
+            if (n == null || n.text == null) continue;
+            String t = n.text.trim();
+            if (t.length() < 2 || t.length() > 40) continue;
+            if (n.top > 350) continue;
+            if (TITLE_NOISE.matcher(t).matches()) continue;
+            if (n.role != PageElement.Role.BUTTON && n.role != PageElement.Role.PARAGRAPH
+                    && n.role != PageElement.Role.TITLE) continue;
+            int center = (n.left + n.right) / 2;
+            if (center < w * 0.12 || center > w * 0.88) continue;
+            double score = Math.abs(n.top - 170) / 100.0
+                    + Math.abs(center - w / 2.0) / Math.max(1.0, w / 2.0);
+            if (n.role == PageElement.Role.BUTTON) score -= 0.2;
+            if (score < bestScore) { bestScore = score; best = n; }
+        }
+        return best == null ? "" : best.text.trim();
+    }
+
     public static Result parse(AccessibilityNodeInfo root) {
         long t0 = System.currentTimeMillis();
         List<PageElement> out = new ArrayList<>();
+        List<TitleCandidate> titleCandidates = new ArrayList<>();
+        Rect rootBounds = new Rect();
+        root.getBoundsInScreen(rootBounds);
         String pageTitle = "";
         if (root == null) return new Result("", out, System.currentTimeMillis() - t0);
         ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
@@ -55,6 +97,8 @@ public final class PageParser {
                 n.getBoundsInScreen(r);
                 if (r.width() > 0 && r.height() > 0) {
                     PageElement.Role role = roleOf(n, text);
+                    titleCandidates.add(new TitleCandidate(text, r.left, r.top, r.right,
+                            r.bottom, role));
                     if (pageTitle.isEmpty() && role == PageElement.Role.TITLE) pageTitle = text;
                     List<String> signals = DangerSignals.nominate(text, role, pageTitle);
                     out.add(new PageElement("a" + (idx++), text, r.left, r.top, r.right, r.bottom,
@@ -66,6 +110,7 @@ public final class PageParser {
                 if (c != null) queue.add(c);
             }
         }
+        if (pageTitle.isEmpty()) pageTitle = inferTitle(titleCandidates, rootBounds.width());
         // 标题后置：给所有元素补 page_sensitive 提名
         if (DangerSignals.pageSensitive(pageTitle) && !out.isEmpty()) {
             List<PageElement> marked = new ArrayList<>();
