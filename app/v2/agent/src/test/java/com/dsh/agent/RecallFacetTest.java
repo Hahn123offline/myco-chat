@@ -24,15 +24,16 @@ public class RecallFacetTest {
                 LineItem a = new LineItem();
                 a.time = 1_700_000_000_000L; a.objectKey = "com.tencent.mobileqq/零杯";
                 a.pkg = "com.tencent.mobileqq"; a.text = "blender你如果搞过了就不用再搞了";
-                a.blockId = 1902; a.shotRef = "shots/a.jpg";
+                a.blockId = 1902; a.shotRef = "shots/a.jpg"; a.kind = "CONTENT";
                 LineItem b = new LineItem();
                 b.time = 1_700_000_100_000L; b.objectKey = "com.tencent.mobileqq/零杯";
                 b.pkg = "com.tencent.mobileqq"; b.text = "倒在自我验收的路上了";
-                b.blockId = 1907;
-                if (q != null && q.object != null && !q.object.isEmpty()) {
-                    return Arrays.asList(a, b);
-                }
-                return Arrays.asList(a, b);
+                b.blockId = 1907; b.kind = "CONTENT";
+                LineItem c = new LineItem();
+                c.time = 1_700_000_200_000L; c.objectKey = "x";
+                c.pkg = "com.tencent.mobileqq"; c.text = "发送";
+                c.kind = "CHROME"; c.blockId = 3;
+                return Arrays.asList(a, b, c);
             }
         };
     }
@@ -58,5 +59,15 @@ public class RecallFacetTest {
         assertTrue(r.isOk());
         assertTrue(r.summary.contains("blender"));
         assertTrue(r.summary.contains("block 1902"));
+        assertFalse(r.summary.contains("发送"));
+    }
+
+    @Test public void includeChrome才返回状态栏行() {
+        Map<String, Object> a = new HashMap<>();
+        a.put("object", "零杯");
+        a.put("include_chrome", true);
+        ToolResult r = call(a);
+        assertTrue(r.isOk());
+        assertTrue(r.summary.contains("发送"));
     }
 }

@@ -182,7 +182,7 @@ public final class AndroidMemorySource implements MemorySource {
             com.dsh.memory.RecallQuery q) {
         java.util.List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT id,object_key,pkg,time,text,block_id,"
-                + "shot_ref,line_no,y_top FROM lines WHERE 1=1");
+                + "shot_ref,line_no,y_top,kind FROM lines WHERE 1=1");
         java.util.List<String> args = new java.util.ArrayList<>();
         if (q != null && q.object != null && !q.object.isEmpty()) {
             sql.append(" AND (object_key=? OR object_key LIKE ?)");
@@ -204,6 +204,7 @@ public final class AndroidMemorySource implements MemorySource {
                 l.id = c.getLong(0); l.objectKey = c.getString(1); l.pkg = c.getString(2);
                 l.time = c.getLong(3); l.text = c.getString(4); l.blockId = c.getLong(5);
                 l.shotRef = c.getString(6); l.lineNo = c.getInt(7); l.yTop = c.getInt(8);
+                l.kind = c.getString(9) == null ? "CONTENT" : c.getString(9);
                 out.add(l);
             }
         } catch (Throwable ignored) { }

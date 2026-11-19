@@ -154,8 +154,38 @@ public final class MemoryProjector {
         } finally {
             if (edb != null) try { edb.close(); } catch (Throwable ignored) { }
         }
+        markFrequencyChrome(db);
         android.util.Log.i("DSHL2", "lines project done: traces=" + traces + " lines=" + n);
         return n;
+    }
+
+    /** 同 pkg 内出现于 >35% 屏的文本视为 chrome。 */
+    private static void markFrequencyChrome(SQLiteDatabase db) {
+        try {
+            java.util.Map<String, Integer> screens = new java.util.HashMap<>();
+            try (Cursor c = db.rawQuery("SELECT pkg,COUNT(DISTINCT block_id) FROM lines "
+                    + "GROUP BY pkg", null)) {
+                while (c.moveToNext()) screens.put(c.getString(0), c.getInt(1));
+            }
+            java.util.List<String[]> freq = new java.util.ArrayList<>();
+            try (Cursor c = db.rawQuery("SELECT pkg,text,COUNT(DISTINCT block_id) n "
+                    + "FROM lines GROUP BY pkg,text", null)) {
+                while (c.moveToNext()) {
+                    String pkg = c.getString(0);
+                    int total = screens.getOrDefault(pkg, 0);
+                    if (total >= 3 && c.getInt(2) * 100 > total * 35) {
+                        freq.add(new String[]{pkg, c.getString(1)});
+                    }
+                }
+            }
+            for (String[] x : freq) {
+                ContentValues v = new ContentValues();
+                v.put("kind", "CHROME");
+                db.update("lines", v, "pkg=? AND text=?", new String[]{x[0], x[1]});
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "freq chrome failed", t);
+        }
     }
 
     private static String activityFallback(String pkg, String activity) {
@@ -189,7 +219,15 @@ public final class MemoryProjector {
     /** 行级 chrome 分类：位置 + 文本双判据。 */
     static String classify(String text, int y, String title) {
         String t = text == null ? "" : text.trim();
-        if (t.isEmpty()) return "CONTENT";
+        if (t.isEmpty()) return "CHROME";
+        if (y < 120 || y > 2350) return "CHROME";
+        boolean asciiWord = t.matches("(?s).*[A-Za-z]{3,}.*");
+        int cjk = 0;
+        for (int i = 0; i < t.length(); i++) {
+            char ch = t.charAt(i);
+            if (ch >= 0x4e00 && ch <= 0x9fff) cjk++;
+        }
+        if (!asciiWord && cjk < 2) return "CHROME";
         if (title != null && !title.isEmpty() && t.equals(title)) return "TITLE";
         if (y < 300 && (t.matches("^\\d{1,2}:\\d{2}.*")
                 || t.matches(".*(5G|4G|KB/s|KB/S|%|电量|信号|运营商).*")

@@ -12,4 +12,5 @@ public final class LineItem {
     public int lineNo;
     public int yTop;
     public double score;
+    public String kind = "CONTENT";
 }

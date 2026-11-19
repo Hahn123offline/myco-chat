@@ -47,6 +47,7 @@ public final class RecallTool implements AgentTool {
                 + "\"to\":{\"type\":\"string\"},\"pkg\":{\"type\":\"string\"},"
                 + "\"level\":{\"type\":\"string\",\"enum\":[\"block\",\"day\"]},"
                 + "\"object\":{\"type\":\"string\"},"
+                + "\"include_chrome\":{\"type\":\"boolean\"},"
                 + "\"limit\":{\"type\":\"integer\"}},\"required\":[]}";
     }
 
@@ -64,6 +65,8 @@ public final class RecallTool implements AgentTool {
         }
         // 对象视图 / 行级内容视图：同一批 lines 的两种切法
         List<com.dsh.memory.LineItem> lines = source.lines(q);
+        boolean includeChrome = Boolean.TRUE.equals(args.get("include_chrome"));
+        if (!includeChrome) lines = contentOnly(lines);
         if (q.object != null && !q.object.isEmpty()) {
             if (lines.isEmpty()) {
                 return ToolResult.ok("对象「" + q.object + "」没有行记录（可能尚未投影 lines，或不在本机）。");
@@ -117,6 +120,16 @@ public final class RecallTool implements AgentTool {
             trace.accept("query=\"" + q.query + "\" → " + s.hits.size() + " hits, top=" + top);
         }
         return ToolResult.ok(RecallCore.render(s.hits));
+    }
+
+    private static List<com.dsh.memory.LineItem> contentOnly(
+            List<com.dsh.memory.LineItem> xs) {
+        List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
+        for (com.dsh.memory.LineItem l : xs) {
+            if (l.kind == null || "CONTENT".equals(l.kind)
+                    || "TITLE".equals(l.kind) || "SYSTEM".equals(l.kind)) out.add(l);
+        }
+        return out;
     }
 
     static String renderLines(List<com.dsh.memory.LineItem> lines, int limit) {

@@ -142,7 +142,7 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
             com.dsh.memory.RecallQuery q) {
         java.util.List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT id,object_key,pkg,time,text,block_id,"
-                + "shot_ref,line_no,y_top FROM lines WHERE 1=1");
+                + "shot_ref,line_no,y_top,kind FROM lines WHERE 1=1");
         java.util.List<Object> args = new java.util.ArrayList<>();
         if (q != null && q.object != null && !q.object.isEmpty()) {
             sql.append(" AND (object_key=? OR object_key LIKE ?)");
@@ -166,6 +166,7 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
                     l.id = rs.getLong(1); l.objectKey = rs.getString(2); l.pkg = rs.getString(3);
                     l.time = rs.getLong(4); l.text = rs.getString(5); l.blockId = rs.getLong(6);
                     l.shotRef = rs.getString(7); l.lineNo = rs.getInt(8); l.yTop = rs.getInt(9);
+                    l.kind = rs.getString(10) == null ? "CONTENT" : rs.getString(10);
                     out.add(l);
                 }
             }
