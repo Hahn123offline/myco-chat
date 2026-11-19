@@ -213,7 +213,8 @@ public final class AndroidMemorySource implements MemorySource {
 
     private static long dayStart(String day) {
         try {
-            return java.time.LocalDate.parse(day).atStartOfDay(
+            String d = day.length() > 10 ? day.substring(0, 10) : day;
+            return java.time.LocalDate.parse(d).atStartOfDay(
                     java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
         } catch (Throwable t) { return 0; }
     }

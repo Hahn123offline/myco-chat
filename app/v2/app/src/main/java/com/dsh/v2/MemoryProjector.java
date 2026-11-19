@@ -154,6 +154,7 @@ public final class MemoryProjector {
         } finally {
             if (edb != null) try { edb.close(); } catch (Throwable ignored) { }
         }
+        backfillKinds(app, db);
         markFrequencyChrome(db);
         android.util.Log.i("DSHL2", "lines project done: traces=" + traces + " lines=" + n);
         return n;
@@ -186,6 +187,50 @@ public final class MemoryProjector {
         } catch (Throwable t) {
             android.util.Log.e("DSHL2", "freq chrome failed", t);
         }
+    }
+
+    /** 一次性回填历史行的 kind（null → 规则分类），500/批，幂等。 */
+    public static int backfillKinds(Context app, SQLiteDatabase db) {
+        int rows = 0, changed = 0;
+        try {
+            while (true) {
+                java.util.List<Object[]> batch = new java.util.ArrayList<>();
+                try (Cursor c = db.rawQuery("SELECT id,text,y_top,object_key FROM lines "
+                        + "WHERE kind IS NULL LIMIT 500", null)) {
+                    while (c.moveToNext()) {
+                        batch.add(new Object[]{c.getLong(0), c.getString(1),
+                                c.getInt(2), c.getString(3)});
+                    }
+                }
+                if (batch.isEmpty()) break;
+                db.beginTransaction();
+                try {
+                    for (Object[] x : batch) {
+                        String obj = (String) x[3];
+                        String title = obj != null && obj.contains("/")
+                                ? obj.substring(obj.indexOf('/') + 1) : "";
+                        String k = classify((String) x[1], (Integer) x[2], title);
+                        ContentValues v = new ContentValues();
+                        v.put("kind", k);
+                        changed += db.update("lines", v, "id=? AND kind IS NULL",
+                                new String[]{String.valueOf(x[0])});
+                        rows++;
+                    }
+                    db.setTransactionSuccessful();
+                } finally {
+                    db.endTransaction();
+                }
+                if (rows % 2000 == 0) {
+                    android.util.Log.i("DSHL2", "lines backfill: rows=" + rows
+                            + " changed=" + changed);
+                }
+            }
+            android.util.Log.i("DSHL2", "lines backfill done: rows=" + rows
+                    + " changed=" + changed);
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "lines backfill failed", t);
+        }
+        return changed;
     }
 
     private static String activityFallback(String pkg, String activity) {

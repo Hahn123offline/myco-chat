@@ -37,8 +37,9 @@ public final class RecallTool implements AgentTool {
     @Override public String name() { return "recall"; }
 
     @Override public String description() {
-        return "统一检索入口。query=内容（行级 BM25）；object=对象累积视图（群/视频等）；"
-                + "from/to yyyy-MM-dd 时间；pkg 包名；level=block|day；limit。";
+        return "统一检索入口。问某段时间做了什么 → 用 from/to，不要带 query；"
+                + "query=内容（行级 BM25）；object=对象累积视图（群/视频等）；"
+                + "pkg 包名；level=block|day；limit。";
     }
 
     @Override public String parametersJson() {
@@ -72,6 +73,10 @@ public final class RecallTool implements AgentTool {
                 return ToolResult.ok("对象「" + q.object + "」没有行记录（可能尚未投影 lines，或不在本机）。");
             }
             return ToolResult.ok(renderLines(lines, q.limit));
+        }
+        if ((q.query == null || q.query.isEmpty())
+                && (q.from != null && !q.from.isEmpty() || q.to != null && !q.to.isEmpty())) {
+            return ToolResult.ok(renderTimeView(lines, q.limit));
         }
         if (q.query != null && !q.query.isEmpty() && !lines.isEmpty()) {
             List<com.dsh.memory.LineItem> hits = com.dsh.memory.LineSearch.search(
@@ -129,10 +134,38 @@ public final class RecallTool implements AgentTool {
             List<com.dsh.memory.LineItem> xs) {
         List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
         for (com.dsh.memory.LineItem l : xs) {
-            if (l.kind == null || "CONTENT".equals(l.kind)
-                    || "TITLE".equals(l.kind) || "SYSTEM".equals(l.kind)) out.add(l);
+            if ("CONTENT".equals(l.kind) || "TITLE".equals(l.kind)
+                    || "SYSTEM".equals(l.kind)) out.add(l);
         }
         return out;
+    }
+
+    static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit) {
+        if (lines.isEmpty()) return "这段时间没有可检索的 CONTENT 行。";
+        java.util.Map<String, java.util.List<com.dsh.memory.LineItem>> byObj =
+                new java.util.LinkedHashMap<>();
+        for (com.dsh.memory.LineItem l : lines) {
+            String k = l.objectKey == null || l.objectKey.isEmpty() ? l.pkg : l.objectKey;
+            byObj.computeIfAbsent(k, x -> new java.util.ArrayList<>()).add(l);
+        }
+        StringBuilder b = new StringBuilder("时间视图：").append(lines.size()).append(" 行 / ")
+                .append(byObj.size()).append(" 个对象\n");
+        int objs = 0;
+        for (java.util.Map.Entry<String, java.util.List<com.dsh.memory.LineItem>> e
+                : byObj.entrySet()) {
+            if (objs++ >= 8) break;
+            java.util.List<com.dsh.memory.LineItem> xs = e.getValue();
+            xs.sort((a, c) -> Long.compare(a.time, c.time));
+            b.append("## ").append(e.getKey()).append(" (").append(xs.size()).append(" 行)\n");
+            int n = 0;
+            for (com.dsh.memory.LineItem l : xs) {
+                if (n++ >= 6 || n > limit) break;
+                b.append("  ").append(fmt(l.time)).append(' ')
+                        .append(l.text == null ? "" : l.text).append("  [block ")
+                        .append(l.blockId).append("]\n");
+            }
+        }
+        return b.toString();
     }
 
     static String renderLines(List<com.dsh.memory.LineItem> lines, int limit) {

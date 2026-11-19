@@ -62,6 +62,16 @@ public class RecallFacetTest {
         assertFalse(r.summary.contains("发送"));
     }
 
+    @Test public void 时间段视图按对象聚合() {
+        Map<String, Object> a = new HashMap<>();
+        a.put("from", "2023-11-14");
+        a.put("to", "2023-11-14");
+        ToolResult r = call(a);
+        assertTrue(r.isOk());
+        assertTrue(r.summary.contains("时间视图"));
+        assertTrue(r.summary.contains("com.tencent.mobileqq/零杯"));
+    }
+
     @Test public void includeChrome才返回状态栏行() {
         Map<String, Object> a = new HashMap<>();
         a.put("object", "零杯");
