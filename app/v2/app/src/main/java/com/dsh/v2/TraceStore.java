@@ -164,7 +164,16 @@ public final class TraceStore extends SQLiteOpenHelper {
         return out;
     }
 
-    public long insert(Trace t) {        ContentValues v = new ContentValues();
+    public long insert(Trace t) {
+        // 同一帧只保留一条 trace：OCR/截图回调可能与多个 scene 竞争。
+        if (t.shotRef != null && !t.shotRef.isEmpty()) {
+            Cursor d = getReadableDatabase().rawQuery(
+                    "SELECT id FROM " + TABLE + " WHERE shot_ref=? LIMIT 1",
+                    new String[]{t.shotRef});
+            if (d.moveToFirst()) { long id = d.getLong(0); d.close(); return id; }
+            d.close();
+        }
+        ContentValues v = new ContentValues();
         v.put("t0", t.t0);
         v.put("t1", t.t1);
         v.put("dwell_ms", t.dwellMs);

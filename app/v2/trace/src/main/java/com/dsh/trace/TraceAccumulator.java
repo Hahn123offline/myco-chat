@@ -159,6 +159,11 @@ public final class TraceAccumulator {
     }
 
     public void updateContent(long nowMs, String text, String shotRef, double sharpness) {
+        updateContent(nowMs, text, shotRef, sharpness, "");
+    }
+
+    public void updateContent(long nowMs, String text, String shotRef, double sharpness,
+                              String pagePkg) {
         Scene s = current;
         if (s == null) return;
         boolean hasText = text != null && !text.isEmpty();
@@ -212,7 +217,7 @@ public final class TraceAccumulator {
         t.t0 = s.t0;
         t.t1 = t1;
         t.dwellMs = dwell;
-        t.pkg = s.pkg;
+        t.pkg = s.pagePkg == null || s.pagePkg.isEmpty() ? s.pkg : s.pagePkg;
         t.activity = s.activity;
         t.pageId = s.pageId;
         t.pageTitle = s.pageTitle == null ? "" : s.pageTitle;

@@ -317,12 +317,16 @@ public final class TraceModule implements Module {
     }
 
     public void onContent(String text, String shotRef, double sharpness) {
+        onContent(text, shotRef, sharpness, "");
+    }
+
+    public void onContent(String text, String shotRef, double sharpness, String pagePkg) {
         if (text == null || text.trim().isEmpty()) ocrEmpty.incrementAndGet();
         else ocrPrimaryOk.incrementAndGet();
         ExecutorService w = worker;
         TraceAccumulator a = accumulator;
         if (w == null || a == null) return;
-        w.execute(() -> a.updateContent(System.currentTimeMillis(), text, shotRef, sharpness));
+        w.execute(() -> a.updateContent(System.currentTimeMillis(), text, shotRef, sharpness, pagePkg));
     }
 
     /** OCR 任务失败（ML Kit 报错） */

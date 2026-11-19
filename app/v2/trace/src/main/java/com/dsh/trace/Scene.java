@@ -14,6 +14,8 @@ public final class Scene {
     public String shotRef;
     /** 页面标题文本：只是字段，不参与 pageId 身份判定（task-20） */
     public String pageTitle = "";
+    /** 该场景代表帧所在页面的 pkg；用于纠正通知/悬浮窗事件带错 pkg。 */
+    public String pagePkg = "";
     /** 块内最清晰帧的 Laplacian 方差（选代表帧用） */
     public double bestSharpness = -1;
     public boolean bestHasText = false;

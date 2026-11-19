@@ -363,7 +363,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
                     .addOnSuccessListener(text -> {
                         TraceModule m = TraceRuntime.get();
                         if (m != null) {
-                            m.onContent(text.getText(), shotRef, sharpness);
+                            m.onContent(text.getText(), shotRef, sharpness, shotPagePkg);
                             try {
                                 List<PageParser.OcrLine> lines = new ArrayList<>();
                                 for (Text.TextBlock b : text.getTextBlocks()) {
