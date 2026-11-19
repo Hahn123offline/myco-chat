@@ -12,7 +12,7 @@ import java.io.File;
 public final class MemoryDb extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "memory.db";
-    public static final int DB_VER = 12;
+    public static final int DB_VER = 13;
 
     private static volatile MemoryDb instance;
     /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
@@ -78,6 +78,10 @@ public final class MemoryDb extends SQLiteOpenHelper {
             try { db.execSQL("ALTER TABLE chains ADD COLUMN covered_ms INTEGER DEFAULT 0"); }
             catch (Throwable ignored) { }
         }
+        if (oldV < 13) {
+            try { db.execSQL("ALTER TABLE lines ADD COLUMN kind TEXT"); }
+            catch (Throwable ignored) { }
+        }
     }
 
     /** 幂等建表；各 store 可复用。 */
@@ -129,7 +133,7 @@ public final class MemoryDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE IF NOT EXISTS lines(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, object_key TEXT, pkg TEXT," +
                 "time INTEGER, text TEXT, block_id INTEGER, shot_ref TEXT," +
-                "line_no INTEGER, y_top INTEGER, created_at INTEGER)");
+                "line_no INTEGER, y_top INTEGER, kind TEXT, created_at INTEGER)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_obj_time ON lines(object_key,time)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_time ON lines(time)");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_block_text ON lines(block_id,line_no,text)");

@@ -67,7 +67,7 @@ public final class MemoryProjector {
     }
 
 
-    /** 行视图：evidence.traces/page_elements → lines（只存文本+指针，幂等）。 */
+    /** 行视图：evidence.traces/page_elements → lines（文本+指针+kind；全量分批，幂等）。 */
     public static int projectLines(Context app) {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
         java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
@@ -78,62 +78,127 @@ public final class MemoryProjector {
             if (c.moveToFirst()) maxBlock = c.getLong(0);
         }
         SQLiteDatabase edb = null;
-        int n = 0;
-        android.util.Log.i("DSHL2", "project lines start maxBlock=" + maxBlock);
+        int n = 0, traces = 0;
+        android.util.Log.i("DSHL2", "lines project start maxBlock=" + maxBlock);
         try {
             edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
                     SQLiteDatabase.OPEN_READONLY);
-            try (Cursor t = edb.rawQuery("SELECT id,t0,pkg,page_title,object_key,shot_ref "
+            try (Cursor t = edb.rawQuery("SELECT id,t0,pkg,page_title,object_key,activity,shot_ref "
                     + "FROM traces WHERE id>? AND shot_ref IS NOT NULL AND shot_ref!='' "
-                    + "ORDER BY id DESC LIMIT 500", new String[]{String.valueOf(maxBlock)})) {
+                    + "ORDER BY id", new String[]{String.valueOf(maxBlock)})) {
                 while (t.moveToNext()) {
-                    db.beginTransaction();
+                    traces++;
                     long id = t.getLong(0);
                     long time = t.getLong(1);
                     String pkg = t.getString(2);
                     String title = t.getString(3);
                     String ok = t.getString(4);
-                    String shot = t.getString(5);
-                    if (ok == null || ok.isEmpty()) {
-                        ok = (pkg == null ? "" : pkg) + "/" + (title == null ? "" : title);
-                    }
+                    String activity = t.getString(5);
+                    String shot = t.getString(6);
+                    java.util.List<String> texts = new java.util.ArrayList<>();
+                    java.util.List<Integer> tops = new java.util.ArrayList<>();
+                    java.util.List<String> srcs = new java.util.ArrayList<>();
                     try (Cursor e = edb.rawQuery(
                             "SELECT text,top,source FROM page_elements WHERE shot_ref=? "
                                     + "ORDER BY top,left", new String[]{shot})) {
-                        int lineNo = 0;
                         while (e.moveToNext()) {
-                            String text = e.getString(0);
-                            if (text == null || text.trim().isEmpty()) continue;
+                            String tx = e.getString(0);
+                            if (tx == null || tx.trim().isEmpty()) continue;
                             String src = e.getString(2);
                             if (!"A11Y".equals(src) && !"BOTH".equals(src)
                                     && !"OCR".equals(src)) continue;
+                            texts.add(tx.trim()); tops.add(e.getInt(1)); srcs.add(src);
+                        }
+                    }
+                    if (texts.isEmpty()) continue;
+                    if (ok == null || ok.isEmpty()) {
+                        if ((pkg == null ? "" : pkg).length() > 0 && title != null && !title.isEmpty()) {
+                            ok = pkg + "/" + title;
+                        }
+                    }
+                    if (ok == null || ok.isEmpty()) ok = activityFallback(pkg, activity);
+                    if (ok == null || ok.isEmpty()) ok = firstLineFallback(pkg, texts);
+                    if (ok == null) ok = "";
+                    String objTitle = ok.contains("/") ? ok.substring(ok.indexOf('/') + 1) : "";
+                    db.beginTransaction();
+                    try {
+                        for (int i = 0; i < texts.size(); i++) {
+                            String text = texts.get(i);
                             ContentValues v = new ContentValues();
                             v.put("object_key", ok);
                             v.put("pkg", pkg);
                             v.put("time", time);
-                            v.put("text", text.trim());
+                            v.put("text", text);
                             v.put("block_id", id);
                             v.put("shot_ref", shot);
-                            v.put("line_no", lineNo++);
-                            v.put("y_top", e.getInt(1));
+                            v.put("line_no", i);
+                            v.put("y_top", tops.get(i));
+                            v.put("kind", classify(text, tops.get(i), objTitle));
                             v.put("created_at", System.currentTimeMillis());
                             long r = db.insertWithOnConflict("lines", null, v,
                                     SQLiteDatabase.CONFLICT_IGNORE);
                             if (r >= 0) n++;
                         }
+                        db.setTransactionSuccessful();
+                    } finally {
+                        db.endTransaction();
                     }
-                    db.setTransactionSuccessful();
-                    db.endTransaction();
+                    if (traces % 200 == 0) {
+                        android.util.Log.i("DSHL2", "lines project: traces=" + traces
+                                + " lines=" + n);
+                    }
                 }
             }
         } catch (Throwable t) {
             android.util.Log.e("DSHL2", "project lines failed", t);
         } finally {
-            try { db.endTransaction(); } catch (Throwable ignored) { }
             if (edb != null) try { edb.close(); } catch (Throwable ignored) { }
         }
-        android.util.Log.i("DSHL2", "project lines: " + n + " maxBlock=" + maxBlock);
+        android.util.Log.i("DSHL2", "lines project done: traces=" + traces + " lines=" + n);
         return n;
+    }
+
+    private static String activityFallback(String pkg, String activity) {
+        if (pkg == null || pkg.isEmpty() || activity == null) return "";
+        int dot = activity.lastIndexOf('.');
+        String a = dot >= 0 ? activity.substring(dot + 1) : activity;
+        if (a.length() < 4) return "";
+        if (a.contains("Splash") || a.contains("MainActivity") || a.contains("FrameLayout")
+                || a.contains("Launcher") || a.contains("ComponentDialog")) return "";
+        return pkg + "/" + a;
+    }
+
+    private static String firstLineFallback(String pkg, java.util.List<String> texts) {
+        int multi = 0;
+        for (String x : texts) if (x.contains(", ,")) multi++;
+        if (multi >= 2) return "";   // 列表页一屏多对象：留空
+        for (String x : texts) {
+            String t = x.trim();
+            if (t.length() < 4) continue;
+            int cjk = 0;
+            for (int i = 0; i < t.length(); i++) {
+                char ch = t.charAt(i);
+                if (ch >= 0x4e00 && ch <= 0x9fff) cjk++;
+            }
+            if (cjk < 3) continue;
+            if (classify(t, 500, "").equals("CONTENT")) return (pkg == null ? "" : pkg) + "/" + t;
+        }
+        return "";
+    }
+
+    /** 行级 chrome 分类：位置 + 文本双判据。 */
+    static String classify(String text, int y, String title) {
+        String t = text == null ? "" : text.trim();
+        if (t.isEmpty()) return "CONTENT";
+        if (title != null && !title.isEmpty() && t.equals(title)) return "TITLE";
+        if (y < 300 && (t.matches("^\\d{1,2}:\\d{2}.*")
+                || t.matches(".*(5G|4G|KB/s|KB/S|%|电量|信号|运营商).*")
+                || t.matches(".*(WLAN|wifi|Wi-Fi).*"))) return "STATUS";
+        if (t.matches("^(返回.*|聊天设置|听筒模式|已读.*|消息未读.*|.*未读\\d*)$")) return "NAV";
+        if (y > 2100 && (t.matches("^(发送|相册|语音|拍照|表情|更多功能|符号.*|换行|回)$")
+                || t.matches("^[A-Z]( [A-Z])*$") || t.matches("^(中っ|L英|确定|取消)$"))) return "TOOLBAR";
+        if (t.matches(".*(加入了群聊|拍了拍|上线了|撤回了一条消息).*")) return "SYSTEM";
+        return "CONTENT";
     }
 
     private static String safeJson(String s) {
