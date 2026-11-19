@@ -33,16 +33,22 @@ public final class ChatSession {
     private ChatSession() { }
 
     public static void send(Context ctx, String text, Callback cb) {
+        sendAs(ctx, ID, text, cb);
+    }
+
+    /** 指定会话 id（验收/多会话用）；默认仍为 chat。 */
+    public static void sendAs(Context ctx, String sessionId, String text, Callback cb) {
+        final String sid = sessionId == null || sessionId.trim().isEmpty() ? ID : sessionId;
         IO.execute(() -> {
             try {
-                runBlocking(ctx, text, cb);
+                runBlocking(ctx, sid, text, cb);
             } catch (Throwable t) {
                 if (cb != null) cb.onDone(false, "会话失败: " + t.getClass().getSimpleName());
             }
         });
     }
 
-    private static void runBlocking(Context ctx, String text, Callback cb) {
+    private static void runBlocking(Context ctx, String sessionId, String text, Callback cb) {
         if (text == null || text.trim().isEmpty()) {
             if (cb != null) cb.onDone(false, "消息为空");
             return;
@@ -53,7 +59,7 @@ public final class ChatSession {
         ToolRegistry tools = new ToolRegistry();
         tools.add(new com.dsh.agent.RecallTool(memory, provenance,
                 new AndroidMaskProvider(ctx)));
-        tools.add(new com.dsh.agent.RememberTool(memory.store(), ID, text));
+        tools.add(new com.dsh.agent.RememberTool(memory.store(), sessionId, text));
         tools.add(new com.dsh.agent.MemoryStatusTool(memory::status));
         tools.add(new com.dsh.agent.ReadBlockTool(memory));
         tools.add(new com.dsh.agent.ReadFrameTool(memory, provenance));
@@ -92,15 +98,17 @@ public final class ChatSession {
                 new SimpleTask("chat", java.util.Collections.singleton(Capability.JSON),
                         Quality.GOOD, EgressTier.WHITE), req);
         ChatHost host = new ChatHost() {
-            @Override public String sessionId() { return ID; }
+            @Override public String sessionId() { return sessionId; }
             @Override public String systemPrompt() { return ChatSession.systemPrompt(ctx); }
             @Override public AgentStore store() { return db; }
             @Override public ToolRegistry tools() { return tools; }
             @Override public LlmCaller caller() { return caller; }
             @Override public AgentEngine.Config config() { return cfg; }
-            @Override public void beforeRun() { db.ensureSession(ID, "chat", "", "single=1"); }
+            @Override public void beforeRun() {
+                db.ensureSession(sessionId, "chat", "", sessionId.equals(ID) ? "single=1" : "");
+            }
             @Override public void afterRun(AgentEngine.Result r) {
-                db.updateStatus(ID, r.done ? "active" : "failed", r.turns);
+                db.updateStatus(sessionId, r.done ? "active" : "failed", r.turns);
             }
         };
         com.dsh.agent.ChatLoop.run(host, text, (ok, msg) -> {

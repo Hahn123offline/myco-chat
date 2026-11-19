@@ -539,10 +539,13 @@ public final class MainActivity extends Activity {
                     String q = intent.getStringExtra("q");
                     if (q == null || q.trim().isEmpty()) q = "你好";
                     final String question = q;
-                    android.util.Log.i("DSHL2", "chat_ask q=" + question);
-                    appendHostLog("chat_ask q=" + question);
+                    String sess = intent.getStringExtra("session");
+                    final String session = (sess == null || sess.trim().isEmpty())
+                            ? ChatSession.ID : sess.trim();
+                    android.util.Log.i("DSHL2", "chat_ask session=" + session + " q=" + question);
+                    appendHostLog("chat_ask session=" + session + " q=" + question);
                     final long t0 = System.currentTimeMillis();
-                    ChatSession.send(this, question, (ok, message) -> {
+                    ChatSession.sendAs(this, session, question, (ok, message) -> {
                         long ms = System.currentTimeMillis() - t0;
                         String head = "chat_answer ok=" + ok + " ms=" + ms + "\n";
                         android.util.Log.i("DSHL2", "chat_answer ok=" + ok + " ms=" + ms);

@@ -74,7 +74,9 @@ public final class RecallTool implements AgentTool {
             }
             return ToolResult.ok(renderLines(lines, q.limit));
         }
-        if ((q.query == null || q.query.isEmpty())
+        boolean timeWord = q.query != null && q.query.matches(
+                ".*(上午|下午|中午|晚上|凌晨|白天|昨天|今天|昨晚|今早).*");
+        if ((q.query == null || q.query.isEmpty() || timeWord)
                 && (q.from != null && !q.from.isEmpty() || q.to != null && !q.to.isEmpty())) {
             return ToolResult.ok(renderTimeView(lines, q.limit));
         }
