@@ -122,7 +122,7 @@ public final class MessageBuilder {
     /** 只有发送者名、没有消息正文的行：不单独成消息，归给下一条。 */
     public static boolean isSenderOnly(String t) {
         if (t == null) return false;
-        String s = t.trim();
+        String s = t.trim().replaceFirst("^[\\p{Punct}\\s]+", "");
         if (s.isEmpty() || s.length() > 40) return false;
         if (s.contains(":") || s.contains("：")) return false;
         if (s.startsWith("[群主") || s.startsWith("(群主") || s.startsWith("（群主")
