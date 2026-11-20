@@ -2,7 +2,6 @@ package com.dsh.pcharness;
 
 import com.dsh.memory.LineItem;
 import com.dsh.memory.MessageBuilder;
-import com.dsh.memory.ObjectMessage;
 import com.dsh.memory.TitlePicker;
 
 import java.sql.Connection;
@@ -15,12 +14,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-/** PC 离线重建 lines/object_messages：与 Android 共用 TitlePicker/MessageBuilder。 */
+/** PC 离线重建 lines/object_messages；与 Android 共用 TitlePicker/MessageBuilder。
+ * 迭代用法：--last-n 50 --object 零杯；全量只在收尾跑。 */
 public final class OfflineProjection {
 
     public static final class Elem {
-        public String text, source, role, shot, pkg;
+        public String text, source, role, pkg;
         public int left, top, right, bottom;
     }
 
@@ -29,27 +30,21 @@ public final class OfflineProjection {
     public static void run(String[] args) throws Exception {
         String ev = arg(args, "--evidence", "raw/v2/device/ev.db");
         String out = arg(args, "--memory", "raw/v2/device/new_mem.db");
+        int lastN = Integer.parseInt(arg(args, "--last-n", "0"));
+        long since = Long.parseLong(arg(args, "--since", "0"));
+        String object = arg(args, "--object", "");
+        long t0 = System.currentTimeMillis();
         Class.forName("org.sqlite.JDBC");
         try (Connection e = DriverManager.getConnection("jdbc:sqlite:" + ev);
              Connection m = DriverManager.getConnection("jdbc:sqlite:" + out)) {
             init(m);
-            Map<String, List<Elem>> elems = loadElements(e);
-            Map<Long, List<long[]>> frames = loadFrames(e); // id,seq,shot? use strings separately
-            // trace rows
-            List<Object[]> traces = new ArrayList<>();
-            try (Statement s = e.createStatement();
-                 ResultSet r = s.executeQuery("SELECT id,t0,pkg,page_title,object_key,shot_ref "
-                         + "FROM traces WHERE shot_ref IS NOT NULL AND shot_ref!='' ORDER BY id")) {
-                while (r.next()) traces.add(new Object[]{r.getLong(1), r.getLong(2),
-                        r.getString(3), r.getString(4), r.getString(5), r.getString(6)});
-            }
-            Map<Long, List<Object[]>> frameRows = new HashMap<>();
-            try (Statement s = e.createStatement();
-                 ResultSet r = s.executeQuery("SELECT id,trace_id,seq,t_ms,shot_ref,text FROM trace_frames")) {
-                while (r.next()) frameRows.computeIfAbsent(r.getLong(2), k -> new ArrayList<>())
-                        .add(new Object[]{r.getLong(1), r.getLong(3), r.getLong(4),
-                                r.getString(5), r.getString(6)});
-            }
+            List<Object[]> traces = loadTraces(e, lastN, since, object);
+            Map<Long, List<Object[]>> frames = loadFrames(e, traces);
+            Set<String> shots = new HashSet<>();
+            for (Object[] t : traces) if (t[5] != null) shots.add((String) t[5]);
+            for (List<Object[]> fs : frames.values())
+                for (Object[] f : fs) if (f[3] != null) shots.add((String) f[3]);
+            Map<String, List<Elem>> elems = loadElements(e, shots);
             long totalLines = 0, xOk = 0, frameOk = 0, frameTotal = 0;
             List<LineItem> allLines = new ArrayList<>();
             try (PreparedStatement ps = m.prepareStatement("INSERT OR IGNORE INTO lines("
@@ -57,12 +52,12 @@ public final class OfflineProjection {
                     + "x_left,x_right,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
                 for (Object[] t : traces) {
                     long tid = (Long) t[0]; long time = (Long) t[1];
-                    String pkg = nz((String) t[2]); String title = nz((String) t[3]);
-                    String baseOk = nz((String) t[4]); String shot = (String) t[5];
-                    List<Object[]> fs = frameRows.getOrDefault(tid, new ArrayList<>());
+                    String pkg = nz((String) t[2]); String baseOk = nz((String) t[4]);
+                    String shot = (String) t[5];
+                    List<Object[]> fs = frames.getOrDefault(tid, new ArrayList<>());
                     if (fs.isEmpty()) fs.add(new Object[]{0L, 0L, time, shot, "", baseOk});
                     for (Object[] f : fs) {
-                        long fid = (Long) f[0]; long fseq = (Long) f[1]; long ft = (Long) f[2];
+                        long fid = (Long) f[0]; long ft = (Long) f[2];
                         String fshot = (String) f[3]; String ftext = nz((String) f[4]);
                         List<Elem> es = elems.getOrDefault(fshot, new ArrayList<>());
                         String framePkg = pkg;
@@ -94,6 +89,7 @@ public final class OfflineProjection {
                                 LineItem li = new LineItem();
                                 li.objectKey = obj; li.pkg = framePkg; li.time = ft;
                                 li.text = x.text; li.blockId = tid; li.frameId = fid;
+                                li.shotRef = fshot;
                                 li.yTop = x.top; li.left = x.left; li.right = x.right;
                                 li.kind = "CONTENT"; allLines.add(li);
                             }
@@ -108,14 +104,14 @@ public final class OfflineProjection {
                     }
                 }
             }
-            // object messages
             Map<String, List<MessageBuilder.Anchor>> anchors = new HashMap<>();
             for (Map.Entry<String, List<Elem>> en : elems.entrySet()) {
                 for (Elem x : en.getValue()) {
                     if (!"A11Y".equals(x.source) && !"BOTH".equals(x.source)) continue;
                     if (x.text == null || x.text.length() > 30 || "BUTTON".equals(x.role)) continue;
                     MessageBuilder.Anchor a = new MessageBuilder.Anchor();
-                    a.text = x.text; a.left = x.left; a.top = x.top; a.right = x.right; a.bottom = x.bottom;
+                    a.text = x.text; a.left = x.left; a.top = x.top;
+                    a.right = x.right; a.bottom = x.bottom;
                     anchors.computeIfAbsent(en.getKey(), k -> new ArrayList<>()).add(a);
                 }
             }
@@ -137,6 +133,8 @@ public final class OfflineProjection {
                     if (x.objectKey != null && x.objectKey.contains("零杯")) zeroMsgs++;
                 }
             }
+            System.out.println("selected traces=" + traces.size() + " shots=" + shots.size()
+                    + " elements=" + countElems(elems) + " ms=" + (System.currentTimeMillis() - t0));
             System.out.println("lines=" + totalLines + "  x非空=" + xOk + "("
                     + pct(xOk, totalLines) + ")  frame object_key 覆盖=" + frameOk + "/" + frameTotal
                     + "(" + pct(frameOk, frameTotal) + ")");
@@ -144,6 +142,76 @@ public final class OfflineProjection {
                     + "  side: SELF=" + self + "/OTHER=" + other + "/UNKNOWN=" + unknown);
             System.out.println("零杯: 消息=" + zeroMsgs + " 串台=" + badPkg + "(pkg不一致)");
         }
+    }
+
+    private static List<Object[]> loadTraces(Connection e, int lastN, long since, String object)
+            throws Exception {
+        StringBuilder sql = new StringBuilder("SELECT id,t0,pkg,page_title,object_key,shot_ref "
+                + "FROM traces WHERE shot_ref IS NOT NULL AND shot_ref!=''");
+        List<Object> ps = new ArrayList<>();
+        if (since > 0) { sql.append(" AND t0>=?"); ps.add(since); }
+        if (object != null && !object.isEmpty()) {
+            sql.append(" AND (object_key LIKE ? OR page_title LIKE ?)");
+            ps.add("%" + object + "%"); ps.add("%" + object + "%");
+        }
+        sql.append(" ORDER BY id DESC");
+        if (lastN > 0) { sql.append(" LIMIT ?"); ps.add(lastN); }
+        List<Object[]> out = new ArrayList<>();
+        try (PreparedStatement st = e.prepareStatement(sql.toString())) {
+            for (int i = 0; i < ps.size(); i++) st.setObject(i + 1, ps.get(i));
+            try (ResultSet r = st.executeQuery()) {
+                while (r.next()) out.add(new Object[]{r.getLong(1), r.getLong(2), r.getString(3),
+                        r.getString(4), r.getString(5), r.getString(6)});
+            }
+        }
+        return out;
+    }
+
+    private static Map<Long, List<Object[]>> loadFrames(Connection e, List<Object[]> traces)
+            throws Exception {
+        Map<Long, List<Object[]>> out = new HashMap<>();
+        if (traces.isEmpty()) return out;
+        for (int off = 0; off < traces.size(); off += 200) {
+            int end = Math.min(traces.size(), off + 200);
+            StringBuilder in = new StringBuilder();
+            for (int i = off; i < end; i++) in.append(i == off ? "?" : ",?");
+            try (PreparedStatement ps = e.prepareStatement("SELECT id,trace_id,seq,t_ms,"
+                    + "shot_ref,text FROM trace_frames WHERE trace_id IN (" + in + ")")) {
+                for (int i = off; i < end; i++) ps.setLong(i - off + 1, (Long) traces.get(i)[0]);
+                try (ResultSet r = ps.executeQuery()) {
+                    while (r.next()) out.computeIfAbsent(r.getLong(2), k -> new ArrayList<>())
+                            .add(new Object[]{r.getLong(1), r.getLong(3), r.getLong(4),
+                                    r.getString(5), r.getString(6)});
+                }
+            }
+        }
+        return out;
+    }
+
+    private static Map<String, List<Elem>> loadElements(Connection e, Set<String> shots)
+            throws Exception {
+        Map<String, List<Elem>> out = new HashMap<>();
+        List<String> ss = new ArrayList<>(shots);
+        for (int off = 0; off < ss.size(); off += 200) {
+            int end = Math.min(ss.size(), off + 200);
+            StringBuilder in = new StringBuilder();
+            for (int i = off; i < end; i++) in.append(i == off ? "?" : ",?");
+            try (PreparedStatement ps = e.prepareStatement("SELECT shot_ref,text,left,top,"
+                    + "right,bottom,source,role,pkg FROM page_elements WHERE shot_ref IN ("
+                    + in + ") AND text!=''")) {
+                for (int i = off; i < end; i++) ps.setString(i - off + 1, ss.get(i));
+                try (ResultSet r = ps.executeQuery()) {
+                    while (r.next()) {
+                        Elem x = new Elem(); String shot = r.getString(1);
+                        x.text = r.getString(2); x.left = r.getInt(3); x.top = r.getInt(4);
+                        x.right = r.getInt(5); x.bottom = r.getInt(6);
+                        x.source = r.getString(7); x.role = r.getString(8); x.pkg = r.getString(9);
+                        out.computeIfAbsent(shot, k -> new ArrayList<>()).add(x);
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     private static void init(Connection m) throws Exception {
@@ -160,28 +228,13 @@ public final class OfflineProjection {
         }
     }
 
-    private static Map<String, List<Elem>> loadElements(Connection e) throws Exception {
-        Map<String, List<Elem>> out = new HashMap<>();
-        try (Statement s = e.createStatement();
-             ResultSet r = s.executeQuery("SELECT shot_ref,text,left,top,right,bottom,source,role,pkg "
-                     + "FROM page_elements WHERE shot_ref!='' AND text!=''")) {
-            while (r.next()) {
-                Elem x = new Elem(); x.shot = r.getString(1); x.text = r.getString(2);
-                x.left = r.getInt(3); x.top = r.getInt(4); x.right = r.getInt(5); x.bottom = r.getInt(6);
-                x.source = r.getString(7); x.role = r.getString(8); x.pkg = r.getString(9);
-                out.computeIfAbsent(x.shot, k -> new ArrayList<>()).add(x);
-            }
-        }
-        return out;
+    private static int countElems(Map<String, List<Elem>> m) {
+        int n = 0; for (List<Elem> xs : m.values()) n += xs.size(); return n;
     }
-
-    private static Map<Long, List<long[]>> loadFrames(Connection e) { return new HashMap<>(); }
-
     private static String arg(String[] a, String key, String def) {
         for (int i = 0; i + 1 < a.length; i++) if (key.equals(a[i])) return a[i + 1];
         return def;
     }
-
     private static String nz(String s) { return s == null ? "" : s; }
     private static String pct(long a, long b) { return b <= 0 ? "0%" : String.format(java.util.Locale.ROOT, "%.1f%%", a * 100.0 / b); }
 }
