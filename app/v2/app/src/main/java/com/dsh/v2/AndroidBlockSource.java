@@ -270,9 +270,12 @@ public final class AndroidBlockSource implements BlockSource {
     /** REDACT 图片：先按 bbox 涂黑原图，再缩放；没有 bbox 则拒绝发送图片（返回 null→灰块）。 */
     private Bitmap maskedImage(Trace t, int target) {
         com.dsh.masker.MaskedBlock mb = maskedById.get(t.id);
-        if (mb == null || mb.imageBboxes.isEmpty()) return null;
+        // null = Masker 没跑成/guard 拒绝，必须拒绝图；
+        // imageBboxes 为空 = 扫过且确认没有敏感内容，原图可安全放行。
+        if (mb == null) return null;
         Bitmap bmp = decode(t.shotRef, Math.max(target, MAX_EDGE));
         if (bmp == null) return null;
+        if (mb.imageBboxes.isEmpty()) return bmp;
         try {
             android.util.DisplayMetrics dm = app.getResources().getDisplayMetrics();
             float sx = bmp.getWidth() / (float) Math.max(1, dm.widthPixels);

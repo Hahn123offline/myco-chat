@@ -34,7 +34,8 @@ public final class MessageBuilder {
         Map<String, List<LineItem>> byObject = new LinkedHashMap<>();
         for (LineItem l : lines) {
             if (l == null || l.text == null || l.text.trim().isEmpty()) continue;
-            if (l.kind != null && !"CONTENT".equals(l.kind) && !"SYSTEM".equals(l.kind)) continue;
+            if (l.kind != null && !"CONTENT".equals(l.kind) && !"SYSTEM".equals(l.kind)
+                    && !isSenderOnly(l.text)) continue;
             String k = l.objectKey == null || l.objectKey.isEmpty() ? l.pkg : l.objectKey;
             byObject.computeIfAbsent(k, x -> new ArrayList<>()).add(l);
         }
@@ -73,6 +74,11 @@ public final class MessageBuilder {
         for (LineItem l : lines) {
             String t = l.text == null ? "" : l.text.trim();
             if (t.isEmpty()) continue;
+            if (isSenderOnly(t)) {
+                String s = cleanSender(t);
+                if (!s.isEmpty()) sender = s;
+                continue;   // sender-only 行不单独成为消息，归给下一条
+            }
             SenderPrefix sp = splitSender(t);
             if (!sp.sender.isEmpty()) sender = sp.sender;
             if (b.length() > 0) b.append(' ');
@@ -113,10 +119,38 @@ public final class MessageBuilder {
         SenderPrefix(String s, String t) { sender = s; text = t; }
     }
 
+    /** 只有发送者名、没有消息正文的行：不单独成消息，归给下一条。 */
+    public static boolean isSenderOnly(String t) {
+        if (t == null) return false;
+        String s = t.trim();
+        if (s.isEmpty() || s.length() > 40) return false;
+        if (s.contains(":") || s.contains("：")) return false;
+        if (s.startsWith("[群主") || s.startsWith("(群主") || s.startsWith("（群主")
+                || s.startsWith("群主")) return true;
+        if (s.matches("^\\d{2}\\s*-.*")) return true;           // 25-鄂-计算机-曾嘉睿
+        if (s.matches("^[A-Za-z0-9_\\-]{2,20}$") && !s.contains(".")) return true;
+        return false;
+    }
+
+    private static String cleanSender(String t) {
+        String s = t.trim();
+        if (s.startsWith("[")) {
+            int end = s.indexOf(']');
+            if (end > 0) return s.substring(0, end + 1);
+        }
+        if (s.startsWith("(") || s.startsWith("（")) {
+            int end = Math.max(s.indexOf(')'), s.indexOf('）'));
+            if (end > 0) return s.substring(0, end + 1);
+        }
+        int i = s.indexOf(':');
+        if (i <= 0) i = s.indexOf('：');
+        return i > 0 ? s.substring(0, i).trim() : s;
+    }
+
     private static SenderPrefix splitSender(String t) {
         String s = t;
-        if (s.startsWith("[群主")) {
-            int end = s.indexOf(']');
+        if (s.startsWith("[群主") || s.startsWith("(群主") || s.startsWith("（群主")) {
+            int end = Math.max(Math.max(s.indexOf(']'), s.indexOf(')')), s.indexOf('）'));
             if (end > 0) return new SenderPrefix(s.substring(0, end + 1), s.substring(end + 1).trim());
         }
         int i = s.indexOf(':');

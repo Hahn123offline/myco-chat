@@ -244,8 +244,9 @@ public final class MemoryProjector {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
         java.util.List<com.dsh.memory.LineItem> lines = new java.util.ArrayList<>();
         try (Cursor c = db.rawQuery("SELECT object_key,pkg,time,text,block_id,frame_id,"
-                + "y_top,kind FROM lines WHERE kind IN ('CONTENT','SYSTEM') "
-                + "AND text IS NOT NULL AND text!='' ORDER BY time", null)) {
+                + "y_top,kind FROM lines WHERE text IS NOT NULL AND text!='' AND ("
+                + "kind IN ('CONTENT','SYSTEM') OR text LIKE '[群主%' OR text LIKE '群主%' "
+                + "OR text GLOB '??-*') ORDER BY time", null)) {
             while (c.moveToNext()) {
                 com.dsh.memory.LineItem l = new com.dsh.memory.LineItem();
                 l.objectKey = c.getString(0);
