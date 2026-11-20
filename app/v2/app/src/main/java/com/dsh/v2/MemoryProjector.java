@@ -368,24 +368,24 @@ public final class MemoryProjector {
         if (!pkg.equals(fp)) {
             android.util.Log.d("DSHL2", "frame object: shot=" + shot
                     + " pkg-mismatch frame=" + fp + " trace=" + pkg + " ok=''");
-            return "";   // 另一个应用界面：不挂到 trace 对象
+            return "";
         }
-        String best = ""; double bestScore = 1e9; int width = 1200; int elements = 0;
-        try (Cursor c = edb.rawQuery("SELECT text,left,top,right,role FROM page_elements "
-                + "WHERE shot_ref=? AND text!='' AND length(text)<=40 AND top<350 "
-                + "AND source IN ('A11Y','BOTH')", new String[]{shot})) {
+        String best = "";
+        int elements = 0;
+        try (Cursor c = edb.rawQuery("SELECT text,top,role FROM page_elements "
+                + "WHERE shot_ref=? AND text!='' AND source IN ('A11Y','BOTH') "
+                + "AND top BETWEEN 80 AND 400 ORDER BY top", new String[]{shot})) {
             while (c.moveToNext()) {
                 elements++;
                 String t = c.getString(0).trim();
-                int l = c.getInt(1), top = c.getInt(2), r = c.getInt(3);
-                String role = c.getString(4);
-                if (r > width) width = r;
-                if (l < width * 0.12 || r > width * 0.92) continue;
-                if (t.matches("^(返回.*|聊天设置|听筒模式|设置|搜索|取消|更多|发送|语音|相册|拍照|表情|更多功能|消息|频道|联系人|动态|QQ|微信|现在|昨天|星期.|\\(\\d+\\)|\\d{1,2}:\\d{2}|.*, ,.*)$")) continue;
-                if (!"BUTTON".equals(role) && !"PARAGRAPH".equals(role) && !"TITLE".equals(role)) continue;
-                double score = Math.abs(top - 170) / 100.0
-                        + Math.abs((l + r) / 2.0 - width / 2.0) / Math.max(1.0, width / 2.0);
-                if (score < bestScore) { bestScore = score; best = t; }
+                int top = c.getInt(1);
+                if (t.length() < 2 || t.length() > 20) continue;
+                if (t.matches("^[0-9.:%+\\-\\s]+$")) continue;
+                if (t.matches("^(返回.*|聊天设置|听筒模式|自动朗读|打开侧边栏|开启新对话|更多|发送|语音|相册|拍照|表情|删除|取消|确定|搜索|设置|消息|频道|联系人|动态|现在|昨天|星期.|QQ|微信|分享|收藏|编辑|复制)$")) continue;
+                if (t.contains("未读") || t.contains("资料卡")) continue;
+                // 第一个合法候选就是 y 最小的标题；不要求水平居中
+                best = t;
+                break;
             }
         } catch (Throwable ignored) { }
         if (elements == 0) {
@@ -399,11 +399,10 @@ public final class MemoryProjector {
                     + " elements=" + elements + " titleNode=" + best
                     + " ok=" + pkg + "/" + best);
         }
-        // 帧级标题拿不到时留空：归到 pkg 下无对象，不能回退到上一个界面的 trace 标题
         return best.isEmpty() ? fallback : pkg + "/" + best;
     }
 
-    /** 历史帧回填：每帧自己的 object_key + lines.object_key（断跨界面串台）。 */
+    /** 历史帧回填：每帧自己的 object_key + lines 的 pkg/x（断跨界面串台）。 */
     public static synchronized int backfillFrameObjects(Context app) {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
         java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
@@ -421,15 +420,12 @@ public final class MemoryProjector {
                     long fid = c.getLong(0); String shot = c.getString(1);
                     String pkg = c.getString(2); String base = c.getString(3);
                     String frameOk = frameObjectKey(edb, shot, pkg, base == null ? "" : base);
-                    if (frameOk == null || frameOk.isEmpty()) continue;
+                    String framePkg = framePkg(edb, shot, pkg);
                     ContentValues fv = new ContentValues(); fv.put("object_key", frameOk);
                     n += edb.update("trace_frames", fv, "id=?", new String[]{String.valueOf(fid)});
-                    ContentValues lv = new ContentValues(); lv.put("object_key", frameOk);
+                    ContentValues lv = new ContentValues();
+                    lv.put("object_key", frameOk); lv.put("pkg", framePkg);
                     n += db.update("lines", lv, "frame_id=?", new String[]{String.valueOf(fid)});
-                    ContentValues pv = new ContentValues();
-                    pv.put("pkg", framePkg(edb, shot, pkg));
-                    db.update("lines", pv, "frame_id=?", new String[]{String.valueOf(fid)});
-                    // 同时补 x，让左右对齐能判 SELF/OTHER
                     try (Cursor pe = edb.rawQuery("SELECT text,left,right FROM page_elements "
                             + "WHERE shot_ref=? AND text!=''", new String[]{shot})) {
                         while (pe.moveToNext()) {
@@ -446,6 +442,18 @@ public final class MemoryProjector {
         } finally { if (edb != null) try { edb.close(); } catch (Throwable ignored) { } }
         android.util.Log.i("DSHL2", "frame object backfill: scanned=" + scanned
                 + " updated=" + n);
+        return n;
+    }
+
+    /** 一次性全量重建 lines（带 x_left/x_right），然后重建对象消息。 */
+    public static synchronized int rebuildLines(Context app) {
+        SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
+        db.delete("lines", null, null);
+        android.util.Log.i("DSHL2", "rebuild lines: cleared");
+        int n = projectLines(app);
+        backfillFrameObjects(app);
+        projectObjectMessages(app);
+        android.util.Log.i("DSHL2", "rebuild lines done: lines=" + n);
         return n;
     }
 

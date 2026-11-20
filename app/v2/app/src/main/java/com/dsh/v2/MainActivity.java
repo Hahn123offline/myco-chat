@@ -561,6 +561,9 @@ public final class MainActivity extends Activity {
                             android.util.Log.e("DSHL2", "chat_open failed", t);
                         }
                     });
+                } else if ("rebuild_lines".equals(action)) {
+                    int n = MemoryProjector.rebuildLines(this);
+                    android.util.Log.i("DSHL2", "dev rebuild_lines done lines=" + n);
                 } else if ("project".equals(action)) {
                     int e = MemoryProjector.projectEvents(this);
                     MemoryProjector.projectTraceBlocks(this);
