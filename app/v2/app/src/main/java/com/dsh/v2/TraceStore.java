@@ -264,7 +264,29 @@ public final class TraceStore extends SQLiteOpenHelper {
         v.put("label", t.label);
         v.put("masked_text", t.maskedText);
         v.put("source", t.source == null || t.source.isEmpty() ? "a11y" : t.source);
-        return getWritableDatabase().insert(TABLE, null, v);
+        long id = getWritableDatabase().insert(TABLE, null, v);
+        t.id = id;
+        if (id > 0 && t.frames != null) {
+            for (com.dsh.trace.TraceFrame f : t.frames) {
+                insertFrame(id, f.seq, f.tMs, f.shotRef, f.text, f.sharpness, f.kind);
+            }
+        }
+        return id;
+    }
+
+    public long insertFrame(long traceId, int seq, long tMs, String shotRef,
+                            String text, double sharpness, String kind) {
+        ContentValues v = new ContentValues();
+        v.put("trace_id", traceId);
+        v.put("seq", seq);
+        v.put("t_ms", tMs);
+        v.put("shot_ref", shotRef);
+        v.put("text", text);
+        v.put("text_hash", Integer.toHexString((text == null ? "" : text).hashCode()));
+        v.put("sharpness", sharpness);
+        v.put("kind", kind == null ? "CONTENT_CHANGE" : kind);
+        return getWritableDatabase().insertWithOnConflict(FRAMES, null, v,
+                SQLiteDatabase.CONFLICT_IGNORE);
     }
 
     /** 用解析结果替换某次页面事件的元素；OCR 合并时覆盖 a11y-only 行。 */
