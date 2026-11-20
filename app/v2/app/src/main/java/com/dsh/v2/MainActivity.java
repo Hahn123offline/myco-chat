@@ -552,6 +552,15 @@ public final class MainActivity extends Activity {
                         android.util.Log.i("DSHL2", "chat_answer " + (message == null ? "" : message));
                         appendHostLog(head + (message == null ? "" : message));
                     });
+                } else if ("chat_open".equals(action)) {
+                    runOnUiThread(() -> {
+                        try {
+                            startActivity(new Intent(this, ChatActivity.class));
+                            android.util.Log.i("DSHL2", "chat_open started");
+                        } catch (Throwable t) {
+                            android.util.Log.e("DSHL2", "chat_open failed", t);
+                        }
+                    });
                 } else if ("project".equals(action)) {
                     int e = MemoryProjector.projectEvents(this);
                     MemoryProjector.projectTraceBlocks(this);
