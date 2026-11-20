@@ -86,7 +86,7 @@ public final class TraceApp extends Application {
                 } catch (Throwable t) {
                     android.util.Log.e("DSHL2", "periodic line projection failed", t);
                 }
-            }, 60, 180, java.util.concurrent.TimeUnit.SECONDS);
+            }, 180, 180, java.util.concurrent.TimeUnit.SECONDS);
             maintenance.scheduleWithFixedDelay(() -> {
                 try {
                     HealthHeartbeat.write(mctx);

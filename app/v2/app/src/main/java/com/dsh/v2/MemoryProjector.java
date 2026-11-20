@@ -68,7 +68,7 @@ public final class MemoryProjector {
 
 
     /** 行视图：evidence.traces/page_elements → lines（文本+指针+kind；全量分批，幂等）。 */
-    public static int projectLines(Context app) {
+    public static synchronized int projectLines(Context app) {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
         java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
                 "evidence.db");
@@ -273,10 +273,18 @@ public final class MemoryProjector {
                     }
                 }
             }
-            for (String[] x : freq) {
-                ContentValues v = new ContentValues();
-                v.put("kind", "CHROME");
-                db.update("lines", v, "pkg=? AND text=?", new String[]{x[0], x[1]});
+            if (!freq.isEmpty()) {
+                db.beginTransaction();
+                try {
+                    for (String[] x : freq) {
+                        ContentValues v = new ContentValues();
+                        v.put("kind", "CHROME");
+                        db.update("lines", v, "pkg=? AND text=?", new String[]{x[0], x[1]});
+                    }
+                    db.setTransactionSuccessful();
+                } finally {
+                    db.endTransaction();
+                }
             }
         } catch (Throwable t) {
             android.util.Log.e("DSHL2", "freq chrome failed", t);
