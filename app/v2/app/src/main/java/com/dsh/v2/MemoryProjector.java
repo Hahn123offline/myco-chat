@@ -327,8 +327,14 @@ public final class MemoryProjector {
         } finally {
             db.endTransaction();
         }
+        int anchorCount = 0;
+        for (java.util.List<com.dsh.memory.MessageBuilder.Anchor> v : anchors.values())
+            anchorCount += v.size();
+        int matched = 0;
+        for (com.dsh.memory.MessageBuilder.Msg m : msgs) if (m.sender != null && !m.sender.isEmpty()) matched++;
         android.util.Log.i("DSHL2", "object messages: lines=" + lines.size()
-                + " messages=" + msgs.size());
+                + " anchors=" + anchorCount + " messages=" + msgs.size()
+                + " matched=" + matched);
         return msgs.size();
     }
 
