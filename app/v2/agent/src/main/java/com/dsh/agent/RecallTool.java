@@ -180,8 +180,11 @@ public final class RecallTool implements AgentTool {
                 b.append("…已截断，可收窄时间范围\n");
                 break;
             }
-            String sender = m.sender == null || m.sender.trim().isEmpty()
-                    ? "（未知发送者）" : m.sender;
+            String sender;
+            if (m.sender != null && !m.sender.trim().isEmpty()) sender = m.sender;
+            else if ("SELF".equals(m.side)) sender = "（我）";
+            else if ("OTHER".equals(m.side)) sender = "（他人）";
+            else sender = "（发送者未知）";
             b.append(fmt(m.tFirst)).append(' ').append(sender).append(' ')
                     .append(m.text == null ? "" : m.text)
                     .append("  [block ").append(m.blockId).append("]")

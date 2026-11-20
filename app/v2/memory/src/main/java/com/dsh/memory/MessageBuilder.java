@@ -26,6 +26,8 @@ public final class MessageBuilder {
         public long tFirst, tLast;
         public int seenCount;
         public String sender = "";
+        /** SELF / OTHER / UNKNOWN：左边=他人、右边=自己；无 x 不敢判。 */
+        public String side = "UNKNOWN";
         public String text = "";
         public String textKey = "";
         public long blockId, frameId;
@@ -40,6 +42,9 @@ public final class MessageBuilder {
     public static List<Msg> build(List<LineItem> lines, Map<String, List<Anchor>> anchors) {
         List<Msg> out = new ArrayList<>();
         if (lines == null || lines.isEmpty()) return out;
+        int maxRight = 1;
+        for (LineItem l : lines) if (l.right > maxRight) maxRight = l.right;
+        int screenWidth = maxRight;
         Map<String, List<LineItem>> byObject = new LinkedHashMap<>();
         for (LineItem l : lines) {
             if (l == null || l.text == null || l.text.trim().isEmpty()) continue;
@@ -60,11 +65,11 @@ public final class MessageBuilder {
                 int lastY = Integer.MIN_VALUE;
                 for (LineItem l : frame) {
                     if (lastY != Integer.MIN_VALUE && Math.abs(l.yTop - lastY) > MERGE_GAP_PX) {
-                        addFrame(merged, e.getKey(), current, anchors); current = new ArrayList<>();
+                        addFrame(merged, e.getKey(), current, anchors, screenWidth); current = new ArrayList<>();
                     }
                     current.add(l); lastY = l.yTop;
                 }
-                if (!current.isEmpty()) addFrame(merged, e.getKey(), current, anchors);
+                if (!current.isEmpty()) addFrame(merged, e.getKey(), current, anchors, screenWidth);
             }
             out.addAll(merged.values());
         }
@@ -72,7 +77,8 @@ public final class MessageBuilder {
     }
 
     private static void addFrame(Map<String, Msg> merged, String objectKey,
-                                 List<LineItem> lines, Map<String, List<Anchor>> anchors) {
+                                 List<LineItem> lines, Map<String, List<Anchor>> anchors,
+                                 int screenWidth) {
         if (lines.isEmpty()) return;
         LineItem first = lines.get(0);
         List<Anchor> as = anchors.get(first.shotRef == null ? "" : first.shotRef);
@@ -104,6 +110,7 @@ public final class MessageBuilder {
             hit.text = text;
             hit.textKey = key;
             hit.sender = sender;
+            hit.side = sideOf(first, screenWidth);
             hit.blockId = first.blockId;
             hit.frameId = first.frameId;
             merged.put(key, hit);
@@ -111,6 +118,7 @@ public final class MessageBuilder {
             hit.seenCount++;
             hit.tLast = Math.max(hit.tLast, lines.get(lines.size() - 1).time);
             if (hit.sender.isEmpty() && !sender.isEmpty()) hit.sender = sender;
+            if ("UNKNOWN".equals(hit.side)) hit.side = sideOf(first, screenWidth);
         }
         hit.tLast = Math.max(hit.tLast, lines.get(lines.size() - 1).time);
         hit.seenCount = Math.max(1, hit.seenCount);
@@ -127,6 +135,13 @@ public final class MessageBuilder {
                 "聊天设置", "返回", "发送", "相册", "拍照", "更多功能", "设置", "搜索"};
         for (String b : bad) if (s.contains(b)) return true;
         return false;
+    }
+
+    private static String sideOf(LineItem l, int screenWidth) {
+        if (l == null || l.right <= l.left) return "UNKNOWN";
+        if (l.left >= screenWidth * 0.50) return "SELF";
+        if (l.left <= screenWidth * 0.35) return "OTHER";
+        return "UNKNOWN";
     }
 
     private static String senderFor(LineItem first, List<Anchor> anchors) {

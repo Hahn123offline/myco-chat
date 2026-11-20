@@ -42,6 +42,39 @@ public class MessageBuilderTest {
         assertEquals("群主", out.get(0).sender);
     }
 
+    @Test public void UI文案不能当sender() {
+        List<LineItem> xs = new ArrayList<>();
+        xs.add(line("消息正文", 300, 1000, 1));
+        java.util.List<MessageBuilder.Anchor> as = new ArrayList<>();
+        for (String bad : new String[]{"听筒模式", "我的资料卡", "语音", "发来[聊天记录]"}) {
+            MessageBuilder.Anchor a = new MessageBuilder.Anchor();
+            a.text = bad; a.left = 180; a.top = 200; a.right = 500; a.bottom = 280;
+            as.add(a);
+        }
+        MessageBuilder.Anchor good = new MessageBuilder.Anchor();
+        good.text = "群主"; good.left = 180; good.top = 200; good.right = 500; good.bottom = 280;
+        as.add(good);
+        java.util.Map<String, List<MessageBuilder.Anchor>> m = new java.util.HashMap<>();
+        m.put("s1", as);
+        List<MessageBuilder.Msg> out = MessageBuilder.build(xs, m);
+        assertEquals("群主", out.get(0).sender);
+    }
+
+    @Test public void 左右对齐判我他人() {
+        List<LineItem> xs = new ArrayList<>();
+        xs.add(line("别人说的", 300, 1000, 1));
+        xs.get(0).left = 80; xs.get(0).right = 600;
+        LineItem me = line("我说的", 500, 2000, 1);
+        me.left = 700; me.right = 1150;
+        xs.add(me);
+        List<MessageBuilder.Msg> out = MessageBuilder.build(xs);
+        assertEquals(2, out.size());
+        for (MessageBuilder.Msg m : out) {
+            if (m.text.contains("别人")) assertEquals("OTHER", m.side);
+            if (m.text.contains("我")) assertEquals("SELF", m.side);
+        }
+    }
+
     @Test public void OCR变体相似度合并() {
         List<LineItem> xs = new ArrayList<>();
         xs.add(line("下载学校的免费AU😋", 100, 1000, 1));

@@ -13,7 +13,7 @@ import java.io.File;
 public final class MemoryDb extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "memory.db";
-    public static final int DB_VER = 18;
+    public static final int DB_VER = 19;
 
     private static volatile MemoryDb instance;
     /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
@@ -113,6 +113,10 @@ public final class MemoryDb extends SQLiteOpenHelper {
             try { db.execSQL("DROP INDEX IF EXISTS idx_lines_block_text"); }
             catch (Throwable t) { android.util.Log.e("DSHL2", "drop old lines index failed", t); }
         }
+        if (oldV < 19) {
+            try { db.execSQL("ALTER TABLE object_messages ADD COLUMN side TEXT DEFAULT 'UNKNOWN'"); }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "add object_messages.side failed", t); }
+        }
         if (oldV < 18) {
             try { db.execSQL("ALTER TABLE lines ADD COLUMN x_left INTEGER"); }
             catch (Throwable t) { android.util.Log.e("DSHL2", "add lines.x_left failed", t); }
@@ -124,7 +128,7 @@ public final class MemoryDb extends SQLiteOpenHelper {
                 db.execSQL("CREATE TABLE IF NOT EXISTS object_messages(" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT, object_key TEXT, pkg TEXT," +
                         "t_first INTEGER, t_last INTEGER, seen_count INTEGER DEFAULT 1," +
-                        "sender TEXT DEFAULT '', text TEXT, text_key TEXT," +
+                        "sender TEXT DEFAULT '', side TEXT DEFAULT 'UNKNOWN', text TEXT, text_key TEXT," +
                         "block_id INTEGER, frame_id INTEGER)");
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_objmsg_key "
                         + "ON object_messages(object_key,text_key,sender)");
@@ -246,7 +250,7 @@ public final class MemoryDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE IF NOT EXISTS object_messages(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, object_key TEXT, pkg TEXT," +
                 "t_first INTEGER, t_last INTEGER, seen_count INTEGER DEFAULT 1," +
-                "sender TEXT DEFAULT '', text TEXT, text_key TEXT," +
+                "sender TEXT DEFAULT '', side TEXT DEFAULT 'UNKNOWN', text TEXT, text_key TEXT," +
                 "block_id INTEGER, frame_id INTEGER)");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_objmsg_key "
                 + "ON object_messages(object_key,text_key,sender)");

@@ -319,6 +319,7 @@ public final class MemoryProjector {
                 v.put("t_last", m.tLast);
                 v.put("seen_count", m.seenCount);
                 v.put("sender", m.sender);
+                v.put("side", m.side == null ? "UNKNOWN" : m.side);
                 v.put("text", m.text);
                 v.put("text_key", m.textKey);
                 v.put("block_id", m.blockId);

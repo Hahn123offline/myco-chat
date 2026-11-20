@@ -8,6 +8,7 @@ public final class ObjectMessage {
     public long tFirst, tLast;
     public int seenCount = 1;
     public String sender = "";
+    public String side = "UNKNOWN";
     public String text = "";
     public String textKey = "";
     public long blockId, frameId;

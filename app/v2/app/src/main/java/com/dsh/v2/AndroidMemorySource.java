@@ -183,7 +183,7 @@ public final class AndroidMemorySource implements MemorySource {
         if (object == null || object.isEmpty()) return out;
         try (android.database.Cursor c = MemoryDb.get(app).getReadableDatabase().rawQuery(
                 "SELECT id,object_key,pkg,t_first,t_last,seen_count,sender,text,text_key,"
-                        + "block_id,frame_id FROM object_messages "
+                        + "block_id,frame_id,side FROM object_messages "
                         + "WHERE object_key=? OR object_key LIKE ? "
                         + "ORDER BY t_first LIMIT ?",
                 new String[]{object, "%" + object + "%", String.valueOf(Math.max(1, limit))})) {
@@ -193,6 +193,7 @@ public final class AndroidMemorySource implements MemorySource {
                 m.tFirst = c.getLong(3); m.tLast = c.getLong(4); m.seenCount = c.getInt(5);
                 m.sender = c.getString(6); m.text = c.getString(7); m.textKey = c.getString(8);
                 m.blockId = c.getLong(9); m.frameId = c.getLong(10);
+                m.side = c.getString(11) == null ? "UNKNOWN" : c.getString(11);
                 out.add(m);
             }
         } catch (Throwable ignored) { }
