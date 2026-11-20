@@ -30,6 +30,19 @@ public class ScrollTriggerTest {
         assertTrue(t.onScroll(1000, 750, 0, 1000));
     }
 
+    @Test public void delta为0时用scrollY绝对差() {
+        ScrollTrigger t = new ScrollTrigger();
+        assertFalse(t.onScroll(1000, 0, 0, 500, 1000));
+        assertTrue(t.onScroll(1200, 0, 0, 1300, 1000));  // sy 差 800
+    }
+
+    @Test public void delta和scrollY都没有时用事件数兜底() {
+        ScrollTrigger t = new ScrollTrigger();
+        assertFalse(t.onScroll(1000, 0, 0, -1, 1000));
+        assertFalse(t.onScroll(1100, 0, 0, -1, 1000));
+        assertTrue(t.onScroll(1200, 0, 0, -1, 1000));
+    }
+
     @Test public void 五百毫秒内不连续截图() {
         ScrollTrigger t = new ScrollTrigger();
         assertTrue(t.onScroll(1000, 0, 800, 1000));

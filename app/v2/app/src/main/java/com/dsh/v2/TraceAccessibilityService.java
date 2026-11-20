@@ -185,8 +185,12 @@ public final class TraceAccessibilityService extends AccessibilityService {
             if (type == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
                 int h = getResources().getDisplayMetrics().heightPixels;
                 long now = SystemClock.uptimeMillis();
-                boolean shot = scrollTrigger.onScroll(now, event.getScrollDeltaX(),
-                        event.getScrollDeltaY(), h);
+                int sdy = event.getScrollDeltaY();
+                int sdx = event.getScrollDeltaX();
+                int sy = event.getScrollY();
+                android.util.Log.d(TAG, "scroll event deltaY=" + sdy + " deltaX=" + sdx
+                        + " scrollY=" + sy + " pkg=" + evPkg);
+                boolean shot = scrollTrigger.onScroll(now, sdx, sdy, sy, h);
                 handler.removeCallbacks(scrollIdle);
                 handler.postDelayed(scrollIdle, ScrollTrigger.IDLE_MS + 20);
                 if (shot) {
