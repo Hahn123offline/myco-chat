@@ -187,7 +187,7 @@ public final class RecallTool implements AgentTool {
                     .append("  [block ").append(m.blockId).append("]")
                     .append(m.seenCount > 1 ? " ×" + m.seenCount : "").append('\n');
         }
-        b.append("【下钻】read_block(block_id) / read_frame(block_id) 核对原图。\n");
+        b.append("【下钻】这些是 OCR 转写；引用任何原话/数字/人名前，必须先 read_frame(block_id) 核对。\n");
         return b.toString();
     }
 
