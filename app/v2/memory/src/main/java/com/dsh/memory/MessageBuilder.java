@@ -82,7 +82,7 @@ public final class MessageBuilder {
             String t = l.text == null ? "" : l.text.trim();
             if (t.isEmpty()) continue;
             // A11Y sender 节点若被投影成内容行，结构上移除（不是文本猜 sender）
-            if (as != null && isAnchorSpan(l.yTop, as)) continue;
+            if (as != null && (isAnchorSpan(l.yTop, as) || containsAnchor(t, l.yTop, as))) continue;
             if (b.length() > 0) b.append(' ');
             b.append(t);
         }
@@ -117,12 +117,23 @@ public final class MessageBuilder {
     }
 
     /** sender 只取 A11Y 锚点：上方/同一水平带、横向重叠、短文本；拿不到返回 ""，不猜。 */
+    /** 大盘 chrome/UI 文案，不能当 sender 候选。 */
+    private static boolean uiText(String t) {
+        if (t == null) return true;
+        String s = t.trim();
+        if (s.isEmpty() || s.length() > 30) return true;
+        if (s.matches("^[()\\d\\s]+$")) return true;   // 未读数/纯数字
+        String[] bad = {"资料卡", "听筒模式", "语音", "表情", "发来[", "我的资料卡",
+                "聊天设置", "返回", "发送", "相册", "拍照", "更多功能", "设置", "搜索"};
+        for (String b : bad) if (s.contains(b)) return true;
+        return false;
+    }
+
     private static String senderFor(LineItem first, List<Anchor> anchors) {
         if (anchors == null || anchors.isEmpty()) return "";
         Anchor best = null; int bestGap = Integer.MAX_VALUE;
         for (Anchor a : anchors) {
-            if (a.text == null || a.text.trim().isEmpty()) continue;
-            if (a.text.length() > 30) continue;
+            if (uiText(a.text)) continue;
             if (a.text.contains(":") || a.text.contains("：")) continue;
             if (a.top > first.yTop) continue;                 // sender 在上方
             int gap = first.yTop - a.top;
@@ -138,10 +149,18 @@ public final class MessageBuilder {
     }
 
     /** 行落在 A11Y 短文本锚点的垂直范围内 → 它是 sender 行，不作为消息内容。 */
+    private static boolean containsAnchor(String t, int y, List<Anchor> as) {
+        for (Anchor a : as) {
+            if (uiText(a.text)) continue;
+            if (t.contains(a.text.trim())
+                    && t.length() <= a.text.trim().length() + 15) return true;
+        }
+        return false;
+    }
+
     private static boolean isAnchorSpan(int y, List<Anchor> as) {
         for (Anchor a : as) {
-            if (a.text == null || a.text.trim().isEmpty()) continue;
-            if (a.text.length() > 30) continue;
+            if (uiText(a.text)) continue;
             if (y >= a.top - 10 && y <= a.bottom + 5) return true;
         }
         return false;

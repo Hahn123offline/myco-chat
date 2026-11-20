@@ -252,7 +252,8 @@ public final class MemoryProjector {
         java.util.List<com.dsh.memory.LineItem> lines = new java.util.ArrayList<>();
         java.util.Set<String> shots = new java.util.HashSet<>();
         try (Cursor c = db.rawQuery("SELECT object_key,pkg,time,text,block_id,frame_id,"
-                + "y_top,kind,shot_ref,x_left,x_right FROM lines WHERE text IS NOT NULL AND text!='' AND ("
+                + "y_top,kind,shot_ref,x_left,x_right FROM lines WHERE text IS NOT NULL AND text!='' "
+                + "AND pkg NOT IN ('com.dsh.v2','com.dsh.pcharness') AND ("
                 + "kind IN ('CONTENT','SYSTEM') OR text LIKE '[群主%' OR text LIKE '群主%' "
                 + "OR text GLOB '??-*') ORDER BY time", null)) {
             while (c.moveToNext()) {
@@ -285,7 +286,7 @@ public final class MemoryProjector {
         }
         for (int off = 0; off < shotList.size(); off += 200) {
             int end = Math.min(shotList.size(), off + 200);
-            StringBuilder sb = new StringBuilder("SELECT shot_ref,text,left,top,right,bottom "
+            StringBuilder sb = new StringBuilder("SELECT shot_ref,text,left,top,right,bottom,role "
                     + "FROM page_elements WHERE shot_ref IN (");
             for (int i = off; i < end; i++) sb.append(i == off ? "?" : ",?");
             sb.append(") AND text!='' AND length(text)<=30 AND source IN ('A11Y','BOTH')");
@@ -296,6 +297,8 @@ public final class MemoryProjector {
                             new com.dsh.memory.MessageBuilder.Anchor();
                     an.text = a.getString(1); an.left = a.getInt(2); an.top = a.getInt(3);
                     an.right = a.getInt(4); an.bottom = a.getInt(5);
+                    String role = a.getString(6);
+                    if ("BUTTON".equals(role)) continue;   // 按钮不是发送者
                     anchors.computeIfAbsent(a.getString(0), k -> new java.util.ArrayList<>()).add(an);
                 }
             } catch (Throwable t) {
