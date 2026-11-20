@@ -20,9 +20,10 @@ import java.util.Calendar;
 public final class TraceStore extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "evidence.db";
-    public static final int DB_VER = 8;
+    public static final int DB_VER = 9;
     public static final String TABLE = "traces";
     public static final String ELEMENTS = "page_elements";
+    public static final String FRAMES = "trace_frames";
     public static final String GAPS = "trace_gaps";
 
     private final File dbFile;
@@ -57,7 +58,7 @@ public final class TraceStore extends SQLiteOpenHelper {
                 "text TEXT, shot_ref TEXT," +
                 "guard INTEGER NOT NULL DEFAULT 0, guard_hit TEXT," +
                 "cloud_at INTEGER NOT NULL DEFAULT 0, label TEXT, masked_text TEXT," +
-                "source TEXT NOT NULL DEFAULT 'a11y', evidence TEXT)");
+                "source TEXT NOT NULL DEFAULT 'a11y', evidence TEXT, n_frames INTEGER DEFAULT 0)");
         db.execSQL("CREATE INDEX idx_t0 ON " + TABLE + "(t0)");
         db.execSQL("CREATE TABLE " + ELEMENTS + "(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -70,6 +71,11 @@ public final class TraceStore extends SQLiteOpenHelper {
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, t0 INTEGER NOT NULL, t1 INTEGER," +
                 "reason TEXT NOT NULL, closed INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE INDEX idx_gap_t0 ON " + GAPS + "(t0)");
+        db.execSQL("CREATE TABLE " + FRAMES + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "trace_id INTEGER NOT NULL, seq INTEGER NOT NULL, t_ms INTEGER NOT NULL,"
+                + "shot_ref TEXT, text TEXT, text_hash TEXT, sharpness REAL, kind TEXT,"
+                + "UNIQUE(trace_id,seq))");
+        db.execSQL("CREATE INDEX idx_frames_trace ON " + FRAMES + "(trace_id,seq)");
     }
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
@@ -89,6 +95,19 @@ public final class TraceStore extends SQLiteOpenHelper {
         if (oldV < 8) {
             try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN evidence TEXT"); }
             catch (Throwable ignored) { }
+        }
+        if (oldV < 9) {
+            try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN n_frames INTEGER DEFAULT 0"); }
+            catch (Throwable ignored) { }
+            try {
+                db.execSQL("CREATE TABLE IF NOT EXISTS " + FRAMES
+                        + "(id INTEGER PRIMARY KEY AUTOINCREMENT, trace_id INTEGER NOT NULL,"
+                        + "seq INTEGER NOT NULL, t_ms INTEGER NOT NULL, shot_ref TEXT,"
+                        + "text TEXT, text_hash TEXT, sharpness REAL, kind TEXT,"
+                        + "UNIQUE(trace_id,seq))");
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_frames_trace ON "
+                        + FRAMES + "(trace_id,seq)");
+            } catch (Throwable ignored) { }
         }
         if (oldV < 4) {
             db.execSQL("CREATE TABLE IF NOT EXISTS " + ELEMENTS + "(" +
@@ -169,6 +188,19 @@ public final class TraceStore extends SQLiteOpenHelper {
         getWritableDatabase().update(TABLE, v, "id=?", new String[]{String.valueOf(id)});
     }
 
+    /** GC 删图后清指针（frames + traces），不留死链。 */
+    public int clearShotRefs(java.util.Collection<String> names) {
+        int n = 0;
+        for (String name : names) {
+            String ref = "shots/" + name;
+            ContentValues v = new ContentValues();
+            v.putNull("shot_ref");
+            n += getWritableDatabase().update(FRAMES, v, "shot_ref=?", new String[]{ref});
+            n += getWritableDatabase().update(TABLE, v, "shot_ref=?", new String[]{ref});
+        }
+        return n;
+    }
+
     public int countBetween(long from, long to) {
         Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM " + TABLE
                 + " WHERE t1>? AND t0<?", new String[]{String.valueOf(from), String.valueOf(to)});
@@ -223,6 +255,7 @@ public final class TraceStore extends SQLiteOpenHelper {
         }
         v.put("object_key", t.objectKey);
         v.put("evidence", t.evidence);
+        v.put("n_frames", t.nFrames);
         v.put("text", t.text);
         v.put("shot_ref", t.shotRef);
         v.put("guard", t.guard);

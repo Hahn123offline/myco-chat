@@ -60,6 +60,9 @@ public final class TraceApp extends Application {
                 java.io.File shots = new java.io.File(getFilesDir(), "trace/shots");
                 ShotGc.Result g = ShotGc.run(shots, System.currentTimeMillis(),
                         ShotGc.MAX_BYTES);
+                try {
+                    new com.dsh.v2.TraceStore(getApplicationContext()).clearShotRefs(g.deletedFiles);
+                } catch (Throwable ignored) { }
                 android.util.Log.i("DSHL2", "gc drop_shots=" + g.dropShots
                         + " freed_mb=" + (g.freedBytes / 1024 / 1024)
                         + " total_mb=" + (g.totalBytes / 1024 / 1024)

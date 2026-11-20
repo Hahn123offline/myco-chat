@@ -23,6 +23,29 @@ public class TraceAccumulatorTest {
         return new TraceAccumulator(timeout, minDwell, out::add);
     }
 
+    @Test public void 多帧累积且相同文本去重() {
+        TraceAccumulator a = new TraceAccumulator(15_000, 0, out::add);
+        a.onEvent(1_000, "pkg", "Act", "标题", null, null);
+        a.updateFrame(2_000, "第一屏", "shots/1.jpg", 1.0, "SCROLL");
+        a.updateFrame(3_000, "第一屏", "shots/2.jpg", 1.0, "SCROLL");  // hash 相同
+        a.updateFrame(4_000, "第二屏", "shots/3.jpg", 1.0, "SCROLL");
+        a.flush(5_000);
+        Trace t = out.get(0);
+        assertEquals(2, t.frames.size());
+        assertEquals("FIRST", t.frames.get(0).kind);
+        assertEquals("第二屏", t.frames.get(1).text);
+        assertEquals(2, t.nFrames);
+        assertEquals("第二屏", t.text);   // 代表帧文本仍是最后一次 best
+    }
+
+    @Test public void 帧数上限20() {
+        TraceAccumulator a = new TraceAccumulator(15_000, 0, out::add);
+        a.onEvent(1_000, "pkg", "Act", "标题", null, null);
+        for (int i = 0; i < 25; i++) a.updateFrame(2000 + i, "帧" + i, "shots/" + i + ".jpg", 1.0, "SCROLL");
+        a.flush(5000);
+        assertEquals(20, out.get(0).frames.size());
+    }
+
     // ---------------- 关闭条件 ----------------
 
     private static String pid(String activity, String stableText) {

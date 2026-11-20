@@ -164,8 +164,31 @@ public final class TraceAccumulator {
 
     public void updateContent(long nowMs, String text, String shotRef, double sharpness,
                               String pagePkg) {
+        updateFrame(nowMs, text, shotRef, sharpness, "CONTENT_CHANGE");
+    }
+
+    public void updateFrame(long nowMs, String text, String shotRef, double sharpness,
+                            String kind) {
         Scene s = current;
         if (s == null) return;
+        String frameText = text == null ? "" : text;
+        String h = Integer.toHexString(frameText.hashCode());
+        boolean dup = false;
+        for (TraceFrame f : s.frames) if (h.equals(f.textHash)) { dup = true; break; }
+        if (!dup && s.frames.size() < 20
+                && ((frameText != null && !frameText.isEmpty())
+                    || (shotRef != null && !shotRef.isEmpty()))) {
+            TraceFrame f = new TraceFrame();
+            f.seq = s.frames.size();
+            f.tMs = nowMs;
+            f.shotRef = shotRef;
+            f.text = frameText.length() > MAX_TEXT_CHARS ? frameText.substring(0, MAX_TEXT_CHARS) : frameText;
+            f.textHash = h;
+            f.sharpness = sharpness;
+            f.kind = kind == null ? "CONTENT_CHANGE" : kind;
+            if (f.seq == 0) f.kind = "FIRST";
+            s.frames.add(f);
+        }
         boolean hasText = text != null && !text.isEmpty();
         boolean better = s.shotRef == null
                 || (hasText && !s.bestHasText)
@@ -223,6 +246,10 @@ public final class TraceAccumulator {
         t.pageTitle = s.pageTitle == null ? "" : s.pageTitle;
         t.text = s.text == null ? "" : s.text;
         t.shotRef = s.shotRef;
+        if (!s.frames.isEmpty()) {
+            t.frames = new java.util.ArrayList<>(s.frames);
+            t.nFrames = t.frames.size();
+        }
 
         // 关闭时 text 为空、但有代表帧：同步补一次 OCR（最多 BACKFILL_TIMEOUT_MS）
         if (t.text.isEmpty() && t.shotRef != null && textResolver != null) {

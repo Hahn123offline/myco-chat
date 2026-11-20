@@ -30,6 +30,7 @@ public final class ShotGc {
         public long freedBytes;
         public long totalBytes;
         public boolean lowDisk;
+        public final java.util.List<String> deletedFiles = new java.util.ArrayList<>();
     }
 
     private ShotGc() { }
@@ -53,6 +54,7 @@ public final class ShotGc {
             if (keptHours.add(hour)) continue;
             if (f.delete()) {
                 r.dropShots++;
+                r.deletedFiles.add(f.getName());
                 r.freedBytes += f.length();
                 total -= f.length();
             }
@@ -64,6 +66,7 @@ public final class ShotGc {
                 long len = f.length();
                 if (f.delete()) {
                     r.dropShots++;
+                    r.deletedFiles.add(f.getName());
                     r.freedBytes += len;
                     total -= len;
                 }

@@ -19,6 +19,8 @@ public final class Scene {
     /** 块内最清晰帧的 Laplacian 方差（选代表帧用） */
     public double bestSharpness = -1;
     public boolean bestHasText = false;
+    /** 块内多帧；上限由 TraceAccumulator 控制。 */
+    public final java.util.List<TraceFrame> frames = new java.util.ArrayList<>();
 
     Scene(String pkg, String activity, String pageId, long t0) {
         this.pkg = pkg == null ? "" : pkg;

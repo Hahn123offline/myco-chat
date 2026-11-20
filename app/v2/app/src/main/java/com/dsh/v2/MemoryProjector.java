@@ -122,6 +122,25 @@ public final class MemoryProjector {
                     String objTitle = ok.contains("/") ? ok.substring(ok.indexOf('/') + 1) : "";
                     db.beginTransaction();
                     try {
+                        // 多帧：每帧文本各自落一行（frame_id 指向 trace_frames；无 bbox 的帧用 y=500）
+                        int frameBase = 1000;
+                        try (Cursor fr = edb.rawQuery("SELECT id,text FROM trace_frames "
+                                + "WHERE trace_id=? ORDER BY seq", new String[]{String.valueOf(id)})) {
+                            while (fr.moveToNext()) {
+                                String ft = fr.getString(1);
+                                if (ft == null || ft.trim().isEmpty()) continue;
+                                ContentValues fv = new ContentValues();
+                                fv.put("object_key", ok); fv.put("pkg", pkg); fv.put("time", time);
+                                fv.put("text", ft.trim()); fv.put("block_id", id);
+                                fv.put("shot_ref", shot); fv.put("line_no", frameBase++);
+                                fv.put("y_top", 500); fv.put("kind", "CONTENT");
+                                fv.put("frame_id", fr.getLong(0));
+                                fv.put("created_at", System.currentTimeMillis());
+                                long r = db.insertWithOnConflict("lines", null, fv,
+                                        SQLiteDatabase.CONFLICT_IGNORE);
+                                if (r >= 0) n++;
+                            }
+                        } catch (Throwable ignored) { }
                         for (int i = 0; i < texts.size(); i++) {
                             String text = texts.get(i);
                             ContentValues v = new ContentValues();

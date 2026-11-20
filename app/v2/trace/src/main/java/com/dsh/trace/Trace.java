@@ -37,4 +37,7 @@ public final class Trace {
     public String maskedText;
     /** 数据来源："a11y"（默认，轨迹主路）或 "usage"（UsageStats 降级，只有 pkg/t0/t1） */
     public String source = "a11y";
+    /** 块内多帧；旧数据为空。 */
+    public java.util.List<TraceFrame> frames = new java.util.ArrayList<>();
+    public int nFrames;
 }
