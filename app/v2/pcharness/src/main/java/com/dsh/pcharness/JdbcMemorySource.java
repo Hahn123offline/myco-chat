@@ -145,7 +145,7 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
              java.sql.PreparedStatement ps = c.prepareStatement(
                      "SELECT id,object_key,pkg,t_first,t_last,seen_count,sender,text,text_key,"
                              + "block_id,frame_id,side FROM object_messages "
-                             + "WHERE object_key=? OR object_key LIKE ? ORDER BY t_first LIMIT ?")) {
+                             + "WHERE object_key=? OR object_key LIKE ? ORDER BY t_first DESC LIMIT ?")) {
             ps.setString(1, object); ps.setString(2, "%" + object + "%");
             ps.setInt(3, Math.max(1, limit));
             try (java.sql.ResultSet rs = ps.executeQuery()) {
@@ -160,7 +160,22 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
                 }
             }
         } catch (Throwable ignored) { }
+        java.util.Collections.reverse(out);
         return out;
+    }
+
+    @Override public long[] messageStats(String object) {
+        if (object == null || object.isEmpty()) return new long[]{0L, 0L, 0L};
+        try (java.sql.Connection c = java.sql.DriverManager.getConnection("jdbc:sqlite:" + db);
+             java.sql.PreparedStatement ps = c.prepareStatement(
+                     "SELECT COUNT(*),MIN(t_first),MAX(t_first) FROM object_messages "
+                             + "WHERE object_key=? OR object_key LIKE ?")) {
+            ps.setString(1, object); ps.setString(2, "%" + object + "%");
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return new long[]{rs.getLong(1), rs.getLong(2), rs.getLong(3)};
+            }
+        } catch (Throwable ignored) { }
+        return new long[]{0L, 0L, 0L};
     }
 
     @Override public java.util.List<String> healthNotes(String from, String to) {
@@ -178,6 +193,7 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
                 }
             }
         } catch (Throwable ignored) { }
+        java.util.Collections.reverse(out);
         return out;
     }
 
@@ -238,6 +254,7 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
                 }
             }
         } catch (Throwable ignored) { }
+        java.util.Collections.reverse(out);
         return out;
     }
 

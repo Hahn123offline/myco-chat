@@ -3,6 +3,15 @@ package com.dsh.memory;
 /** 行级 chrome 分类（纯规则，PC/Android 共用）。 */
 public final class TextKind {
     private TextKind() { }
+    /** 本 App 自己的 UI/回答文本，永远不该进记忆消息。 */
+    public static boolean isSelfUi(String text) {
+        String t = text == null ? "" : text;
+        return t.contains("问我：") || t.contains("问它：") || t.contains("【覆盖】")
+                || t.contains("以上都是我翻记录") || t.contains("（发送者未知）")
+                || t.contains("【对象消息】") || t.contains("【本次显示】")
+                || t.contains("问它:") || t.contains("问我:");
+    }
+
     /** 明确不是消息的行：状态/文件名/纯表情/单字符。 */
     public static boolean isNonMessage(String text) {
         String t = text == null ? "" : text.trim();

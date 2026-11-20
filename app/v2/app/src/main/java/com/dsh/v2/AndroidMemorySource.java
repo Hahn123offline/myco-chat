@@ -185,7 +185,7 @@ public final class AndroidMemorySource implements MemorySource {
                 "SELECT id,object_key,pkg,t_first,t_last,seen_count,sender,text,text_key,"
                         + "block_id,frame_id,side FROM object_messages "
                         + "WHERE object_key=? OR object_key LIKE ? "
-                        + "ORDER BY t_first LIMIT ?",
+                        + "ORDER BY t_first DESC LIMIT ?",
                 new String[]{object, "%" + object + "%", String.valueOf(Math.max(1, limit))})) {
             while (c.moveToNext()) {
                 com.dsh.memory.ObjectMessage m = new com.dsh.memory.ObjectMessage();
@@ -200,6 +200,17 @@ public final class AndroidMemorySource implements MemorySource {
         return out;
     }
 
+    @Override public long[] messageStats(String object) {
+        if (object == null || object.isEmpty()) return new long[]{0L, 0L, 0L};
+        try (android.database.Cursor c = MemoryDb.get(app).getReadableDatabase().rawQuery(
+                "SELECT COUNT(*),MIN(t_first),MAX(t_first) FROM object_messages "
+                        + "WHERE object_key=? OR object_key LIKE ?",
+                new String[]{object, "%" + object + "%"})) {
+            if (c.moveToFirst()) return new long[]{c.getLong(0), c.getLong(1), c.getLong(2)};
+        } catch (Throwable ignored) { }
+        return new long[]{0L, 0L, 0L};
+    }
+
     @Override public java.util.List<String> healthNotes(String from, String to) {
         java.util.List<String> out = new java.util.ArrayList<>();
         try {
@@ -209,53 +220,6 @@ public final class AndroidMemorySource implements MemorySource {
                     "SELECT text FROM mem_items WHERE namespace='health' AND t0>=? AND t0<? "
                             + "ORDER BY t0", new String[]{String.valueOf(a), String.valueOf(b)})) {
                 while (c.moveToNext()) out.add(c.getString(0));
-            }
-        } catch (Throwable ignored) { }
-        return out;
-    }
-
-    @Override public int traceCount(String from, String to) {
-        try {
-            long a = from == null || from.isEmpty() ? 0 : parseMs(from);
-            long b = to == null || to.isEmpty() ? Long.MAX_VALUE : parseMs(to);
-            return new TraceStore(app).countBetween(a, b);
-        } catch (Throwable t) { return 0; }
-    }
-
-    @Override public java.util.List<com.dsh.memory.LineItem> lines(
-            com.dsh.memory.RecallQuery q) {
-        java.util.List<com.dsh.memory.LineItem> out = new java.util.ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT id,object_key,pkg,time,text,block_id,"
-                + "shot_ref,line_no,y_top,kind FROM lines WHERE 1=1");
-        java.util.List<String> args = new java.util.ArrayList<>();
-        if (q != null && q.object != null && !q.object.isEmpty()) {
-            sql.append(" AND (object_key=? OR object_key LIKE ?)");
-            args.add(q.object); args.add("%" + q.object + "%");
-        }
-        if (q != null && q.pkg != null && !q.pkg.isEmpty()) {
-            sql.append(" AND (pkg=? OR pkg LIKE ?)");
-            args.add(q.pkg);
-            args.add("%" + q.pkg + "%");
-        }
-        if (q != null && q.from != null && !q.from.isEmpty()) {
-            sql.append(" AND time>=?");
-            args.add(String.valueOf(parseMs(q.from)));
-        }
-        if (q != null && q.to != null && !q.to.isEmpty()) {
-            sql.append(" AND time<?");
-            args.add(String.valueOf(hasTime(q.to) ? parseMs(q.to)
-                    : parseMs(q.to) + 86400000L));
-        }
-        sql.append(" ORDER BY time LIMIT 5000");
-        try (android.database.Cursor c = MemoryDb.get(app).getReadableDatabase()
-                .rawQuery(sql.toString(), args.toArray(new String[0]))) {
-            while (c.moveToNext()) {
-                com.dsh.memory.LineItem l = new com.dsh.memory.LineItem();
-                l.id = c.getLong(0); l.objectKey = c.getString(1); l.pkg = c.getString(2);
-                l.time = c.getLong(3); l.text = c.getString(4); l.blockId = c.getLong(5);
-                l.shotRef = c.getString(6); l.lineNo = c.getInt(7); l.yTop = c.getInt(8);
-                l.kind = c.getString(9) == null ? "CONTENT" : c.getString(9);
-                out.add(l);
             }
         } catch (Throwable ignored) { }
         return out;

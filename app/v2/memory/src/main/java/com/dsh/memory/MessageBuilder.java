@@ -49,6 +49,7 @@ public final class MessageBuilder {
         for (LineItem l : lines) {
             if (l == null || l.text == null || l.text.trim().isEmpty()) continue;
             if (l.kind != null && !"CONTENT".equals(l.kind) && !"SYSTEM".equals(l.kind)) continue;
+            if (TextKind.isSelfUi(l.text)) continue;
             if (TextKind.isNonMessage(l.text)) continue;
             String k = l.objectKey == null || l.objectKey.isEmpty() ? l.pkg : l.objectKey;
             byObject.computeIfAbsent(k, x -> new ArrayList<>()).add(l);
@@ -87,7 +88,7 @@ public final class MessageBuilder {
         StringBuilder b = new StringBuilder();
         for (LineItem l : lines) {
             String t = l.text == null ? "" : l.text.trim();
-            if (t.isEmpty() || TextKind.isNonMessage(t)) continue;
+            if (t.isEmpty() || TextKind.isSelfUi(t) || TextKind.isNonMessage(t)) continue;
             String title = objectKey.contains("/") ? objectKey.substring(objectKey.indexOf('/') + 1) : "";
             if (!title.isEmpty() && normalize(t).equals(normalize(title))) continue;
             // A11Y sender 节点若被投影成内容行，结构上移除（不是文本猜 sender）

@@ -78,7 +78,8 @@ public final class RecallTool implements AgentTool {
         List<com.dsh.memory.ObjectMessage> messages = q.object == null || q.object.isEmpty()
                 ? java.util.Collections.emptyList() : source.messages(q.object, q.limit);
         if (!messages.isEmpty()) {
-            return ToolResult.ok(renderMessages(messages, q.limit));
+            long[] stats = source.messageStats(q.object);
+            return ToolResult.ok(renderMessages(messages, q.limit, stats));
         }
         boolean includeChrome = Boolean.TRUE.equals(args.get("include_chrome"));
         if (!includeChrome) lines = contentOnly(lines);
@@ -163,6 +164,10 @@ public final class RecallTool implements AgentTool {
     }
 
     static String renderMessages(List<com.dsh.memory.ObjectMessage> msgs, int limit) {
+        return renderMessages(msgs, limit, new long[]{msgs.size(), 0L, 0L});
+    }
+
+    static String renderMessages(List<com.dsh.memory.ObjectMessage> msgs, int limit, long[] stats) {
         long first = Long.MAX_VALUE, last = 0;
         int seen = 0;
         for (com.dsh.memory.ObjectMessage m : msgs) {
@@ -170,17 +175,22 @@ public final class RecallTool implements AgentTool {
             last = Math.max(last, m.tLast);
             seen += Math.max(1, m.seenCount);
         }
+        long total = stats != null && stats[0] > 0 ? stats[0] : msgs.size();
+        long covMin = stats != null && stats[1] > 0 ? stats[1] : first;
+        long covMax = stats != null && stats[2] > 0 ? stats[2] : last;
         StringBuilder b = new StringBuilder("【对象消息】覆盖 ")
-                .append(fmt(first)).append(" → ").append(fmt(last)).append('\n')
-                .append("共 ").append(msgs.size()).append(" 条唯一消息，被看到 ")
+                .append(fmt(covMin)).append(" → ").append(fmt(covMax)).append('\n')
+                .append("共 ").append(total).append(" 条唯一消息，被看到 ")
                 .append(seen).append(" 次\n");
-        int n = 0;
+        if (!msgs.isEmpty()) {
+            b.append("【本次显示】最近 ").append(msgs.size()).append(" 条（")
+                    .append(fmt(first)).append(" → ").append(fmt(last)).append("）\n");
+        }
+        if (total > msgs.size()) {
+            b.append("【未显示】").append(total - msgs.size())
+                    .append(" 条更早的，可用 from/to 收窄查看\n");
+        }
         for (com.dsh.memory.ObjectMessage m : msgs) {
-            if (n++ >= Math.max(1, limit)) {
-                b.append("…已截断，可收窄时间范围\n");
-                break;
-            }
-            // side 已去掉：只保留 A11Y sender 名字；拿不到就是发送者未知
             String sender = m.sender == null || m.sender.trim().isEmpty()
                     ? "（发送者未知）" : m.sender;
             b.append(fmt(m.tFirst)).append(' ').append(sender).append(' ')

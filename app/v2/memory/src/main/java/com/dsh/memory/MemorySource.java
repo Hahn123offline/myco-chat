@@ -42,4 +42,7 @@ public interface MemorySource {
     default java.util.List<ObjectMessage> messages(String object, int limit) {
         return java.util.Collections.emptyList();
     }
+
+    /** {total, minTFirst, maxTFirst}；不支持返回 {0,0,0}。 */
+    default long[] messageStats(String object) { return new long[]{0L, 0L, 0L}; }
 }
