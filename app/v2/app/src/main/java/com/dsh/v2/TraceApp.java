@@ -43,9 +43,13 @@ public final class TraceApp extends Application {
         DbMigrator.migrateIfNeeded(this);
         MemoryDb.checkMigrationState(this);
         if (MemoryDb.migrationWarning.isEmpty()) {
-            MemoryProjector.projectEvents(this);
-            MemoryProjector.projectTraceBlocks(this);
-            MemoryProjector.projectDays(this);
+            try {
+                MemoryProjector.projectEvents(this);
+                MemoryProjector.projectTraceBlocks(this);
+                MemoryProjector.projectDays(this);
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "startup projection failed; app continues", t);
+            }
             final android.content.Context ctx = this;
             new Thread(() -> {
                 try { Thread.sleep(15000); } catch (Throwable ignored) { }

@@ -74,33 +74,44 @@ public final class MemoryDb extends SQLiteOpenHelper {
     }
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
-        createAll(db);
+        // 顺序：先补列（ALTER），再建表/索引（IF NOT EXISTS），最后数据迁移。
+        // 任何一步失败只影响本版功能，绝不能把 App 启动带崩。
+        try {
+            migrateColumns(db, oldV);
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "lines migrate columns failed", t);
+        }
+        try {
+            createAll(db);
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "lines migrate createAll failed", t);
+        }
+        try {
+            migrateData(db, oldV);
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "lines migrate data failed", t);
+        }
+    }
+
+    private static void migrateColumns(SQLiteDatabase db, int oldV) {
         if (oldV < 11) {
             try { db.execSQL("ALTER TABLE chains ADD COLUMN covered_ms INTEGER DEFAULT 0"); }
-            catch (Throwable ignored) { }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "migrate chains.covered_ms failed", t); }
         }
         if (oldV < 13) {
             try { db.execSQL("ALTER TABLE lines ADD COLUMN kind TEXT"); }
-            catch (Throwable ignored) { }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "migrate lines.kind failed", t); }
         }
         if (oldV < 14) {
             try { db.execSQL("ALTER TABLE lines ADD COLUMN frame_id INTEGER"); }
-            catch (Throwable ignored) { }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "migrate lines.frame_id failed", t); }
         }
+    }
+
+    private static void migrateData(SQLiteDatabase db, int oldV) {
         if (oldV < 15) {
-            try { db.execSQL("DROP INDEX IF EXISTS idx_lines_block_text"); } catch (Throwable ignored) { }
-            try {
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_block_frame_text "
-                        + "ON lines(block_id,frame_id,line_no,text)");
-            } catch (Throwable t) {
-                android.util.Log.e("DSHL2", "create frame lines index failed", t);
-            }
-            try {
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
-                        + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
-            } catch (Throwable t) {
-                android.util.Log.e("DSHL2", "create legacy lines index failed", t);
-            }
+            try { db.execSQL("DROP INDEX IF EXISTS idx_lines_block_text"); }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "drop old lines index failed", t); }
         }
         if (oldV < 16) {
             // v15 的 frame_id NULL 唯一索引无去重能力；先清历史重复行，再建部分唯一索引。
@@ -121,12 +132,39 @@ public final class MemoryDb extends SQLiteOpenHelper {
                 if (c.moveToFirst()) after = c.getInt(0);
             }
             android.util.Log.i("DSHL2", "lines dedupe: removed=" + (before - after));
-            try {
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
-                        + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
-            } catch (Throwable t) {
-                android.util.Log.e("DSHL2", "create legacy lines index failed", t);
+        }
+        // 最后确保两个索引存在；frame_id 不存在时跳过，并 Log.e。
+        if (hasColumn(db, "lines", "frame_id")) {
+            createLinesIndexes(db);
+        } else {
+            android.util.Log.e("DSHL2", "skip lines indexes: frame_id column missing");
+        }
+    }
+
+    private static boolean hasColumn(SQLiteDatabase db, String table, String column) {
+        try (Cursor c = db.rawQuery("PRAGMA table_info(" + table + ")", null)) {
+            while (c.moveToNext()) {
+                if (column.equals(c.getString(1))) return true;
             }
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "pragma table_info failed", t);
+        }
+        return false;
+    }
+
+    private static void createLinesIndexes(SQLiteDatabase db) {
+        try {
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_block_frame_text "
+                    + "ON lines(block_id,frame_id,line_no,text)");
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "create frame lines index failed", t);
+        }
+        // 历史行 frame_id 为 NULL；SQLite UNIQUE 中 NULL 互不相等，单独用部分索引保证旧行幂等
+        try {
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
+                    + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "create legacy lines index failed", t);
         }
     }
 
@@ -182,11 +220,7 @@ public final class MemoryDb extends SQLiteOpenHelper {
                 "line_no INTEGER, y_top INTEGER, kind TEXT, frame_id INTEGER, created_at INTEGER)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_obj_time ON lines(object_key,time)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_time ON lines(time)");
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_block_frame_text "
-                + "ON lines(block_id,frame_id,line_no,text)");
-        // 历史行 frame_id 为 NULL；SQLite UNIQUE 中 NULL 互不相等，单独用部分索引保证旧行幂等
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
-                + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
+        createLinesIndexes(db);
 
         db.execSQL("CREATE TABLE IF NOT EXISTS trace_gaps(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, t0 INTEGER NOT NULL, t1 INTEGER," +
