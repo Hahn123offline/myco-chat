@@ -78,7 +78,7 @@ public final class MemoryProjector {
             if (c.moveToFirst()) maxBlock = c.getLong(0);
         }
         SQLiteDatabase edb = null;
-        int n = 0, traces = 0;
+        int n = 0, traces = 0, framesTotal = 0;
         android.util.Log.i("DSHL2", "lines project start maxBlock=" + maxBlock);
         try {
             edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
@@ -122,25 +122,62 @@ public final class MemoryProjector {
                     String objTitle = ok.contains("/") ? ok.substring(ok.indexOf('/') + 1) : "";
                     db.beginTransaction();
                     try {
-                        // 多帧：每帧文本各自落一行（frame_id 指向 trace_frames；无 bbox 的帧用 y=500）
-                        int frameBase = 1000;
-                        try (Cursor fr = edb.rawQuery("SELECT id,text FROM trace_frames "
+                        // 多帧：按 frame 的 shot_ref 读该帧 page_elements，逐元素落行（带真实 bbox）
+                        int framesThisTrace = 0;
+                        try (Cursor fr = edb.rawQuery("SELECT id,shot_ref,text FROM trace_frames "
                                 + "WHERE trace_id=? ORDER BY seq", new String[]{String.valueOf(id)})) {
                             while (fr.moveToNext()) {
-                                String ft = fr.getString(1);
-                                if (ft == null || ft.trim().isEmpty()) continue;
-                                ContentValues fv = new ContentValues();
-                                fv.put("object_key", ok); fv.put("pkg", pkg); fv.put("time", time);
-                                fv.put("text", ft.trim()); fv.put("block_id", id);
-                                fv.put("shot_ref", shot); fv.put("line_no", frameBase++);
-                                fv.put("y_top", 500); fv.put("kind", "CONTENT");
-                                fv.put("frame_id", fr.getLong(0));
-                                fv.put("created_at", System.currentTimeMillis());
-                                long r = db.insertWithOnConflict("lines", null, fv,
-                                        SQLiteDatabase.CONFLICT_IGNORE);
-                                if (r >= 0) n++;
+                                long frameId = fr.getLong(0);
+                                String fshot = fr.getString(1);
+                                String ftext = fr.getString(2);
+                                framesThisTrace++;
+                                int fno = 0;
+                                boolean hadElement = false;
+                                if (fshot != null && !fshot.isEmpty()) {
+                                    try (Cursor fe = edb.rawQuery(
+                                            "SELECT text,top,source FROM page_elements WHERE shot_ref=? "
+                                                    + "ORDER BY top,left", new String[]{fshot})) {
+                                        while (fe.moveToNext()) {
+                                            String tx = fe.getString(0);
+                                            if (tx == null || tx.trim().isEmpty()) continue;
+                                            String src = fe.getString(2);
+                                            if (!"A11Y".equals(src) && !"BOTH".equals(src)
+                                                    && !"OCR".equals(src)) continue;
+                                            int top = fe.getInt(1);
+                                            ContentValues fv = new ContentValues();
+                                            fv.put("object_key", ok); fv.put("pkg", pkg);
+                                            fv.put("time", time); fv.put("text", tx.trim());
+                                            fv.put("block_id", id); fv.put("shot_ref", fshot);
+                                            fv.put("line_no", fno++);
+                                            fv.put("y_top", top);
+                                            fv.put("kind", classify(tx.trim(), top, objTitle));
+                                            fv.put("frame_id", frameId);
+                                            fv.put("created_at", System.currentTimeMillis());
+                                            long r = db.insertWithOnConflict("lines", null, fv,
+                                                    SQLiteDatabase.CONFLICT_IGNORE);
+                                            if (r >= 0) n++;
+                                            hadElement = true;
+                                        }
+                                    } catch (Throwable ignored) { }
+                                }
+                                // 无图/无元素时：文本行不带 bbox（不伪造 y=500），不可声称版式
+                                if (!hadElement && ftext != null && !ftext.trim().isEmpty()) {
+                                    ContentValues fv = new ContentValues();
+                                    fv.put("object_key", ok); fv.put("pkg", pkg);
+                                    fv.put("time", time); fv.put("text", ftext.trim());
+                                    fv.put("block_id", id); fv.put("shot_ref", (String) null);
+                                    fv.putNull("y_top");
+                                    fv.put("line_no", 0);
+                                    fv.put("kind", "CHROME");
+                                    fv.put("frame_id", frameId);
+                                    fv.put("created_at", System.currentTimeMillis());
+                                    long r = db.insertWithOnConflict("lines", null, fv,
+                                            SQLiteDatabase.CONFLICT_IGNORE);
+                                    if (r >= 0) n++;
+                                }
                             }
                         } catch (Throwable ignored) { }
+                        framesTotal += framesThisTrace;
                         for (int i = 0; i < texts.size(); i++) {
                             String text = texts.get(i);
                             ContentValues v = new ContentValues();
@@ -175,7 +212,8 @@ public final class MemoryProjector {
         }
         backfillKinds(app, db);
         markFrequencyChrome(db);
-        android.util.Log.i("DSHL2", "lines project done: traces=" + traces + " lines=" + n);
+        android.util.Log.i("DSHL2", "lines project: traces=" + traces
+                + " frames=" + framesTotal + " lines=" + n);
         return n;
     }
 

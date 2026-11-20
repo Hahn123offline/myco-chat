@@ -78,6 +78,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
     private volatile long lastRootAt = 0;
     private volatile String lastRootPkg = "";
     private final ScrollTrigger scrollTrigger = new ScrollTrigger();
+    private volatile String shotKind = "CONTENT_CHANGE";
     private static final java.util.Set<String> HARD_SKIP = new java.util.HashSet<>(
             java.util.Arrays.asList("com.dsh.v2", "com.android.systemui",
                     "com.android.inputmethod.latin", "com.sohu.inputmethod.sogou",
@@ -190,6 +191,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
                 handler.postDelayed(scrollIdle, ScrollTrigger.IDLE_MS + 20);
                 if (shot) {
                     lastShotAt = now;
+                    shotKind = "SCROLL";
                     requestScreenshot();
                 }
                 return;
@@ -281,6 +283,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
                 scheduleInteractionShot();
             } else if (now - lastShotAt >= SHOT_MIN_THRESHOLD_MS) {
                 lastShotAt = now;
+                shotKind = "CONTENT_CHANGE";
                 requestScreenshot();
             }
         } catch (Throwable t) {
@@ -300,6 +303,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
         long now = SystemClock.uptimeMillis();
         if (scrollTrigger.onIdle(now, h)) {
             lastShotAt = now;
+            shotKind = "SCROLL";
             requestScreenshot();
         }
     };
@@ -310,6 +314,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
         long elapsed = now - lastShotAt;
         if (elapsed >= SHOT_MIN_INTERACTION_MS) {
             lastShotAt = now;
+            shotKind = "INTERACTION";
             TraceModule m = TraceRuntime.get();
             if (m != null) m.noteScreenshot(true);
             requestScreenshot();
@@ -473,7 +478,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
                     .addOnSuccessListener(text -> {
                         TraceModule m = TraceRuntime.get();
                         if (m != null) {
-                            m.onContent(text.getText(), shotRef, sharpness, shotPagePkg);
+                            m.onContent(text.getText(), shotRef, sharpness, shotPagePkg, shotKind);
                             try {
                                 List<PageParser.OcrLine> lines = new ArrayList<>();
                                 for (Text.TextBlock b : text.getTextBlocks()) {
