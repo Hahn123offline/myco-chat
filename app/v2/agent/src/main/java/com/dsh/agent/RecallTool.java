@@ -88,12 +88,13 @@ public final class RecallTool implements AgentTool {
         if ((q.query == null || q.query.isEmpty() || timeWord)
                 && (q.from != null && !q.from.isEmpty() || q.to != null && !q.to.isEmpty())) {
             int tc = source.traceCount(q.from, q.to);
+            java.util.List<String> health = source.healthNotes(q.from, q.to);
             if (lines.isEmpty()) {
                 if (tc == 0) return ToolResult.ok("这段时间没有痕迹：没有采集到任何记录。");
                 return ToolResult.ok("有 " + tc + " 条痕迹，但没有可检索的 CONTENT 行；"
                         + "可能只有截图/无文本块，可先用 read_frame(block_id) 看原图。");
             }
-            return ToolResult.ok(renderTimeView(lines, q.limit, tc, q.from, q.to));
+            return ToolResult.ok(renderTimeView(lines, q.limit, tc, q.from, q.to, health));
         }
         if (q.query != null && !q.query.isEmpty() && !lines.isEmpty()) {
             List<com.dsh.memory.LineItem> hits = com.dsh.memory.LineSearch.search(
@@ -220,6 +221,13 @@ public final class RecallTool implements AgentTool {
 
     static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit,
                                  int traces, String from, String to) {
+        return renderTimeView(lines, limit, traces, from, to,
+                java.util.Collections.emptyList());
+    }
+
+    static String renderTimeView(List<com.dsh.memory.LineItem> lines, int limit,
+                                 int traces, String from, String to,
+                                 java.util.List<String> health) {
         if (lines.isEmpty()) return "这段时间没有可检索的 CONTENT 行。";
         long[] r = rangeMs(from, to, lines);
         long rangeStart = r[0] == Long.MAX_VALUE ? lines.get(0).time : r[0];
@@ -327,6 +335,14 @@ public final class RecallTool implements AgentTool {
         }
         b.append("【不知道时】这段无记录可以：①换时间段 ②看前后对象活动 ③按 app 查活跃段；"
                 + "如果有痕迹无文本，用 read_block/read_frame 看原图。\n");
+        if (health != null && !health.isEmpty()) {
+            b.append("【心跳】\n");
+            int hn = 0;
+            for (String h : health) {
+                if (hn++ >= 8) { b.append("  …已截断\n"); break; }
+                b.append("  ").append(h).append("\n");
+            }
+        }
         b.append("【下钻】read_block(block_id) / read_frame(block_id)。\n");
         return b.toString();
     }

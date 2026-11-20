@@ -178,6 +178,20 @@ public final class AndroidMemorySource implements MemorySource {
         }
     }
 
+    @Override public java.util.List<String> healthNotes(String from, String to) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        try {
+            long a = from == null || from.isEmpty() ? 0 : parseMs(from);
+            long b = to == null || to.isEmpty() ? Long.MAX_VALUE : parseMs(to);
+            try (android.database.Cursor c = MemoryDb.get(app).getReadableDatabase().rawQuery(
+                    "SELECT text FROM mem_items WHERE namespace='health' AND t0>=? AND t0<? "
+                            + "ORDER BY t0", new String[]{String.valueOf(a), String.valueOf(b)})) {
+                while (c.moveToNext()) out.add(c.getString(0));
+            }
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
     @Override public int traceCount(String from, String to) {
         try {
             long a = from == null || from.isEmpty() ? 0 : parseMs(from);

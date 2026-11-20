@@ -138,6 +138,24 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         return com.dsh.memory.FrameRef.blocked("PC 宿主没有掩码图管道，拒绝看图");
     }
 
+    @Override public java.util.List<String> healthNotes(String from, String to) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        try {
+            long a = from == null || from.isEmpty() ? 0 : parseMs(from);
+            long b = to == null || to.isEmpty() ? Long.MAX_VALUE : parseMs(to);
+            try (java.sql.Connection c = java.sql.DriverManager.getConnection("jdbc:sqlite:" + db);
+                 java.sql.PreparedStatement ps = c.prepareStatement(
+                         "SELECT text FROM mem_items WHERE namespace='health' AND t0>=? AND t0<? "
+                                 + "ORDER BY t0")) {
+                ps.setLong(1, a); ps.setLong(2, b);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) out.add(rs.getString(1));
+                }
+            }
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
     @Override public int traceCount(String from, String to) {
         try {
             long a = from == null || from.isEmpty() ? 0 : parseMs(from);

@@ -212,6 +212,18 @@ public final class MemoryProjector {
         }
         backfillKinds(app, db);
         markFrequencyChrome(db);
+        long toBlock = maxBlock;
+        try (Cursor mb = db.rawQuery("SELECT COALESCE(MAX(block_id),0) FROM lines", null)) {
+            if (mb.moveToFirst()) toBlock = mb.getLong(0);
+        }
+        ProjectionHealth.lastProjectAt = System.currentTimeMillis();
+        ProjectionHealth.lastBlock = toBlock;
+        ProjectionHealth.lastLineBlock = toBlock;
+        ProjectionHealth.lastTraces = traces;
+        ProjectionHealth.lastFrames = framesTotal;
+        android.util.Log.i("DSHL2", "lines project inc: from_block=" + (maxBlock + 1)
+                + " to_block=" + toBlock + " traces=" + traces
+                + " frames=" + framesTotal + " lines=" + n);
         try (Cursor lc = db.rawQuery("SELECT COUNT(*) FROM lines WHERE frame_id IS NULL", null)) {
             int legacy = lc.moveToFirst() ? lc.getInt(0) : 0;
             try (Cursor fc = db.rawQuery("SELECT COUNT(*) FROM lines WHERE frame_id IS NOT NULL", null)) {

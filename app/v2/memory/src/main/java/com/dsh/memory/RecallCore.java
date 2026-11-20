@@ -37,6 +37,8 @@ public final class RecallCore {
         for (MemItem m : candidates) {
             if (m == null || m.superseded) continue;
             if ("compaction".equals(m.namespace)) continue;
+            // health 心跳只用于按时间核对，默认不参与内容 BM25
+            if ("health".equals(m.namespace) && q.query != null && !q.query.isEmpty()) continue;
             if (m.t0 < fromMs || m.t0 > toMs) continue;
             if (q.namespace != null && !q.namespace.isEmpty()
                     && !q.namespace.equals(m.namespace)) continue;

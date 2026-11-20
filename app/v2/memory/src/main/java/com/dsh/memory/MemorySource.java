@@ -32,4 +32,9 @@ public interface MemorySource {
 
     /** 某时间窗的 trace 数；用于区分「没有痕迹」与「有痕迹无文本」。 */
     default int traceCount(String from, String to) { return 0; }
+
+    /** 某时间窗的 health 心跳文本；默认不参与内容检索。 */
+    default java.util.List<String> healthNotes(String from, String to) {
+        return java.util.Collections.emptyList();
+    }
 }

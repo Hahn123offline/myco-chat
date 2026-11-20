@@ -27,6 +27,7 @@ public final class TraceApp extends Application {
     private ModelsModule modelsModule;
     private SecretStore secrets;
     private ConfigStore configs;
+    private java.util.concurrent.ScheduledExecutorService maintenance;
 
     public static TraceApp get(android.content.Context c) {
         return (TraceApp) c.getApplicationContext();
@@ -73,6 +74,26 @@ public final class TraceApp extends Application {
                         + " low_disk=" + g.lowDisk);
             }, "shot-gc").start();
             ChainCoverage.backfill(this);
+            final android.content.Context mctx = this;
+            maintenance = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "maintenance");
+                t.setDaemon(true);
+                return t;
+            });
+            maintenance.scheduleWithFixedDelay(() -> {
+                try {
+                    MemoryProjector.projectLines(mctx);
+                } catch (Throwable t) {
+                    android.util.Log.e("DSHL2", "periodic line projection failed", t);
+                }
+            }, 60, 180, java.util.concurrent.TimeUnit.SECONDS);
+            maintenance.scheduleWithFixedDelay(() -> {
+                try {
+                    HealthHeartbeat.write(mctx);
+                } catch (Throwable t) {
+                    android.util.Log.e("DSHL2", "health heartbeat failed", t);
+                }
+            }, 30, 300, java.util.concurrent.TimeUnit.SECONDS);
         }
         File base = getFilesDir();
         File hostDir = new File(base, "host");
