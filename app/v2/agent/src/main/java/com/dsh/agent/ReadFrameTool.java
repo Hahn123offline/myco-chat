@@ -23,8 +23,8 @@ public final class ReadFrameTool implements AgentTool {
     @Override public String name() { return "read_frame"; }
 
     @Override public String description() {
-        return "看某块原始截图（已掩码）。只在需要核对具体文字/数字/标题时用，一次只取一张，"
-                + "每轮最多 3 张。OCR 不可信时用它看原图。";
+        return "核对具体细节的标准动作。引用数字/人名/群名/标题/链接/代码前，先看这张图；"
+                + "一次只取一张，每轮最多 3 张。看不清就如实说，不要按 OCR 转写猜。";
     }
 
     @Override public String parametersJson() {
