@@ -77,6 +77,8 @@ public final class TraceAccessibilityService extends AccessibilityService {
     private long lastEventAtMs = 0;
     private volatile long lastRootAt = 0;
     private volatile String lastRootPkg = "";
+    private volatile String lastContentParsePkg = "";
+    private volatile long lastContentParseAt = 0;
     private final ScrollTrigger scrollTrigger = new ScrollTrigger();
     private volatile String shotKind = "CONTENT_CHANGE";
     private static final java.util.Set<String> HARD_SKIP = new java.util.HashSet<>(
@@ -206,6 +208,15 @@ public final class TraceAccessibilityService extends AccessibilityService {
                 if (m0 != null) m0.onSkippedHeartbeat(nowEv, evPkg, currentActivity);
                 return;
             }
+            // 内容变化是高频事件（打字/动画/进度条）：同 pkg 300ms 内不重复解析
+            if (type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                if (evPkg.equals(lastContentParsePkg) && nowEv - lastContentParseAt < 300) {
+                    if (m0 != null) m0.onSkippedHeartbeat(nowEv, evPkg, currentActivity);
+                    return;
+                }
+                lastContentParsePkg = evPkg;
+                lastContentParseAt = nowEv;
+            }
             lastRootAt = nowEv;
             lastRootPkg = evPkg;
             AccessibilityNodeInfo active = activeRoot();
@@ -251,7 +262,9 @@ public final class TraceAccessibilityService extends AccessibilityService {
                 }
             }
 
-            String[] st = extractStructure(active);
+            // 只有窗口切换才做完整树；内容变化用 500/120 的紧凑配额
+            boolean full = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
+            String[] st = extractStructure(active, full);
             long pageNow = System.currentTimeMillis();
             lastPageT0 = pageNow;
             lastPagePkg = pkg;
@@ -366,7 +379,12 @@ public final class TraceAccessibilityService extends AccessibilityService {
      * **只取文本，不取可点击性**（task-19：可点击文本会随推荐位/计数变化）。
      */
     private String[] extractStructure(AccessibilityNodeInfo root) {
-        PageParser.Result pr = PageParser.parse(root);
+        return extractStructure(root, true);
+    }
+
+    private String[] extractStructure(AccessibilityNodeInfo root, boolean full) {
+        PageParser.Result pr = full ? PageParser.parse(root)
+                : PageParser.parse(root, 500, 120);
         lastPageResult = pr;
         String title = pr.pageTitle == null ? "" : pr.pageTitle;
         List<String> texts = new ArrayList<>();

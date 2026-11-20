@@ -76,6 +76,11 @@ public final class PageParser {
     }
 
     public static Result parse(AccessibilityNodeInfo root) {
+        return parse(root, MAX_NODES, MAX_ELEMENTS);
+    }
+
+    /** 内容变化事件用更小配额（高频，避免打字时卡主线程）。 */
+    public static Result parse(AccessibilityNodeInfo root, int maxNodes, int maxElements) {
         long t0 = System.currentTimeMillis();
         List<PageElement> out = new ArrayList<>();
         List<TitleCandidate> titleCandidates = new ArrayList<>();
@@ -86,7 +91,7 @@ public final class PageParser {
         ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
         queue.add(root);
         int visited = 0, idx = 0;
-        while (!queue.isEmpty() && visited < MAX_NODES && out.size() < MAX_ELEMENTS) {
+        while (!queue.isEmpty() && visited < maxNodes && out.size() < maxElements) {
             AccessibilityNodeInfo n = queue.poll();
             if (n == null) continue;
             visited++;
