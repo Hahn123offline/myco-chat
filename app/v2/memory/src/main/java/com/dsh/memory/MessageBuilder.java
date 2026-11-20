@@ -82,7 +82,7 @@ public final class MessageBuilder {
             String t = l.text == null ? "" : l.text.trim();
             if (t.isEmpty()) continue;
             // A11Y sender 节点若被投影成内容行，结构上移除（不是文本猜 sender）
-            if (as != null && isAnchorText(t, l.yTop, as)) continue;
+            if (as != null && isAnchorSpan(l.yTop, as)) continue;
             if (b.length() > 0) b.append(' ');
             b.append(t);
         }
@@ -127,16 +127,20 @@ public final class MessageBuilder {
             if (a.top > first.yTop) continue;                 // sender 在上方
             int gap = first.yTop - a.top;
             if (gap > 180) continue;
-            // 同一屏内按 y 最近取 A11Y 锚点；lines 暂未存 x，水平重叠留待 lines 带 left/right
+            // 水平必须相交（群聊左右分栏），否则不配 sender
+            int overlap = Math.min(a.right, first.right) - Math.max(a.left, first.left);
+            if (first.right <= first.left || overlap <= 0) continue;
             if (gap < bestGap) { bestGap = gap; best = a; }
         }
         return best == null ? "" : best.text.trim();
     }
 
-    private static boolean isAnchorText(String t, int y, List<Anchor> as) {
+    /** 行落在 A11Y 短文本锚点的垂直范围内 → 它是 sender 行，不作为消息内容。 */
+    private static boolean isAnchorSpan(int y, List<Anchor> as) {
         for (Anchor a : as) {
-            if (a.text == null) continue;
-            if (t.equals(a.text.trim()) && Math.abs(y - a.top) <= 100) return true;
+            if (a.text == null || a.text.trim().isEmpty()) continue;
+            if (a.text.length() > 30) continue;
+            if (y >= a.top - 10 && y <= a.bottom + 5) return true;
         }
         return false;
     }

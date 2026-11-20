@@ -12,6 +12,7 @@ public final class LineItem {
     public String shotRef = "";
     public int lineNo;
     public int yTop;
+    public int left, right;
     public double score;
     public String kind = "CONTENT";
     public String match = "exact";

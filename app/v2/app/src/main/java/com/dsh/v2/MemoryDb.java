@@ -13,7 +13,7 @@ import java.io.File;
 public final class MemoryDb extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "memory.db";
-    public static final int DB_VER = 17;
+    public static final int DB_VER = 18;
 
     private static volatile MemoryDb instance;
     /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
@@ -112,6 +112,12 @@ public final class MemoryDb extends SQLiteOpenHelper {
         if (oldV < 15) {
             try { db.execSQL("DROP INDEX IF EXISTS idx_lines_block_text"); }
             catch (Throwable t) { android.util.Log.e("DSHL2", "drop old lines index failed", t); }
+        }
+        if (oldV < 18) {
+            try { db.execSQL("ALTER TABLE lines ADD COLUMN x_left INTEGER"); }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "add lines.x_left failed", t); }
+            try { db.execSQL("ALTER TABLE lines ADD COLUMN x_right INTEGER"); }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "add lines.x_right failed", t); }
         }
         if (oldV < 17) {
             try {
@@ -232,7 +238,7 @@ public final class MemoryDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE IF NOT EXISTS lines(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, object_key TEXT, pkg TEXT," +
                 "time INTEGER, text TEXT, block_id INTEGER, shot_ref TEXT," +
-                "line_no INTEGER, y_top INTEGER, kind TEXT, frame_id INTEGER, created_at INTEGER)");
+                "line_no INTEGER, y_top INTEGER, kind TEXT, frame_id INTEGER, x_left INTEGER, x_right INTEGER, created_at INTEGER)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_obj_time ON lines(object_key,time)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_time ON lines(time)");
         createLinesIndexes(db);

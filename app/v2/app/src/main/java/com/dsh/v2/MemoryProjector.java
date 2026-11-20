@@ -97,9 +97,11 @@ public final class MemoryProjector {
                     String shot = t.getString(6);
                     java.util.List<String> texts = new java.util.ArrayList<>();
                     java.util.List<Integer> tops = new java.util.ArrayList<>();
+                    java.util.List<Integer> lefts = new java.util.ArrayList<>();
+                    java.util.List<Integer> rights = new java.util.ArrayList<>();
                     java.util.List<String> srcs = new java.util.ArrayList<>();
                     try (Cursor e = edb.rawQuery(
-                            "SELECT text,top,source FROM page_elements WHERE shot_ref=? "
+                            "SELECT text,top,source,left,right FROM page_elements WHERE shot_ref=? "
                                     + "ORDER BY top,left", new String[]{shot})) {
                         while (e.moveToNext()) {
                             String tx = e.getString(0);
@@ -108,6 +110,7 @@ public final class MemoryProjector {
                             if (!"A11Y".equals(src) && !"BOTH".equals(src)
                                     && !"OCR".equals(src)) continue;
                             texts.add(tx.trim()); tops.add(e.getInt(1)); srcs.add(src);
+                            lefts.add(e.getInt(3)); rights.add(e.getInt(4));
                         }
                     }
                     if (texts.isEmpty()) continue;
@@ -135,7 +138,7 @@ public final class MemoryProjector {
                                 boolean hadElement = false;
                                 if (fshot != null && !fshot.isEmpty()) {
                                     try (Cursor fe = edb.rawQuery(
-                                            "SELECT text,top,source FROM page_elements WHERE shot_ref=? "
+                                            "SELECT text,top,source,left,right FROM page_elements WHERE shot_ref=? "
                                                     + "ORDER BY top,left", new String[]{fshot})) {
                                         while (fe.moveToNext()) {
                                             String tx = fe.getString(0);
@@ -150,6 +153,8 @@ public final class MemoryProjector {
                                             fv.put("block_id", id); fv.put("shot_ref", fshot);
                                             fv.put("line_no", fno++);
                                             fv.put("y_top", top);
+                                            fv.put("x_left", fe.getInt(3));
+                                            fv.put("x_right", fe.getInt(4));
                                             fv.put("kind", classify(tx.trim(), top, objTitle));
                                             fv.put("frame_id", frameId);
                                             fv.put("created_at", System.currentTimeMillis());
@@ -189,6 +194,8 @@ public final class MemoryProjector {
                             v.put("shot_ref", shot);
                             v.put("line_no", i);
                             v.put("y_top", tops.get(i));
+                            v.put("x_left", lefts.get(i));
+                            v.put("x_right", rights.get(i));
                             v.put("kind", classify(text, tops.get(i), objTitle));
                             v.put("created_at", System.currentTimeMillis());
                             long r = db.insertWithOnConflict("lines", null, v,
@@ -245,7 +252,7 @@ public final class MemoryProjector {
         java.util.List<com.dsh.memory.LineItem> lines = new java.util.ArrayList<>();
         java.util.Set<String> shots = new java.util.HashSet<>();
         try (Cursor c = db.rawQuery("SELECT object_key,pkg,time,text,block_id,frame_id,"
-                + "y_top,kind,shot_ref FROM lines WHERE text IS NOT NULL AND text!='' AND ("
+                + "y_top,kind,shot_ref,x_left,x_right FROM lines WHERE text IS NOT NULL AND text!='' AND ("
                 + "kind IN ('CONTENT','SYSTEM') OR text LIKE '[群主%' OR text LIKE '群主%' "
                 + "OR text GLOB '??-*') ORDER BY time", null)) {
             while (c.moveToNext()) {
@@ -259,6 +266,7 @@ public final class MemoryProjector {
                 l.yTop = c.getInt(6);
                 l.kind = c.getString(7);
                 l.shotRef = c.getString(8);
+                l.left = c.getInt(9); l.right = c.getInt(10);
                 if (l.shotRef != null && !l.shotRef.isEmpty()) shots.add(l.shotRef);
                 lines.add(l);
             }
@@ -266,6 +274,15 @@ public final class MemoryProjector {
         java.util.Map<String, java.util.List<com.dsh.memory.MessageBuilder.Anchor>> anchors =
                 new java.util.HashMap<>();
         java.util.List<String> shotList = new java.util.ArrayList<>(shots);
+        java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
+                "evidence.db");
+        SQLiteDatabase edb = null;
+        try {
+            edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
+                    SQLiteDatabase.OPEN_READONLY);
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "open evidence for anchors failed", t);
+        }
         for (int off = 0; off < shotList.size(); off += 200) {
             int end = Math.min(shotList.size(), off + 200);
             StringBuilder sb = new StringBuilder("SELECT shot_ref,text,left,top,right,bottom "
@@ -273,7 +290,7 @@ public final class MemoryProjector {
             for (int i = off; i < end; i++) sb.append(i == off ? "?" : ",?");
             sb.append(") AND text!='' AND length(text)<=30 AND source IN ('A11Y','BOTH')");
             String[] args = shotList.subList(off, end).toArray(new String[0]);
-            try (Cursor a = db.rawQuery(sb.toString(), args)) {
+            try (Cursor a = edb.rawQuery(sb.toString(), args)) {
                 while (a.moveToNext()) {
                     com.dsh.memory.MessageBuilder.Anchor an =
                             new com.dsh.memory.MessageBuilder.Anchor();
@@ -285,6 +302,7 @@ public final class MemoryProjector {
                 android.util.Log.e("DSHL2", "load sender anchors failed", t);
             }
         }
+        if (edb != null) try { edb.close(); } catch (Throwable ignored) { }
         java.util.List<com.dsh.memory.MessageBuilder.Msg> msgs =
                 com.dsh.memory.MessageBuilder.build(lines, anchors);
         db.beginTransaction();
