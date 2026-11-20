@@ -133,6 +133,7 @@ public final class MemoryProjector {
                                 long frameId = fr.getLong(0);
                                 String fshot = fr.getString(1);
                                 String ftext = fr.getString(2);
+                                String framePkg = framePkg(edb, fshot, pkg);
                                 String frameOk = frameObjectKey(edb, fshot, pkg, ok);
                                 try {
                                     ContentValues fo = new ContentValues();
@@ -155,7 +156,7 @@ public final class MemoryProjector {
                                                     && !"OCR".equals(src)) continue;
                                             int top = fe.getInt(1);
                                             ContentValues fv = new ContentValues();
-                                            fv.put("object_key", frameOk); fv.put("pkg", pkg);
+                                            fv.put("object_key", frameOk); fv.put("pkg", framePkg);
                                             fv.put("time", time); fv.put("text", tx.trim());
                                             fv.put("block_id", id); fv.put("shot_ref", fshot);
                                             fv.put("line_no", fno++);
@@ -175,7 +176,7 @@ public final class MemoryProjector {
                                 // 无图/无元素时：文本行不带 bbox（不伪造 y=500），不可声称版式
                                 if (!hadElement && ftext != null && !ftext.trim().isEmpty()) {
                                     ContentValues fv = new ContentValues();
-                                    fv.put("object_key", frameOk); fv.put("pkg", pkg);
+                                    fv.put("object_key", frameOk); fv.put("pkg", framePkg);
                                     fv.put("time", time); fv.put("text", ftext.trim());
                                     fv.put("block_id", id); fv.put("shot_ref", (String) null);
                                     fv.putNull("y_top");
@@ -349,10 +350,26 @@ public final class MemoryProjector {
         return msgs.size();
     }
 
-    /** 帧级对象：用该帧 shot 的顶部居中标题；拿不到回溯 trace 的 object_key。 */
+    /** 帧的 pkg 以该 shot 的 page_elements 为准。 */
+    public static String framePkg(SQLiteDatabase edb, String shot, String fallback) {
+        if (shot == null || shot.isEmpty()) return fallback == null ? "" : fallback;
+        try (Cursor c = edb.rawQuery("SELECT pkg FROM page_elements WHERE shot_ref=? "
+                + "AND pkg IS NOT NULL AND pkg!='' LIMIT 1", new String[]{shot})) {
+            if (c.moveToFirst()) return c.getString(0);
+        } catch (Throwable ignored) { }
+        return fallback == null ? "" : fallback;
+    }
+
+    /** 帧级对象：先做 pkg 一致性；pkg 不同直接空，不挂到 trace 对象。 */
     public static String frameObjectKey(SQLiteDatabase edb, String shot, String pkg,
                                         String fallback) {
         if (shot == null || shot.isEmpty() || pkg == null || pkg.isEmpty()) return fallback;
+        String fp = framePkg(edb, shot, pkg);
+        if (!pkg.equals(fp)) {
+            android.util.Log.d("DSHL2", "frame object: shot=" + shot
+                    + " pkg-mismatch frame=" + fp + " trace=" + pkg + " ok=''");
+            return "";   // 另一个应用界面：不挂到 trace 对象
+        }
         String best = ""; double bestScore = 1e9; int width = 1200; int elements = 0;
         try (Cursor c = edb.rawQuery("SELECT text,left,top,right,role FROM page_elements "
                 + "WHERE shot_ref=? AND text!='' AND length(text)<=40 AND top<350 "
@@ -383,7 +400,7 @@ public final class MemoryProjector {
                     + " ok=" + pkg + "/" + best);
         }
         // 帧级标题拿不到时留空：归到 pkg 下无对象，不能回退到上一个界面的 trace 标题
-        return best.isEmpty() ? "" : pkg + "/" + best;
+        return best.isEmpty() ? fallback : pkg + "/" + best;
     }
 
     /** 历史帧回填：每帧自己的 object_key + lines.object_key（断跨界面串台）。 */
@@ -409,6 +426,9 @@ public final class MemoryProjector {
                     n += edb.update("trace_frames", fv, "id=?", new String[]{String.valueOf(fid)});
                     ContentValues lv = new ContentValues(); lv.put("object_key", frameOk);
                     n += db.update("lines", lv, "frame_id=?", new String[]{String.valueOf(fid)});
+                    ContentValues pv = new ContentValues();
+                    pv.put("pkg", framePkg(edb, shot, pkg));
+                    db.update("lines", pv, "frame_id=?", new String[]{String.valueOf(fid)});
                     // 同时补 x，让左右对齐能判 SELF/OTHER
                     try (Cursor pe = edb.rawQuery("SELECT text,left,right FROM page_elements "
                             + "WHERE shot_ref=? AND text!=''", new String[]{shot})) {

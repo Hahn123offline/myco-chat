@@ -304,16 +304,16 @@ public final class TraceStore extends SQLiteOpenHelper {
             java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
                     "evidence.db");
             if (ev.exists()) {
-                String fpkg = "";
+                String fpkg = ""; String ftraceOk = "";
                 try (Cursor pc = getReadableDatabase().rawQuery(
-                        "SELECT pkg FROM " + TABLE + " WHERE id=?",
+                        "SELECT pkg,object_key FROM " + TABLE + " WHERE id=?",
                         new String[]{String.valueOf(traceId)})) {
-                    if (pc.moveToFirst()) fpkg = pc.getString(0);
+                    if (pc.moveToFirst()) { fpkg = pc.getString(0); ftraceOk = pc.getString(1); }
                 }
                 SQLiteDatabase edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
                         SQLiteDatabase.OPEN_READONLY);
                 try {
-                    v.put("object_key", MemoryProjector.frameObjectKey(edb, shotRef, fpkg, ""));
+                    v.put("object_key", MemoryProjector.frameObjectKey(edb, shotRef, fpkg, ftraceOk));
                 } finally {
                     try { edb.close(); } catch (Throwable ignored) { }
                 }
