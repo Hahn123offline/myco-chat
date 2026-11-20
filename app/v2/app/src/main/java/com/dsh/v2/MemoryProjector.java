@@ -353,11 +353,12 @@ public final class MemoryProjector {
     private static String frameObjectKey(SQLiteDatabase edb, String shot, String pkg,
                                          String fallback) {
         if (shot == null || shot.isEmpty() || pkg == null || pkg.isEmpty()) return fallback;
-        String best = ""; double bestScore = 1e9; int width = 1200;
+        String best = ""; double bestScore = 1e9; int width = 1200; int elements = 0;
         try (Cursor c = edb.rawQuery("SELECT text,left,top,right,role FROM page_elements "
-                + "WHERE shot_ref=? AND text!='' AND length(text)<=40 AND top<350",
-                new String[]{shot})) {
+                + "WHERE shot_ref=? AND text!='' AND length(text)<=40 AND top<350 "
+                + "AND source IN ('A11Y','BOTH')", new String[]{shot})) {
             while (c.moveToNext()) {
+                elements++;
                 String t = c.getString(0).trim();
                 int l = c.getInt(1), top = c.getInt(2), r = c.getInt(3);
                 String role = c.getString(4);
@@ -370,6 +371,17 @@ public final class MemoryProjector {
                 if (score < bestScore) { bestScore = score; best = t; }
             }
         } catch (Throwable ignored) { }
+        if (elements == 0) {
+            android.util.Log.d("DSHL2", "frame object: shot=" + shot
+                    + " elements=0 no-elements");
+        } else if (best.isEmpty()) {
+            android.util.Log.d("DSHL2", "frame object: shot=" + shot
+                    + " elements=" + elements + " titleNode=null");
+        } else {
+            android.util.Log.d("DSHL2", "frame object: shot=" + shot
+                    + " elements=" + elements + " titleNode=" + best
+                    + " ok=" + pkg + "/" + best);
+        }
         return best.isEmpty() ? fallback : pkg + "/" + best;
     }
 
