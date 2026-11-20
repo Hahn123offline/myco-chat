@@ -55,6 +55,7 @@ public final class TraceApp extends Application {
             new Thread(() -> {
                 try { Thread.sleep(15000); } catch (Throwable ignored) { }
                 MemoryProjector.projectLines(ctx);
+                MemoryProjector.backfillFrameObjects(ctx);
                 MemoryProjector.projectObjectMessages(ctx);
             }, "line-projector").start();
             new Thread(() -> {
@@ -84,6 +85,7 @@ public final class TraceApp extends Application {
             maintenance.scheduleWithFixedDelay(() -> {
                 try {
                     MemoryProjector.projectLines(mctx);
+                    MemoryProjector.backfillFrameObjects(mctx);
                     MemoryProjector.projectObjectMessages(mctx);
                 } catch (Throwable t) {
                     android.util.Log.e("DSHL2", "periodic line projection failed", t);

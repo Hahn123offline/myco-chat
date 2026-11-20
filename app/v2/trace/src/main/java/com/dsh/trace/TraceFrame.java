@@ -9,4 +9,6 @@ public final class TraceFrame {
     public String textHash;
     public double sharpness;
     public String kind = "CONTENT_CHANGE";
+    /** 该帧自己的对象键（来自该帧标题节点）；空则回溯 trace.object_key。 */
+    public String objectKey;
 }

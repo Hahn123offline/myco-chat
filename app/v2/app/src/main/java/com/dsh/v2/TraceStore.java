@@ -20,7 +20,7 @@ import java.util.Calendar;
 public final class TraceStore extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "evidence.db";
-    public static final int DB_VER = 9;
+    public static final int DB_VER = 10;
     public static final String TABLE = "traces";
     public static final String ELEMENTS = "page_elements";
     public static final String FRAMES = "trace_frames";
@@ -73,7 +73,7 @@ public final class TraceStore extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX idx_gap_t0 ON " + GAPS + "(t0)");
         db.execSQL("CREATE TABLE " + FRAMES + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "trace_id INTEGER NOT NULL, seq INTEGER NOT NULL, t_ms INTEGER NOT NULL,"
-                + "shot_ref TEXT, text TEXT, text_hash TEXT, sharpness REAL, kind TEXT,"
+                + "shot_ref TEXT, text TEXT, text_hash TEXT, sharpness REAL, kind TEXT, object_key TEXT,"
                 + "UNIQUE(trace_id,seq))");
         db.execSQL("CREATE INDEX idx_frames_trace ON " + FRAMES + "(trace_id,seq)");
     }
@@ -95,6 +95,10 @@ public final class TraceStore extends SQLiteOpenHelper {
         if (oldV < 8) {
             try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN evidence TEXT"); }
             catch (Throwable ignored) { }
+        }
+        if (oldV < 10) {
+            try { db.execSQL("ALTER TABLE " + FRAMES + " ADD COLUMN object_key TEXT"); }
+            catch (Throwable t) { android.util.Log.e("DSHL2", "add frames.object_key failed", t); }
         }
         if (oldV < 9) {
             try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN n_frames INTEGER DEFAULT 0"); }

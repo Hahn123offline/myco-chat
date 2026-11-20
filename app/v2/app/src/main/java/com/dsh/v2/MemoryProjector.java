@@ -133,6 +133,13 @@ public final class MemoryProjector {
                                 long frameId = fr.getLong(0);
                                 String fshot = fr.getString(1);
                                 String ftext = fr.getString(2);
+                                String frameOk = frameObjectKey(edb, fshot, pkg, ok);
+                                try {
+                                    ContentValues fo = new ContentValues();
+                                    fo.put("object_key", frameOk);
+                                    edb.update("trace_frames", fo, "id=?",
+                                            new String[]{String.valueOf(frameId)});
+                                } catch (Throwable ignored) { }
                                 framesThisTrace++;
                                 int fno = 0;
                                 boolean hadElement = false;
@@ -148,7 +155,7 @@ public final class MemoryProjector {
                                                     && !"OCR".equals(src)) continue;
                                             int top = fe.getInt(1);
                                             ContentValues fv = new ContentValues();
-                                            fv.put("object_key", ok); fv.put("pkg", pkg);
+                                            fv.put("object_key", frameOk); fv.put("pkg", pkg);
                                             fv.put("time", time); fv.put("text", tx.trim());
                                             fv.put("block_id", id); fv.put("shot_ref", fshot);
                                             fv.put("line_no", fno++);
@@ -168,7 +175,7 @@ public final class MemoryProjector {
                                 // 无图/无元素时：文本行不带 bbox（不伪造 y=500），不可声称版式
                                 if (!hadElement && ftext != null && !ftext.trim().isEmpty()) {
                                     ContentValues fv = new ContentValues();
-                                    fv.put("object_key", ok); fv.put("pkg", pkg);
+                                    fv.put("object_key", frameOk); fv.put("pkg", pkg);
                                     fv.put("time", time); fv.put("text", ftext.trim());
                                     fv.put("block_id", id); fv.put("shot_ref", (String) null);
                                     fv.putNull("y_top");
@@ -340,6 +347,71 @@ public final class MemoryProjector {
                 + " anchors=" + anchorCount + " messages=" + msgs.size()
                 + " matched=" + matched);
         return msgs.size();
+    }
+
+    /** 帧级对象：用该帧 shot 的顶部居中标题；拿不到回溯 trace 的 object_key。 */
+    private static String frameObjectKey(SQLiteDatabase edb, String shot, String pkg,
+                                         String fallback) {
+        if (shot == null || shot.isEmpty() || pkg == null || pkg.isEmpty()) return fallback;
+        String best = ""; double bestScore = 1e9; int width = 1200;
+        try (Cursor c = edb.rawQuery("SELECT text,left,top,right,role FROM page_elements "
+                + "WHERE shot_ref=? AND text!='' AND length(text)<=40 AND top<350",
+                new String[]{shot})) {
+            while (c.moveToNext()) {
+                String t = c.getString(0).trim();
+                int l = c.getInt(1), top = c.getInt(2), r = c.getInt(3);
+                String role = c.getString(4);
+                if (r > width) width = r;
+                if (l < width * 0.12 || r > width * 0.92) continue;
+                if (t.matches("^(返回.*|聊天设置|听筒模式|设置|搜索|取消|更多|发送|语音|相册|拍照|表情|更多功能|消息|频道|联系人|动态|QQ|微信|现在|昨天|星期.|\\(\\d+\\)|\\d{1,2}:\\d{2}|.*, ,.*)$")) continue;
+                if (!"BUTTON".equals(role) && !"PARAGRAPH".equals(role) && !"TITLE".equals(role)) continue;
+                double score = Math.abs(top - 170) / 100.0
+                        + Math.abs((l + r) / 2.0 - width / 2.0) / Math.max(1.0, width / 2.0);
+                if (score < bestScore) { bestScore = score; best = t; }
+            }
+        } catch (Throwable ignored) { }
+        return best.isEmpty() ? fallback : pkg + "/" + best;
+    }
+
+    /** 历史帧回填：每帧自己的 object_key + lines.object_key（断跨界面串台）。 */
+    public static synchronized int backfillFrameObjects(Context app) {
+        SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
+        java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
+                "evidence.db");
+        if (!ev.exists()) return 0;
+        SQLiteDatabase edb = null; int n = 0;
+        try {
+            edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
+                    SQLiteDatabase.OPEN_READWRITE);
+            try (Cursor c = edb.rawQuery("SELECT f.id,f.shot_ref,t.pkg,t.object_key "
+                    + "FROM trace_frames f JOIN traces t ON t.id=f.trace_id "
+                    + "WHERE f.shot_ref IS NOT NULL AND f.shot_ref!=''", null)) {
+                while (c.moveToNext()) {
+                    long fid = c.getLong(0); String shot = c.getString(1);
+                    String pkg = c.getString(2); String base = c.getString(3);
+                    String frameOk = frameObjectKey(edb, shot, pkg, base == null ? "" : base);
+                    if (frameOk == null || frameOk.isEmpty()) continue;
+                    ContentValues fv = new ContentValues(); fv.put("object_key", frameOk);
+                    n += edb.update("trace_frames", fv, "id=?", new String[]{String.valueOf(fid)});
+                    ContentValues lv = new ContentValues(); lv.put("object_key", frameOk);
+                    n += db.update("lines", lv, "frame_id=?", new String[]{String.valueOf(fid)});
+                    // 同时补 x，让左右对齐能判 SELF/OTHER
+                    try (Cursor pe = edb.rawQuery("SELECT text,left,right FROM page_elements "
+                            + "WHERE shot_ref=? AND text!=''", new String[]{shot})) {
+                        while (pe.moveToNext()) {
+                            ContentValues xv = new ContentValues();
+                            xv.put("x_left", pe.getInt(1)); xv.put("x_right", pe.getInt(2));
+                            db.update("lines", xv, "frame_id=? AND text=?",
+                                    new String[]{String.valueOf(fid), pe.getString(0)});
+                        }
+                    } catch (Throwable ignored) { }
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "backfill frame objects failed", t);
+        } finally { if (edb != null) try { edb.close(); } catch (Throwable ignored) { } }
+        if (n > 0) android.util.Log.i("DSHL2", "frame objects backfilled=" + n);
+        return n;
     }
 
     private static boolean fragmented(String t) {
