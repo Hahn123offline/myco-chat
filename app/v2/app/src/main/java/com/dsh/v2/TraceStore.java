@@ -236,7 +236,17 @@ public final class TraceStore extends SQLiteOpenHelper {
             Cursor d = getReadableDatabase().rawQuery(
                     "SELECT id FROM " + TABLE + " WHERE shot_ref=? LIMIT 1",
                     new String[]{t.shotRef});
-            if (d.moveToFirst()) { long id = d.getLong(0); d.close(); return id; }
+            if (d.moveToFirst()) {
+                long id = d.getLong(0);
+                d.close();
+                // 即使 trace 行已存在，也补写当前内存帧（避免上一次只写了 n_frames 没写 frames）
+                if (t.frames != null) {
+                    for (com.dsh.trace.TraceFrame f : t.frames) {
+                        insertFrame(id, f.seq, f.tMs, f.shotRef, f.text, f.sharpness, f.kind);
+                    }
+                }
+                return id;
+            }
             d.close();
         }
         ContentValues v = new ContentValues();
@@ -285,8 +295,17 @@ public final class TraceStore extends SQLiteOpenHelper {
         v.put("text_hash", Integer.toHexString((text == null ? "" : text).hashCode()));
         v.put("sharpness", sharpness);
         v.put("kind", kind == null ? "CONTENT_CHANGE" : kind);
-        return getWritableDatabase().insertWithOnConflict(FRAMES, null, v,
-                SQLiteDatabase.CONFLICT_IGNORE);
+        try {
+            long r = getWritableDatabase().insertWithOnConflict(FRAMES, null, v,
+                    SQLiteDatabase.CONFLICT_IGNORE);
+            android.util.Log.d("DSHL2", "frame insert trace=" + traceId + " seq=" + seq
+                    + " kind=" + kind + " row=" + r);
+            return r;
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "frame insert failed trace=" + traceId
+                    + " seq=" + seq, t);
+            return -1;
+        }
     }
 
     /** 用解析结果替换某次页面事件的元素；OCR 合并时覆盖 a11y-only 行。 */

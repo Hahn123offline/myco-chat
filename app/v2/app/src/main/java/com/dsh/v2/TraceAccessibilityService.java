@@ -392,6 +392,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
     }
 
     private void requestScreenshot() {
+        final String kindForShot = shotKind;
         try {
             takeScreenshot(Display.DEFAULT_DISPLAY, io, new TakeScreenshotCallback() {
                 @Override public void onSuccess(ScreenshotResult result) {
@@ -425,7 +426,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
                         } catch (Throwable t) {
                             Log.w(TAG, "hsv/sharpness failed", t);
                         }
-                        saveAndOcr(sw, sharpness);
+                        saveAndOcr(sw, sharpness, kindForShot);
                     } catch (Throwable t) {
                         Log.w(TAG, "screenshot bitmap failed", t);
                     } finally {
@@ -466,6 +467,10 @@ public final class TraceAccessibilityService extends AccessibilityService {
     }
 
     private void saveAndOcr(Bitmap bmp, double sharpness) {
+        saveAndOcr(bmp, sharpness, "CONTENT_CHANGE");
+    }
+
+    private void saveAndOcr(Bitmap bmp, double sharpness, String kind) {
         final String shotRef = saveShotFile(bmp);
         TextRecognizer recognizer = ocr;
         if (recognizer == null || shotRef == null) {
@@ -478,7 +483,8 @@ public final class TraceAccessibilityService extends AccessibilityService {
                     .addOnSuccessListener(text -> {
                         TraceModule m = TraceRuntime.get();
                         if (m != null) {
-                            m.onContent(text.getText(), shotRef, sharpness, shotPagePkg, shotKind);
+                            android.util.Log.d(TAG, "onContent kind=" + kind + " shot=" + shotRef);
+                            m.onContent(text.getText(), shotRef, sharpness, shotPagePkg, kind);
                             try {
                                 List<PageParser.OcrLine> lines = new ArrayList<>();
                                 for (Text.TextBlock b : text.getTextBlocks()) {
