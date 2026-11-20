@@ -63,9 +63,9 @@ public class MessageBuilderTest {
     @Test public void 左右对齐判我他人() {
         List<LineItem> xs = new ArrayList<>();
         xs.add(line("别人说的", 300, 1000, 1));
-        xs.get(0).left = 80; xs.get(0).right = 600;
-        LineItem me = line("我说的", 500, 2000, 1);
-        me.left = 700; me.right = 1150;
+        xs.get(0).left = 40; xs.get(0).right = 400;
+        LineItem me = line("我说的", 500, 2000, 2);
+        me.left = 900; me.right = 1150;
         xs.add(me);
         List<MessageBuilder.Msg> out = MessageBuilder.build(xs);
         assertEquals(2, out.size());

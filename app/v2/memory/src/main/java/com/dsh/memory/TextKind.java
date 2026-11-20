@@ -3,6 +3,17 @@ package com.dsh.memory;
 /** 行级 chrome 分类（纯规则，PC/Android 共用）。 */
 public final class TextKind {
     private TextKind() { }
+    /** 明确不是消息的行：状态/文件名/纯表情/单字符。 */
+    public static boolean isNonMessage(String text) {
+        String t = text == null ? "" : text.trim();
+        if (t.length() < 2) return true;
+        if (t.matches("^[\\p{So}\\p{S}\\s]+$")) return true;
+        if (t.matches(".*\\.(csv|md|pdf|wav|json|srt|txt|jpg|jpeg|png|zip|rar)$")) return true;
+        if (t.matches(".*(在线|听筒模式|自动朗读|打开侧边栏|开启新对话|资料卡|未读|置顶聊天|群文件).*")) return true;
+        if (t.matches("^[0-9.:%+\\-\\s]+$")) return true;
+        return false;
+    }
+
     public static String kind(String text, int y) {
         String t = text == null ? "" : text.trim();
         if (t.isEmpty()) return "CHROME";

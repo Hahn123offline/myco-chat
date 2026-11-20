@@ -49,6 +49,7 @@ public final class MessageBuilder {
         for (LineItem l : lines) {
             if (l == null || l.text == null || l.text.trim().isEmpty()) continue;
             if (l.kind != null && !"CONTENT".equals(l.kind) && !"SYSTEM".equals(l.kind)) continue;
+            if (TextKind.isNonMessage(l.text)) continue;
             String k = l.objectKey == null || l.objectKey.isEmpty() ? l.pkg : l.objectKey;
             byObject.computeIfAbsent(k, x -> new ArrayList<>()).add(l);
         }
@@ -86,7 +87,9 @@ public final class MessageBuilder {
         StringBuilder b = new StringBuilder();
         for (LineItem l : lines) {
             String t = l.text == null ? "" : l.text.trim();
-            if (t.isEmpty()) continue;
+            if (t.isEmpty() || TextKind.isNonMessage(t)) continue;
+            String title = objectKey.contains("/") ? objectKey.substring(objectKey.indexOf('/') + 1) : "";
+            if (!title.isEmpty() && normalize(t).equals(normalize(title))) continue;
             // A11Y sender 节点若被投影成内容行，结构上移除（不是文本猜 sender）
             if (as != null && (isAnchorSpan(l.yTop, as) || containsAnchor(t, l.yTop, as))) continue;
             if (b.length() > 0) b.append(' ');
@@ -110,7 +113,7 @@ public final class MessageBuilder {
             hit.text = text;
             hit.textKey = key;
             hit.sender = sender;
-            hit.side = sideOf(first, screenWidth);
+            hit.side = sideOf(first, screenWidth, lines.size() == 1);
             hit.blockId = first.blockId;
             hit.frameId = first.frameId;
             merged.put(key, hit);
@@ -118,7 +121,7 @@ public final class MessageBuilder {
             hit.seenCount++;
             hit.tLast = Math.max(hit.tLast, lines.get(lines.size() - 1).time);
             if (hit.sender.isEmpty() && !sender.isEmpty()) hit.sender = sender;
-            if ("UNKNOWN".equals(hit.side)) hit.side = sideOf(first, screenWidth);
+            if ("UNKNOWN".equals(hit.side)) hit.side = sideOf(first, screenWidth, lines.size() == 1);
         }
         hit.tLast = Math.max(hit.tLast, lines.get(lines.size() - 1).time);
         hit.seenCount = Math.max(1, hit.seenCount);
@@ -137,10 +140,10 @@ public final class MessageBuilder {
         return false;
     }
 
-    private static String sideOf(LineItem l, int screenWidth) {
-        if (l == null || l.right <= l.left) return "UNKNOWN";
-        if (l.left >= screenWidth * 0.50) return "SELF";
-        if (l.left <= screenWidth * 0.35) return "OTHER";
+    private static String sideOf(LineItem l, int screenWidth, boolean singleBubble) {
+        if (l == null || l.right <= l.left || !singleBubble) return "UNKNOWN";
+        if (l.left >= screenWidth * 0.60) return "SELF";
+        if (l.right <= screenWidth * 0.40) return "OTHER";
         return "UNKNOWN";
     }
 
