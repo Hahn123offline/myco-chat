@@ -127,9 +127,11 @@ public final class MessageBuilder {
             if (a.top > first.yTop) continue;                 // sender 在上方
             int gap = first.yTop - a.top;
             if (gap > 180) continue;
-            // 水平必须相交（群聊左右分栏），否则不配 sender
-            int overlap = Math.min(a.right, first.right) - Math.max(a.left, first.left);
-            if (first.right <= first.left || overlap <= 0) continue;
+            // 有 x 时水平必须相交；历史行 x 为空时退回 y-only（兼容旧投影）
+            if (first.right > first.left) {
+                int overlap = Math.min(a.right, first.right) - Math.max(a.left, first.left);
+                if (overlap <= 0) continue;
+            }
             if (gap < bestGap) { bestGap = gap; best = a; }
         }
         return best == null ? "" : best.text.trim();
