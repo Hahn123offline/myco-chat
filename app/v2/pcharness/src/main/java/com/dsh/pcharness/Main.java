@@ -50,6 +50,7 @@ public final class Main {
         else if ("dump".equals(args[0])) ChatConsole.dump(args);
         else if ("fidelity".equals(args[0])) Fidelity.run(args);
         else if ("migrate-memory".equals(args[0])) migrateMemory(args);
+        else if ("rebuild-lines".equals(args[0])) OfflineProjection.run(args);
         else if ("pipeline".equals(args[0])) {
             System.err.println("pipeline 子命令尚未实现（L0→L1→L2 桌面路径下一阶段）");
             System.exit(2);

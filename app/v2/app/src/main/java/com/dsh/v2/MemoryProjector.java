@@ -365,40 +365,18 @@ public final class MemoryProjector {
                                         String fallback) {
         if (shot == null || shot.isEmpty() || pkg == null || pkg.isEmpty()) return fallback;
         String fp = framePkg(edb, shot, pkg);
-        if (!pkg.equals(fp)) {
-            android.util.Log.d("DSHL2", "frame object: shot=" + shot
-                    + " pkg-mismatch frame=" + fp + " trace=" + pkg + " ok=''");
-            return "";
-        }
-        String best = "";
-        int elements = 0;
-        try (Cursor c = edb.rawQuery("SELECT text,top,role FROM page_elements "
-                + "WHERE shot_ref=? AND text!='' AND source IN ('A11Y','BOTH') "
-                + "AND top BETWEEN 80 AND 400 ORDER BY top", new String[]{shot})) {
+        if (!pkg.equals(fp)) return "";
+        java.util.List<com.dsh.memory.TitlePicker.Candidate> cs = new java.util.ArrayList<>();
+        try (Cursor c = edb.rawQuery("SELECT text,top,source,role FROM page_elements "
+                + "WHERE shot_ref=? AND text!=''", new String[]{shot})) {
             while (c.moveToNext()) {
-                elements++;
-                String t = c.getString(0).trim();
-                int top = c.getInt(1);
-                if (t.length() < 2 || t.length() > 20) continue;
-                if (t.matches("^[0-9.:%+\\-\\s]+$")) continue;
-                if (t.matches("^(返回.*|聊天设置|听筒模式|自动朗读|打开侧边栏|开启新对话|更多|发送|语音|相册|拍照|表情|删除|取消|确定|搜索|设置|消息|频道|联系人|动态|现在|昨天|星期.|QQ|微信|分享|收藏|编辑|复制)$")) continue;
-                if (t.contains("未读") || t.contains("资料卡")) continue;
-                // 第一个合法候选就是 y 最小的标题；不要求水平居中
-                best = t;
-                break;
+                cs.add(new com.dsh.memory.TitlePicker.Candidate(c.getString(0),
+                        c.getInt(1), c.getString(2), c.getString(3)));
             }
         } catch (Throwable ignored) { }
-        if (elements == 0) {
-            android.util.Log.d("DSHL2", "frame object: shot=" + shot
-                    + " elements=0 no-elements");
-        } else if (best.isEmpty()) {
-            android.util.Log.d("DSHL2", "frame object: shot=" + shot
-                    + " elements=" + elements + " titleNode=null");
-        } else {
-            android.util.Log.d("DSHL2", "frame object: shot=" + shot
-                    + " elements=" + elements + " titleNode=" + best
-                    + " ok=" + pkg + "/" + best);
-        }
+        String best = com.dsh.memory.TitlePicker.pick(cs);
+        android.util.Log.d("DSHL2", "frame object: shot=" + shot + " elements=" + cs.size()
+                + (best.isEmpty() ? " titleNode=null" : " titleNode=" + best));
         return best.isEmpty() ? fallback : pkg + "/" + best;
     }
 
