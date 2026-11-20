@@ -243,8 +243,9 @@ public final class MemoryProjector {
     public static synchronized int projectObjectMessages(Context app) {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
         java.util.List<com.dsh.memory.LineItem> lines = new java.util.ArrayList<>();
+        java.util.Set<String> shots = new java.util.HashSet<>();
         try (Cursor c = db.rawQuery("SELECT object_key,pkg,time,text,block_id,frame_id,"
-                + "y_top,kind FROM lines WHERE text IS NOT NULL AND text!='' AND ("
+                + "y_top,kind,shot_ref FROM lines WHERE text IS NOT NULL AND text!='' AND ("
                 + "kind IN ('CONTENT','SYSTEM') OR text LIKE '[群主%' OR text LIKE '群主%' "
                 + "OR text GLOB '??-*') ORDER BY time", null)) {
             while (c.moveToNext()) {
@@ -257,11 +258,35 @@ public final class MemoryProjector {
                 l.frameId = c.getLong(5);
                 l.yTop = c.getInt(6);
                 l.kind = c.getString(7);
+                l.shotRef = c.getString(8);
+                if (l.shotRef != null && !l.shotRef.isEmpty()) shots.add(l.shotRef);
                 lines.add(l);
             }
         }
+        java.util.Map<String, java.util.List<com.dsh.memory.MessageBuilder.Anchor>> anchors =
+                new java.util.HashMap<>();
+        java.util.List<String> shotList = new java.util.ArrayList<>(shots);
+        for (int off = 0; off < shotList.size(); off += 200) {
+            int end = Math.min(shotList.size(), off + 200);
+            StringBuilder sb = new StringBuilder("SELECT shot_ref,text,left,top,right,bottom "
+                    + "FROM page_elements WHERE shot_ref IN (");
+            for (int i = off; i < end; i++) sb.append(i == off ? "?" : ",?");
+            sb.append(") AND text!='' AND length(text)<=30 AND source IN ('A11Y','BOTH')");
+            String[] args = shotList.subList(off, end).toArray(new String[0]);
+            try (Cursor a = db.rawQuery(sb.toString(), args)) {
+                while (a.moveToNext()) {
+                    com.dsh.memory.MessageBuilder.Anchor an =
+                            new com.dsh.memory.MessageBuilder.Anchor();
+                    an.text = a.getString(1); an.left = a.getInt(2); an.top = a.getInt(3);
+                    an.right = a.getInt(4); an.bottom = a.getInt(5);
+                    anchors.computeIfAbsent(a.getString(0), k -> new java.util.ArrayList<>()).add(an);
+                }
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "load sender anchors failed", t);
+            }
+        }
         java.util.List<com.dsh.memory.MessageBuilder.Msg> msgs =
-                com.dsh.memory.MessageBuilder.build(lines);
+                com.dsh.memory.MessageBuilder.build(lines, anchors);
         db.beginTransaction();
         try {
             db.delete("object_messages", null, null);

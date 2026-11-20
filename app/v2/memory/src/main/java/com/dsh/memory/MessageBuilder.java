@@ -4,16 +4,21 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
-/** 行 → 对象消息：按 frame 内 y 邻近合并，跨 frame 去重，sender 从前缀提取。 */
+/** 行 → 对象消息。
+ * 原则：结构（sender/气泡）只来自 A11Y 节点或坐标几何；文本只来自 OCR。
+ * 禁止从 OCR 字符串猜 sender / 消息边界。 */
 public final class MessageBuilder {
 
-    /** 相邻两行 y 间距小于该值视为同一条消息（约 1.5 行高，屏幕坐标）。 */
+    /** 相邻两行 y 间距小于该值视为同一消息（坐标几何，约 1.5 行高）。 */
     public static final int MERGE_GAP_PX = 90;
-    /** 文本相似度 >= 0.9 视为 OCR 变体。 */
     public static final double SIM_THRESHOLD = 0.9;
+
+    public static final class Anchor {
+        public String text = "";
+        public int left, top, right, bottom;
+    }
 
     public static final class Msg {
         public String objectKey = "";
@@ -29,13 +34,16 @@ public final class MessageBuilder {
     private MessageBuilder() { }
 
     public static List<Msg> build(List<LineItem> lines) {
+        return build(lines, java.util.Collections.emptyMap());
+    }
+
+    public static List<Msg> build(List<LineItem> lines, Map<String, List<Anchor>> anchors) {
         List<Msg> out = new ArrayList<>();
         if (lines == null || lines.isEmpty()) return out;
         Map<String, List<LineItem>> byObject = new LinkedHashMap<>();
         for (LineItem l : lines) {
             if (l == null || l.text == null || l.text.trim().isEmpty()) continue;
-            if (l.kind != null && !"CONTENT".equals(l.kind) && !"SYSTEM".equals(l.kind)
-                    && !isSenderOnly(l.text)) continue;
+            if (l.kind != null && !"CONTENT".equals(l.kind) && !"SYSTEM".equals(l.kind)) continue;
             String k = l.objectKey == null || l.objectKey.isEmpty() ? l.pkg : l.objectKey;
             byObject.computeIfAbsent(k, x -> new ArrayList<>()).add(l);
         }
@@ -52,37 +60,31 @@ public final class MessageBuilder {
                 int lastY = Integer.MIN_VALUE;
                 for (LineItem l : frame) {
                     if (lastY != Integer.MIN_VALUE && Math.abs(l.yTop - lastY) > MERGE_GAP_PX) {
-                        addFrame(out, merged, e.getKey(), current); current = new ArrayList<>();
+                        addFrame(merged, e.getKey(), current, anchors); current = new ArrayList<>();
                     }
                     current.add(l); lastY = l.yTop;
                 }
-                if (!current.isEmpty()) addFrame(out, merged, e.getKey(), current);
+                if (!current.isEmpty()) addFrame(merged, e.getKey(), current, anchors);
             }
             out.addAll(merged.values());
-        }
-        for (Msg m : out) {
-            if (m.textKey.isEmpty()) m.textKey = normalize(m.text);
         }
         return out;
     }
 
-    private static void addFrame(List<Msg> out, Map<String, Msg> merged, String objectKey,
-                                 List<LineItem> lines) {
+    private static void addFrame(Map<String, Msg> merged, String objectKey,
+                                 List<LineItem> lines, Map<String, List<Anchor>> anchors) {
         if (lines.isEmpty()) return;
+        LineItem first = lines.get(0);
+        List<Anchor> as = anchors.get(first.shotRef == null ? "" : first.shotRef);
+        String sender = senderFor(first, as);
         StringBuilder b = new StringBuilder();
-        String sender = "";
         for (LineItem l : lines) {
             String t = l.text == null ? "" : l.text.trim();
             if (t.isEmpty()) continue;
-            if (isSenderOnly(t)) {
-                String s = cleanSender(t);
-                if (!s.isEmpty()) sender = s;
-                continue;   // sender-only 行不单独成为消息，归给下一条
-            }
-            SenderPrefix sp = splitSender(t);
-            if (!sp.sender.isEmpty()) sender = sp.sender;
+            // A11Y sender 节点若被投影成内容行，结构上移除（不是文本猜 sender）
+            if (as != null && isAnchorText(t, l.yTop, as)) continue;
             if (b.length() > 0) b.append(' ');
-            b.append(sp.text);
+            b.append(t);
         }
         String text = b.toString().trim();
         if (text.isEmpty()) return;
@@ -97,13 +99,13 @@ public final class MessageBuilder {
         if (hit == null) {
             hit = new Msg();
             hit.objectKey = objectKey;
-            hit.pkg = lines.get(0).pkg == null ? "" : lines.get(0).pkg;
-            hit.tFirst = lines.get(0).time;
+            hit.pkg = first.pkg == null ? "" : first.pkg;
+            hit.tFirst = first.time;
             hit.text = text;
             hit.textKey = key;
             hit.sender = sender;
-            hit.blockId = lines.get(0).blockId;
-            hit.frameId = lines.get(0).frameId;
+            hit.blockId = first.blockId;
+            hit.frameId = first.frameId;
             merged.put(key, hit);
         } else {
             hit.seenCount++;
@@ -114,54 +116,29 @@ public final class MessageBuilder {
         hit.seenCount = Math.max(1, hit.seenCount);
     }
 
-    static final class SenderPrefix {
-        final String sender, text;
-        SenderPrefix(String s, String t) { sender = s; text = t; }
+    /** sender 只取 A11Y 锚点：上方/同一水平带、横向重叠、短文本；拿不到返回 ""，不猜。 */
+    private static String senderFor(LineItem first, List<Anchor> anchors) {
+        if (anchors == null || anchors.isEmpty()) return "";
+        Anchor best = null; int bestGap = Integer.MAX_VALUE;
+        for (Anchor a : anchors) {
+            if (a.text == null || a.text.trim().isEmpty()) continue;
+            if (a.text.length() > 30) continue;
+            if (a.text.contains(":") || a.text.contains("：")) continue;
+            if (a.top > first.yTop) continue;                 // sender 在上方
+            int gap = first.yTop - a.top;
+            if (gap > 180) continue;
+            // 同一屏内按 y 最近取 A11Y 锚点；lines 暂未存 x，水平重叠留待 lines 带 left/right
+            if (gap < bestGap) { bestGap = gap; best = a; }
+        }
+        return best == null ? "" : best.text.trim();
     }
 
-    /** 只有发送者名、没有消息正文的行：不单独成消息，归给下一条。 */
-    public static boolean isSenderOnly(String t) {
-        if (t == null) return false;
-        String s = t.trim().replaceFirst("^[\\p{Punct}\\s]+", "");
-        if (s.isEmpty() || s.length() > 40) return false;
-        if (s.contains(":") || s.contains("：")) return false;
-        if (s.startsWith("[群主") || s.startsWith("(群主") || s.startsWith("（群主")
-                || s.startsWith("群主")) return true;
-        if (s.matches("^\\d{2}\\s*-.*")) return true;           // 25-鄂-计算机-曾嘉睿
-        if (s.matches("^[A-Za-z0-9_\\-]{2,20}$") && !s.contains(".")) return true;
+    private static boolean isAnchorText(String t, int y, List<Anchor> as) {
+        for (Anchor a : as) {
+            if (a.text == null) continue;
+            if (t.equals(a.text.trim()) && Math.abs(y - a.top) <= 100) return true;
+        }
         return false;
-    }
-
-    private static String cleanSender(String t) {
-        String s = t.trim();
-        if (s.startsWith("[")) {
-            int end = s.indexOf(']');
-            if (end > 0) return s.substring(0, end + 1);
-        }
-        if (s.startsWith("(") || s.startsWith("（")) {
-            int end = Math.max(s.indexOf(')'), s.indexOf('）'));
-            if (end > 0) return s.substring(0, end + 1);
-        }
-        int i = s.indexOf(':');
-        if (i <= 0) i = s.indexOf('：');
-        return i > 0 ? s.substring(0, i).trim() : s;
-    }
-
-    private static SenderPrefix splitSender(String t) {
-        String s = t;
-        if (s.startsWith("[群主") || s.startsWith("(群主") || s.startsWith("（群主")) {
-            int end = Math.max(Math.max(s.indexOf(']'), s.indexOf(')')), s.indexOf('）'));
-            if (end > 0) return new SenderPrefix(s.substring(0, end + 1), s.substring(end + 1).trim());
-        }
-        int i = s.indexOf(':');
-        if (i <= 0 || i > 24) i = s.indexOf('：');
-        if (i > 0 && i <= 24) {
-            String sender = s.substring(0, i).trim();
-            if (!sender.isEmpty() && !sender.contains("http")) {
-                return new SenderPrefix(sender, s.substring(i + 1).trim());
-            }
-        }
-        return new SenderPrefix("", t);
     }
 
     /** 去空白/标点、统一全半角，作为去重键。 */
@@ -176,7 +153,6 @@ public final class MessageBuilder {
         return b.toString();
     }
 
-    /** 汉字 2-gram + 拉丁字符的 Jaccard 近似。 */
     public static double similarity(String a, String b) {
         java.util.Set<String> x = grams(a), y = grams(b);
         if (x.isEmpty() || y.isEmpty()) return 0;
