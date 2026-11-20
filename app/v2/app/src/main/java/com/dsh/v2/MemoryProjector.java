@@ -350,8 +350,8 @@ public final class MemoryProjector {
     }
 
     /** 帧级对象：用该帧 shot 的顶部居中标题；拿不到回溯 trace 的 object_key。 */
-    private static String frameObjectKey(SQLiteDatabase edb, String shot, String pkg,
-                                         String fallback) {
+    public static String frameObjectKey(SQLiteDatabase edb, String shot, String pkg,
+                                        String fallback) {
         if (shot == null || shot.isEmpty() || pkg == null || pkg.isEmpty()) return fallback;
         String best = ""; double bestScore = 1e9; int width = 1200; int elements = 0;
         try (Cursor c = edb.rawQuery("SELECT text,left,top,right,role FROM page_elements "
@@ -382,7 +382,8 @@ public final class MemoryProjector {
                     + " elements=" + elements + " titleNode=" + best
                     + " ok=" + pkg + "/" + best);
         }
-        return best.isEmpty() ? fallback : pkg + "/" + best;
+        // 帧级标题拿不到时留空：归到 pkg 下无对象，不能回退到上一个界面的 trace 标题
+        return best.isEmpty() ? "" : pkg + "/" + best;
     }
 
     /** 历史帧回填：每帧自己的 object_key + lines.object_key（断跨界面串台）。 */
@@ -391,7 +392,7 @@ public final class MemoryProjector {
         java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
                 "evidence.db");
         if (!ev.exists()) return 0;
-        SQLiteDatabase edb = null; int n = 0;
+        SQLiteDatabase edb = null; int n = 0; int scanned = 0;
         try {
             edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
                     SQLiteDatabase.OPEN_READWRITE);
@@ -399,6 +400,7 @@ public final class MemoryProjector {
                     + "FROM trace_frames f JOIN traces t ON t.id=f.trace_id "
                     + "WHERE f.shot_ref IS NOT NULL AND f.shot_ref!=''", null)) {
                 while (c.moveToNext()) {
+                    scanned++;
                     long fid = c.getLong(0); String shot = c.getString(1);
                     String pkg = c.getString(2); String base = c.getString(3);
                     String frameOk = frameObjectKey(edb, shot, pkg, base == null ? "" : base);
@@ -422,7 +424,8 @@ public final class MemoryProjector {
         } catch (Throwable t) {
             android.util.Log.e("DSHL2", "backfill frame objects failed", t);
         } finally { if (edb != null) try { edb.close(); } catch (Throwable ignored) { } }
-        if (n > 0) android.util.Log.i("DSHL2", "frame objects backfilled=" + n);
+        android.util.Log.i("DSHL2", "frame object backfill: scanned=" + scanned
+                + " updated=" + n);
         return n;
     }
 

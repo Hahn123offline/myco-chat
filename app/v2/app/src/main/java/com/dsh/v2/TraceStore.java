@@ -299,6 +299,28 @@ public final class TraceStore extends SQLiteOpenHelper {
         v.put("text_hash", Integer.toHexString((text == null ? "" : text).hashCode()));
         v.put("sharpness", sharpness);
         v.put("kind", kind == null ? "CONTENT_CHANGE" : kind);
+        // 帧级对象：用该帧 shot 的 A11Y/BOTH 标题；拿不到就留空，绝不回退 trace 标题
+        try {
+            java.io.File ev = new java.io.File(new java.io.File(app.getFilesDir(), "trace"),
+                    "evidence.db");
+            if (ev.exists()) {
+                String fpkg = "";
+                try (Cursor pc = getReadableDatabase().rawQuery(
+                        "SELECT pkg FROM " + TABLE + " WHERE id=?",
+                        new String[]{String.valueOf(traceId)})) {
+                    if (pc.moveToFirst()) fpkg = pc.getString(0);
+                }
+                SQLiteDatabase edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
+                        SQLiteDatabase.OPEN_READONLY);
+                try {
+                    v.put("object_key", MemoryProjector.frameObjectKey(edb, shotRef, fpkg, ""));
+                } finally {
+                    try { edb.close(); } catch (Throwable ignored) { }
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "frame object key failed", t);
+        }
         try {
             long r = getWritableDatabase().insertWithOnConflict(FRAMES, null, v,
                     SQLiteDatabase.CONFLICT_IGNORE);
