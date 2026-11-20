@@ -1,6 +1,7 @@
 package com.dsh.v2;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -12,7 +13,7 @@ import java.io.File;
 public final class MemoryDb extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "memory.db";
-    public static final int DB_VER = 15;
+    public static final int DB_VER = 16;
 
     private static volatile MemoryDb instance;
     /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
@@ -94,6 +95,32 @@ public final class MemoryDb extends SQLiteOpenHelper {
             } catch (Throwable t) {
                 android.util.Log.e("DSHL2", "create frame lines index failed", t);
             }
+            try {
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
+                        + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "create legacy lines index failed", t);
+            }
+        }
+        if (oldV < 16) {
+            // v15 的 frame_id NULL 唯一索引无去重能力；先清历史重复行，再建部分唯一索引。
+            int before = 0, after = 0;
+            try (Cursor c = db.rawQuery(
+                    "SELECT COUNT(*) FROM lines WHERE frame_id IS NULL", null)) {
+                if (c.moveToFirst()) before = c.getInt(0);
+            }
+            try {
+                db.execSQL("DELETE FROM lines WHERE frame_id IS NULL AND id NOT IN ("
+                        + "SELECT MIN(id) FROM lines WHERE frame_id IS NULL "
+                        + "GROUP BY block_id,line_no,text)");
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "lines dedupe failed", t);
+            }
+            try (Cursor c = db.rawQuery(
+                    "SELECT COUNT(*) FROM lines WHERE frame_id IS NULL", null)) {
+                if (c.moveToFirst()) after = c.getInt(0);
+            }
+            android.util.Log.i("DSHL2", "lines dedupe: removed=" + (before - after));
             try {
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
                         + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");

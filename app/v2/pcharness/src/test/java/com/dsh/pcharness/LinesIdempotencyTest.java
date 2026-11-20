@@ -54,6 +54,24 @@ public class LinesIdempotencyTest {
         assertEquals(2, count(c));
     }
 
+    @Test public void v16去重三行只留一行且可重复执行() throws Exception {
+        Connection c = db();
+        try (Statement s = c.createStatement()) {
+            s.execute("DROP INDEX idx_lines_legacy");
+        }
+        insert(c, "重复旧行", 9, 0, null);
+        insert(c, "重复旧行", 9, 0, null);
+        insert(c, "重复旧行", 9, 0, null);
+        assertEquals(3, count(c));
+        String sql = "DELETE FROM lines WHERE frame_id IS NULL AND id NOT IN ("
+                + "SELECT MIN(id) FROM lines WHERE frame_id IS NULL "
+                + "GROUP BY block_id,line_no,text)";
+        try (Statement s = c.createStatement()) { s.execute(sql); }
+        assertEquals(1, count(c));
+        try (Statement s = c.createStatement()) { s.execute(sql); }   // 幂等
+        assertEquals(1, count(c));
+    }
+
     @Test public void 不同帧同文本保留两行() throws Exception {
         Connection c = db();
         insert(c, "同一句", 2, 0, 11);
