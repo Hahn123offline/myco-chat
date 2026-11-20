@@ -13,7 +13,7 @@ import java.io.File;
 public final class MemoryDb extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "memory.db";
-    public static final int DB_VER = 16;
+    public static final int DB_VER = 17;
 
     private static volatile MemoryDb instance;
     /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
@@ -112,6 +112,21 @@ public final class MemoryDb extends SQLiteOpenHelper {
         if (oldV < 15) {
             try { db.execSQL("DROP INDEX IF EXISTS idx_lines_block_text"); }
             catch (Throwable t) { android.util.Log.e("DSHL2", "drop old lines index failed", t); }
+        }
+        if (oldV < 17) {
+            try {
+                db.execSQL("CREATE TABLE IF NOT EXISTS object_messages(" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, object_key TEXT, pkg TEXT," +
+                        "t_first INTEGER, t_last INTEGER, seen_count INTEGER DEFAULT 1," +
+                        "sender TEXT DEFAULT '', text TEXT, text_key TEXT," +
+                        "block_id INTEGER, frame_id INTEGER)");
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_objmsg_key "
+                        + "ON object_messages(object_key,text_key,sender)");
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_objmsg_obj_time "
+                        + "ON object_messages(object_key,t_first)");
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "create object_messages failed", t);
+            }
         }
         if (oldV < 16) {
             // v15 的 frame_id NULL 唯一索引无去重能力；先清历史重复行，再建部分唯一索引。
@@ -222,6 +237,15 @@ public final class MemoryDb extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_time ON lines(time)");
         createLinesIndexes(db);
 
+        db.execSQL("CREATE TABLE IF NOT EXISTS object_messages(" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, object_key TEXT, pkg TEXT," +
+                "t_first INTEGER, t_last INTEGER, seen_count INTEGER DEFAULT 1," +
+                "sender TEXT DEFAULT '', text TEXT, text_key TEXT," +
+                "block_id INTEGER, frame_id INTEGER)");
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_objmsg_key "
+                + "ON object_messages(object_key,text_key,sender)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_objmsg_obj_time "
+                + "ON object_messages(object_key,t_first)");
         db.execSQL("CREATE TABLE IF NOT EXISTS trace_gaps(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, t0 INTEGER NOT NULL, t1 INTEGER," +
                 "reason TEXT NOT NULL, closed INTEGER NOT NULL DEFAULT 0)");

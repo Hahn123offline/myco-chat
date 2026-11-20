@@ -8,6 +8,7 @@ public final class LineItem {
     public long time;
     public String text = "";
     public long blockId;
+    public long frameId;
     public String shotRef = "";
     public int lineNo;
     public int yTop;

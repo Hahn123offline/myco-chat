@@ -37,4 +37,9 @@ public interface MemorySource {
     default java.util.List<String> healthNotes(String from, String to) {
         return java.util.Collections.emptyList();
     }
+
+    /** 对象级消息序列；空表示未投影。 */
+    default java.util.List<ObjectMessage> messages(String object, int limit) {
+        return java.util.Collections.emptyList();
+    }
 }

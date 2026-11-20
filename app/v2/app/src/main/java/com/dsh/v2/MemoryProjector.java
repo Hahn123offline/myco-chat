@@ -239,6 +239,55 @@ public final class MemoryProjector {
         return n;
     }
 
+    /** 行 → 对象消息（长截图记忆）：chrome 不进；跨帧去重；sender 前缀提取。 */
+    public static synchronized int projectObjectMessages(Context app) {
+        SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
+        java.util.List<com.dsh.memory.LineItem> lines = new java.util.ArrayList<>();
+        try (Cursor c = db.rawQuery("SELECT object_key,pkg,time,text,block_id,frame_id,"
+                + "y_top,kind FROM lines WHERE kind IN ('CONTENT','SYSTEM') "
+                + "AND text IS NOT NULL AND text!='' ORDER BY time", null)) {
+            while (c.moveToNext()) {
+                com.dsh.memory.LineItem l = new com.dsh.memory.LineItem();
+                l.objectKey = c.getString(0);
+                l.pkg = c.getString(1);
+                l.time = c.getLong(2);
+                l.text = c.getString(3);
+                l.blockId = c.getLong(4);
+                l.frameId = c.getLong(5);
+                l.yTop = c.getInt(6);
+                l.kind = c.getString(7);
+                lines.add(l);
+            }
+        }
+        java.util.List<com.dsh.memory.MessageBuilder.Msg> msgs =
+                com.dsh.memory.MessageBuilder.build(lines);
+        db.beginTransaction();
+        try {
+            db.delete("object_messages", null, null);
+            for (com.dsh.memory.MessageBuilder.Msg m : msgs) {
+                ContentValues v = new ContentValues();
+                v.put("object_key", m.objectKey);
+                v.put("pkg", m.pkg);
+                v.put("t_first", m.tFirst);
+                v.put("t_last", m.tLast);
+                v.put("seen_count", m.seenCount);
+                v.put("sender", m.sender);
+                v.put("text", m.text);
+                v.put("text_key", m.textKey);
+                v.put("block_id", m.blockId);
+                v.put("frame_id", m.frameId);
+                db.insertWithOnConflict("object_messages", null, v,
+                        SQLiteDatabase.CONFLICT_IGNORE);
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        android.util.Log.i("DSHL2", "object messages: lines=" + lines.size()
+                + " messages=" + msgs.size());
+        return msgs.size();
+    }
+
     private static boolean fragmented(String t) {
         int switches = 0, run = 0;
         boolean lastCjk = false, first = true;

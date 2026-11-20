@@ -178,6 +178,27 @@ public final class AndroidMemorySource implements MemorySource {
         }
     }
 
+    @Override public java.util.List<com.dsh.memory.ObjectMessage> messages(String object, int limit) {
+        java.util.List<com.dsh.memory.ObjectMessage> out = new java.util.ArrayList<>();
+        if (object == null || object.isEmpty()) return out;
+        try (android.database.Cursor c = MemoryDb.get(app).getReadableDatabase().rawQuery(
+                "SELECT id,object_key,pkg,t_first,t_last,seen_count,sender,text,text_key,"
+                        + "block_id,frame_id FROM object_messages "
+                        + "WHERE object_key=? OR object_key LIKE ? "
+                        + "ORDER BY t_first LIMIT ?",
+                new String[]{object, "%" + object + "%", String.valueOf(Math.max(1, limit))})) {
+            while (c.moveToNext()) {
+                com.dsh.memory.ObjectMessage m = new com.dsh.memory.ObjectMessage();
+                m.id = c.getLong(0); m.objectKey = c.getString(1); m.pkg = c.getString(2);
+                m.tFirst = c.getLong(3); m.tLast = c.getLong(4); m.seenCount = c.getInt(5);
+                m.sender = c.getString(6); m.text = c.getString(7); m.textKey = c.getString(8);
+                m.blockId = c.getLong(9); m.frameId = c.getLong(10);
+                out.add(m);
+            }
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
     @Override public java.util.List<String> healthNotes(String from, String to) {
         java.util.List<String> out = new java.util.ArrayList<>();
         try {

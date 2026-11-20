@@ -75,6 +75,11 @@ public final class RecallTool implements AgentTool {
         }
         // 对象视图 / 行级内容视图：同一批 lines 的两种切法
         List<com.dsh.memory.LineItem> lines = source.lines(q);
+        List<com.dsh.memory.ObjectMessage> messages = q.object == null || q.object.isEmpty()
+                ? java.util.Collections.emptyList() : source.messages(q.object, q.limit);
+        if (!messages.isEmpty()) {
+            return ToolResult.ok(renderMessages(messages, q.limit));
+        }
         boolean includeChrome = Boolean.TRUE.equals(args.get("include_chrome"));
         if (!includeChrome) lines = contentOnly(lines);
         if (q.object != null && !q.object.isEmpty()) {
@@ -155,6 +160,35 @@ public final class RecallTool implements AgentTool {
             trace.accept("query=\"" + q.query + "\" → " + s.hits.size() + " hits, top=" + top);
         }
         return ToolResult.ok(RecallCore.render(s.hits));
+    }
+
+    static String renderMessages(List<com.dsh.memory.ObjectMessage> msgs, int limit) {
+        long first = Long.MAX_VALUE, last = 0;
+        int seen = 0;
+        for (com.dsh.memory.ObjectMessage m : msgs) {
+            first = Math.min(first, m.tFirst);
+            last = Math.max(last, m.tLast);
+            seen += Math.max(1, m.seenCount);
+        }
+        StringBuilder b = new StringBuilder("【对象消息】覆盖 ")
+                .append(fmt(first)).append(" → ").append(fmt(last)).append('\n')
+                .append("共 ").append(msgs.size()).append(" 条唯一消息，被看到 ")
+                .append(seen).append(" 次\n");
+        int n = 0;
+        for (com.dsh.memory.ObjectMessage m : msgs) {
+            if (n++ >= Math.max(1, limit)) {
+                b.append("…已截断，可收窄时间范围\n");
+                break;
+            }
+            String sender = m.sender == null || m.sender.trim().isEmpty()
+                    ? "（未知发送者）" : m.sender;
+            b.append(fmt(m.tFirst)).append(' ').append(sender).append(' ')
+                    .append(m.text == null ? "" : m.text)
+                    .append("  [block ").append(m.blockId).append("]")
+                    .append(m.seenCount > 1 ? " ×" + m.seenCount : "").append('\n');
+        }
+        b.append("【下钻】read_block(block_id) / read_frame(block_id) 核对原图。\n");
+        return b.toString();
     }
 
     private static List<com.dsh.memory.LineItem> contentOnly(

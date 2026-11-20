@@ -138,6 +138,30 @@ public final class JdbcMemorySource implements MemorySource, com.dsh.memory.Memo
         return com.dsh.memory.FrameRef.blocked("PC 宿主没有掩码图管道，拒绝看图");
     }
 
+    @Override public java.util.List<com.dsh.memory.ObjectMessage> messages(String object, int limit) {
+        java.util.List<com.dsh.memory.ObjectMessage> out = new java.util.ArrayList<>();
+        if (object == null || object.isEmpty()) return out;
+        try (java.sql.Connection c = java.sql.DriverManager.getConnection("jdbc:sqlite:" + db);
+             java.sql.PreparedStatement ps = c.prepareStatement(
+                     "SELECT id,object_key,pkg,t_first,t_last,seen_count,sender,text,text_key,"
+                             + "block_id,frame_id FROM object_messages "
+                             + "WHERE object_key=? OR object_key LIKE ? ORDER BY t_first LIMIT ?")) {
+            ps.setString(1, object); ps.setString(2, "%" + object + "%");
+            ps.setInt(3, Math.max(1, limit));
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.dsh.memory.ObjectMessage m = new com.dsh.memory.ObjectMessage();
+                    m.id = rs.getLong(1); m.objectKey = rs.getString(2); m.pkg = rs.getString(3);
+                    m.tFirst = rs.getLong(4); m.tLast = rs.getLong(5); m.seenCount = rs.getInt(6);
+                    m.sender = rs.getString(7); m.text = rs.getString(8); m.textKey = rs.getString(9);
+                    m.blockId = rs.getLong(10); m.frameId = rs.getLong(11);
+                    out.add(m);
+                }
+            }
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
     @Override public java.util.List<String> healthNotes(String from, String to) {
         java.util.List<String> out = new java.util.ArrayList<>();
         try {
