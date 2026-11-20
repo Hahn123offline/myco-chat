@@ -80,7 +80,8 @@ public final class OfflineProjection {
                                 ps.setString(1, obj); ps.setString(2, framePkg); ps.setLong(3, ft);
                                 ps.setString(4, x.text.trim()); ps.setLong(5, tid);
                                 ps.setString(6, fshot); ps.setInt(7, lineNo++);
-                                ps.setInt(8, x.top); ps.setString(9, "CONTENT");
+                                ps.setInt(8, x.top); ps.setString(9,
+                                        com.dsh.memory.TextKind.kind(x.text, x.top));
                                 if (fid > 0) ps.setLong(10, fid); else ps.setNull(10, java.sql.Types.INTEGER);
                                 if (x.left > 0 || x.right > 0) { ps.setInt(11, x.left); ps.setInt(12, x.right); xOk++; }
                                 else { ps.setNull(11, java.sql.Types.INTEGER); ps.setNull(12, java.sql.Types.INTEGER); }
@@ -91,7 +92,9 @@ public final class OfflineProjection {
                                 li.text = x.text; li.blockId = tid; li.frameId = fid;
                                 li.shotRef = fshot;
                                 li.yTop = x.top; li.left = x.left; li.right = x.right;
-                                li.kind = "CONTENT"; allLines.add(li);
+                                li.kind = com.dsh.memory.TextKind.kind(x.text, x.top);
+                                if (!"CONTENT".equals(li.kind) && !"SYSTEM".equals(li.kind)) continue;
+                                allLines.add(li);
                             }
                         } else if (!ftext.isEmpty()) {
                             ps.setString(1, obj); ps.setString(2, framePkg); ps.setLong(3, ft);
