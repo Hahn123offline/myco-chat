@@ -212,8 +212,18 @@ public final class MemoryProjector {
         }
         backfillKinds(app, db);
         markFrequencyChrome(db);
-        android.util.Log.i("DSHL2", "lines project: traces=" + traces
-                + " frames=" + framesTotal + " lines=" + n);
+        try (Cursor lc = db.rawQuery("SELECT COUNT(*) FROM lines WHERE frame_id IS NULL", null)) {
+            int legacy = lc.moveToFirst() ? lc.getInt(0) : 0;
+            try (Cursor fc = db.rawQuery("SELECT COUNT(*) FROM lines WHERE frame_id IS NOT NULL", null)) {
+                int framed = fc.moveToFirst() ? fc.getInt(0) : 0;
+                android.util.Log.i("DSHL2", "lines project: traces=" + traces
+                        + " frames=" + framesTotal + " legacy=" + legacy
+                        + " framed=" + framed + " new=" + n);
+            }
+        } catch (Throwable t) {
+            android.util.Log.i("DSHL2", "lines project: traces=" + traces
+                    + " frames=" + framesTotal + " lines=" + n);
+        }
         return n;
     }
 

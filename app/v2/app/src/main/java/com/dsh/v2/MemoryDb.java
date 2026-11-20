@@ -91,7 +91,15 @@ public final class MemoryDb extends SQLiteOpenHelper {
             try {
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_block_frame_text "
                         + "ON lines(block_id,frame_id,line_no,text)");
-            } catch (Throwable ignored) { }
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "create frame lines index failed", t);
+            }
+            try {
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
+                        + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
+            } catch (Throwable t) {
+                android.util.Log.e("DSHL2", "create legacy lines index failed", t);
+            }
         }
     }
 
@@ -149,6 +157,9 @@ public final class MemoryDb extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_time ON lines(time)");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_block_frame_text "
                 + "ON lines(block_id,frame_id,line_no,text)");
+        // 历史行 frame_id 为 NULL；SQLite UNIQUE 中 NULL 互不相等，单独用部分索引保证旧行幂等
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_lines_legacy "
+                + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
 
         db.execSQL("CREATE TABLE IF NOT EXISTS trace_gaps(" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, t0 INTEGER NOT NULL, t1 INTEGER," +
