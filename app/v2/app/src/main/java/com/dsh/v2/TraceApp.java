@@ -55,6 +55,16 @@ public final class TraceApp extends Application {
                 try { Thread.sleep(25000); } catch (Throwable ignored) { }
                 TraceModule.backfillEmptyText(ctx);
             }, "ocr-empty-backfill").start();
+            new Thread(() -> {
+                try { Thread.sleep(40000); } catch (Throwable ignored) { }
+                java.io.File shots = new java.io.File(getFilesDir(), "trace/shots");
+                ShotGc.Result g = ShotGc.run(shots, System.currentTimeMillis(),
+                        ShotGc.MAX_BYTES);
+                android.util.Log.i("DSHL2", "gc drop_shots=" + g.dropShots
+                        + " freed_mb=" + (g.freedBytes / 1024 / 1024)
+                        + " total_mb=" + (g.totalBytes / 1024 / 1024)
+                        + " low_disk=" + g.lowDisk);
+            }, "shot-gc").start();
             ChainCoverage.backfill(this);
         }
         File base = getFilesDir();

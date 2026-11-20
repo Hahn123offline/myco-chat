@@ -77,6 +77,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
     private long lastEventAtMs = 0;
     private volatile long lastRootAt = 0;
     private volatile String lastRootPkg = "";
+    private final ScrollTrigger scrollTrigger = new ScrollTrigger();
     private static final java.util.Set<String> HARD_SKIP = new java.util.HashSet<>(
             java.util.Arrays.asList("com.dsh.v2", "com.android.systemui",
                     "com.android.inputmethod.latin", "com.sohu.inputmethod.sogou",
@@ -179,6 +180,20 @@ public final class TraceAccessibilityService extends AccessibilityService {
                 if (m0 != null) m0.onSkippedHeartbeat(System.currentTimeMillis(), evPkg, currentActivity);
                 return;
             }
+            // 滚动触发：不遍历树，只累计位移；每 0.7 屏高截一帧，停止后补一帧
+            if (type == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+                int h = getResources().getDisplayMetrics().heightPixels;
+                long now = SystemClock.uptimeMillis();
+                boolean shot = scrollTrigger.onScroll(now, event.getScrollDeltaX(),
+                        event.getScrollDeltaY(), h);
+                handler.removeCallbacks(scrollIdle);
+                handler.postDelayed(scrollIdle, ScrollTrigger.IDLE_MS + 20);
+                if (shot) {
+                    lastShotAt = now;
+                    requestScreenshot();
+                }
+                return;
+            }
             long nowEv = SystemClock.uptimeMillis();
             if (type != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
                     && nowEv - lastRootAt < 300 && evPkg.equals(lastRootPkg)) {
@@ -279,6 +294,15 @@ public final class TraceAccessibilityService extends AccessibilityService {
         pendingInteractionShot = this::takeInteractionShot;
         handler.postDelayed(pendingInteractionShot, INTERACTION_DEBOUNCE_MS);
     }
+
+    private final Runnable scrollIdle = () -> {
+        int h = getResources().getDisplayMetrics().heightPixels;
+        long now = SystemClock.uptimeMillis();
+        if (scrollTrigger.onIdle(now, h)) {
+            lastShotAt = now;
+            requestScreenshot();
+        }
+    };
 
     private void takeInteractionShot() {
         pendingInteractionShot = null;
@@ -484,10 +508,20 @@ public final class TraceAccessibilityService extends AccessibilityService {
         try {
             File dir = new File(getFilesDir(), "trace/shots");
             if (!dir.exists()) dir.mkdirs();
+            File tmpDir = new File(getFilesDir(), "trace/tmp");
+            if (!tmpDir.exists()) tmpDir.mkdirs();
             String name = "shot_" + System.currentTimeMillis() + ".jpg";
+            File tmp = new File(tmpDir, name);
             File f = new File(dir, name);
-            try (FileOutputStream out = new FileOutputStream(f)) {
+            try (FileOutputStream out = new FileOutputStream(tmp)) {
                 bmp.compress(Bitmap.CompressFormat.JPEG, 70, out);
+            }
+            if (!ShotGc.commitTemp(tmp, f)) {
+                Log.w(TAG, "save shot commit failed " + name);
+                return null;
+            }
+            if (ShotGc.lowDisk(dir)) {
+                Log.w(TAG, "low disk <2GB: 仅首帧降级告警");
             }
             return "shots/" + name;
         } catch (Throwable t) {
