@@ -205,13 +205,13 @@ public final class TraceAccessibilityService extends AccessibilityService {
             long nowEv = SystemClock.uptimeMillis();
             if (type != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
                     && nowEv - lastRootAt < 300 && evPkg.equals(lastRootPkg)) {
-                if (m0 != null) m0.onSkippedHeartbeat(nowEv, evPkg, currentActivity);
+                if (m0 != null) m0.onSkippedHeartbeat(System.currentTimeMillis(), evPkg, currentActivity);
                 return;
             }
             // 内容变化是高频事件（打字/动画/进度条）：同 pkg 300ms 内不重复解析
             if (type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
                 if (evPkg.equals(lastContentParsePkg) && nowEv - lastContentParseAt < 300) {
-                    if (m0 != null) m0.onSkippedHeartbeat(nowEv, evPkg, currentActivity);
+                    if (m0 != null) m0.onSkippedHeartbeat(System.currentTimeMillis(), evPkg, currentActivity);
                     return;
                 }
                 lastContentParsePkg = evPkg;
@@ -283,6 +283,11 @@ public final class TraceAccessibilityService extends AccessibilityService {
                 if (parseSampleIdx % 50 == 0) {
                     Log.i(TAG, "page_parse " + parseStats());
                 }
+            }
+            // 滚动容器探针：验证 scrollY 在 RecyclerView 上是否可用（设计文档 §10.3）
+            if (pr != null && !pr.scrollables.isEmpty() && (full || parseSampleIdx % 4 == 0)) {
+                Log.d(TAG, "scrollables pkg=" + pkg + " "
+                        + PageParser.describeScrollables(pr.scrollables));
             }
             boolean skipped = module.onPageEvent(pageNow, pkg, currentActivity,
                     st[0], st[1], lastShotHash, pr == null ? null : pr.elements);

@@ -23,14 +23,50 @@ public final class PageParser {
         }
     }
 
+    /**
+     * 滚动容器探针。注意：{@link AccessibilityNodeInfo} **没有** scrollX/scrollY 读取器
+     * （只有 isScrollable()），所以位移不可能从"容器滚动位置"得到。
+     * 位移只能来自：①同一节点在两次观察中的 bbox 差 ②像素栅格对齐。
+     */
+    public static final class ScrollProbe {
+        public final String cls;
+        public final String resId;
+        public final int rows, cols;      // CollectionInfo，-1 = 非集合
+        public final int left, top, right, bottom;
+        public final int order;
+        ScrollProbe(String cls, String resId, int rows, int cols,
+                    int l, int t, int r, int b, int order) {
+            this.cls = cls == null ? "" : cls;
+            this.resId = resId == null ? "" : resId;
+            this.rows = rows; this.cols = cols;
+            this.left = l; this.top = t; this.right = r; this.bottom = b;
+            this.order = order;
+        }
+        @Override public String toString() {
+            String c = cls.contains(".") ? cls.substring(cls.lastIndexOf('.') + 1) : cls;
+            return c + "#" + order + "{id=" + resId + ",r=" + rows + ",c=" + cols
+                    + ",b=[" + left + "," + top + "," + right + "," + bottom + "]}";
+        }
+    }
+
+    /** 一行式输出，便于 logcat 观察。 */
+    public static String describeScrollables(List<ScrollProbe> list) {
+        if (list == null || list.isEmpty()) return "n=0";
+        StringBuilder sb = new StringBuilder("n=").append(list.size());
+        for (ScrollProbe s : list) sb.append(' ').append(s);
+        return sb.toString();
+    }
+
     public static final class Result {
         public final String pageTitle;
         public final List<PageElement> elements;
         public final long elapsedMs;
-        Result(String title, List<PageElement> e, long ms) {
+        public final List<ScrollProbe> scrollables;
+        Result(String title, List<PageElement> e, long ms, List<ScrollProbe> sc) {
             this.pageTitle = title == null ? "" : title;
             this.elements = e == null ? new ArrayList<>() : e;
             this.elapsedMs = ms;
+            this.scrollables = sc == null ? new ArrayList<>() : sc;
         }
     }
 
@@ -84,7 +120,10 @@ public final class PageParser {
         long t0 = System.currentTimeMillis();
         List<PageElement> out = new ArrayList<>();
         List<TitleCandidate> titleCandidates = new ArrayList<>();
-        if (root == null) return new Result("", out, System.currentTimeMillis() - t0);
+        List<ScrollProbe> scrollables = new ArrayList<>();
+        if (root == null) {
+            return new Result("", out, System.currentTimeMillis() - t0, scrollables);
+        }
         Rect rootBounds = new Rect();
         root.getBoundsInScreen(rootBounds);
         String pageTitle = "";
@@ -95,6 +134,20 @@ public final class PageParser {
             AccessibilityNodeInfo n = queue.poll();
             if (n == null) continue;
             visited++;
+            // 滚动容器探针：只记录事实（class / resource-id / 集合形状 / 屏幕 bbox）
+            try {
+                if (n.isScrollable()) {
+                    Rect sr = new Rect();
+                    n.getBoundsInScreen(sr);
+                    AccessibilityNodeInfo.CollectionInfo ci = n.getCollectionInfo();
+                    scrollables.add(new ScrollProbe(
+                            n.getClassName() == null ? "" : n.getClassName().toString(),
+                            n.getViewIdResourceName(),
+                            ci == null ? -1 : ci.getRowCount(),
+                            ci == null ? -1 : ci.getColumnCount(),
+                            sr.left, sr.top, sr.right, sr.bottom, visited));
+                }
+            } catch (Throwable ignored) { }
             CharSequence cs = n.getText();
             if (cs == null || cs.length() == 0) cs = n.getContentDescription();
             String text = cs == null ? "" : cs.toString().trim();
@@ -128,7 +181,7 @@ public final class PageParser {
             }
             out = marked;
         }
-        return new Result(pageTitle, out, System.currentTimeMillis() - t0);
+        return new Result(pageTitle, out, System.currentTimeMillis() - t0, scrollables);
     }
 
     static PageElement.Role roleOf(AccessibilityNodeInfo n, String text) {
