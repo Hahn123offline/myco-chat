@@ -62,11 +62,18 @@ public final class PageParser {
         public final List<PageElement> elements;
         public final long elapsedMs;
         public final List<ScrollProbe> scrollables;
-        Result(String title, List<PageElement> e, long ms, List<ScrollProbe> sc) {
+        /** 实际遍历的节点数（诊断：解析成本 ≈ visited × 每次 getChild） */
+        public final int visited;
+        /** 诊断用分段耗时：text/visible/bounds/role/signals/children/scrollProbe */
+        public final long[] stageNs;
+        Result(String title, List<PageElement> e, long ms, List<ScrollProbe> sc, long[] st,
+               int visited) {
             this.pageTitle = title == null ? "" : title;
             this.elements = e == null ? new ArrayList<>() : e;
             this.elapsedMs = ms;
             this.scrollables = sc == null ? new ArrayList<>() : sc;
+            this.stageNs = st == null ? new long[0] : st;
+            this.visited = visited;
         }
     }
 
@@ -117,12 +124,23 @@ public final class PageParser {
 
     /** 内容变化事件用更小配额（高频，避免打字时卡主线程）。 */
     public static Result parse(AccessibilityNodeInfo root, int maxNodes, int maxElements) {
+        return parse(root, maxNodes, maxElements, 0);
+    }
+
+    /**
+     * @param maxTexts >0 时收集到这么多文本就提前结束遍历。
+     *                 指纹只需要前 8 条文本，但整树 getChild() 是解析成本的 95%，
+     *                 早退可以少走一大半节点。
+     */
+    public static Result parse(AccessibilityNodeInfo root, int maxNodes, int maxElements,
+                               int maxTexts) {
         long t0 = System.currentTimeMillis();
         List<PageElement> out = new ArrayList<>();
         List<TitleCandidate> titleCandidates = new ArrayList<>();
         List<ScrollProbe> scrollables = new ArrayList<>();
+        long[] st = new long[7];
         if (root == null) {
-            return new Result("", out, System.currentTimeMillis() - t0, scrollables);
+            return new Result("", out, System.currentTimeMillis() - t0, scrollables, st, 0);
         }
         Rect rootBounds = new Rect();
         root.getBoundsInScreen(rootBounds);
@@ -131,9 +149,11 @@ public final class PageParser {
         queue.add(root);
         int visited = 0, idx = 0;
         while (!queue.isEmpty() && visited < maxNodes && out.size() < maxElements) {
+            if (maxTexts > 0 && out.size() >= maxTexts) break;
             AccessibilityNodeInfo n = queue.poll();
             if (n == null) continue;
             visited++;
+            long ts = System.nanoTime();
             // 滚动容器探针：只记录事实（class / resource-id / 集合形状 / 屏幕 bbox）
             try {
                 if (n.isScrollable()) {
@@ -148,26 +168,50 @@ public final class PageParser {
                             sr.left, sr.top, sr.right, sr.bottom, visited));
                 }
             } catch (Throwable ignored) { }
+            long tn = System.nanoTime();
+            st[6] += tn - ts;
             CharSequence cs = n.getText();
             if (cs == null || cs.length() == 0) cs = n.getContentDescription();
             String text = cs == null ? "" : cs.toString().trim();
-            if (!text.isEmpty() && n.isVisibleToUser()) {
+            long tv0 = System.nanoTime();
+            st[0] += tv0 - tn;
+            boolean visible = n.isVisibleToUser();
+            long tv1 = System.nanoTime();
+            st[1] += tv1 - tv0;
+            if (!text.isEmpty() && visible) {
                 Rect r = new Rect();
                 n.getBoundsInScreen(r);
+                long tb0 = System.nanoTime();
+                st[2] += tb0 - tv1;
                 if (r.width() > 0 && r.height() > 0) {
                     PageElement.Role role = roleOf(n, text);
+                    long tr0 = System.nanoTime();
+                    st[3] += tr0 - tb0;
                     titleCandidates.add(new TitleCandidate(text, r.left, r.top, r.right,
                             r.bottom, role));
                     if (pageTitle.isEmpty() && role == PageElement.Role.TITLE) pageTitle = text;
                     List<String> signals = DangerSignals.nominate(text, role, pageTitle);
+                    long tg0 = System.nanoTime();
+                    st[4] += tg0 - tr0;
                     out.add(new PageElement("a" + (idx++), text, r.left, r.top, r.right, r.bottom,
                             role, PageElement.Source.A11Y, 1.0, signals));
                 }
             }
-            for (int i = 0; i < n.getChildCount(); i++) {
-                AccessibilityNodeInfo c = n.getChild(i);
-                if (c != null) queue.add(c);
+            long tc0 = System.nanoTime();
+            // 视口裁剪：完全在屏幕外的子树不下钻。getChild() 是解析成本的全部，
+            // 少下一个节点就少一次开销（实测 visited 是唯一有效杠杆）。
+            Rect nb = new Rect();
+            n.getBoundsInScreen(nb);
+            boolean offScreen = nb.width() > 0 && nb.height() > 0
+                    && (nb.right <= 0 || nb.left >= rootBounds.width()
+                        || nb.bottom <= 0 || nb.top >= rootBounds.height());
+            if (!offScreen) {
+                for (int i = 0; i < n.getChildCount(); i++) {
+                    AccessibilityNodeInfo c = n.getChild(i);
+                    if (c != null) queue.add(c);
+                }
             }
+            st[5] += System.nanoTime() - tc0;
         }
         if (pageTitle.isEmpty()) pageTitle = inferTitle(titleCandidates, rootBounds.width());
         // 标题后置：给所有元素补 page_sensitive 提名
@@ -181,7 +225,7 @@ public final class PageParser {
             }
             out = marked;
         }
-        return new Result(pageTitle, out, System.currentTimeMillis() - t0, scrollables);
+        return new Result(pageTitle, out, System.currentTimeMillis() - t0, scrollables, st, visited);
     }
 
     static PageElement.Role roleOf(AccessibilityNodeInfo n, String text) {

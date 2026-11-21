@@ -65,7 +65,13 @@ public final class TraceAccessibilityService extends AccessibilityService {
     private volatile String lastShotHash = "";
     private volatile long lastPageT0 = 0;
     private volatile String lastPagePkg = "";
+    /** 上一次解析结果；内容变化路径现在是早退版（只够指纹），完整结果在截图时单独解析。 */
     private volatile PageParser.Result lastPageResult;
+    /** 最近一次活动窗口根节点：等画面稳定后的解析用它。 */
+    private volatile AccessibilityNodeInfo lastRootForShot;
+    /** 画面稳定后延迟解析：滚动中解析要 400ms+，稳定后只要 40ms。 */
+    private static final long PARSE_SETTLE_MS = 250L;
+    private final Runnable parseSettle = this::doSettleParse;
     private volatile long shotPageT0;
     private volatile String shotPagePkg = "";
     private volatile PageParser.Result shotPageResult;
@@ -220,6 +226,7 @@ public final class TraceAccessibilityService extends AccessibilityService {
             lastRootAt = nowEv;
             lastRootPkg = evPkg;
             AccessibilityNodeInfo active = activeRoot();
+            lastRootForShot = active;
             String pkg = rootPkg(active);
             if (pkg.isEmpty()) {
                 CharSequence pkgCs = event.getPackageName();
@@ -264,28 +271,30 @@ public final class TraceAccessibilityService extends AccessibilityService {
 
             // 只有窗口切换才做完整树；内容变化用 500/120 的紧凑配额
             boolean full = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
-            String[] st = extractStructure(active, full);
             long pageNow = System.currentTimeMillis();
             lastPageT0 = pageNow;
             lastPagePkg = pkg;
             shotPageT0 = pageNow;
             shotPagePkg = pkg;
+            // 解析成本 95% 在 getChild()，但真正的杠杆不是节点数而是时机：
+            // 实测同一棵树 visited=261，滚动中 422–546ms、静止后 37–49ms（13 倍差）。
+            // 原因是滚动时目标 App 主线程忙，每次 getChild 的 binder 往返都在等它。
+            // 所以高频的内容变化路径不立即解析，等画面稳定后再解析一次。
+            String[] st;
+            if (full) {
+                st = extractStructure(active, true);
+                recordParseStats(lastPageResult, true);
+            } else {
+                handler.removeCallbacks(parseSettle);
+                handler.postDelayed(parseSettle, PARSE_SETTLE_MS);
+                st = structureOf(lastPageResult);
+            }
+            // 截图用的完整 elements 在 requestScreenshot() 里按截图节奏单独全量解析，
+            // 不再每个事件都全量走一遍树。
             shotPageResult = lastPageResult;
             PageParser.Result pr = lastPageResult;
-            if (pr != null) {
-                parseSamples[parseSampleIdx % parseSamples.length] = pr.elapsedMs;
-                elementSamples[parseSampleIdx % elementSamples.length] = pr.elements.size();
-                parseSampleIdx++;
-                if (pr.elapsedMs > 30) {
-                    Log.w(TAG, "page parse slow " + pr.elapsedMs + "ms elements="
-                            + pr.elements.size());
-                }
-                if (parseSampleIdx % 50 == 0) {
-                    Log.i(TAG, "page_parse " + parseStats());
-                }
-            }
-            // 滚动容器探针：验证 scrollY 在 RecyclerView 上是否可用（设计文档 §10.3）
-            if (pr != null && !pr.scrollables.isEmpty() && (full || parseSampleIdx % 4 == 0)) {
+            // 滚动容器探针：只记录事实（class / resource-id / 集合形状 / bbox）
+            if (pr != null && !pr.scrollables.isEmpty()) {
                 Log.d(TAG, "scrollables pkg=" + pkg + " "
                         + PageParser.describeScrollables(pr.scrollables));
             }
@@ -388,8 +397,9 @@ public final class TraceAccessibilityService extends AccessibilityService {
     }
 
     private String[] extractStructure(AccessibilityNodeInfo root, boolean full) {
+        // 内容变化路径：只取指纹所需的文本量，靠视口裁剪把树走过路降到最低
         PageParser.Result pr = full ? PageParser.parse(root)
-                : PageParser.parse(root, 500, 120);
+                : PageParser.parse(root, 400, 60);
         lastPageResult = pr;
         String title = pr.pageTitle == null ? "" : pr.pageTitle;
         List<String> texts = new ArrayList<>();
@@ -398,6 +408,63 @@ public final class TraceAccessibilityService extends AccessibilityService {
             if (TextFingerprint.useful(e.text)) texts.add(e.text.trim());
         }
         return new String[]{title, TextFingerprint.joined(texts)};
+    }
+
+    /** 画面稳定后的解析（主线程，此时目标 App 空闲，getChild 便宜一个数量级）。 */
+    private void doSettleParse() {
+        AccessibilityNodeInfo root = lastRootForShot;
+        if (root == null) return;
+        try {
+            PageParser.Result pr = PageParser.parse(root, 500, 120);
+            lastPageResult = pr;
+            shotPageResult = pr;
+            recordParseStats(pr, true);
+        } catch (Throwable t) {
+            Log.w(TAG, "settle parse failed", t);
+        }
+    }
+
+    /** 从上一次解析结果取结构指纹；还没有结果时返回空串（不阻塞等解析）。 */
+    private String[] structureOf(PageParser.Result pr) {
+        if (pr == null) return new String[]{"", ""};
+        String title = pr.pageTitle == null ? "" : pr.pageTitle;
+        List<String> texts = new ArrayList<>();
+        for (PageElement e : pr.elements) {
+            if (texts.size() >= TextFingerprint.N) break;
+            if (TextFingerprint.useful(e.text)) texts.add(e.text.trim());
+        }
+        return new String[]{title, TextFingerprint.joined(texts)};
+    }
+
+    /** 记录解析统计（后台线程与主线程都会调）。 */
+    private synchronized void recordParseStats(PageParser.Result pr, boolean log) {
+        if (pr == null) return;
+        parseSamples[parseSampleIdx % parseSamples.length] = pr.elapsedMs;
+        elementSamples[parseSampleIdx % elementSamples.length] = pr.elements.size();
+        parseSampleIdx++;
+        if (log && pr.elapsedMs > 30) {
+            Log.w(TAG, "page parse slow " + pr.elapsedMs + "ms elements="
+                    + pr.elements.size() + " visited=" + pr.visited + " "
+                    + stageBreakdown(pr.stageNs));
+        }
+        if (log && parseSampleIdx % 50 == 0) {
+            Log.i(TAG, "page_parse " + parseStats());
+        }
+    }
+
+    /** 分段耗时（毫秒）：text/visible/bbox/role/signals/children/scrollProbe。诊断用。 */
+    private static String stageBreakdown(long[] st) {
+        if (st == null || st.length < 7) return "";
+        String[] names = {"text", "vis", "bbox", "role", "sig", "child", "scroll"};
+        long sum = 0;
+        StringBuilder sb = new StringBuilder("stages=[");
+        for (int i = 0; i < 7; i++) {
+            sum += st[i];
+            if (i > 0) sb.append(' ');
+            sb.append(names[i]).append('=').append(st[i] / 1_000_000L);
+        }
+        sb.append(" sum=").append(sum / 1_000_000L).append("]");
+        return sb.toString();
     }
 
     private String parseStats() {
