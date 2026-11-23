@@ -204,8 +204,11 @@ public final class AndroidMemorySource implements MemorySource {
     @Override public com.dsh.memory.IdfModel idf() {
         if (STATIC_IDF != null) return STATIC_IDF;
         try {
+            // 原先 limit=10000：为了建 IDF 又整表加载一次，实测 35.7 秒（一次 recall 51 秒里的大头）。
+            // IDF 是语料统计量，不需要全量样本就能稳定；降到 IDF_SAMPLE 条。
+            // 真正的修法是预计算 IDF 存库，这里先止血。
             java.util.List<MemItem> all = store.query(
-                    new Query().includeSuperseded(false).limit(10000));
+                    new Query().includeSuperseded(false).limit(IDF_SAMPLE));
             java.util.List<String> texts = new java.util.ArrayList<>();
             for (MemItem m : all) texts.add(m.text);
             STATIC_IDF = com.dsh.memory.IdfModel.fromTexts(texts);
@@ -214,6 +217,9 @@ public final class AndroidMemorySource implements MemorySource {
             return null;
         }
     }
+
+    /** IDF 采样条数：只影响词权重精度，不影响命中集合。 */
+    private static final int IDF_SAMPLE = 2000;
 
     @Override public com.dsh.memory.FrameRef readFrame(long blockId) {
         try {

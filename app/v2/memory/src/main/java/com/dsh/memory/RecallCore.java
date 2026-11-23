@@ -10,6 +10,11 @@ import java.util.Map;
 /** recall v0 纯逻辑：过滤 + 打分 + 排序 + 渲染；零 Android。 */
 public final class RecallCore {
 
+    /** 上一次 recall 的分段耗时：候选查询 / IDF 构建 / 其余（逐条打分）。诊断用。 */
+    public static volatile long lastCandidatesMs;
+    public static volatile long lastIdfMs;
+    public static volatile int lastCandCount;
+
     /** 低于此相似度视为“没有找到”，不拿近似结果糊。 */
     public static final double MIN_SIM = 0.05;
 
@@ -24,8 +29,14 @@ public final class RecallCore {
         long fromMs = from.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
         long toMs = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
+        long __t0 = System.currentTimeMillis();
         List<MemItem> candidates = source.candidates(q);
+        long __t1 = System.currentTimeMillis();
         IdfModel idf = source.idf();
+        long __t2 = System.currentTimeMillis();
+        lastCandidatesMs = __t1 - __t0;
+        lastIdfMs = __t2 - __t1;
+        lastCandCount = candidates == null ? 0 : candidates.size();
         if (idf == null) {
             List<String> texts = new ArrayList<>();
             for (MemItem m : candidates) texts.add(m.text);

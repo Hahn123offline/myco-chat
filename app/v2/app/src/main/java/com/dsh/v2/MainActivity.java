@@ -592,7 +592,10 @@ public final class MainActivity extends Activity {
                     android.util.Log.i("DSHL2", "contract answer=" + r.answer);
                     android.util.Log.i("DSHL2", "contract timing recallMs=" + cr.lastRecallMs
                             + " renderMs=" + cr.lastRenderMs
-                            + " hits=" + cr.lastHitCount);
+                            + " hits=" + cr.lastHitCount
+                            + " | candMs=" + com.dsh.memory.RecallCore.lastCandidatesMs
+                            + " idfMs=" + com.dsh.memory.RecallCore.lastIdfMs
+                            + " candN=" + com.dsh.memory.RecallCore.lastCandCount);
                 }
             } catch (Throwable t) {
                 android.util.Log.e("DSHL2", "dev_action failed " + action, t);
