@@ -13,7 +13,7 @@ import java.io.File;
 public final class MemoryDb extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "memory.db";
-    public static final int DB_VER = 19;
+    public static final int DB_VER = 20;
 
     private static volatile MemoryDb instance;
     /** 迁移未完成/可疑时非空；状态页与日志可见，绝不静默当新设备。 */
@@ -190,6 +190,14 @@ public final class MemoryDb extends SQLiteOpenHelper {
                     + "ON lines(block_id,line_no,text) WHERE frame_id IS NULL");
         } catch (Throwable t) {
             android.util.Log.e("DSHL2", "create legacy lines index failed", t);
+        }
+        // backfillKinds 每轮要查 WHERE kind IS NULL LIMIT 500；没有这个部分索引时，
+        // 一旦“没有 NULL 行了”，它要从头扫到 63 万行才能确认，实测是投影空转的主要残留成本。
+        try {
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_lines_kind_null "
+                    + "ON lines(id) WHERE kind IS NULL");
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "create kind-null index failed", t);
         }
     }
 
