@@ -254,16 +254,43 @@ public final class MemoryProjector {
         return n;
     }
 
+    /** 对象消息单轮处理的行数上限：全量一次扫 63 万行会把同链其他投影饿死。 */
+    private static final int OBJMSG_BATCH = 20000;
+    /** 增量重叠窗口：防止 time 顺序抖动导致边界行被跳过。 */
+    private static final long OBJMSG_OVERLAP_MS = 120_000L;
+
     /** 行 → 对象消息（长截图记忆）：chrome 不进；跨帧去重；sender 前缀提取。 */
     public static synchronized int projectObjectMessages(Context app) {
+        return projectObjectMessages(app, false);
+    }
+
+    /**
+     * @param full true = 清空重建（rebuildLines 用）；false = 增量追加。
+     *
+     * 游标取 object_messages 的 MAX(t_last)：自洽，不需要新表/迁移，
+     * 表被清空时自动回落成全量。每轮限量 OBJMSG_BATCH 行，多轮追平。
+     * 代价：已有行不再累加 seen_count / 更新 t_last（只做 CONFLICT_IGNORE 插入），
+     * 用一点统计精度换掉"object_messages 滞后 18 小时"。
+     */
+    public static synchronized int projectObjectMessages(Context app, boolean full) {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
         java.util.List<com.dsh.memory.LineItem> lines = new java.util.ArrayList<>();
         java.util.Set<String> shots = new java.util.HashSet<>();
+        long cursor = 0L;
+        if (!full) {
+            try (Cursor m = db.rawQuery("SELECT MAX(t_last) FROM object_messages", null)) {
+                if (m.moveToFirst() && !m.isNull(0)) {
+                    cursor = Math.max(0L, m.getLong(0) - OBJMSG_OVERLAP_MS);
+                }
+            } catch (Throwable ignored) { }
+        }
         try (Cursor c = db.rawQuery("SELECT object_key,pkg,time,text,block_id,frame_id,"
                 + "y_top,kind,shot_ref,x_left,x_right FROM lines WHERE text IS NOT NULL AND text!='' "
+                + "AND time>=? "
                 + "AND pkg NOT IN ('com.dsh.v2','com.dsh.pcharness') AND ("
                 + "kind IN ('CONTENT','SYSTEM') OR text LIKE '[群主%' OR text LIKE '群主%' "
-                + "OR text GLOB '??-*') ORDER BY time", null)) {
+                + "OR text GLOB '??-*') ORDER BY time LIMIT " + OBJMSG_BATCH,
+                new String[]{String.valueOf(cursor)})) {
             while (c.moveToNext()) {
                 com.dsh.memory.LineItem l = new com.dsh.memory.LineItem();
                 l.objectKey = c.getString(0);
@@ -318,7 +345,7 @@ public final class MemoryProjector {
                 com.dsh.memory.MessageBuilder.build(lines, anchors);
         db.beginTransaction();
         try {
-            db.delete("object_messages", null, null);
+            if (full) db.delete("object_messages", null, null);
             for (com.dsh.memory.MessageBuilder.Msg m : msgs) {
                 ContentValues v = new ContentValues();
                 v.put("object_key", m.objectKey);
@@ -443,7 +470,7 @@ public final class MemoryProjector {
         android.util.Log.i("DSHL2", "rebuild lines: cleared");
         int n = projectLines(app);
         backfillFrameObjects(app);
-        projectObjectMessages(app);
+        projectObjectMessages(app, true);
         android.util.Log.i("DSHL2", "rebuild lines done: lines=" + n);
         return n;
     }
