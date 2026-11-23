@@ -225,8 +225,13 @@ public final class MemoryProjector {
         } finally {
             if (edb != null) try { edb.close(); } catch (Throwable ignored) { }
         }
-        backfillKinds(app, db);
-        markFrequencyChrome(db);
+        if (n > 0) backfillKinds(app, db);
+        // chrome 判定（跨对象频率）结果只依赖已有 lines：没有新行时重跑不会改变任何东西。
+        // 而它要跑两个 637k 行的 GROUP BY，实测把它每 180s 跑一次是纯浪费。
+        if (n > 0 && System.currentTimeMillis() - LAST_CHROME_AT > CHROME_INTERVAL_MS) {
+            markFrequencyChrome(db);
+            LAST_CHROME_AT = System.currentTimeMillis();
+        }
         long toBlock = maxBlock;
         try (Cursor mb = db.rawQuery("SELECT COALESCE(MAX(block_id),0) FROM lines", null)) {
             if (mb.moveToFirst()) toBlock = mb.getLong(0);
@@ -239,23 +244,19 @@ public final class MemoryProjector {
         android.util.Log.i("DSHL2", "lines project inc: from_block=" + (maxBlock + 1)
                 + " to_block=" + toBlock + " traces=" + traces
                 + " frames=" + framesTotal + " lines=" + n);
-        try (Cursor lc = db.rawQuery("SELECT COUNT(*) FROM lines WHERE frame_id IS NULL", null)) {
-            int legacy = lc.moveToFirst() ? lc.getInt(0) : 0;
-            try (Cursor fc = db.rawQuery("SELECT COUNT(*) FROM lines WHERE frame_id IS NOT NULL", null)) {
-                int framed = fc.moveToFirst() ? fc.getInt(0) : 0;
-                android.util.Log.i("DSHL2", "lines project: traces=" + traces
-                        + " frames=" + framesTotal + " legacy=" + legacy
-                        + " framed=" + framed + " new=" + n);
-            }
-        } catch (Throwable t) {
-            android.util.Log.i("DSHL2", "lines project: traces=" + traces
-                    + " frames=" + framesTotal + " lines=" + n);
-        }
+        // 原来这里还有两个 COUNT(*) 全表扫（frame_id IS NULL / IS NOT NULL），
+        // 63 万行各扫一遍，实测固定花掉 40 秒——纯粹为了打一行诊断日志。
+        // 增量是 0 条时也要付这 40 秒，且与同链其他投影争锁。已删。
+        android.util.Log.i("DSHL2", "lines project: traces=" + traces
+                + " frames=" + framesTotal + " new=" + n);
         return n;
     }
 
     /** 对象消息单轮处理的行数上限：全量一次扫 63 万行会把同链其他投影饿死。 */
     private static final int OBJMSG_BATCH = 20000;
+    /** chrome 重判间隔：结果只依赖已有 lines，没必要每轮重算。 */
+    private static final long CHROME_INTERVAL_MS = 30 * 60_000L;
+    private static volatile long LAST_CHROME_AT = 0L;
     /** 增量重叠窗口：防止 time 顺序抖动导致边界行被跳过。 */
     private static final long OBJMSG_OVERLAP_MS = 120_000L;
 
