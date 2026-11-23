@@ -380,6 +380,13 @@ public final class MemoryProjector {
         return best.isEmpty() ? fallback : pkg + "/" + best;
     }
 
+    /**
+     * 单轮回填上限。实测每帧 ~2.4s（两库各一次查询 + 逐元素 update），
+     * 必须让一轮远小于 180s 的维护周期，否则整条维护链会被它拖到 10 分钟一轮。
+     * 40 × 2.4s ≈ 96s，留出余量给同轮的其他投影。
+     */
+    private static final int BACKFILL_BATCH = 40;
+
     /** 历史帧回填：每帧自己的 object_key + lines 的 pkg/x（断跨界面串台）。 */
     public static synchronized int backfillFrameObjects(Context app) {
         SQLiteDatabase db = MemoryDb.get(app).getWritableDatabase();
@@ -390,16 +397,22 @@ public final class MemoryProjector {
         try {
             edb = SQLiteDatabase.openDatabase(ev.getAbsolutePath(), null,
                     SQLiteDatabase.OPEN_READWRITE);
+            // 只处理还没回填过的帧，并限制单轮批量：
+            // 原来的查询没有增量条件，每 180s 把所有帧重做一遍（实测 2s/帧、永不收敛），
+            // 把同一维护链上排在其后的 projectObjectMessages 饿死（object_messages 落后 18h）。
             try (Cursor c = edb.rawQuery("SELECT f.id,f.shot_ref,t.pkg,t.object_key "
                     + "FROM trace_frames f JOIN traces t ON t.id=f.trace_id "
-                    + "WHERE f.shot_ref IS NOT NULL AND f.shot_ref!=''", null)) {
+                    + "WHERE f.shot_ref IS NOT NULL AND f.shot_ref!='' "
+                    + "AND f.object_key IS NULL LIMIT " + BACKFILL_BATCH, null)) {
                 while (c.moveToNext()) {
                     scanned++;
                     long fid = c.getLong(0); String shot = c.getString(1);
                     String pkg = c.getString(2); String base = c.getString(3);
                     String frameOk = frameObjectKey(edb, shot, pkg, base == null ? "" : base);
                     String framePkg = framePkg(edb, shot, pkg);
-                    ContentValues fv = new ContentValues(); fv.put("object_key", frameOk);
+                    // 写 ""（非 NULL）：回填不出来也算处理过，否则 IS NULL 会反复选中它
+                    ContentValues fv = new ContentValues();
+                    fv.put("object_key", frameOk == null ? "" : frameOk);
                     n += edb.update("trace_frames", fv, "id=?", new String[]{String.valueOf(fid)});
                     ContentValues lv = new ContentValues();
                     lv.put("object_key", frameOk); lv.put("pkg", framePkg);

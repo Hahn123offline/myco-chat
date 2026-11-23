@@ -55,8 +55,8 @@ public final class TraceApp extends Application {
             new Thread(() -> {
                 try { Thread.sleep(15000); } catch (Throwable ignored) { }
                 MemoryProjector.projectLines(ctx);
-                MemoryProjector.backfillFrameObjects(ctx);
                 MemoryProjector.projectObjectMessages(ctx);
+                MemoryProjector.backfillFrameObjects(ctx);
             }, "line-projector").start();
             new Thread(() -> {
                 try { Thread.sleep(25000); } catch (Throwable ignored) { }
@@ -84,9 +84,13 @@ public final class TraceApp extends Application {
             });
             maintenance.scheduleWithFixedDelay(() -> {
                 try {
+                    // 顺序有讲究：projectObjectMessages 必须排在慢任务之前。
+                    // backfillFrameObjects 曾因没有增量条件而永不收敛（2s/帧 × 全部帧），
+                    // 把排在它后面的对象消息投影饿死，导致 object_messages 滞后 18 小时、
+                    // 用户问"昨晚群里"答"没看到"。现在它已改成增量 + 批量上限。
                     MemoryProjector.projectLines(mctx);
-                    MemoryProjector.backfillFrameObjects(mctx);
                     MemoryProjector.projectObjectMessages(mctx);
+                    MemoryProjector.backfillFrameObjects(mctx);
                 } catch (Throwable t) {
                     android.util.Log.e("DSHL2", "periodic line projection failed", t);
                 }
