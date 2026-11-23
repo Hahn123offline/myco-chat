@@ -8,6 +8,8 @@ java {
 }
 
 dependencies {
+    // 契约实现对外暴露 contract 类型，用 api 而非 implementation
+    api project(":contract")
     implementation project(":models")
     implementation project(":egress")
     testImplementation "junit:junit:4.13.2"

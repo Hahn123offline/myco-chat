@@ -1,0 +1,15 @@
+plugins {
+    id "java-library"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// 契约模块：**零依赖**。
+// 只有接口和数据类，不允许依赖 android、sqlite、任何实现模块。
+// 另一仓可以直接依赖这个 jar，而不必拖入本仓的采集实现。
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+}
