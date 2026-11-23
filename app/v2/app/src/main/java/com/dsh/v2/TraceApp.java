@@ -35,6 +35,26 @@ public final class TraceApp extends Application {
 
     public static TraceApp instance() { return instance; }
 
+    /**
+     * 包一层投影任务：计时 + 失败可见。
+     *
+     * 不在这里单独存"投影到哪了"——进度由数据库自身的时间前沿推导
+     * （MAX(lines.time) / MAX(object_messages.t_last)），
+     * recall 的 freshness 直接读这两个值算 lag，不需要额外状态、也不会与数据不一致。
+     */
+    private static void runProjection(String name, Runnable task) {
+        long t0 = System.currentTimeMillis();
+        try {
+            task.run();
+            long ms = System.currentTimeMillis() - t0;
+            if (ms > 3000) {
+                android.util.Log.w("DSHL2", "projection " + name + " slow " + ms + "ms");
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("DSHL2", "projection " + name + " failed", t);
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -52,12 +72,21 @@ public final class TraceApp extends Application {
                 android.util.Log.e("DSHL2", "startup projection failed; app continues", t);
             }
             final android.content.Context ctx = this;
+            // 三条投影各自独立线程：原来串成一条链（lines → objmsg → backfill），
+            // 任何一个慢就把后面的饿死。实测 backfill 永不收敛、projectLines 积压时能跑
+            // 十几分钟，结果 object_messages 滞后 18 小时，系统对有证据的事答"没看到"。
             new Thread(() -> {
                 try { Thread.sleep(15000); } catch (Throwable ignored) { }
-                MemoryProjector.projectLines(ctx);
-                MemoryProjector.projectObjectMessages(ctx);
-                MemoryProjector.backfillFrameObjects(ctx);
-            }, "line-projector").start();
+                runProjection("lines", () -> MemoryProjector.projectLines(ctx));
+            }, "proj-lines").start();
+            new Thread(() -> {
+                try { Thread.sleep(16000); } catch (Throwable ignored) { }
+                runProjection("objmsg", () -> MemoryProjector.projectObjectMessages(ctx));
+            }, "proj-objmsg").start();
+            new Thread(() -> {
+                try { Thread.sleep(20000); } catch (Throwable ignored) { }
+                runProjection("backfill", () -> MemoryProjector.backfillFrameObjects(ctx));
+            }, "proj-backfill").start();
             new Thread(() -> {
                 try { Thread.sleep(25000); } catch (Throwable ignored) { }
                 TraceModule.backfillEmptyText(ctx);
@@ -77,24 +106,22 @@ public final class TraceApp extends Application {
             }, "shot-gc").start();
             ChainCoverage.backfill(this);
             final android.content.Context mctx = this;
-            maintenance = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            maintenance = java.util.concurrent.Executors.newScheduledThreadPool(3, r -> {
                 Thread t = new Thread(r, "maintenance");
                 t.setDaemon(true);
                 return t;
             });
-            maintenance.scheduleWithFixedDelay(() -> {
-                try {
-                    // 顺序有讲究：projectObjectMessages 必须排在慢任务之前。
-                    // backfillFrameObjects 曾因没有增量条件而永不收敛（2s/帧 × 全部帧），
-                    // 把排在它后面的对象消息投影饿死，导致 object_messages 滞后 18 小时、
-                    // 用户问"昨晚群里"答"没看到"。现在它已改成增量 + 批量上限。
-                    MemoryProjector.projectLines(mctx);
-                    MemoryProjector.projectObjectMessages(mctx);
-                    MemoryProjector.backfillFrameObjects(mctx);
-                } catch (Throwable t) {
-                    android.util.Log.e("DSHL2", "periodic line projection failed", t);
-                }
-            }, 180, 180, java.util.concurrent.TimeUnit.SECONDS);
+            // 三个任务各自定时，不再串成一条链。projectObjectMessages 是增量且快，
+            // 给它更短的周期（60s），保证 object_messages 的新鲜度不被 lines 积压拖住。
+            maintenance.scheduleWithFixedDelay(
+                    () -> runProjection("lines", () -> MemoryProjector.projectLines(mctx)),
+                    180, 180, java.util.concurrent.TimeUnit.SECONDS);
+            maintenance.scheduleWithFixedDelay(
+                    () -> runProjection("objmsg", () -> MemoryProjector.projectObjectMessages(mctx)),
+                    60, 60, java.util.concurrent.TimeUnit.SECONDS);
+            maintenance.scheduleWithFixedDelay(
+                    () -> runProjection("backfill", () -> MemoryProjector.backfillFrameObjects(mctx)),
+                    240, 240, java.util.concurrent.TimeUnit.SECONDS);
             maintenance.scheduleWithFixedDelay(() -> {
                 try {
                     HealthHeartbeat.write(mctx);
