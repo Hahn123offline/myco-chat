@@ -6,6 +6,13 @@ import java.util.List;
 public interface MemorySource {
     List<MemItem> candidates(RecallQuery q);
 
+    /**
+     * 数据已处理到哪个时间点（毫秒）。0 = 未知。
+     * 契约的 freshness 由它直接推导，不额外存状态，因此不会与实际数据不一致。
+     * 实现方应返回 MAX(lines.time) 与 MAX(object_messages.t_last) 中的较大值。
+     */
+    default long projectedUntil() { return 0L; }
+
     /** level=day：按日期取日叙事；没有返回 null。 */
     default DayRecall day(String day) { return null; }
 
