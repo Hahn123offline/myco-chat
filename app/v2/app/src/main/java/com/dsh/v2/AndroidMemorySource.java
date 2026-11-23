@@ -69,6 +69,58 @@ public final class AndroidMemorySource implements MemorySource {
 
     public AndroidMemoryStore store() { return store; }
 
+    /**
+     * 契约入口：另一仓只需要拿到这个接口，不需要知道 AndroidMemoryStore 的存在。
+     */
+    public com.dsh.contract.MemoryReader reader() {
+        return new com.dsh.memory.api.ContractRecall(this);
+    }
+
+    public static com.dsh.contract.MemoryReader readerOf(Context ctx) {
+        return new AndroidMemorySource(ctx).reader();
+    }
+
+    /**
+     * 数据已处理到哪个时间点 = MAX(lines.time) 与 MAX(object_messages.t_last) 的较大值。
+     *
+     * 这两个前沿会分叉（实测差过 18 小时：lines 到 11-23 13:19，object_messages 停在 11-22 02:53），
+     * 取较大值会让 freshness 显得乐观，所以同时提供 {@link #projectionLag()} 给排查用。
+     * 取较大值是为了回答"我最多看到了多久之前的事"，而 object_messages 的滞后由 lag 字段暴露。
+     */
+    @Override public long projectedUntil() {
+        long lines = 0L, objmsg = 0L;
+        try {
+            android.database.sqlite.SQLiteDatabase db =
+                    MemoryDb.get(app).getReadableDatabase();
+            try (android.database.Cursor c = db.rawQuery("SELECT MAX(time) FROM lines", null)) {
+                if (c.moveToFirst() && !c.isNull(0)) lines = c.getLong(0);
+            }
+            try (android.database.Cursor c = db.rawQuery(
+                    "SELECT MAX(t_last) FROM object_messages", null)) {
+                if (c.moveToFirst() && !c.isNull(0)) objmsg = c.getLong(0);
+            }
+        } catch (Throwable ignored) { }
+        return Math.max(lines, objmsg);
+    }
+
+    /** 两条投影前沿的分叉量（毫秒）。用于诊断"对象视图比文本层旧多少"。 */
+    public long projectionLag() {
+        long lines = 0L, objmsg = 0L;
+        try {
+            android.database.sqlite.SQLiteDatabase db =
+                    MemoryDb.get(app).getReadableDatabase();
+            try (android.database.Cursor c = db.rawQuery("SELECT MAX(time) FROM lines", null)) {
+                if (c.moveToFirst() && !c.isNull(0)) lines = c.getLong(0);
+            }
+            try (android.database.Cursor c = db.rawQuery(
+                    "SELECT MAX(t_last) FROM object_messages", null)) {
+                if (c.moveToFirst() && !c.isNull(0)) objmsg = c.getLong(0);
+            }
+        } catch (Throwable ignored) { }
+        if (lines <= 0 || objmsg <= 0) return -1L;
+        return Math.max(0L, lines - objmsg);
+    }
+
     public java.util.List<MemItem> blocksBetween(long from, long to) {
         java.util.List<MemItem> out = new java.util.ArrayList<>();
         for (MemItem m : store.query(new Query().window(from, to).limit(10000))) {

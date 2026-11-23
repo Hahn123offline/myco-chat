@@ -569,6 +569,25 @@ public final class MainActivity extends Activity {
                     MemoryProjector.projectTraceBlocks(this);
                     int d = MemoryProjector.projectDays(this);
                     android.util.Log.i("DSHL2", "dev project done events=" + e + " days=" + d);
+                } else if ("probe_contract".equals(action)) {
+                    // 契约自检：不经过代理，直接用 MemoryReader 验证 recall + freshness
+                    String q = intent.getStringExtra("q");
+                    if (q == null || q.trim().isEmpty()) q = "你好";
+                    AndroidMemorySource src = new AndroidMemorySource(this);
+                    com.dsh.contract.MemoryReader reader = src.reader();
+                    com.dsh.contract.Freshness fr = reader.freshness();
+                    android.util.Log.i("DSHL2", "contract freshness state=" + fr.state
+                            + " lagMs=" + fr.lagMs + " projectedUntil=" + fr.projectedUntil
+                            + " caveat=[" + fr.caveat() + "]");
+                    android.util.Log.i("DSHL2", "contract projectionLagMs=" + src.projectionLag());
+                    com.dsh.contract.Recall.Result r =
+                            reader.recall(com.dsh.contract.Recall.Request.of(q));
+                    android.util.Log.i("DSHL2", "contract recall ids=" + r.ids.length
+                            + " coveredMs=" + r.coverage.coveredMs
+                            + " shown=" + r.coverage.shownRange
+                            + " truncated=" + r.coverage.truncated
+                            + " answerLen=" + (r.answer == null ? 0 : r.answer.length()));
+                    android.util.Log.i("DSHL2", "contract answer=" + r.answer);
                 }
             } catch (Throwable t) {
                 android.util.Log.e("DSHL2", "dev_action failed " + action, t);
