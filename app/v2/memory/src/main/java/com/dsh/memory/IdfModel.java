@@ -42,7 +42,9 @@ public final class IdfModel {
             out.put(e.getKey(), Math.log(Math.max(1, n) / (double) Math.max(1, e.getValue())));
         }
         IdfModel m = new IdfModel(n, out, df, n == 0 ? 1 : lenSum / (double) n);
-        for (String t : texts) m.gramsFor(t); // 预热每篇文档的 grams，首查询不阻塞
+        // 原来这里还有一遍 `for (String t : texts) m.gramsFor(t);` 预热每篇文档的 grams。
+        // 那是对每篇全文**第二次**分词，实测是 IDF 构建 35 秒的主要来源；
+        // 预热省掉的只是首查询的一次性开销，完全不值得。
         return m;
     }
 
