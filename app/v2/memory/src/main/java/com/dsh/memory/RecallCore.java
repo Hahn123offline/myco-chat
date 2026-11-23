@@ -14,6 +14,10 @@ public final class RecallCore {
     public static volatile long lastCandidatesMs;
     public static volatile long lastIdfMs;
     public static volatile int lastCandCount;
+    /** 打分循环内部：JSON 解析 / coverage 分词 / tieBreak+bm25 分词。 */
+    public static volatile long lastDataMs;
+    public static volatile long lastCoverageMs;
+    public static volatile long lastTieMs;
 
     /** 低于此相似度视为“没有找到”，不拿近似结果糊。 */
     public static final double MIN_SIM = 0.05;
@@ -45,6 +49,7 @@ public final class RecallCore {
         java.util.Set<String> qTerms = (q.query != null && !q.query.trim().isEmpty())
                 ? RecallRanker.queryGrams(q.query) : java.util.Collections.emptySet();
         List<RecallHit> hits = new ArrayList<>();
+        lastDataMs = 0L; lastCoverageMs = 0L; lastTieMs = 0L;
         for (MemItem m : candidates) {
             if (m == null || m.superseded) continue;
             if ("compaction".equals(m.namespace)) continue;
@@ -53,7 +58,9 @@ public final class RecallCore {
             if (m.t0 < fromMs || m.t0 > toMs) continue;
             if (q.namespace != null && !q.namespace.isEmpty()
                     && !q.namespace.equals(m.namespace)) continue;
+            long __d0 = System.currentTimeMillis();
             Map<String, Object> data = data(m.data);
+            lastDataMs += System.currentTimeMillis() - __d0;
             String pkg = str(data.get("pkg"));
             if (q.pkg != null && !q.pkg.isEmpty() && !q.pkg.equals(pkg)) continue;
             // APP_ONLY 永远不能作为内容证据
@@ -62,21 +69,25 @@ public final class RecallCore {
             if (m.detailLevel == DetailLevel.IMAGE_ONLY && hasQuery) continue;
             double sim;
             RecallRanker.Coverage cov = new RecallRanker.Coverage(1, 1);
+            long __c0 = System.currentTimeMillis();
             if (hasQuery) {
                 cov = RecallRanker.coverage(q.query, m.text, idf);
                 if (RecallRanker.MIN_COVERAGE > 0) {
-                    if (cov.coverage < RecallRanker.MIN_COVERAGE) continue;
-                    if (cov.maxIdf < idf.median) continue;
+                    if (cov.coverage < RecallRanker.MIN_COVERAGE) { lastCoverageMs += System.currentTimeMillis() - __c0; continue; }
+                    if (cov.maxIdf < idf.median) { lastCoverageMs += System.currentTimeMillis() - __c0; continue; }
                 }
                 sim = cov.coverage;
             } else {
                 sim = 0.0;
             }
+            lastCoverageMs += System.currentTimeMillis() - __c0;
             long ageDays = Math.max(0, (System.currentTimeMillis() - m.t1) / 86_400_000L);
             double decay = RecallRanker.decay(ageDays, m.namespace);
+            long __t0b = System.currentTimeMillis();
             double base = RecallRanker.tieBreak(q.query, m.text,
                     str(data.get("page_title")),
                     hasQuery ? RecallRanker.bm25(qTerms, m.text, idf) : 1.0);
+            lastTieMs += System.currentTimeMillis() - __t0b;
             double score = base * m.weight * decay;
             if (MemoryPolicy.NS_MANUAL.equals(m.namespace)) score *= 1.25;
             RecallHit hit = new RecallHit(m.id, score, sim, m.weight, decay,

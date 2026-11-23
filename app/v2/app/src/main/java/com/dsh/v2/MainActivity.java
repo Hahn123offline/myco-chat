@@ -595,7 +595,10 @@ public final class MainActivity extends Activity {
                             + " hits=" + cr.lastHitCount
                             + " | candMs=" + com.dsh.memory.RecallCore.lastCandidatesMs
                             + " idfMs=" + com.dsh.memory.RecallCore.lastIdfMs
-                            + " candN=" + com.dsh.memory.RecallCore.lastCandCount);
+                            + " candN=" + com.dsh.memory.RecallCore.lastCandCount
+                            + " | dataMs=" + com.dsh.memory.RecallCore.lastDataMs
+                            + " covMs=" + com.dsh.memory.RecallCore.lastCoverageMs
+                            + " tieMs=" + com.dsh.memory.RecallCore.lastTieMs);
                 }
             } catch (Throwable t) {
                 android.util.Log.e("DSHL2", "dev_action failed " + action, t);

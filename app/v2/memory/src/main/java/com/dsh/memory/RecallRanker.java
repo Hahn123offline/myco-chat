@@ -15,19 +15,46 @@ public final class RecallRanker {
 
     private RecallRanker() { }
 
-    /** 内容 2-gram + 英文/数字 token。 */
+    /** 内容 2-gram + 英文/数字 token。
+     *
+     * 原实现每个 2-gram 都做一次 `replaceAll("[\\p{Punct}\\s]","")`——
+     * 一段 2000 字文本就是 2000 次正则，一条候选要算 3 遍（coverage/bm25/tieBreak），
+     * 1133 条候选实测花掉 30 秒。改成纯字符判断 + 按文本缓存。
+     */
     public static java.util.Set<String> grams(String s) {
+        if (s == null) return new java.util.HashSet<>();
+        java.util.Set<String> cached = GRAMS_CACHE.get(s);
+        if (cached != null) return cached;
+
         java.util.Set<String> out = new java.util.HashSet<>();
-        if (s == null) return out;
-        String x = s.replaceAll("\\s+", "").toLowerCase(java.util.Locale.ROOT);
+        int n = s.length();
+        StringBuilder sb = new StringBuilder(n);
+        for (int i = 0; i < n; i++) {
+            char c = s.charAt(i);
+            if (Character.isWhitespace(c)) continue;
+            sb.append(Character.toLowerCase(c));
+        }
+        String x = sb.toString();
         for (int i = 0; i + 2 <= x.length(); i++) {
-            String g = x.substring(i, i + 2);
-            if (!g.replaceAll("[\\p{Punct}\\s]", "").isEmpty()) out.add(g);
+            char a = x.charAt(i), b = x.charAt(i + 1);
+            if (!asciiPunct(a) || !asciiPunct(b)) out.add(x.substring(i, i + 2));
         }
         for (String tok : s.toLowerCase(java.util.Locale.ROOT).split("[^a-z0-9_]+")) {
             if (tok.length() >= 2) out.add(tok);
         }
+        if (GRAMS_CACHE.size() > GRAMS_CACHE_MAX) GRAMS_CACHE.clear();
+        GRAMS_CACHE.put(s, out);
         return out;
+    }
+
+    private static final int GRAMS_CACHE_MAX = 4096;
+    private static final java.util.concurrent.ConcurrentHashMap<String, java.util.Set<String>>
+            GRAMS_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** 近似 Java 正则的 \p{Punct}（ASCII 标点）。 */
+    private static boolean asciiPunct(char c) {
+        return (c >= 33 && c <= 47) || (c >= 58 && c <= 64)
+                || (c >= 91 && c <= 96) || (c >= 123 && c <= 126);
     }
 
     /** 查询归一：去虚词字符后再切 2-gram。 */
