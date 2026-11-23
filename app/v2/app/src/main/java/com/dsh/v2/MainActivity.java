@@ -574,7 +574,9 @@ public final class MainActivity extends Activity {
                     String q = intent.getStringExtra("q");
                     if (q == null || q.trim().isEmpty()) q = "你好";
                     AndroidMemorySource src = new AndroidMemorySource(this);
-                    com.dsh.contract.MemoryReader reader = src.reader();
+                    com.dsh.memory.api.ContractRecall cr =
+                            new com.dsh.memory.api.ContractRecall(src);
+                    com.dsh.contract.MemoryReader reader = cr;
                     com.dsh.contract.Freshness fr = reader.freshness();
                     android.util.Log.i("DSHL2", "contract freshness state=" + fr.state
                             + " lagMs=" + fr.lagMs + " projectedUntil=" + fr.projectedUntil
@@ -588,6 +590,9 @@ public final class MainActivity extends Activity {
                             + " truncated=" + r.coverage.truncated
                             + " answerLen=" + (r.answer == null ? 0 : r.answer.length()));
                     android.util.Log.i("DSHL2", "contract answer=" + r.answer);
+                    android.util.Log.i("DSHL2", "contract timing recallMs=" + cr.lastRecallMs
+                            + " renderMs=" + cr.lastRenderMs
+                            + " hits=" + cr.lastHitCount);
                 }
             } catch (Throwable t) {
                 android.util.Log.e("DSHL2", "dev_action failed " + action, t);

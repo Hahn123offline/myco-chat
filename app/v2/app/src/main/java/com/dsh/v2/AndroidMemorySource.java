@@ -185,10 +185,21 @@ public final class AndroidMemorySource implements MemorySource {
     }
 
     @Override public List<MemItem> candidates(RecallQuery q) {
-        Query query = new Query().includeSuperseded(false).limit(10000);
+        // 原实现完全忽略 RecallQuery 的 from/to：不管问什么都捞 10000 条全表，
+        // 再由 RecallCore 在内存里打分 —— 实测一次 recall 120 秒以上。
+        // 这里至少把时间窗下推到 SQL；query/object/pkg 仍需上层过滤（见 TODO）。
+        Query query = new Query().includeSuperseded(false).limit(CANDIDATE_LIMIT);
         if (q != null && q.namespace != null) query.namespace(q.namespace);
+        if (q != null) {
+            Long from = hasTime(q.from) ? parseMs(q.from) : null;
+            Long to = hasTime(q.to) ? parseMs(q.to) + 86_400_000L : null;   // to 含当天
+            if (from != null || to != null) query.window(from, to);
+        }
         return store.query(query);
     }
+
+    /** 候选上限：BM25 在内存里跑，条数直接决定延迟。 */
+    private static final int CANDIDATE_LIMIT = 3000;
 
     @Override public com.dsh.memory.IdfModel idf() {
         if (STATIC_IDF != null) return STATIC_IDF;

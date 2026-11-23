@@ -30,6 +30,11 @@ public final class ContractRecall implements MemoryReader {
     private final MemorySource source;
     private final SimpleDateFormat dayFmt;
 
+    /** 上一次 recall 的分段耗时，供宿主/诊断读取。 */
+    public volatile long lastRecallMs;
+    public volatile long lastRenderMs;
+    public volatile int lastHitCount;
+
     public ContractRecall(MemorySource source) {
         this.source = source;
         this.dayFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -48,12 +53,15 @@ public final class ContractRecall implements MemoryReader {
         if (req.to > 0) q.to(day(req.to));
 
         List<RecallHit> hits;
+        long tRecall = System.currentTimeMillis();
         try {
             hits = RecallCore.recall(source, q);
         } catch (Throwable t) {
             hits = new ArrayList<>();
         }
+        lastRecallMs = System.currentTimeMillis() - tRecall;
         if (hits == null) hits = new ArrayList<>();
+        lastHitCount = hits.size();
 
         long[] ids = new long[hits.size()];
         long minT = Long.MAX_VALUE, maxT = Long.MIN_VALUE, covered = 0L;
@@ -81,11 +89,13 @@ public final class ContractRecall implements MemoryReader {
                 null, truncated ? 1 : 0, shown);
 
         String answer;
+        long tRender = System.currentTimeMillis();
         try {
             answer = RecallCore.render(hits);
         } catch (Throwable t) {
             answer = "";
         }
+        lastRenderMs = System.currentTimeMillis() - tRender;
         return new Recall.Result(answer, ids, cov, freshness());
     }
 
