@@ -16,7 +16,7 @@
 ## 1. 怎么重新生成
 
 ```bat
-cd <workspace>\viz
+cd viz
 
 :: 默认：2026-11-17，顺带把关键块截图拉下来（只拉没缓存的）
 python build_viz.py
@@ -39,7 +39,7 @@ python selfcheck.py
 Python 解释器（本机已装 pandas/numpy/Pillow）：
 
 ```
-C:\Users\<user>\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe
+python
 ```
 
 `build_viz.py` 会自己调 adb 拉截图，adapter 路径写在文件顶部 `ADB` 常量里，换机器改那一行即可。

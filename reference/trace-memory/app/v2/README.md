@@ -13,10 +13,10 @@
 ## 跑测试
 
 ```powershell
-$env:JAVA_HOME='C:\Users\<user>\AppData\Roaming\.minecraft\runtime\java-runtime-delta'
-cd <workspace>\app\v2
-& '<workspace>\tools\gradle-8.9\bin\gradle.bat' test
-& '<workspace>\tools\gradle-8.9\bin\gradle.bat' :app:assembleDebug
+$env:JAVA_HOME='%JAVA_HOME%'
+cd app/v2
+& 'gradle' test
+& 'gradle' :app:assembleDebug
 ```
 
 单模块：`gradle :trace:test`。测试报告：`<module>/build/reports/tests/test/index.html`。
