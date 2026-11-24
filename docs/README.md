@@ -115,6 +115,25 @@ INTERFACE.md                  契约：表结构公开面 + 工具语义 + fresh
 · object_messages 兼容期未定
 ```
 
+### 6.1 已移除的实验脚本（不要去找）
+
+清理时为了从 git 历史中剔除硬编码的设备序列号，以下 6 个**实验/可视化脚本**
+连同其历史一起移除了，没有恢复：
+
+```
+viz/build_viz.py                        可视化构建
+viz/pull_device_db.py                   从设备拉库
+app/collector/build.ps1                 采集器构建
+app/v2/tools/fidelity_image_check.py    失真定位
+app/v2/tools/fidelity_image_check2.py   失真定位
+app/v2/tools/fidelity_image_high.py     失真定位
+```
+
+它们是过程工具，不是产品代码，**不影响 design 与契约的任何结论**。
+若需要，重写成本很低——但注意：任何引用设备序列号的地方都应读环境变量
+`ADB_SERIAL`，不要再硬编码。
+
+
 ## 7. 一条建议
 
 如果要继续这条路，**从契约出发但不继承实现**：
