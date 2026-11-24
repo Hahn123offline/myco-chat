@@ -52,3 +52,6 @@ Thumbs.db
 /viz/_*.py
 /viz/_*.txt
 /viz/_testshot*
+
+# --- 历史文档本地归档（含真实 PII，不进仓库）---
+/docs/archive/
