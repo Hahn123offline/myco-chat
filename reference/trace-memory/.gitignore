@@ -1,0 +1,57 @@
+# ============================================================
+# 安卓 ICL / 记忆体 —— 仓库只装源码与文档
+# 大件全部排除：模型、NDK、gradle 发行版、外部仓库、抓取数据
+# 注意：.gitignore 的 # 只在行首表示注释，行尾不能写注释
+# ============================================================
+
+# --- 秘密：绝不能进仓库 ---
+.secrets/
+*.key
+*.secret
+*.pem
+
+# --- 大目录（合计约 46 GB）---
+# tools: gradle 发行版 / NDK / 模型 / 外部仓库
+/tools/
+# raw: trace.db / chains.db / shots.tar / memory.db 等抓取数据
+/raw/
+# _ws: 外部仓库工作区（pywxdump / wechat-decrypt 等）
+/_ws/
+/frontend-preview/
+
+# --- 构建产物 ---
+**/build/
+**/.gradle/
+**/local.properties
+*.apk
+*.aab
+*.class
+
+# --- 数据与二进制 ---
+*.db
+*.db-shm
+*.db-wal
+*.tar
+*.gguf
+*.bin
+*.zip
+*.mp4
+
+# --- 运行期 ---
+*.log
+/tmp/
+**/__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+# 可视化产物（可重新生成）
+/viz/index.html
+/viz/shots/
+/viz/*_out.txt
+/raw/v2/device/evidence.db
+/viz/_*.py
+/viz/_*.txt
+/viz/_testshot*
+
+# --- 历史文档本地归档（含真实 PII，不进仓库）---
+/docs/archive/
