@@ -13,6 +13,7 @@ import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.tools.ToolRegistry
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -255,6 +256,25 @@ class InProcessBridgeTest {
         assertTrue(res is CommandResult.Err)
         assertEquals("TOOL_BUDGET", (res as CommandResult.Err).code)
         assertTrue(f.sessions.read(meta.id).none { it is SessionEvent.TurnStart })
+    }
+
+    @Test
+    fun `rename delete search session via bridge`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default", "旧标题")
+        assertTrue(f.bridge.send(Command.SessionRename(meta.id, "新标题")) is CommandResult.Ok)
+        val listed = f.bridge.query(Query.SessionList()) as QueryResult.Ok
+        assertEquals("新标题", (listed.data as JsonArray)[0].jsonObject["title"]!!.jsonPrimitive.content)
+
+        assertTrue(f.bridge.send(Command.SessionDelete(meta.id)) is CommandResult.Ok)
+        val afterDelete = f.bridge.query(Query.SessionList()) as QueryResult.Ok
+        assertEquals(0, (afterDelete.data as JsonArray).size)
+
+        val search = f.bridge.query(Query.SessionSearch("新标题")) as QueryResult.Ok
+        assertEquals(0, (search.data as JsonArray).size) // 软删后不出现
+        f.bridge.send(Command.SessionRestore(meta.id))
+        val restored = f.bridge.query(Query.SessionSearch("新标题")) as QueryResult.Ok
+        assertEquals(1, (restored.data as JsonArray).size)
     }
 
     @Test

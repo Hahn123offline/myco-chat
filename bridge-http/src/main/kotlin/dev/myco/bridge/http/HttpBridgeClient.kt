@@ -36,6 +36,11 @@ class HttpBridgeClient(
             is Command.SessionCreate -> "session.create" to buildJsonObject {
                 put("app", cmd.app); put("preset", cmd.preset); put("title", cmd.title)
             }
+            is Command.SessionRename -> "session.rename" to buildJsonObject {
+                put("sessionId", cmd.sessionId); put("title", cmd.title)
+            }
+            is Command.SessionDelete -> "session.delete" to buildJsonObject { put("sessionId", cmd.sessionId) }
+            is Command.SessionRestore -> "session.restore" to buildJsonObject { put("sessionId", cmd.sessionId) }
             is Command.ChatSend -> "chat.send" to buildJsonObject {
                 put("sessionId", cmd.sessionId); put("text", cmd.text)
             }
@@ -81,6 +86,9 @@ class HttpBridgeClient(
     override suspend fun query(q: Query): QueryResult {
         val (name, payload) = when (q) {
             is Query.SessionList -> "/session.list" to buildJsonObject { q.app?.let { put("app", it) } }
+            is Query.SessionSearch -> "/session.search" to buildJsonObject {
+                put("query", q.query); put("limit", q.limit)
+            }
             is Query.SessionEvents -> "/session.events" to buildJsonObject {
                 put("sessionId", q.sessionId); put("fromSeq", q.fromSeq)
             }

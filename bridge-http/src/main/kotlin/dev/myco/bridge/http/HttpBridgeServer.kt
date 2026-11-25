@@ -116,6 +116,16 @@ class HttpBridgeServer(
             "chat.stop" -> Command.ChatStop(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
             )
+            "session.rename" -> Command.SessionRename(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                title = payload["title"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing title")),
+            )
+            "session.delete" -> Command.SessionDelete(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+            )
+            "session.restore" -> Command.SessionRestore(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+            )
             "provider.replace" -> {
                 val arr = payload["providers"] as? kotlinx.serialization.json.JsonArray
                     ?: return json(ex, 400, err("PAYLOAD", "missing providers array"))
@@ -146,6 +156,10 @@ class HttpBridgeServer(
                 fromSeq = payload["fromSeq"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
             )
             "/providers" -> Query.Providers
+            "/session.search" -> Query.SessionSearch(
+                query = payload["query"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing query")),
+                limit = payload["limit"]?.jsonPrimitive?.content?.toIntOrNull() ?: 50,
+            )
             "/provider.export" -> Query.ProviderExport
             "/doctor" -> Query.DoctorRun
             else -> return json(ex, 404, err("UNKNOWN_QUERY", name))

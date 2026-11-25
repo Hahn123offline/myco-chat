@@ -54,6 +54,30 @@ class InProcessBridge(
         }
         is Command.ChatSend -> chatSend(cmd)
         is Command.ChatStop -> chatStop(cmd)
+        is Command.SessionRename -> runCatching { sessions.rename(cmd.sessionId, cmd.title) }
+            .fold(
+                onSuccess = { meta ->
+                    _events.tryEmit(BridgeEvent.SessionUpdated(meta.id))
+                    CommandResult.Ok(buildJsonObject { put("sessionId", meta.id); put("title", meta.title) })
+                },
+                onFailure = { CommandResult.Err("SESSION_RENAME", it.message ?: "改名失败") },
+            )
+        is Command.SessionDelete -> runCatching { sessions.delete(cmd.sessionId) }
+            .fold(
+                onSuccess = {
+                    _events.tryEmit(BridgeEvent.SessionUpdated(cmd.sessionId))
+                    CommandResult.Ok(buildJsonObject { put("deleted", true) })
+                },
+                onFailure = { CommandResult.Err("SESSION_DELETE", it.message ?: "删除失败") },
+            )
+        is Command.SessionRestore -> runCatching { sessions.restore(cmd.sessionId) }
+            .fold(
+                onSuccess = {
+                    _events.tryEmit(BridgeEvent.SessionUpdated(cmd.sessionId))
+                    CommandResult.Ok(buildJsonObject { put("restored", true) })
+                },
+                onFailure = { CommandResult.Err("SESSION_RESTORE", it.message ?: "恢复失败") },
+            )
         is Command.ProviderSave -> providerSave(cmd)
         is Command.ProviderDelete -> providerDelete(cmd)
         is Command.CredentialSet -> {
@@ -311,6 +335,23 @@ class InProcessBridge(
             val events = runCatching { sessions.readFrom(q.sessionId, q.fromSeq) }
                 .getOrElse { return QueryResult.Err("SESSION_NOT_FOUND", it.message ?: "读取失败") }
             QueryResult.Ok(buildJsonArray { events.forEach { add(eventJson(it)) } })
+        }
+        is Query.SessionSearch -> {
+            val hits = runCatching { sessions.search(q.query, q.limit) }
+                .getOrElse { return QueryResult.Err("SEARCH_FAILED", it.message ?: "搜索失败") }
+            QueryResult.Ok(buildJsonArray {
+                hits.forEach { h ->
+                    add(buildJsonObject {
+                        put("id", h.session.id)
+                        put("title", h.session.title)
+                        put("createdAt", h.session.createdAt)
+                        put("app", h.session.app)
+                        put("preset", h.session.preset)
+                        put("formatVersion", h.session.formatVersion)
+                        put("snippet", h.snippet)
+                    })
+                }
+            })
         }
         Query.Providers -> {
             val snap = providers.load()

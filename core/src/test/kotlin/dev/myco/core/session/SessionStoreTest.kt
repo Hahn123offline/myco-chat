@@ -13,6 +13,49 @@ class SessionStoreTest {
     private fun home(): MycoHome = MycoHome(Files.createTempDirectory("myco-test")).also { it.ensureLayout() }
 
     @Test
+    fun `rename overrides title without touching log`() {
+        val h = home()
+        val store = SessionStore(h)
+        val meta = store.create("chat", "chat-default", "原标题")
+        val before = store.read(meta.id).size
+        val renamed = store.rename(meta.id, "新标题")
+        assertEquals("新标题", renamed.title)
+        assertEquals("新标题", store.list().single().title)
+        // 事件日志保持不变
+        assertEquals(before, store.read(meta.id).size)
+    }
+
+    @Test
+    fun `delete hides session and restore brings it back`() {
+        val h = home()
+        val store = SessionStore(h)
+        val meta = store.create("chat", "chat-default")
+        store.delete(meta.id)
+        assertTrue(store.list().isEmpty())
+        assertEquals(1, store.list(includeDeleted = true).size)
+        store.restore(meta.id)
+        assertEquals(1, store.list().size)
+    }
+
+    @Test
+    fun `search matches title and message text`() {
+        val h = home()
+        val store = SessionStore(h)
+        val a = store.create("chat", "chat-default", "关于 DeepSeek 的讨论")
+        val b = store.create("chat", "chat-default", "另一个会话")
+        store.append(b.id, SessionEvent.UserMessage(data = SessionEvent.UserMessage.Data("请推荐 deepseek 的资料")))
+        val hits = store.search("deepseek")
+        assertEquals(2, hits.size)
+        assertTrue(hits.all { it.session.title.isNotBlank() })
+        assertTrue(hits.any { it.snippet.contains("资料") })
+        assertTrue(store.search("不存在的词").isEmpty())
+        assertTrue(store.search("  ").isEmpty())
+        // 软删后不进搜索结果
+        store.delete(a.id)
+        assertEquals(1, store.search("deepseek").size)
+    }
+
+    @Test
     fun `create and append assigns monotonic seq`() {
         val h = home()
         val store = SessionStore(h)

@@ -33,11 +33,22 @@ sealed class Command {
 
     /** 导入：整份替换 provider 列表（GUI 侧文件选择后调用）；expectedRevision 冲突则拒绝。 */
     data class ProviderReplace(val profiles: List<ProviderProfile>, val expectedRevision: Long) : Command()
+
+    /** 改名（只改展示标题，不改历史事件）。 */
+    data class SessionRename(val sessionId: String, val title: String) : Command()
+
+    /** 软删（日志保留，列表默认隐藏，可 restore）。 */
+    data class SessionDelete(val sessionId: String) : Command()
+
+    data class SessionRestore(val sessionId: String) : Command()
 }
 
 sealed class Query {
     data class SessionList(val app: String? = null) : Query()
     data class SessionEvents(val sessionId: String, val fromSeq: Long = 0) : Query()
+
+    /** 搜索标题与会话内文本（大小写不敏感）。 */
+    data class SessionSearch(val query: String, val limit: Int = 50) : Query()
     data object Providers : Query()
     data object DoctorRun : Query()
 

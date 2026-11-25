@@ -1,12 +1,27 @@
 package dev.myco.core.session
 
 import dev.myco.core.MycoHome
+import dev.myco.core.io.TextFiles
 import dev.myco.core.spec.MycoJson
 import dev.myco.core.spec.SessionMeta
-import java.nio.charset.StandardCharsets
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+
+/**
+ * 会话的可变元数据（标题覆盖/软删/置顶）。
+ * 事件日志保持 append-only 不变；这里只放"展示层"状态，避免为改名动 formatVersion。
+ */
+@Serializable
+data class SessionSidecar(
+    val schemaVersion: Int = 1,
+    val title: String? = null,
+    val deletedAt: Long? = null,
+    val pinned: Boolean = false,
+)
+
+data class SessionSearchHit(val session: SessionMeta, val snippet: String)
 
 class UnknownSessionFormatException(message: String) : RuntimeException(message)
 class CorruptSessionException(message: String) : RuntimeException(message)
@@ -18,6 +33,8 @@ class CorruptSessionException(message: String) : RuntimeException(message)
  *  - seq 单调、由 store 分配；重放按 seq 排序，不按时间排序。
  *  - 首事件必须是 session/start(f=1)，否则拒绝打开（不自动迁移）。
  *  - 只允许最后一行不完整（崩溃尾部）：读侧丢弃并 warn；中间损坏必须报错。
+ *
+ * 可变元数据（标题/软删）放在同目录 `meta.v1.json`，不改事件日志。
  */
 class SessionStore(private val home: MycoHome) {
     private val seqCache = mutableMapOf<String, Long>()
@@ -60,7 +77,7 @@ class SessionStore(private val home: MycoHome) {
         val dir = sessionDir(sessionId)
         val file = dir.resolve(FILE_NAME)
         if (!Files.exists(file)) throw IllegalArgumentException("session not found: $sessionId")
-        val raw = Files.readAllLines(file, StandardCharsets.UTF_8)
+        val raw = Files.readAllLines(file, java.nio.charset.StandardCharsets.UTF_8)
         val events = ArrayList<SessionEvent>(raw.size)
         var lastBad: Int = -1
         raw.forEachIndexed { index, line ->
@@ -89,20 +106,96 @@ class SessionStore(private val home: MycoHome) {
         return events.filter { it.seq >= fromSeq }
     }
 
-    fun list(): List<SessionMeta> {
+    fun list(includeDeleted: Boolean = false): List<SessionMeta> {
         if (!Files.exists(home.sessions)) return emptyList()
-        return Files.list(home.sessions).use { stream ->
-            stream.filter { Files.isDirectory(it) && Files.exists(it.resolve(FILE_NAME)) }
-                .map { dir ->
-                    val first = Files.readAllLines(dir.resolve(FILE_NAME), StandardCharsets.UTF_8).firstOrNull()
-                        ?: throw CorruptSessionException("empty log: $dir")
-                    val event = MycoJson.decodeFromString(SessionEvent.serializer(), first)
-                    (event as? SessionEvent.SessionStart)?.data
-                        ?: throw CorruptSessionException("no session/start: $dir")
-                }
-                .toList()
-                .sortedByDescending { it.createdAt }
+        val dirs = Files.list(home.sessions).use { stream ->
+            stream.filter { Files.isDirectory(it) && Files.exists(it.resolve(FILE_NAME)) }.toList()
         }
+        return dirs.mapNotNull { dir ->
+            val sidecar = readSidecar(dir)
+            if (!includeDeleted && sidecar?.deletedAt != null) return@mapNotNull null
+            val first = Files.readAllLines(dir.resolve(FILE_NAME), java.nio.charset.StandardCharsets.UTF_8)
+                .firstOrNull() ?: throw CorruptSessionException("empty log: $dir")
+            val event = MycoJson.decodeFromString(SessionEvent.serializer(), first)
+            val meta = (event as? SessionEvent.SessionStart)?.data
+                ?: throw CorruptSessionException("no session/start: $dir")
+            // 标题覆盖：日志里的是创建时标题，sidecar 有则优先
+            sidecar?.title?.let { meta.copy(title = it) } ?: meta
+        }.sortedByDescending { it.createdAt }
+    }
+
+    /** 标题可变（只改展示，不改历史事件）。空标题拒绝。 */
+    fun rename(sessionId: String, title: String): SessionMeta {
+        val clean = title.trim()
+        require(clean.isNotEmpty()) { "标题不能为空" }
+        require(clean.length <= 80) { "标题最长 80 字符" }
+        val dir = sessionDir(sessionId)
+        if (!Files.exists(dir.resolve(FILE_NAME))) throw IllegalArgumentException("session not found: $sessionId")
+        val current = readSidecar(dir) ?: SessionSidecar()
+        writeSidecar(dir, current.copy(title = clean))
+        return list(includeDeleted = true).firstOrNull { it.id == sessionId }
+            ?: throw IllegalStateException("session list missing after rename: $sessionId")
+    }
+
+    /** 软删：保留日志与元数据，列表默认隐藏；可 restore。 */
+    fun delete(sessionId: String) {
+        val dir = sessionDir(sessionId)
+        if (!Files.exists(dir.resolve(FILE_NAME))) throw IllegalArgumentException("session not found: $sessionId")
+        val current = readSidecar(dir) ?: SessionSidecar()
+        writeSidecar(dir, current.copy(deletedAt = System.currentTimeMillis()))
+    }
+
+    fun restore(sessionId: String) {
+        val dir = sessionDir(sessionId)
+        if (!Files.exists(dir.resolve(FILE_NAME))) throw IllegalArgumentException("session not found: $sessionId")
+        val current = readSidecar(dir) ?: return
+        writeSidecar(dir, current.copy(deletedAt = null))
+    }
+
+    /** 搜索：标题与会话内 user/assistant 文本；大小写不敏感。 */
+    fun search(query: String, limit: Int = 50): List<SessionSearchHit> {
+        val q = query.trim()
+        if (q.isEmpty()) return emptyList()
+        val hits = ArrayList<SessionSearchHit>()
+        for (meta in list()) {
+            if (hits.size >= limit) break
+            val titleHit = meta.title.contains(q, ignoreCase = true)
+            val events = try {
+                read(meta.id)
+            } catch (e: Exception) {
+                continue
+            }
+            var snippet: String? = null
+            for (e in events) {
+                val text = when (e) {
+                    is SessionEvent.UserMessage -> e.data.text
+                    is SessionEvent.AssistantMessage -> e.data.text
+                    else -> null
+                } ?: continue
+                if (text.contains(q, ignoreCase = true)) {
+                    val idx = text.indexOf(q, ignoreCase = true).coerceAtLeast(0)
+                    val start = (idx - 30).coerceAtLeast(0)
+                    snippet = text.substring(start, (idx + q.length + 60).coerceAtMost(text.length))
+                    break
+                }
+            }
+            if (titleHit || snippet != null) {
+                hits += SessionSearchHit(meta, snippet ?: meta.title)
+            }
+        }
+        return hits
+    }
+
+    private fun readSidecar(dir: Path): SessionSidecar? {
+        val f = dir.resolve(SIDECAR_NAME)
+        if (!Files.exists(f)) return null
+        return runCatching {
+            Json { ignoreUnknownKeys = true }.decodeFromString(SessionSidecar.serializer(), TextFiles.read(f))
+        }.getOrNull()
+    }
+
+    private fun writeSidecar(dir: Path, sidecar: SessionSidecar) {
+        TextFiles.write(dir.resolve(SIDECAR_NAME), MycoJson.encodeToString(SessionSidecar.serializer(), sidecar))
     }
 
     private fun ensureLoaded(sessionId: String) {
@@ -119,5 +212,6 @@ class SessionStore(private val home: MycoHome) {
 
     companion object {
         const val FILE_NAME = "events.v1.jsonl"
+        const val SIDECAR_NAME = "meta.v1.json"
     }
 }

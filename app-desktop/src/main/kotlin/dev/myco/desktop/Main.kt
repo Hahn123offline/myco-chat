@@ -56,6 +56,25 @@ fun main(args: Array<String>): Unit = runBlocking {
         "sessions" -> sessions.list().forEach {
             println("${it.id}  ${it.app}/${it.preset}  ${it.title}  ${java.time.Instant.ofEpochMilli(it.createdAt)}")
         }
+        "rename" -> {
+            val id = args.getOrNull(1) ?: return@runBlocking usage("rename <sessionId> <title>")
+            val title = args.drop(2).joinToString(" ").ifBlank { return@runBlocking usage("rename <sessionId> <title>") }
+            runCatching { sessions.rename(id, title) }
+                .onSuccess { println("renamed ${it.id} -> ${it.title}") }
+                .onFailure { println("[failed] ${it.message}") }
+        }
+        "delete" -> {
+            val id = args.getOrNull(1) ?: return@runBlocking usage("delete <sessionId>")
+            runCatching { sessions.delete(id) }
+                .onSuccess { println("deleted (soft) $id；可用 Bridge SessionRestore 恢复") }
+                .onFailure { println("[failed] ${it.message}") }
+        }
+        "search" -> {
+            val q = args.getOrNull(1) ?: return@runBlocking usage("search <query>")
+            val hits = sessions.search(q)
+            println("${hits.size} 个结果")
+            hits.forEach { h -> println("${h.session.id}  ${h.session.title}\n   ${h.snippet}") }
+        }
         "providers" -> {
             val snap = providers.load()
             val list = snap.providers
