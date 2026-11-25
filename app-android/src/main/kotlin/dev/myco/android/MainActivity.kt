@@ -9,23 +9,28 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -46,8 +51,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.myco.core.bridge.BridgeEvent
+import dev.myco.android.ui.ChatBubble
+import dev.myco.android.ui.ChatComposer
+import dev.myco.android.ui.BubbleRole
+import dev.myco.android.ui.Divider
+import dev.myco.android.ui.EmptyState
+import dev.myco.android.ui.InlineError
+import dev.myco.android.ui.MycoSpacing
+import dev.myco.android.ui.MycoTheme
+import dev.myco.android.ui.MycoTopBar
+import dev.myco.android.ui.SectionHeader
+import dev.myco.android.ui.ThemeMode
+import dev.myco.android.ui.ThemePrefs
 import dev.myco.core.bridge.Command
+import dev.myco.core.bridge.BridgeEvent
 import dev.myco.core.bridge.CommandResult
 import dev.myco.core.bridge.InProcessBridge
 import dev.myco.core.bridge.Query
@@ -72,7 +89,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         BridgeHolder.init(applicationContext)
-        setContent { MaterialTheme { MycoApp() } }
+        val initial = ThemePrefs.load(this)
+        setContent {
+            var mode by remember { mutableStateOf(initial) }
+            MycoTheme(mode) {
+                MycoApp(mode, onThemeChange = {
+                    mode = it
+                    ThemePrefs.save(applicationContext, it)
+                })
+            }
+        }
     }
 }
 
@@ -87,7 +113,7 @@ private data class ChatLine(val role: String, val text: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MycoApp() {
+private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     val bridge = BridgeHolder.bridge
     val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf<Screen>(Screen.SessionList) }
@@ -101,42 +127,59 @@ private fun MycoApp() {
         }
     }
 
+    fun createSession() {
+        scope.launch {
+            val r = bridge.send(Command.SessionCreate(title = "新会话"))
+            refreshSessions()
+            if (r is CommandResult.Ok) {
+                val id = (r.data as? JsonObject)?.get("sessionId")?.jsonPrimitive?.content
+                if (id != null) screen = Screen.Chat(id, "新会话")
+            }
+        }
+    }
+
     LaunchedEffect(Unit) { refreshSessions() }
 
     when (val s = screen) {
         Screen.SessionList -> Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("myco") },
+                MycoTopBar(
+                    title = "myco",
                     actions = { TextButton(onClick = { screen = Screen.Settings }) { Text("设置") } },
                 )
             },
         ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-                Button(onClick = {
-                    scope.launch {
-                        val r = bridge.send(Command.SessionCreate(title = "新会话"))
-                        refreshSessions()
-                        if (r is CommandResult.Ok) {
-                            val id = (r.data as? JsonObject)?.get("sessionId")?.jsonPrimitive?.content
-                            if (id != null) screen = Screen.Chat(id, "新会话")
-                        }
-                    }
-                }) { Text("新建会话") }
-                Spacer(Modifier.height(12.dp))
+            Column(Modifier.fillMaxSize().padding(padding)) {
+                Box(Modifier.padding(horizontal = MycoSpacing.l, vertical = MycoSpacing.s)) {
+                    Button(onClick = { createSession() }) { Text("新建会话") }
+                }
                 if (sessions.isEmpty()) {
-                    Text("还没有会话。S0-b 使用假模型（离线）。", style = MaterialTheme.typography.bodyMedium)
+                    EmptyState(
+                        title = "还没有会话",
+                        message = "新建一个会话开始。未配置 provider 时会用假模型（离线）。",
+                        actionLabel = "新建会话",
+                        onAction = { createSession() },
+                    )
                 } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    LazyColumn(
+                        Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = MycoSpacing.l, vertical = MycoSpacing.s),
+                    ) {
                         items(sessions) { row ->
                             Column(
-                                Modifier.fillMaxWidth().clickable { screen = Screen.Chat(row.id, row.title) }
-                                    .padding(vertical = 10.dp)
+                                Modifier.fillMaxWidth()
+                                    .clickable { screen = Screen.Chat(row.id, row.title) }
+                                    .padding(vertical = MycoSpacing.m)
                             ) {
-                                Text(row.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    row.title,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
                                 Text(formatTime(row.createdAt), style = MaterialTheme.typography.bodySmall)
                             }
-                            HorizontalDivider()
+                            Divider()
                         }
                     }
                 }
@@ -155,7 +198,12 @@ private fun MycoApp() {
             },
         )
 
-        Screen.Settings -> SettingsScreen(bridge = bridge, onBack = { screen = Screen.SessionList })
+        Screen.Settings -> SettingsScreen(
+            bridge = bridge,
+            themeMode = themeMode,
+            onThemeChange = onThemeChange,
+            onBack = { screen = Screen.SessionList },
+        )
     }
 }
 
@@ -188,69 +236,82 @@ private fun ChatScreen(bridge: InProcessBridge, sessionId: String, title: String
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = { TextButton(onClick = onBack) { Text("返回") } },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(lines) { line -> ChatBubble(line) }
-                if (streaming != null) item { ChatBubble(ChatLine("assistant", streaming!!), streaming = true) }
-                if (error != null) item {
-                    Text("错误：$error", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp))
-                }
-            }
-            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = input, onValueChange = { input = it },
-                    modifier = Modifier.weight(1f), placeholder = { Text("说点什么…") }, maxLines = 4,
-                )
-                Spacer(Modifier.width(8.dp))
-                if (streaming != null) {
-                    OutlinedButton(onClick = {
-                        scope.launch { bridge.send(Command.ChatStop(sessionId)) }
-                    }) { Text("停止") }
-                } else {
-                    Button(
-                        enabled = input.isNotBlank(),
-                        onClick = {
-                            val text = input.trim()
-                            input = ""; error = null
-                            lines = lines + ChatLine("user", text)
-                            scope.launch {
-                                val r = bridge.send(Command.ChatSend(sessionId, text))
-                                if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
-                            }
-                        },
-                    ) { Text("发送") }
-                }
-            }
+    fun send() {
+        val text = input.trim()
+        if (text.isEmpty() || streaming != null) return
+        input = ""; error = null
+        lines = lines + ChatLine("user", text)
+        scope.launch {
+            val r = bridge.send(Command.ChatSend(sessionId, text))
+            if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
         }
     }
-}
 
-@Composable
-private fun ChatBubble(line: ChatLine, streaming: Boolean = false) {
-    val isUser = line.role == "user"
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start) {
-        Column(
-            Modifier.fillMaxWidth(0.86f).padding(vertical = 2.dp),
-        ) {
-            Text(
-                line.text + if (streaming) " ▍" else "",
-                color = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-            )
+    Scaffold(topBar = { MycoTopBar(title = title, onBack = onBack) }) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
+            val listState = rememberLazyListState()
+            val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+            val context = LocalContext.current
+            val atBottom by remember {
+                androidx.compose.runtime.derivedStateOf {
+                    val info = listState.layoutInfo
+                    val last = info.visibleItemsInfo.lastOrNull()
+                    last == null || last.index >= info.totalItemsCount - 2
+                }
+            }
+            LaunchedEffect(lines.size, streaming?.length) {
+                val target = listState.layoutInfo.totalItemsCount - 1
+                if (target >= 0 && atBottom) listState.scrollToItem(target)
+            }
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = MycoSpacing.l, vertical = MycoSpacing.m),
+                verticalArrangement = Arrangement.spacedBy(MycoSpacing.s),
+            ) {
+                items(lines) { line ->
+                    ChatBubble(
+                        role = when (line.role) {
+                            "user" -> BubbleRole.USER
+                            "assistant" -> BubbleRole.ASSISTANT
+                            "error" -> BubbleRole.ERROR
+                            else -> BubbleRole.SYSTEM
+                        },
+                        text = line.text,
+                        onLongPress = {
+                            clipboard.setText(androidx.compose.ui.text.AnnotatedString(line.text))
+                            android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                }
+                if (streaming != null) item {
+                    ChatBubble(BubbleRole.ASSISTANT, streaming!!, streaming = true)
+                }
+                if (error != null) item {
+                    InlineError(error!!)
+                }
+            }
+            Box(Modifier.padding(MycoSpacing.m)) {
+                ChatComposer(
+                    value = input,
+                    onValueChange = { input = it },
+                    onSend = { send() },
+                    onStop = { scope.launch { bridge.send(Command.ChatStop(sessionId)) } },
+                    streaming = streaming != null,
+                )
+            }
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
+private fun SettingsScreen(
+    bridge: InProcessBridge,
+    themeMode: ThemeMode,
+    onThemeChange: (ThemeMode) -> Unit,
+    onBack: () -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var checks by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
@@ -317,18 +378,34 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("设置") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("返回") } },
-            )
-        },
+        topBar = { MycoTopBar(title = "设置", onBack = onBack) },
     ) { padding ->
         LazyColumn(
-            Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = MycoSpacing.l),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            item { Text("模型提供方", style = MaterialTheme.typography.titleMedium) }
+            item { SectionHeader("外观") }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s)) {
+                    ThemeMode.values().forEach { mode ->
+                        FilterChip(
+                            selected = themeMode == mode,
+                            onClick = { onThemeChange(mode) },
+                            label = {
+                                Text(
+                                    when (mode) {
+                                        ThemeMode.SYSTEM -> "跟随系统"
+                                        ThemeMode.LIGHT -> "浅色"
+                                        ThemeMode.DARK -> "深色"
+                                    }
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+            item { Divider() }
+            item { SectionHeader("模型提供方") }
             item { Text("revision=$revision · 保存冲突会提示重试", style = MaterialTheme.typography.bodySmall) }
             if (message != null) item {
                 Text(message!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)

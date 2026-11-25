@@ -14,6 +14,7 @@
 | [mobile-agent-landscape.md](mobile-agent-landscape.md) | Android 平台与手机 agent 生态（第二轮补） | 常驻只能 FGS(specialUse)+通知；截图 ~333ms 限速；Play 禁止运行时下载可执行文件（proot 受影响）；移动端 10 条约束 |
 | [runtime-options.md](runtime-options.md) | 运行时选型（建议 D9 拍板用） | 7 候选五维打分：Kotlin/JVM 单核心 89 分最高；nodejs-mobile/CodePush/RN SSE 的否决证据；1 周 spike 判据 |
 | [deepseek-chat-demo-ui.md](deepseek-chat-demo-ui.md) | 官方 `deepseek-ai/chat-demo`（MIT） | chat 壳的结构参考：回复五态、贴底滚动、首 token 三段反馈、移动键盘、会话分组；但它没有 provider 管理 |
+| [mobile-chat-ux.md](mobile-chat-ux.md) | 移动端 chat UX 基线 + 开源项目/DSH Go 可抄点（M1–M6 用） | 单条会话=长按菜单、流式四态、40px 贴底规则、过程折叠、imePadding、M4 双形态推荐 |
 
 > 证据分级不统一是这批材料的通病（dsh-icl 自己就有两套互斥的 E0–E4 定义）。
 > 本目录各报告已各自声明口径；引用数字前先看它的口径表。
