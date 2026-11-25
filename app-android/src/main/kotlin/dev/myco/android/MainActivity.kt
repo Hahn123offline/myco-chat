@@ -62,9 +62,12 @@ import dev.myco.android.ui.ChatComposer
 import dev.myco.android.ui.BubbleRole
 import dev.myco.android.ui.Divider
 import dev.myco.android.ui.EmptyState
+import dev.myco.android.ui.GlassSurface
 import dev.myco.android.ui.InlineError
 import dev.myco.android.ui.MycoRadius
 import dev.myco.android.ui.MycoSpacing
+import dev.myco.android.ui.SearchField
+import dev.myco.android.ui.SessionListItem
 import dev.myco.android.ui.MycoTheme
 import dev.myco.android.ui.MycoTopBar
 import dev.myco.android.ui.SectionHeader
@@ -301,14 +304,7 @@ private fun HistoryScreen(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.l, vertical = MycoSpacing.s),
-                placeholder = { Text("搜索会话或消息") },
-                singleLine = true,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(MycoRadius.control),
-            )
+            SearchField(value = query, onValueChange = onQueryChange)
             when {
                 sessions.isEmpty() && query.isBlank() -> EmptyState(
                     title = if (appMode == AppMode.CHAT) "开始聊天" else "还没有会话",
@@ -325,29 +321,13 @@ private fun HistoryScreen(
                     contentPadding = PaddingValues(horizontal = MycoSpacing.l, vertical = MycoSpacing.s),
                 ) {
                     items(sessions, key = { it.id }) { row ->
-                        Column(
-                            Modifier.fillMaxWidth()
-                                .combinedClickable(onClick = { onOpen(row) }, onLongClick = { onLongPress(row) })
-                                .padding(vertical = MycoSpacing.m)
-                        ) {
-                            Text(
-                                row.title,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(formatTime(row.createdAt), style = MaterialTheme.typography.bodySmall)
-                            row.snippet?.takeIf { it.isNotBlank() }?.let {
-                                Text(
-                                    it,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = MycoSpacing.xs),
-                                )
-                            }
-                        }
+                        SessionListItem(
+                            title = row.title,
+                            time = formatTime(row.createdAt),
+                            snippet = row.snippet,
+                            onClick = { onOpen(row) },
+                            onLongClick = { onLongPress(row) },
+                        )
                         Divider()
                     }
                     if (onCreate != null) {
@@ -522,6 +502,16 @@ private fun ChatScreen(
                 }
                 if (error != null) item {
                     InlineError(error!!)
+                }
+            }
+            if (!atBottom && lines.isNotEmpty()) {
+                Box(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m)) {
+                    TextButton(onClick = {
+                        scope.launch {
+                            val target = listState.layoutInfo.totalItemsCount - 1
+                            if (target >= 0) listState.scrollToItem(target)
+                        }
+                    }) { Text("↓ 回到最新") }
                 }
             }
             if (pending.isNotEmpty()) {
@@ -721,26 +711,29 @@ private fun SettingsScreen(
                 Text("还没有 provider（当前用假模型，可离线跑）", style = MaterialTheme.typography.bodySmall)
             }
             items(providers, key = { it.id }) { p ->
-                Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Text(
-                        "${p.displayName.ifBlank { p.id }}  (${p.kind})",
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    Text(p.baseUrl, style = MaterialTheme.typography.bodySmall)
-                    Text("models: " + p.models.joinToString { it.id }, style = MaterialTheme.typography.bodySmall)
-                    if (p.authRef != null) {
-                        Text(
-                            if (p.configured) "密钥：已配置（不回显）" else "密钥：缺失 ${p.authRef}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (p.configured) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
-                        )
+                Box(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    GlassSurface(Modifier.fillMaxWidth()) {
+                        Column(Modifier.fillMaxWidth().padding(MycoSpacing.m)) {
+                            Text(
+                                "${p.displayName.ifBlank { p.id }}  (${p.kind})",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(p.baseUrl, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("models: " + p.models.joinToString { it.id }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (p.authRef != null) {
+                                Text(
+                                    if (p.configured) "密钥：已配置（不回显）" else "密钥：缺失 ${p.authRef}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (p.configured) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                TextButton(onClick = { discoverStatus = null; editor = p.toEditor() }) { Text("编辑") }
+                                if (p.authRef != null) TextButton(onClick = { keyTarget = p }) { Text("设置密钥") }
+                                TextButton(onClick = { deleteTarget = p }) { Text("删除") }
+                            }
+                        }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        TextButton(onClick = { discoverStatus = null; editor = p.toEditor() }) { Text("编辑") }
-                        if (p.authRef != null) TextButton(onClick = { keyTarget = p }) { Text("设置密钥") }
-                        TextButton(onClick = { deleteTarget = p }) { Text("删除") }
-                    }
-                    HorizontalDivider()
                 }
             }
             item {
