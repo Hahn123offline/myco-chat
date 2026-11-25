@@ -27,6 +27,9 @@ sealed class Command {
 
     /** 显式"获取可用模型"：只在用户点按钮时调用，不会在保存 provider 时自动跑。 */
     data class ProviderDiscover(val profile: ProviderProfile) : Command()
+
+    /** 取消该会话正在跑的一轮；部分文本会按"已停止"落盘，不假装完成。 */
+    data class ChatStop(val sessionId: String) : Command()
 }
 
 sealed class Query {
@@ -38,7 +41,12 @@ sealed class Query {
 
 sealed class BridgeEvent {
     data class AssistantDelta(val sessionId: String, val turnId: Long, val text: String) : BridgeEvent()
-    data class AssistantDone(val sessionId: String, val turnId: Long, val text: String) : BridgeEvent()
+    data class AssistantDone(
+        val sessionId: String,
+        val turnId: Long,
+        val text: String,
+        val stopped: Boolean = false,
+    ) : BridgeEvent()
     data class Failed(val code: String, val message: String, val retriable: Boolean) : BridgeEvent()
     data class SessionUpdated(val sessionId: String) : BridgeEvent()
 }

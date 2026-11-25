@@ -46,3 +46,27 @@
 3. 取消的自动化测试（用慢速 SSE 服务器 + 超时断言连接被断开）。
 4. Android 上的 provider 导入导出按钮；模型多行编辑。
 5. 真机窗口（A8）：需要用户约 10–20 分钟。
+
+## 7. 本轮补充（2026-11-26 03:00）
+
+### 停止生成（端到端）
+- `Command.ChatStop(sessionId)`：只取消该会话的流式收集 job；已收到的部分文本按 assistant/message 落盘，
+  `turn/end.steps=0`，事件 `assistant.done{stopped=true}`；**不会留下卡死的 job**（随后再发一轮验证通过）。
+- 无进行中回合时返回 `NOT_RUNNING`（明确错误，不静默）。
+- 两种传输都实现（http-sse 的 `chat.stop` 与事件 `stopped` 字段）。
+- Android 聊天页：生成中把“发送”换成「停止」按钮；停止后保留部分回复。
+- 修了两个真问题：
+  1. 直接 cancel 外层 async 会让调用方收到 CancellationException → 改为只取消“收集 job”，runChat 正常收尾；
+  2. `invokeOnCompletion` 在阻塞读结束前不会触发 → 改为 `awaitCancellation` watcher 的 finally 里 disconnect，取消从 4.7s 降到 <3s。
+
+### 用量成本（pricing）
+- `ProviderProfile.pricing`（每 1M token：input/output/cachedInput，币种）+ JSON Schema 同步更新。
+- `UsageCost.compute`：未命中输入 + 缓存命中输入 + 输出；**没配 pricing 就返回 null，不猜价格**。
+- 两个方言在 `Done` 前自动算 `usage.costUsd`，随后进 `assistant/message` 与 `turn/end`。
+- 测试：纯函数成本断言（1000/500/200 → 0.00095 USD）；未配置 pricing 返回 null；取消测试断言 <3s 且没有 Done。
+
+### 当前测试
+`:core:test` **37** + `:bridge-http:test` **5** = **42/42 绿**；`:app-android:assembleDebug` 与 `:app-desktop:installDist` 成功。
+
+### 仍未做
+- 真链路 e2e（等 key/授权）；DeepSeek 峰谷价格窗口（pricing 字段已留，乘法未做）；Android 导入导出按钮；真机窗口。

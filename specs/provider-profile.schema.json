@@ -106,6 +106,16 @@
         "maxRetries": { "type": "integer", "minimum": 0 }
       }
     },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "currency": { "type": "string", "minLength": 1, "maxLength": 8 },
+        "inputPerMillion": { "type": "number", "minimum": 0 },
+        "outputPerMillion": { "type": "number", "minimum": 0 },
+        "cachedInputPerMillion": { "type": "number", "minimum": 0 }
+      }
+    },
     "enabled": { "type": "boolean" }
   }
 }

@@ -81,6 +81,18 @@ data class RetryProfile(
     val maxRetries: Int = 0,
 )
 
+/**
+ * 定价（每 1M token）。峰谷价差先不做乘法，字段留出来：
+ * 以后加 peakWindows 时只改 UsageCost，不动 provider 结构。
+ */
+@Serializable
+data class Pricing(
+    val currency: String = "USD",
+    val inputPerMillion: Double? = null,
+    val outputPerMillion: Double? = null,
+    val cachedInputPerMillion: Double? = null,
+)
+
 /** chat 家族的 provider 档案（对应 specs/provider-profile.schema.json）。 */
 @Serializable
 data class ProviderProfile(
@@ -95,6 +107,7 @@ data class ProviderProfile(
     val headers: Map<String, String> = emptyMap(),
     val limits: ProviderLimits? = null,
     val retry: RetryProfile? = null,
+    val pricing: Pricing? = null,
     val enabled: Boolean = true,
 ) {
     fun model(role: String = "chat"): ModelProfile? {

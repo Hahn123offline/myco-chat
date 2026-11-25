@@ -6,7 +6,9 @@ import dev.myco.core.spec.AuthProfile
 import dev.myco.core.spec.ModelProfile
 import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.spec.RetryProfile
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -57,6 +59,60 @@ private class CountingHttpServer(
     override fun close() {
         runCatching { server.close() }
         worker.join(1000)
+    }
+}
+
+class UsageCostTest {
+    @Test
+    fun `computes cost from pricing and cached tokens`() {
+        val usage = dev.myco.core.spec.Usage(
+            inputTokens = 1000, outputTokens = 200, cachedTokens = 500,
+        )
+        val pricing = dev.myco.core.spec.Pricing(
+            currency = "USD",
+            inputPerMillion = 1.0,
+            outputPerMillion = 2.0,
+            cachedInputPerMillion = 0.1,
+        )
+        val cost = UsageCost.compute(usage, pricing)!!
+        // (500*1 + 500*0.1 + 200*2) / 1_000_000
+        assertEquals(0.00095, cost, 1e-9)
+    }
+
+    @Test
+    fun `no pricing means no cost guess`() {
+        val usage = dev.myco.core.spec.Usage(inputTokens = 10, outputTokens = 10)
+        assertEquals(null, UsageCost.compute(usage, null))
+    }
+}
+
+class LlmCancellationTest {
+    @Test
+    fun `cancelling collection aborts the request without a Done`() = runBlocking {
+        val body = "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\n"
+        CountingHttpServer { attempt ->
+            if (attempt == 1) {
+                Thread.sleep(5_000) // 故意拖住：取消要能立刻断开
+            }
+            Pair(200, body)
+        }.use { srv ->
+            val provider = ProviderProfile(
+                id = "local", kind = "openai-completions", baseUrl = "http://127.0.0.1:${srv.port}",
+                auth = AuthProfile.None,
+                models = listOf(ModelProfile(id = "m", contextWindow = 1024, maxTokens = 128)),
+            )
+            val client = OpenAiCompatibleClient(provider, CredentialResolver(MycoHome(java.nio.file.Files.createTempDirectory("myco-cancel")), emptyMap()))
+            val received = mutableListOf<ChatChunk>()
+            val job = launch {
+                client.stream(ChatRequest("m", listOf(ChatMessage("user", "hi")))).collect { received += it }
+            }
+            kotlinx.coroutines.delay(300)
+            val started = System.nanoTime()
+            job.cancelAndJoin()
+            val elapsedMs = (System.nanoTime() - started) / 1_000_000
+            assertTrue("cancel took ${elapsedMs}ms", elapsedMs < 3_000)
+            assertTrue(received.none { it is ChatChunk.Done })
+        }
     }
 }
 

@@ -172,7 +172,8 @@ private fun ChatScreen(bridge: InProcessBridge, sessionId: String, title: String
                     streaming = (streaming ?: "") + e.text
                 }
                 is BridgeEvent.AssistantDone -> if (e.sessionId == sessionId) {
-                    lines = lines + ChatLine("assistant", e.text); streaming = null
+                    if (e.text.isNotEmpty()) lines = lines + ChatLine("assistant", e.text)
+                    streaming = null
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
                     error = "${e.code}: ${e.message}"; streaming = null
@@ -204,18 +205,24 @@ private fun ChatScreen(bridge: InProcessBridge, sessionId: String, title: String
                     modifier = Modifier.weight(1f), placeholder = { Text("说点什么…") }, maxLines = 4,
                 )
                 Spacer(Modifier.width(8.dp))
-                Button(
-                    enabled = input.isNotBlank() && streaming == null,
-                    onClick = {
-                        val text = input.trim()
-                        input = ""; error = null
-                        lines = lines + ChatLine("user", text)
-                        scope.launch {
-                            val r = bridge.send(Command.ChatSend(sessionId, text))
-                            if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
-                        }
-                    },
-                ) { Text("发送") }
+                if (streaming != null) {
+                    OutlinedButton(onClick = {
+                        scope.launch { bridge.send(Command.ChatStop(sessionId)) }
+                    }) { Text("停止") }
+                } else {
+                    Button(
+                        enabled = input.isNotBlank(),
+                        onClick = {
+                            val text = input.trim()
+                            input = ""; error = null
+                            lines = lines + ChatLine("user", text)
+                            scope.launch {
+                                val r = bridge.send(Command.ChatSend(sessionId, text))
+                                if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
+                            }
+                        },
+                    ) { Text("发送") }
+                }
             }
         }
     }

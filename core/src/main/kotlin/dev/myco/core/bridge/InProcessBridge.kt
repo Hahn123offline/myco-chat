@@ -13,6 +13,7 @@ import dev.myco.core.session.SessionStore
 import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.spec.SessionMeta
 import dev.myco.core.tools.ToolRegistry
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -39,6 +40,11 @@ class InProcessBridge(
 
     private val doctor = Doctor(home, sessions, providers, credentials, tools)
 
+    private val scope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default
+    )
+    private val activeTurns = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Job>()
+
     override suspend fun send(cmd: Command): CommandResult = when (cmd) {
         is Command.SessionCreate -> {
             val meta = sessions.create(cmd.app, cmd.preset, cmd.title)
@@ -46,6 +52,7 @@ class InProcessBridge(
             CommandResult.Ok(buildJsonObject { put("sessionId", meta.id) })
         }
         is Command.ChatSend -> chatSend(cmd)
+        is Command.ChatStop -> chatStop(cmd)
         is Command.ProviderSave -> providerSave(cmd)
         is Command.ProviderDelete -> providerDelete(cmd)
         is Command.CredentialSet -> {
@@ -114,7 +121,16 @@ class InProcessBridge(
         }
     }
 
-    private suspend fun chatSend(cmd: Command.ChatSend): CommandResult {
+    private suspend fun chatSend(cmd: Command.ChatSend): CommandResult = runChat(cmd)
+
+    private fun chatStop(cmd: Command.ChatStop): CommandResult {
+        val collector = activeTurns.remove(cmd.sessionId)
+            ?: return CommandResult.Err("NOT_RUNNING", "该会话没有进行中的回合")
+        collector.cancel()
+        return CommandResult.Ok(buildJsonObject { put("stopped", true) })
+    }
+
+    private suspend fun runChat(cmd: Command.ChatSend): CommandResult {
         val provider = providers.firstEnabled()
             ?: return CommandResult.Err("PROVIDER_MISSING", "还没有配置 provider，请先在设置里添加")
         val model = provider.model("chat")
@@ -135,27 +151,56 @@ class InProcessBridge(
         val full = StringBuilder()
         var failed: ChatChunk.Failed? = null
 
-        client.stream(ChatRequest(model = model.id, messages = messages, maxTokens = model.maxTokens)).collect { chunk ->
-            when (chunk) {
-                is ChatChunk.Delta -> {
-                    full.append(chunk.text)
-                    _events.tryEmit(BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text))
-                }
-                is ChatChunk.Done -> {
-                    sessions.append(
-                        cmd.sessionId,
-                        SessionEvent.AssistantMessage(
-                            data = SessionEvent.AssistantMessage.Data(chunk.text, chunk.model, chunk.usage)
+        // 把"流式收集"单独放一个 job：停止 = 取消它；runChat 自己不被取消，能正常收尾
+        val collector = scope.async {
+            client.stream(ChatRequest(model = model.id, messages = messages, maxTokens = model.maxTokens)).collect { chunk ->
+                when (chunk) {
+                    is ChatChunk.Delta -> {
+                        full.append(chunk.text)
+                        _events.tryEmit(BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text))
+                    }
+                    is ChatChunk.Done -> {
+                        sessions.append(
+                            cmd.sessionId,
+                            SessionEvent.AssistantMessage(
+                                data = SessionEvent.AssistantMessage.Data(chunk.text, chunk.model, chunk.usage)
+                            )
                         )
-                    )
-                    sessions.append(
-                        cmd.sessionId,
-                        SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = 1, chunk.usage?.costUsd))
-                    )
-                    _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, chunk.text))
+                        sessions.append(
+                            cmd.sessionId,
+                            SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = 1, chunk.usage?.costUsd))
+                        )
+                        _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, chunk.text))
+                    }
+                    is ChatChunk.Failed -> failed = chunk
                 }
-                is ChatChunk.Failed -> failed = chunk
             }
+        }
+        activeTurns[cmd.sessionId] = collector
+        try {
+            collector.await()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            if (!collector.isCancelled) throw e
+            // 用户点"停止"：把已收到的部分文本按"已停止"落盘，turn 正常收尾
+            val partial = full.toString()
+            if (partial.isNotEmpty()) {
+                sessions.append(
+                    cmd.sessionId,
+                    SessionEvent.AssistantMessage(
+                        data = SessionEvent.AssistantMessage.Data(partial, model.id, null)
+                    )
+                )
+            }
+            sessions.append(
+                cmd.sessionId,
+                SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = 0, null))
+            )
+            _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, partial, stopped = true))
+            return CommandResult.Ok(buildJsonObject {
+                put("turnId", turn); put("text", partial); put("stopped", true)
+            })
+        } finally {
+            activeTurns.remove(cmd.sessionId)
         }
 
         failed?.let {

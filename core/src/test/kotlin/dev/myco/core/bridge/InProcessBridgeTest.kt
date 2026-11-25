@@ -11,6 +11,7 @@ import dev.myco.core.spec.AuthProfile
 import dev.myco.core.spec.ModelProfile
 import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.tools.ToolRegistry
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -21,7 +22,7 @@ import org.junit.Test
 import java.nio.file.Files
 
 class InProcessBridgeTest {
-    private class Fixture(withProvider: Boolean = true) {
+    private class Fixture(withProvider: Boolean = true, client: ChatClient = FakeChatClient()) {
         val home: MycoHome = MycoHome(Files.createTempDirectory("myco-bridge")).also { it.ensureLayout() }
         val sessions = SessionStore(home)
         val providers = ProviderStore(home)
@@ -44,7 +45,7 @@ class InProcessBridgeTest {
                     expectedRevision = 0,
                 )
             }
-            val factory: (ProviderProfile) -> ChatClient = { FakeChatClient() }
+            val factory: (ProviderProfile) -> ChatClient = { client }
             bridge = InProcessBridge(home, sessions, providers, credentials, tools, factory)
         }
     }
@@ -136,6 +137,41 @@ class InProcessBridgeTest {
         assertTrue(set is CommandResult.Ok)
         val providersQuery = f.bridge.query(Query.Providers) as QueryResult.Ok
         assertTrue(!providersQuery.data.toString().contains("sk-very-secret"))
+    }
+
+    @Test
+    fun `stop cancels running turn and persists partial text`() = runBlocking {
+        val slow = FakeChatClient(
+            reply = { "这是一段很长的回复，用来测试停止。".repeat(40) },
+            tickMs = 20,
+        )
+        val f = Fixture(withProvider = true, client = slow)
+        val meta = f.sessions.create("chat", "chat-default")
+        val job = async { f.bridge.send(Command.ChatSend(meta.id, "讲个长故事")) }
+        kotlinx.coroutines.delay(200)
+        val stop = f.bridge.send(Command.ChatStop(meta.id))
+        assertTrue(stop is CommandResult.Ok)
+        val result = job.await()
+        assertTrue(result is CommandResult.Ok)
+        assertTrue((result as CommandResult.Ok).data.toString().contains("\"stopped\":true"))
+
+        val events = f.sessions.read(meta.id)
+        val assistant = events.filterIsInstance<SessionEvent.AssistantMessage>().single()
+        assertTrue(assistant.data.text.isNotEmpty())
+        val end = events.filterIsInstance<SessionEvent.TurnEnd>().single()
+        assertEquals(0, end.data.steps)
+        // 再发一轮应能正常走（没有卡死的 job）
+        val again = f.bridge.send(Command.ChatSend(meta.id, "还在吗"))
+        assertTrue(again is CommandResult.Ok)
+    }
+
+    @Test
+    fun `stop with no running turn returns NOT_RUNNING`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default")
+        val res = f.bridge.send(Command.ChatStop(meta.id))
+        assertTrue(res is CommandResult.Err)
+        assertEquals("NOT_RUNNING", (res as CommandResult.Err).code)
     }
 
     @Test

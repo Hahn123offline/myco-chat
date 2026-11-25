@@ -4,8 +4,6 @@ import dev.myco.core.provider.CredentialResolver
 import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.spec.Usage
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -53,10 +51,6 @@ class OpenAiCompatibleClient(
         val key = credentials.resolveFor(provider.auth)?.takeIf { it.isNotBlank() }
         val body = buildRequestBody(request)
         val activeConn = AtomicReference<HttpURLConnection?>(null)
-        // flow 被取消（用户点"停止"）→ 切断连接，让阻塞读立刻退出
-        currentCoroutineContext()[Job]?.invokeOnCompletion {
-            activeConn.getAndSet(null)?.let { runCatching { it.disconnect() } }
-        }
 
         val job = launch(Dispatchers.IO) {
             val maxAttempts = 1 + (provider.retry?.maxRetries ?: 0).coerceIn(0, 5)
@@ -94,7 +88,16 @@ class OpenAiCompatibleClient(
                 }
             }
         }
+        // flow 被取消（用户点"停止"）→ 切断连接，让阻塞读立刻退出
+        val watcher = launch {
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                activeConn.getAndSet(null)?.let { runCatching { it.disconnect() } }
+            }
+        }
         job.join()
+        watcher.cancel()
     }
 
     private suspend fun kotlinx.coroutines.channels.ProducerScope<ChatChunk>.parseStream(conn: HttpURLConnection) {
@@ -135,7 +138,7 @@ class OpenAiCompatibleClient(
                 if (!content.isNullOrEmpty()) { full.append(content); send(ChatChunk.Delta(content)) }
             }
         }
-        send(ChatChunk.Done(full.toString(), usage, model))
+        send(ChatChunk.Done(full.toString(), usage?.let { UsageCost.apply(it, provider.pricing) }, model))
     }
 
     private fun buildRequestBody(request: ChatRequest): String = buildJsonObject {

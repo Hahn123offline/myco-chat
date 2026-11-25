@@ -113,6 +113,9 @@ class HttpBridgeServer(
                 }.getOrElse { return json(ex, 400, err("PAYLOAD", "bad profile: ${it.message}")) }
                 Command.ProviderDiscover(profile)
             }
+            "chat.stop" -> Command.ChatStop(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+            )
             else -> return json(ex, 404, err("UNKNOWN_COMMAND", name))
         }
         val result = runBlocking { bridge.send(cmd) }
@@ -172,7 +175,8 @@ class HttpBridgeServer(
             put("type", "assistant.delta"); put("sessionId", e.sessionId); put("turnId", e.turnId); put("text", e.text)
         }.toString()
         is BridgeEvent.AssistantDone -> buildJsonObject {
-            put("type", "assistant.done"); put("sessionId", e.sessionId); put("turnId", e.turnId); put("text", e.text)
+            put("type", "assistant.done"); put("sessionId", e.sessionId); put("turnId", e.turnId)
+            put("text", e.text); put("stopped", e.stopped)
         }.toString()
         is BridgeEvent.Failed -> buildJsonObject {
             put("type", "failed"); put("code", e.code); put("message", e.message); put("retriable", e.retriable)

@@ -56,6 +56,7 @@ class HttpBridgeClient(
                     dev.myco.core.spec.ProviderProfile.serializer(), cmd.profile
                 ))
             }
+            is Command.ChatStop -> "chat.stop" to buildJsonObject { put("sessionId", cmd.sessionId) }
         }
         val body = post("/command/$name", payload)
         return if (body["ok"]?.jsonPrimitive?.content == "true") {
@@ -206,6 +207,7 @@ class HttpBridgeClient(
                 o["sessionId"]?.jsonPrimitive?.content ?: "",
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["text"]?.jsonPrimitive?.content ?: "",
+                stopped = o["stopped"]?.jsonPrimitive?.content == "true",
             )
             "failed" -> BridgeEvent.Failed(
                 o["code"]?.jsonPrimitive?.content ?: "ERROR",

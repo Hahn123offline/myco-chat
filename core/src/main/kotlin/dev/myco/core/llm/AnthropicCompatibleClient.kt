@@ -4,8 +4,6 @@ import dev.myco.core.provider.CredentialResolver
 import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.spec.Usage
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -52,9 +50,6 @@ class AnthropicCompatibleClient(
         }
         val body = buildRequestBody(request)
         val activeConn = AtomicReference<HttpURLConnection?>(null)
-        currentCoroutineContext()[Job]?.invokeOnCompletion {
-            activeConn.getAndSet(null)?.let { runCatching { it.disconnect() } }
-        }
 
         val job = launch(Dispatchers.IO) {
             val maxAttempts = 1 + (provider.retry?.maxRetries ?: 0).coerceIn(0, 5)
@@ -92,7 +87,15 @@ class AnthropicCompatibleClient(
                 }
             }
         }
+        val watcher = launch {
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                activeConn.getAndSet(null)?.let { runCatching { it.disconnect() } }
+            }
+        }
         job.join()
+        watcher.cancel()
     }
 
     private suspend fun kotlinx.coroutines.channels.ProducerScope<ChatChunk>.parseStream(conn: HttpURLConnection) {
@@ -145,7 +148,7 @@ class AnthropicCompatibleClient(
                 }
             }
         }
-        send(ChatChunk.Done(full.toString(), usage, model))
+        send(ChatChunk.Done(full.toString(), usage?.let { UsageCost.apply(it, provider.pricing) }, model))
     }
 
     private fun buildRequestBody(request: ChatRequest): String {
