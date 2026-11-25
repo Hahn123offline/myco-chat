@@ -12,6 +12,8 @@ data class ChatRequest(
     val messages: List<ChatMessage>,
     val maxTokens: Long? = null,
     val temperature: Double? = null,
+    /** null = 由客户端按 provider 默认值决定；false 显式关闭思考（DeepSeek 默认开，关掉省钱）。 */
+    val thinking: Boolean? = null,
 )
 
 sealed class ChatChunk {

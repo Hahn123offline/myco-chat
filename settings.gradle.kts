@@ -26,6 +26,7 @@ dependencyResolutionManagement {
 }
 
 include(":core")
+include(":bridge-http")
 include(":tools:fake-sse")
 include(":app-desktop")
 include(":app-android")

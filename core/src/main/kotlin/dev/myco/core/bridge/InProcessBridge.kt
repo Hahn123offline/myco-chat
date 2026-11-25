@@ -118,7 +118,7 @@ class InProcessBridge(
             QueryResult.Ok(buildJsonArray { events.forEach { add(eventJson(it)) } })
         }
         Query.Providers -> {
-            val list = providers.load()
+            val list = providers.load().providers
             QueryResult.Ok(buildJsonArray {
                 list.forEach { p ->
                     add(buildJsonObject {

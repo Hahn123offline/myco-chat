@@ -40,14 +40,14 @@ class Doctor(
         }.getOrElse { Check("sessions", CheckStatus.ERROR, "读取失败：${it.message}") }
 
         checks += runCatching {
-            val list = providers.load()
+            val list = providers.load().providers
             val enabled = list.count { it.enabled }
             if (list.isEmpty()) Check("providers", CheckStatus.WARN, "0 个已配置（本地/DeepSeek 模板可一键添加）")
             else Check("providers", CheckStatus.OK, "${list.size} 个（启用 $enabled）")
         }.getOrElse { Check("providers", CheckStatus.ERROR, "配置非法：${it.message}") }
 
         checks += runCatching {
-            val list = providers.load().filter { it.enabled }
+            val list = providers.load().providers.filter { it.enabled }
             val missing = list.mapNotNull { p ->
                 when (val a = p.auth) {
                     is AuthProfile.ApiKey -> if (credentials.describe(a.ref).configured) null else "${p.id}(${a.ref})"

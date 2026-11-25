@@ -8,9 +8,10 @@ import dev.myco.core.bridge.Query
 import dev.myco.core.bridge.QueryResult
 import dev.myco.core.doctor.Doctor
 import dev.myco.core.llm.ChatClient
+import dev.myco.core.llm.ChatClients
 import dev.myco.core.llm.FakeChatClient
-import dev.myco.core.llm.OpenAiCompatibleClient
 import dev.myco.core.provider.CredentialResolver
+import dev.myco.core.provider.ModelDiscovery
 import dev.myco.core.provider.ProviderStore
 import dev.myco.core.session.SessionStore
 import dev.myco.core.spec.AuthProfile
@@ -36,7 +37,7 @@ fun main(args: Array<String>) = runBlocking {
 
     fun clientFor(provider: ProviderProfile): ChatClient =
         if (System.getenv("MYCO_FAKE") == "1" || provider.id == "fake") FakeChatClient()
-        else OpenAiCompatibleClient(provider, credentials)
+        else ChatClients.createOrFailed(provider, credentials)
 
     val bridge = InProcessBridge(home, sessions, providers, credentials, tools, ::clientFor)
 
@@ -47,7 +48,9 @@ fun main(args: Array<String>) = runBlocking {
             println("${it.id}  ${it.app}/${it.preset}  ${it.title}  ${java.time.Instant.ofEpochMilli(it.createdAt)}")
         }
         "providers" -> {
-            val list = providers.load()
+            val snap = providers.load()
+            val list = snap.providers
+            println("revision=${snap.revision}")
             if (list.isEmpty()) println("（未配置 provider；可用 `init-local` 写入本地模板）")
             list.forEach { p ->
                 val status = when (val a = p.auth) {
@@ -75,7 +78,8 @@ fun main(args: Array<String>) = runBlocking {
         }
         "init-local" -> {
             val baseUrl = args.getOrNull(1) ?: "http://127.0.0.1:8787/v1"
-            providers.save(
+            val current = providers.load()
+            val revision = providers.save(
                 listOf(
                     ProviderProfile(
                         id = "local",
@@ -86,11 +90,25 @@ fun main(args: Array<String>) = runBlocking {
                         models = listOf(ModelProfile(id = "fake-chat", contextWindow = 32768, maxTokens = 4096)),
                         roles = mapOf("chat" to "fake-chat", "fast" to "fake-chat"),
                     )
-                )
+                ),
+                expectedRevision = current.revision,
             )
-            println("wrote ${home.providersFile}")
+            println("wrote ${home.providersFile} (revision=$revision)")
             println("start fake server:  gradle :tools:fake-sse:run")
-            println("then:               MYCO_FAKE=0 gradle :app-desktop:run --args=\"demo 你好\"")
+            println("then:               gradle :app-desktop:run --args=\"demo 你好\"")
+        }
+        "discover" -> {
+            val pid = args.getOrNull(1) ?: return@runBlocking usage("discover <providerId>")
+            val p = providers.load().providers.firstOrNull { it.id == pid }
+                ?: return@runBlocking usage("provider not found: $pid")
+            runCatching { ModelDiscovery.discover(p, credentials) }
+                .onSuccess { models ->
+                    println("discovered ${models.size} models from ${p.baseUrl}")
+                    models.forEach { m ->
+                        println("  ${m.id}${m.displayName?.let { "  ($it)" } ?: ""}${m.contextWindow?.let { "  ctx=$it" } ?: ""}")
+                    }
+                }
+                .onFailure { println("[failed] ${it.message}") }
         }
         else -> usage("unknown command: ${args.firstOrNull()}")
     }
@@ -138,6 +156,7 @@ private fun printHelp() {
           sessions               列出会话
           new [title]            新建会话
           providers              列出 provider（不打印密钥）
+          discover <providerId>  显式"获取可用模型"（不自动探测）
           chat <id> <text...>    发一条消息（流式）
           demo [text...]         用现有/新建会话跑一次 demo
           init-local [baseUrl]   写入本地 OpenAI 兼容 provider 模板（默认 fake-sse :8787）

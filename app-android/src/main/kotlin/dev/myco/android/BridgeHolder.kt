@@ -4,6 +4,7 @@ import android.content.Context
 import dev.myco.core.MycoHome
 import dev.myco.core.bridge.InProcessBridge
 import dev.myco.core.llm.ChatClient
+import dev.myco.core.llm.ChatClients
 import dev.myco.core.llm.FakeChatClient
 import dev.myco.core.provider.CredentialResolver
 import dev.myco.core.provider.ProviderStore
@@ -30,7 +31,10 @@ object BridgeHolder {
         val providers = ProviderStore(home)
         val credentials = CredentialResolver(home)
         val tools = ToolRegistry().apply { register(timeNowTool()) }
-        val factory: (ProviderProfile) -> ChatClient = { FakeChatClient() }
+        // 没有 provider 时用假模型保证可离线跑；有 provider 就按方言接真服务（失败会明确报错，不静默造假）
+        val hasProvider = runCatching { providers.load().providers.isNotEmpty() }.getOrDefault(false)
+        val factory: (ProviderProfile) -> ChatClient =
+            if (hasProvider) { p -> ChatClients.createOrFailed(p, credentials) } else { { FakeChatClient() } }
         bridge = InProcessBridge(home, sessions, providers, credentials, tools, factory)
     }
 }

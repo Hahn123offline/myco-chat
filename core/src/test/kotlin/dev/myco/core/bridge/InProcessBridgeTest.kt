@@ -37,7 +37,8 @@ class InProcessBridgeTest {
                             auth = AuthProfile.None,
                             models = listOf(ModelProfile(id = "fake-chat", contextWindow = 1024, maxTokens = 128)),
                         )
-                    )
+                    ),
+                    expectedRevision = 0,
                 )
             }
             val factory: (ProviderProfile) -> ChatClient = { FakeChatClient() }

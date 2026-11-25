@@ -1,6 +1,7 @@
 package dev.myco.core.provider
 
 import dev.myco.core.MycoHome
+import dev.myco.core.settings.SettingsConflictException
 import dev.myco.core.spec.AuthProfile
 import dev.myco.core.spec.ModelProfile
 import dev.myco.core.spec.ProviderProfile
@@ -24,32 +25,58 @@ class ProviderStoreTest {
     )
 
     @Test
-    fun `save and load roundtrip`() {
+    fun `save and load roundtrip with revision`() {
         val h = home()
         val store = ProviderStore(h)
-        store.save(listOf(provider()))
-        val loaded = store.load()
-        assertEquals(1, loaded.size)
-        assertEquals("local", loaded.first().id)
+        assertEquals(0L, store.load().revision)
+        assertEquals(1L, store.save(listOf(provider()), expectedRevision = 0))
+        val snap = store.load()
+        assertEquals(1L, snap.revision)
+        assertEquals(1, snap.providers.size)
+        assertEquals("local", snap.providers.first().id)
+    }
+
+    @Test
+    fun `stale revision is rejected`() {
+        val h = home()
+        val store = ProviderStore(h)
+        store.save(listOf(provider()), expectedRevision = 0)
+        assertThrows(SettingsConflictException::class.java) {
+            store.save(listOf(provider("other")), expectedRevision = 0)
+        }
+        // 拿到新 revision 后可以写
+        assertEquals(2L, store.save(listOf(provider("other")), expectedRevision = 1))
+    }
+
+    @Test
+    fun `legacy plain file is read as revision 0`() {
+        val h = home()
+        Files.writeString(
+            h.providersFile,
+            """{"providers":[{"id":"local","kind":"openai-completions","auth":{"type":"none"},"models":[{"id":"m","contextWindow":1,"maxTokens":1}]}]}"""
+        )
+        val snap = ProviderStore(h).load()
+        assertEquals(0L, snap.revision)
+        assertEquals("local", snap.providers.single().id)
     }
 
     @Test
     fun `empty models rejected`() {
         val h = home()
         val bad = provider().copy(models = emptyList())
-        assertThrows(ProviderConfigException::class.java) { ProviderStore(h).save(listOf(bad)) }
+        assertThrows(ProviderConfigException::class.java) { ProviderStore(h).save(listOf(bad), 0) }
     }
 
     @Test
     fun `illegal id rejected`() {
         val h = home()
         val bad = provider(id = "Bad_ID")
-        assertThrows(ProviderConfigException::class.java) { ProviderStore(h).save(listOf(bad)) }
+        assertThrows(ProviderConfigException::class.java) { ProviderStore(h).save(listOf(bad), 0) }
     }
 
     @Test
     fun `empty file means no providers`() {
-        assertEquals(0, ProviderStore(home()).load().size)
+        assertEquals(0, ProviderStore(home()).load().providers.size)
     }
 }
 
