@@ -70,3 +70,21 @@
 
 ### 仍未做
 - 真链路 e2e（等 key/授权）；DeepSeek 峰谷价格窗口（pricing 字段已留，乘法未做）；Android 导入导出按钮；真机窗口。
+
+## 8. 真链路 e2e（2026-11-26 01:45，已完成）
+
+用户提供了可用的 DeepSeek key（**未读入仓库、未打印**，仅以环境变量注入进程）。结果：
+
+| 项 | 结果 |
+|---|---|
+| `init-deepseek`（kind=`deepseek-messages`, base=`https://api.deepseek.com/anthropic`） | 成功 |
+| 模型发现 | **成功**：`deepseek-flash`（DeepSeek-V4.1-Flash）、`deepseek-v4-pro`（DeepSeek-V4-Pro），`context_window=1048576` |
+| 流式对话（Anthropic Messages 方言） | **成功**：两轮真实回复，SSE 增量正常 |
+| usage / costUsd | **成功**：input=5 / output=15 tokens → `costUsd=6.5e-5`（按 profile.pricing 的 CNY 单价算出），同时写入 `assistant/message` 与 `turn/end` |
+| 发现路径坑 | 模型清单在站点根 `/models`，不在 `/anthropic/v1/models`；`ModelDiscovery` 已改为对 `/anthropic` 基址同时尝试根路径与基址路径 |
+
+## 9. 真机（Android 15 / API 35）已完成
+
+详细证据见 [android-s0b-device.md](android-s0b-device.md)：安装、冷启动 413–651ms、provider UI 管理、
+SSE 流式（经 adb reverse + fake-sse）、历史跨进程持久化、FGS `specialUse` 通知全部通过；
+真机暴露并修复 4 个 Android-only 问题（Files.readString/writeString、明文策略、INTERNET 权限、历史 payload）。
