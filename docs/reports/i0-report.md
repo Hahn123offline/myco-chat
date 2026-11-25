@@ -73,3 +73,11 @@ I1 的"真链路"必须打一次真实模型，但：
 所以在拿到**一次授权**之前，只能继续做不联网的部分（provider 管理 UI、Android 设置页、doctor 扩展、文档）。
 可选：① 允许打一次自建服务（只发 1 条 ping 请求，测 `/v1/chat/completions` 路径与 SSE）；
 ② 提供 DeepSeek key；③ 继续只做 fake/单元测试，等用户方便再说。
+
+## 8. 事故与处置（2026-11-26 02:05，必须留档）
+
+- **发生了什么**：工作区根目录原本就有一个未跟踪的 `deepseek.key`（35 字符、`sk-` 开头）。本轮用 `git add -A` 提交时被一起带进 `f89e8bc` 并推送了一次。
+- **处置**：`git reset --soft HEAD~1` → 从提交中移除该文件（工作区文件保留）→ `.gitignore` 增加 `*.key / *.pem / .env* / secrets*` → 重新提交 `ed8eba1` → `git push --force-with-lease` 覆盖远端。
+- **验证**：远端 main = `ed8eba1`；`git ls-files` 中已无 `.key` 文件。
+- **影响与要求**：该 key 在远端存在过约几分钟。**如果它是真实凭据，请立即轮换**。本次未在任何日志、测试或模型请求中使用它。
+- **防再犯**：以后只 `git add` 明确路径；提交前 `git diff --cached --name-only` 自检；密钥只走环境变量或 `~/.myco/credentials.json`（已在 ignore 内）。
