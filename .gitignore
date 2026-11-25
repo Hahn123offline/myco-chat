@@ -1,6 +1,21 @@
-# 本仓库只包含参考实现，见 reference/README.md
-# 以下为工作区本地目录（数据、工具链、外部仓库），不属于仓库内容
+# 工作区本地目录（数据、外部仓库），不属于仓库内容
 /raw/
-/tools/
 /_ws/
 /.secrets/
+
+# Gradle / JVM 构建产物
+.gradle/
+**/build/
+
+# myco 本地数据（开发调试）
+/.myco-dev/
+/.myco/
+
+# IDE
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.pyc
+
