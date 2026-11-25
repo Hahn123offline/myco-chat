@@ -24,6 +24,9 @@ sealed class Command {
 
     /** 只写不读；值不会出现在任何查询结果里。 */
     data class CredentialSet(val ref: String, val value: String) : Command()
+
+    /** 显式"获取可用模型"：只在用户点按钮时调用，不会在保存 provider 时自动跑。 */
+    data class ProviderDiscover(val profile: ProviderProfile) : Command()
 }
 
 sealed class Query {

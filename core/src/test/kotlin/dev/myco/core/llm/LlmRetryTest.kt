@@ -1,0 +1,130 @@
+package dev.myco.core.llm
+
+import dev.myco.core.MycoHome
+import dev.myco.core.provider.CredentialResolver
+import dev.myco.core.spec.AuthProfile
+import dev.myco.core.spec.ModelProfile
+import dev.myco.core.spec.ProviderProfile
+import dev.myco.core.spec.RetryProfile
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.ServerSocket
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
+
+/** 可编程 HTTP 服务器：每次请求调用 responder(attempt) 返回 (status, body)。 */
+private class CountingHttpServer(
+    private val responder: (attempt: Int) -> Pair<Int, String>,
+) : AutoCloseable {
+    private val server = ServerSocket(0)
+    private val counter = AtomicInteger(0)
+    val port: Int = server.localPort
+
+    private val worker = thread(isDaemon = true) {
+        while (!server.isClosed) {
+            runCatching {
+                server.accept().use { socket ->
+                    val reader = BufferedReader(InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1))
+                    reader.readLine() // request line
+                    while (true) {
+                        val line = reader.readLine() ?: break
+                        if (line.isEmpty()) break
+                    }
+                    val attempt = counter.incrementAndGet()
+                    val (status, body) = responder(attempt)
+                    val bytes = body.toByteArray(StandardCharsets.UTF_8)
+                    val out = socket.getOutputStream()
+                    val reason = if (status == 200) "OK" else "ERROR"
+                    val header = "HTTP/1.1 $status $reason\r\nContent-Type: text/event-stream\r\n" +
+                        "Content-Length: ${bytes.size}\r\nConnection: close\r\n\r\n"
+                    out.write(header.toByteArray(StandardCharsets.ISO_8859_1))
+                    out.write(bytes)
+                    out.flush()
+                }
+            }
+        }
+    }
+
+    fun requests(): Int = counter.get()
+
+    override fun close() {
+        runCatching { server.close() }
+        worker.join(1000)
+    }
+}
+
+class LlmRetryTest {
+    private fun home() = MycoHome(java.nio.file.Files.createTempDirectory("myco-retry"))
+
+    private fun openAi(port: Int, maxRetries: Int) = ProviderProfile(
+        id = "local", kind = "openai-completions", baseUrl = "http://127.0.0.1:$port",
+        auth = AuthProfile.None,
+        models = listOf(ModelProfile(id = "m", contextWindow = 1024, maxTokens = 128)),
+        retry = RetryProfile(mode = "normal", maxRetries = maxRetries),
+    )
+
+    private val okSse = "data: {\"choices\":[{\"delta\":{\"content\":\"好\"}}]}\n\ndata: [DONE]\n\n"
+
+    @Test
+    fun `retries 5xx then succeeds`() = runBlocking {
+        CountingHttpServer { attempt -> if (attempt <= 2) Pair(500, "boom") else Pair(200, okSse) }.use { srv ->
+            val chunks = OpenAiCompatibleClient(openAi(srv.port, maxRetries = 3), CredentialResolver(home(), emptyMap()))
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "hi")))).toList()
+            assertEquals(3, srv.requests())
+            assertTrue(chunks.any { it is ChatChunk.Done })
+            assertTrue(chunks.none { it is ChatChunk.Failed })
+        }
+    }
+
+    @Test
+    fun `retry exhaustion surfaces retriable failure`() = runBlocking {
+        CountingHttpServer { Pair(503, "unavailable") }.use { srv ->
+            val chunks = OpenAiCompatibleClient(openAi(srv.port, maxRetries = 1), CredentialResolver(home(), emptyMap()))
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "hi")))).toList()
+            assertEquals(2, srv.requests())
+            val failed = chunks.filterIsInstance<ChatChunk.Failed>().single()
+            assertTrue(failed.retriable)
+            assertTrue(failed.message.contains("503"))
+        }
+    }
+
+    @Test
+    fun `400 is not retried`() = runBlocking {
+        CountingHttpServer { Pair(400, "bad request") }.use { srv ->
+            val chunks = OpenAiCompatibleClient(openAi(srv.port, maxRetries = 3), CredentialResolver(home(), emptyMap()))
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "hi")))).toList()
+            assertEquals(1, srv.requests())
+            val failed = chunks.filterIsInstance<ChatChunk.Failed>().single()
+            assertFalse(failed.retriable)
+        }
+    }
+
+    @Test
+    fun `anthropic client retries then parses usage`() = runBlocking {
+        val sse = buildString {
+            append("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"deepseek-flash\",\"usage\":{\"input_tokens\":7,\"output_tokens\":0}}}\n\n")
+            append("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"嗨\"}}\n\n")
+            append("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
+        }
+        CountingHttpServer { attempt -> if (attempt == 1) Pair(500, "boom") else Pair(200, sse) }.use { srv ->
+            val provider = ProviderProfile(
+                id = "ds", kind = "deepseek-messages", baseUrl = "http://127.0.0.1:${srv.port}",
+                auth = AuthProfile.ApiKey("K"),
+                models = listOf(ModelProfile(id = "deepseek-flash", contextWindow = 1000, maxTokens = 100)),
+                retry = RetryProfile(mode = "normal", maxRetries = 2),
+            )
+            val chunks = AnthropicCompatibleClient(provider, CredentialResolver(home(), mapOf("K" to "sk-test")))
+                .stream(ChatRequest("deepseek-flash", listOf(ChatMessage("user", "hi")))).toList()
+            assertEquals(2, srv.requests())
+            assertEquals("嗨", chunks.filterIsInstance<ChatChunk.Delta>().joinToString("") { it.text })
+            assertEquals(7L, chunks.filterIsInstance<ChatChunk.Done>().single().usage?.inputTokens)
+        }
+    }
+}

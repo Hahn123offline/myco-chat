@@ -59,6 +59,24 @@ class Doctor(
         }.getOrElse { Check("credentials", CheckStatus.ERROR, "解析失败：${it.message}") }
 
         checks += runCatching {
+            val snap = providers.load()
+            Check("settings", CheckStatus.OK, "providers.json revision=${snap.revision}")
+        }.getOrElse { Check("settings", CheckStatus.ERROR, "读取失败：${it.message}") }
+
+        checks += runCatching {
+            val enabled = providers.load().providers.filter { it.enabled }
+            val missingChat = enabled.filter { it.model("chat") == null }
+            when {
+                enabled.isEmpty() -> Check("models", CheckStatus.WARN, "没有启用的 provider")
+                missingChat.isNotEmpty() -> Check(
+                    "models", CheckStatus.ERROR,
+                    "provider 没有可解析的 chat 角色：${missingChat.joinToString { it.id }}"
+                )
+                else -> Check("models", CheckStatus.OK, "${enabled.size} 个 provider 的 chat 角色可解析")
+            }
+        }.getOrElse { Check("models", CheckStatus.ERROR, "读取失败：${it.message}") }
+
+        checks += runCatching {
             val n = tools.list().size
             val chars = tools.schemaChars()
             val status = if (chars <= BUDGET_CHARS) CheckStatus.OK else CheckStatus.ERROR

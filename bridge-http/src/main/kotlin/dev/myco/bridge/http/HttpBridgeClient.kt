@@ -51,6 +51,11 @@ class HttpBridgeClient(
             is Command.CredentialSet -> "credential.set" to buildJsonObject {
                 put("ref", cmd.ref); put("value", cmd.value)
             }
+            is Command.ProviderDiscover -> "provider.discover" to buildJsonObject {
+                put("profile", dev.myco.core.spec.MycoJson.encodeToJsonElement(
+                    dev.myco.core.spec.ProviderProfile.serializer(), cmd.profile
+                ))
+            }
         }
         val body = post("/command/$name", payload)
         return if (body["ok"]?.jsonPrimitive?.content == "true") {

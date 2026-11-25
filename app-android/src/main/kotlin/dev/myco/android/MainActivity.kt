@@ -246,6 +246,7 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
     var revision by remember { mutableStateOf(0L) }
     var message by remember { mutableStateOf<String?>(null) }
     var editor by remember { mutableStateOf<ProviderEditor?>(null) }
+    var discoverStatus by remember { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<ProviderUi?>(null) }
     var keyTarget by remember { mutableStateOf<ProviderUi?>(null) }
     var running by remember { mutableStateOf(false) }
@@ -298,7 +299,7 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        TextButton(onClick = { editor = p.toEditor() }) { Text("编辑") }
+                        TextButton(onClick = { discoverStatus = null; editor = p.toEditor() }) { Text("编辑") }
                         if (p.authRef != null) TextButton(onClick = { keyTarget = p }) { Text("设置密钥") }
                         TextButton(onClick = { deleteTarget = p }) { Text("删除") }
                     }
@@ -307,8 +308,8 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { editor = ProviderEditor.localTemplate() }) { Text("加本地模板") }
-                    OutlinedButton(onClick = { editor = ProviderEditor.deepseekTemplate() }) { Text("加 DeepSeek") }
+                    Button(onClick = { discoverStatus = null; editor = ProviderEditor.localTemplate() }) { Text("加本地模板") }
+                    OutlinedButton(onClick = { discoverStatus = null; editor = ProviderEditor.deepseekTemplate() }) { Text("加 DeepSeek") }
                 }
             }
             item { HorizontalDivider() }
@@ -340,7 +341,18 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
     editor?.let { ed ->
         ProviderEditDialog(
             initial = ed,
-            onDismiss = { editor = null },
+            discoverStatus = discoverStatus,
+            onDiscover = { form ->
+                discoverStatus = "获取中…"
+                scope.launch {
+                    val res = bridge.send(Command.ProviderDiscover(form.toProfile()))
+                    discoverStatus = when (res) {
+                        is CommandResult.Ok -> "可用模型：${parseDiscoveredIds(res.data)}"
+                        is CommandResult.Err -> "${res.code}: ${res.message}"
+                    }
+                }
+            },
+            onDismiss = { editor = null; discoverStatus = null },
             onSave = { updated ->
                 scope.launch {
                     val res = bridge.send(Command.ProviderSave(updated.toProfile(), revision))
@@ -397,6 +409,8 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
 @Composable
 private fun ProviderEditDialog(
     initial: ProviderEditor,
+    discoverStatus: String?,
+    onDiscover: (ProviderEditor) -> Unit,
     onDismiss: () -> Unit,
     onSave: (ProviderEditor) -> Unit,
 ) {
@@ -416,6 +430,12 @@ private fun ProviderEditDialog(
                 OutlinedTextField(form.contextWindow, { form = form.copy(contextWindow = it) }, label = { Text("上下文窗口") }, singleLine = true)
                 OutlinedTextField(form.maxTokens, { form = form.copy(maxTokens = it) }, label = { Text("最大输出") }, singleLine = true)
                 OutlinedTextField(form.ref, { form = form.copy(ref = it) }, label = { Text("密钥引用（留空=无鉴权）") }, singleLine = true)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(onClick = { onDiscover(form) }) { Text("测试连通性") }
+                    if (discoverStatus != null) {
+                        Text(discoverStatus, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             }
         },
         confirmButton = { TextButton(onClick = { onSave(form) }) { Text("保存") } },
@@ -509,6 +529,11 @@ private data class ProviderEditor(
             ref = "DEEPSEEK_API_KEY",
         )
     }
+}
+
+private fun parseDiscoveredIds(data: kotlinx.serialization.json.JsonElement?): String {
+    val arr = (data as? JsonObject)?.get("models") as? JsonArray ?: return "（空）"
+    return arr.mapNotNull { (it as? JsonObject)?.get("id")?.jsonPrimitive?.content }.joinToString(", ").ifBlank { "（空）" }
 }
 
 private fun parseProviders(doc: JsonObject?): List<ProviderUi> {

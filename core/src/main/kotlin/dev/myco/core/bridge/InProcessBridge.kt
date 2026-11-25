@@ -55,6 +55,30 @@ class InProcessBridge(
                     onFailure = { CommandResult.Err("INVALID_CREDENTIAL", it.message ?: "写入失败") },
                 )
         }
+        is Command.ProviderDiscover -> {
+            runCatching { dev.myco.core.provider.ModelDiscovery.discover(cmd.profile, credentials) }
+                .fold(
+                    onSuccess = { models ->
+                        CommandResult.Ok(buildJsonObject {
+                            put("models", buildJsonArray {
+                                models.forEach { m ->
+                                    add(buildJsonObject {
+                                        put("id", m.id)
+                                        put("displayName", m.displayName ?: "")
+                                        m.contextWindow?.let { put("contextWindow", it) }
+                                        m.maxOutputTokens?.let { put("maxTokens", it) }
+                                    })
+                                }
+                            })
+                        })
+                    },
+                    onFailure = { e ->
+                        val code = if (e.message?.contains("缺少凭据") == true || e.message?.contains("api-key") == true)
+                            "CREDENTIAL_MISSING" else "DISCOVERY_FAILED"
+                        CommandResult.Err(code, e.message ?: "获取模型失败")
+                    },
+                )
+        }
     }
 
     private fun providerSave(cmd: Command.ProviderSave): CommandResult {
