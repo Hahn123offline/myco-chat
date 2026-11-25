@@ -207,6 +207,57 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `tool loop executes registry and feeds result back`() = runBlocking {
+        val client = object : ChatClient {
+            var calls = 0
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    calls++
+                    if (calls == 1) {
+                        emit(dev.myco.core.llm.ChatChunk.ToolRequest("call_1", "time_now", kotlinx.serialization.json.JsonObject(emptyMap())))
+                        emit(dev.myco.core.llm.ChatChunk.Done(""))
+                    } else {
+                        emit(dev.myco.core.llm.ChatChunk.Delta("现在时间拿到了"))
+                        emit(dev.myco.core.llm.ChatChunk.Done("现在时间拿到了"))
+                    }
+                }
+        }
+        val f = Fixture(client = client)
+        f.tools.register(dev.myco.core.tools.timeNowTool())
+        val meta = f.sessions.create("chat", "chat-default")
+        val res = f.bridge.send(Command.ChatSend(meta.id, "几点了"))
+        assertTrue(res is CommandResult.Ok)
+        assertEquals(2, client.calls)
+
+        val events = f.sessions.read(meta.id)
+        val call = events.filterIsInstance<SessionEvent.ToolCall>().single()
+        assertEquals("time_now", call.data.name)
+        val result = events.filterIsInstance<SessionEvent.ToolResult>().single()
+        assertTrue(result.data.ok)
+        assertTrue(result.data.text.contains("epochMs"))
+        assertEquals(2, events.filterIsInstance<SessionEvent.TurnEnd>().last().data.steps)
+    }
+
+    @Test
+    fun `tool schema over budget is rejected before any turn`() = runBlocking {
+        val f = Fixture()
+        repeat(30) { i ->
+            f.tools.register(
+                dev.myco.core.tools.ToolDef(
+                    name = "tool_$i",
+                    summary = "s",
+                    description = "d".repeat(900),
+                ) { "" }
+            )
+        }
+        val meta = f.sessions.create("chat", "chat-default")
+        val res = f.bridge.send(Command.ChatSend(meta.id, "hi"))
+        assertTrue(res is CommandResult.Err)
+        assertEquals("TOOL_BUDGET", (res as CommandResult.Err).code)
+        assertTrue(f.sessions.read(meta.id).none { it is SessionEvent.TurnStart })
+    }
+
+    @Test
     fun `session list query respects app filter`() = runBlocking {
         val f = Fixture()
         f.sessions.create("chat", "chat-default")

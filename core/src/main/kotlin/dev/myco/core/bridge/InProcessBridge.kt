@@ -6,6 +6,7 @@ import dev.myco.core.llm.ChatChunk
 import dev.myco.core.llm.ChatClient
 import dev.myco.core.llm.ChatMessage
 import dev.myco.core.llm.ChatRequest
+import dev.myco.core.llm.ToolSpec
 import dev.myco.core.provider.CredentialResolver
 import dev.myco.core.provider.ProviderStore
 import dev.myco.core.session.SessionEvent
@@ -146,6 +147,13 @@ class InProcessBridge(
         val model = provider.model("chat")
             ?: return CommandResult.Err("MODEL_MISSING", "provider ${provider.id} 没有 chat 角色模型")
 
+        // 工具 schema 进每轮请求前缀：超预算直接拒绝，不偷偷裁剪（模型看到的必须可复现）
+        val toolSpecs = tools.list().map { ToolSpec(it.name, it.description, it.parameters) }
+        val schemaChars = tools.schemaChars()
+        if (schemaChars > TOOL_BUDGET_CHARS) {
+            return CommandResult.Err("TOOL_BUDGET", "工具 schema 超预算：$schemaChars > $TOOL_BUDGET_CHARS 字符")
+        }
+
         val history = runCatching { sessions.read(cmd.sessionId) }
             .getOrElse { return CommandResult.Err("SESSION_NOT_FOUND", "会话不存在：${cmd.sessionId}") }
 
@@ -156,34 +164,93 @@ class InProcessBridge(
             SessionEvent.UserMessage(data = SessionEvent.UserMessage.Data(cmd.text, source = "human"))
         )
 
-        val messages = buildMessages(history) + ChatMessage("user", cmd.text)
         val client = clientFactory(provider)
         val full = StringBuilder()
         var failed: ChatChunk.Failed? = null
+        var steps = 0
+        var totalCost = 0.0
+        var finished = false
+        // 当前这一步的文本（取消时只落这一段，避免和已落盘的中途消息重复）
+        val currentStep = StringBuilder()
+        var messages = buildMessages(history) + ChatMessage("user", cmd.text)
 
-        // 把"流式收集"单独放一个 job：停止 = 取消它；runChat 自己不被取消，能正常收尾
+        // 把"流式 + 工具循环"单独放一个 job：停止 = 取消它；runChat 自己不被取消，能正常收尾
         val collector = scope.async {
-            client.stream(ChatRequest(model = model.id, messages = messages, maxTokens = model.maxTokens)).collect { chunk ->
-                when (chunk) {
-                    is ChatChunk.Delta -> {
-                        full.append(chunk.text)
-                        _events.tryEmit(BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text))
+            while (steps < MAX_TOOL_STEPS) {
+                steps++
+                currentStep.clear()
+                val toolRequests = mutableListOf<ChatChunk.ToolRequest>()
+                client.stream(
+                    ChatRequest(
+                        model = model.id,
+                        messages = messages,
+                        maxTokens = model.maxTokens,
+                        tools = toolSpecs,
+                    )
+                ).collect { chunk ->
+                    when (chunk) {
+                        is ChatChunk.Delta -> {
+                            currentStep.append(chunk.text)
+                            full.append(chunk.text)
+                            _events.tryEmit(BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text))
+                        }
+                        is ChatChunk.ToolRequest -> toolRequests += chunk
+                        is ChatChunk.Done -> chunk.usage?.costUsd?.let { totalCost += it }
+                        is ChatChunk.Failed -> failed = chunk
                     }
-                    is ChatChunk.Done -> {
+                }
+                if (failed != null) return@async
+
+                val stepText = currentStep.toString()
+                if (toolRequests.isEmpty()) {
+                    if (stepText.isNotEmpty()) {
                         sessions.append(
                             cmd.sessionId,
                             SessionEvent.AssistantMessage(
-                                data = SessionEvent.AssistantMessage.Data(chunk.text, chunk.model, chunk.usage)
+                                data = SessionEvent.AssistantMessage.Data(stepText, model.id, null)
                             )
                         )
-                        sessions.append(
-                            cmd.sessionId,
-                            SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = 1, chunk.usage?.costUsd))
-                        )
-                        _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, chunk.text))
                     }
-                    is ChatChunk.Failed -> failed = chunk
+                    sessions.append(
+                        cmd.sessionId,
+                        SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = steps, costUsd = totalCost))
+                    )
+                    _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString()))
+                    finished = true
+                    return@async
                 }
+
+                // 这一轮是工具调用：先落 assistant 文本（若有），再逐个执行
+                if (stepText.isNotEmpty()) {
+                    sessions.append(
+                        cmd.sessionId,
+                        SessionEvent.AssistantMessage(
+                            data = SessionEvent.AssistantMessage.Data(stepText, model.id, null)
+                        )
+                    )
+                }
+                val calls = mutableListOf<dev.myco.core.llm.ToolCall>()
+                val resultMessages = mutableListOf<ChatMessage>()
+                for (tr in toolRequests) {
+                    sessions.append(
+                        cmd.sessionId,
+                        SessionEvent.ToolCall(data = SessionEvent.ToolCall.Data(tr.name, tr.arguments))
+                    )
+                    _events.tryEmit(BridgeEvent.ToolStarted(cmd.sessionId, turn, tr.name))
+                    val result = tools.execute(tr.name, tr.arguments)
+                    val ok = result.isSuccess
+                    val out = result.getOrElse { it.message ?: "工具执行失败" }
+                    sessions.append(
+                        cmd.sessionId,
+                        SessionEvent.ToolResult(
+                            data = SessionEvent.ToolResult.Data(tr.name, ok, out, reason = if (ok) null else out)
+                        )
+                    )
+                    _events.tryEmit(BridgeEvent.ToolFinished(cmd.sessionId, turn, tr.name, ok, out))
+                    calls += dev.myco.core.llm.ToolCall(tr.id, tr.name, tr.arguments.toString())
+                    resultMessages += ChatMessage("tool", out, toolCallId = tr.id, toolName = tr.name)
+                }
+                messages = messages + ChatMessage("assistant", stepText, toolCalls = calls) + resultMessages
             }
         }
         activeTurns[cmd.sessionId] = collector
@@ -191,8 +258,8 @@ class InProcessBridge(
             collector.await()
         } catch (e: kotlinx.coroutines.CancellationException) {
             if (!collector.isCancelled) throw e
-            // 用户点"停止"：把已收到的部分文本按"已停止"落盘，turn 正常收尾
-            val partial = full.toString()
+            // 用户点"停止"：把当前步已收到的部分文本按"已停止"落盘，turn 正常收尾
+            val partial = currentStep.toString()
             if (partial.isNotEmpty()) {
                 sessions.append(
                     cmd.sessionId,
@@ -205,9 +272,9 @@ class InProcessBridge(
                 cmd.sessionId,
                 SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = 0, null))
             )
-            _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, partial, stopped = true))
+            _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString(), stopped = true))
             return CommandResult.Ok(buildJsonObject {
-                put("turnId", turn); put("text", partial); put("stopped", true)
+                put("turnId", turn); put("text", full.toString()); put("stopped", true)
             })
         } finally {
             activeTurns.remove(cmd.sessionId)
@@ -216,6 +283,13 @@ class InProcessBridge(
         failed?.let {
             _events.tryEmit(BridgeEvent.Failed("LLM_FAILED", it.message, it.retriable))
             return CommandResult.Err("LLM_FAILED", it.message, it.retriable)
+        }
+        if (!finished) {
+            sessions.append(
+                cmd.sessionId,
+                SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = steps, costUsd = totalCost))
+            )
+            return CommandResult.Err("MAX_STEPS", "工具调用超过 $MAX_TOOL_STEPS 步，已停止")
         }
         return CommandResult.Ok(buildJsonObject { put("turnId", turn); put("text", full.toString()) })
     }
@@ -317,8 +391,10 @@ class InProcessBridge(
             is SessionEvent.TurnStart -> put("data", buildJsonObject { put("turn", e.data.turn) })
             is SessionEvent.UserMessage -> put("data", buildJsonObject { put("text", e.data.text) })
             is SessionEvent.AssistantMessage -> put("data", buildJsonObject { put("text", e.data.text) })
-            is SessionEvent.ToolCall -> put("data", buildJsonObject { put("name", e.data.name) })
-            is SessionEvent.ToolResult -> put("data", buildJsonObject { put("name", e.data.name); put("ok", e.data.ok); put("text", e.data.text) })
+            is SessionEvent.ToolCall -> put("data", buildJsonObject { put("name", e.data.name); put("args", e.data.args) })
+            is SessionEvent.ToolResult -> put("data", buildJsonObject {
+                put("name", e.data.name); put("ok", e.data.ok); put("text", e.data.text); put("reason", e.data.reason ?: "")
+            })
             is SessionEvent.SystemInject -> put("data", buildJsonObject { put("text", e.data.text) })
             is SessionEvent.TurnEnd -> put("data", buildJsonObject { put("turn", e.data.turn); put("steps", e.data.steps) })
         }
@@ -335,3 +411,9 @@ class InProcessBridge(
         is SessionEvent.TurnEnd -> "turn/end"
     }
 }
+
+/** 一轮里最多允许多少次"模型→工具→模型"往返；超了明确失败，不无限烧钱。 */
+const val MAX_TOOL_STEPS = 4
+
+/** 所有工具 schema 进每请求的固定前缀预算（字符）。 */
+const val TOOL_BUDGET_CHARS = 24_000

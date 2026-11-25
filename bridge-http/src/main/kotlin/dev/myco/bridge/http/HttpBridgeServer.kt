@@ -181,6 +181,8 @@ class HttpBridgeServer(
         is BridgeEvent.AssistantDelta -> e.sessionId
         is BridgeEvent.AssistantDone -> e.sessionId
         is BridgeEvent.SessionUpdated -> e.sessionId
+        is BridgeEvent.ToolStarted -> e.sessionId
+        is BridgeEvent.ToolFinished -> e.sessionId
         is BridgeEvent.Failed -> null
     }
 
@@ -197,6 +199,13 @@ class HttpBridgeServer(
         }.toString()
         is BridgeEvent.SessionUpdated -> buildJsonObject {
             put("type", "session.updated"); put("sessionId", e.sessionId)
+        }.toString()
+        is BridgeEvent.ToolStarted -> buildJsonObject {
+            put("type", "tool.started"); put("sessionId", e.sessionId); put("turnId", e.turnId); put("name", e.name)
+        }.toString()
+        is BridgeEvent.ToolFinished -> buildJsonObject {
+            put("type", "tool.finished"); put("sessionId", e.sessionId); put("turnId", e.turnId)
+            put("name", e.name); put("ok", e.ok); put("text", e.text)
         }.toString()
     }
 

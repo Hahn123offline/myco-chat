@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -105,6 +106,9 @@ class OpenAiCompatibleClient(
         val full = StringBuilder()
         var usage: Usage? = null
         var model: String? = provider.model()?.id
+        val toolIds = LinkedHashMap<Int, String>()
+        val toolNames = LinkedHashMap<Int, String>()
+        val toolArgs = LinkedHashMap<Int, StringBuilder>()
         BufferedReader(InputStreamReader(conn.inputStream, StandardCharsets.UTF_8)).use { reader ->
             while (true) {
                 val line = reader.readLine() ?: break
@@ -120,13 +124,34 @@ class OpenAiCompatibleClient(
                             ?.jsonPrimitive?.longOrNull ?: 0,
                     )
                 }
-                val content = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-                    ?.get("delta")?.jsonObject?.get("content")?.jsonPrimitive?.contentOrNull
+                val delta = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject?.get("delta")?.jsonObject
+                val content = delta?.get("content")?.jsonPrimitive?.contentOrNull
                 if (!content.isNullOrEmpty()) {
                     full.append(content)
                     send(ChatChunk.Delta(content))
                 }
+                delta?.get("tool_calls")?.jsonArray?.forEachIndexed { fallbackIndex, el ->
+                    val tc = runCatching { el.jsonObject }.getOrNull() ?: return@forEachIndexed
+                    val index = tc["index"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: fallbackIndex
+                    tc["id"]?.jsonPrimitive?.contentOrNull?.let { toolIds[index] = it }
+                    tc["function"]?.jsonObject?.let { fn ->
+                        fn["name"]?.jsonPrimitive?.contentOrNull?.let { toolNames[index] = it }
+                        fn["arguments"]?.jsonPrimitive?.contentOrNull?.let { part ->
+                            toolArgs.getOrPut(index) { StringBuilder() }.append(part)
+                        }
+                    }
+                }
             }
+        }
+        // 工具调用累积完成后再发射（参数是跨 chunk 拼接的 JSON）
+        val indexes = (toolIds.keys + toolNames.keys + toolArgs.keys).distinct().sorted()
+        for (i in indexes) {
+            val name = toolNames[i] ?: continue
+            val id = toolIds[i] ?: "call_$i"
+            val raw = toolArgs[i]?.toString().orEmpty()
+            val args = runCatching { Json.parseToJsonElement(raw.ifBlank { "{}" }).jsonObject }
+                .getOrElse { JsonObject(emptyMap()) }
+            send(ChatChunk.ToolRequest(id, name, args))
         }
         parser.finish()?.let { rest ->
             if (rest.data != "[DONE]") {
@@ -147,9 +172,49 @@ class OpenAiCompatibleClient(
         request.maxTokens?.let { put("max_tokens", it) }
         request.temperature?.let { put("temperature", it) }
         put("messages", buildJsonArray {
-            request.messages.forEach { m -> add(buildJsonObject { put("role", m.role); put("content", m.content) }) }
+            request.messages.forEach { m -> add(messageJson(m)) }
         })
+        if (request.tools.isNotEmpty()) {
+            put("tools", buildJsonArray {
+                request.tools.forEach { t ->
+                    add(buildJsonObject {
+                        put("type", "function")
+                        put("function", buildJsonObject {
+                            put("name", t.name)
+                            put("description", t.description)
+                            put("parameters", t.parameters)
+                        })
+                    })
+                }
+            })
+        }
     }.toString()
+
+    private fun messageJson(m: ChatMessage) = buildJsonObject {
+        put("role", m.role)
+        when {
+            m.role == "tool" -> {
+                put("tool_call_id", m.toolCallId ?: "")
+                put("content", m.content)
+            }
+            m.toolCalls.isNotEmpty() -> {
+                put("content", if (m.content.isEmpty()) kotlinx.serialization.json.JsonNull else kotlinx.serialization.json.JsonPrimitive(m.content))
+                put("tool_calls", buildJsonArray {
+                    m.toolCalls.forEach { tc ->
+                        add(buildJsonObject {
+                            put("id", tc.id)
+                            put("type", "function")
+                            put("function", buildJsonObject {
+                                put("name", tc.name)
+                                put("arguments", tc.argumentsJson)
+                            })
+                        })
+                    }
+                })
+            }
+            else -> put("content", m.content)
+        }
+    }
 
     private fun open(base: String, body: String, key: String?): HttpURLConnection =
         (URI.create(base.trimEnd('/') + path).toURL().openConnection() as HttpURLConnection).apply {

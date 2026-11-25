@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -104,6 +105,9 @@ class AnthropicCompatibleClient(
         var usage: Usage? = null
         var model: String? = provider.model()?.id
         var stopped = false
+        val toolIds = LinkedHashMap<Int, String>()
+        val toolNames = LinkedHashMap<Int, String>()
+        val toolArgs = LinkedHashMap<Int, StringBuilder>()
         BufferedReader(InputStreamReader(conn.inputStream, StandardCharsets.UTF_8)).use { reader ->
             while (!stopped) {
                 val line = reader.readLine() ?: break
@@ -121,15 +125,42 @@ class AnthropicCompatibleClient(
                             )
                         }
                     }
+                    "content_block_start" -> {
+                        val index = obj["index"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+                        val block = obj["content_block"]?.jsonObject
+                        if (block?.get("type")?.jsonPrimitive?.content == "tool_use") {
+                            block["id"]?.jsonPrimitive?.content?.let { toolIds[index] = it }
+                            block["name"]?.jsonPrimitive?.content?.let { toolNames[index] = it }
+                            toolArgs.getOrPut(index) { StringBuilder() }
+                        }
+                    }
                     "content_block_delta" -> {
+                        val index = obj["index"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
                         val delta = obj["delta"]?.jsonObject
-                        // text_delta 才进可见文本；thinking_delta 属于推理内容，暂不展示
-                        if (delta?.get("type")?.jsonPrimitive?.content == "text_delta") {
-                            val text = delta["text"]?.jsonPrimitive?.content
-                            if (!text.isNullOrEmpty()) {
-                                full.append(text)
-                                send(ChatChunk.Delta(text))
+                        when (delta?.get("type")?.jsonPrimitive?.content) {
+                            "text_delta" -> {
+                                val text = delta["text"]?.jsonPrimitive?.content
+                                if (!text.isNullOrEmpty()) {
+                                    full.append(text)
+                                    send(ChatChunk.Delta(text))
+                                }
                             }
+                            "input_json_delta" -> {
+                                delta["partial_json"]?.jsonPrimitive?.content?.let {
+                                    toolArgs.getOrPut(index) { StringBuilder() }.append(it)
+                                }
+                            }
+                        }
+                    }
+                    "content_block_stop" -> {
+                        val index = obj["index"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+                        val name = toolNames[index]
+                        if (name != null) {
+                            val raw = toolArgs[index]?.toString().orEmpty()
+                            val args = runCatching { Json.parseToJsonElement(raw.ifBlank { "{}" }).jsonObject }
+                                .getOrElse { JsonObject(emptyMap()) }
+                            send(ChatChunk.ToolRequest(toolIds[index] ?: "tool_$index", name, args))
+                            toolNames.remove(index); toolIds.remove(index); toolArgs.remove(index)
                         }
                     }
                     "message_delta" -> {
@@ -159,12 +190,54 @@ class AnthropicCompatibleClient(
             put("stream", true)
             put("thinking", buildJsonObject { put("type", if (thinkingEnabled) "enabled" else "disabled") })
             request.temperature?.let { put("temperature", it) }
-            put("messages", buildJsonArray {
-                request.messages.forEach { m ->
-                    add(buildJsonObject { put("role", m.role); put("content", m.content) })
-                }
-            })
+            put("messages", buildJsonArray { request.messages.forEach { add(messageJson(it)) } })
+            if (request.tools.isNotEmpty()) {
+                put("tools", buildJsonArray {
+                    request.tools.forEach { t ->
+                        add(buildJsonObject {
+                            put("name", t.name)
+                            put("description", t.description)
+                            put("input_schema", t.parameters)
+                        })
+                    }
+                })
+            }
         }.toString()
+    }
+
+    private fun messageJson(m: ChatMessage) = buildJsonObject {
+        when {
+            m.role == "tool" -> {
+                put("role", "user")
+                put("content", buildJsonArray {
+                    add(buildJsonObject {
+                        put("type", "tool_result")
+                        put("tool_use_id", m.toolCallId ?: "")
+                        put("content", m.content)
+                    })
+                })
+            }
+            m.toolCalls.isNotEmpty() -> {
+                put("role", "assistant")
+                put("content", buildJsonArray {
+                    if (m.content.isNotEmpty()) add(buildJsonObject { put("type", "text"); put("text", m.content) })
+                    m.toolCalls.forEach { tc ->
+                        add(buildJsonObject {
+                            put("type", "tool_use")
+                            put("id", tc.id)
+                            put("name", tc.name)
+                            put("input", runCatching {
+                                Json.parseToJsonElement(tc.argumentsJson).jsonObject
+                            }.getOrElse { JsonObject(emptyMap()) })
+                        })
+                    }
+                })
+            }
+            else -> {
+                put("role", m.role)
+                put("content", m.content)
+            }
+        }
     }
 
     private fun open(base: String, body: String, key: String): HttpURLConnection =

@@ -55,6 +55,18 @@ sealed class BridgeEvent {
     ) : BridgeEvent()
     data class Failed(val code: String, val message: String, val retriable: Boolean) : BridgeEvent()
     data class SessionUpdated(val sessionId: String) : BridgeEvent()
+
+    /** 正在调用工具（GUI 可显示"正在使用 xxx"）。 */
+    data class ToolStarted(val sessionId: String, val turnId: Long, val name: String) : BridgeEvent()
+
+    /** 工具返回（ok=false 时 text 是原因）。 */
+    data class ToolFinished(
+        val sessionId: String,
+        val turnId: Long,
+        val name: String,
+        val ok: Boolean,
+        val text: String,
+    ) : BridgeEvent()
 }
 
 sealed class CommandResult {

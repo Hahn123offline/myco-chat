@@ -195,6 +195,8 @@ private suspend fun chat(bridge: InProcessBridge, sessionId: String, text: Strin
                 is BridgeEvent.AssistantDone -> println("\n--- done (turn ${e.turnId}) ---")
                 is BridgeEvent.Failed -> println("\n[error] ${e.code}: ${e.message} (retriable=${e.retriable})")
                 is BridgeEvent.SessionUpdated -> Unit
+                is BridgeEvent.ToolStarted -> println("\n[tool] 调用 ${e.name} …")
+                is BridgeEvent.ToolFinished -> println("[tool] ${e.name} ${if (e.ok) "ok" else "失败"}：${e.text.take(200)}")
             }
         }
     }

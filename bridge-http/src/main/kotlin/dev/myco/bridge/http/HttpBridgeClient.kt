@@ -223,6 +223,18 @@ class HttpBridgeClient(
                 o["retriable"]?.jsonPrimitive?.content == "true",
             )
             "session.updated" -> BridgeEvent.SessionUpdated(o["sessionId"]?.jsonPrimitive?.content ?: "")
+            "tool.started" -> BridgeEvent.ToolStarted(
+                o["sessionId"]?.jsonPrimitive?.content ?: "",
+                o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
+                o["name"]?.jsonPrimitive?.content ?: "",
+            )
+            "tool.finished" -> BridgeEvent.ToolFinished(
+                o["sessionId"]?.jsonPrimitive?.content ?: "",
+                o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
+                o["name"]?.jsonPrimitive?.content ?: "",
+                ok = o["ok"]?.jsonPrimitive?.content == "true",
+                text = o["text"]?.jsonPrimitive?.content ?: "",
+            )
             else -> null
         }
     }

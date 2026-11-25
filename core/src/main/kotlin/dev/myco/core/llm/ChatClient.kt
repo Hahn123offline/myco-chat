@@ -4,8 +4,30 @@ import dev.myco.core.spec.Usage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.JsonObject
 
-data class ChatMessage(val role: String, val content: String)
+/** 一条可提供给模型的工具（schema 进请求前缀，必须计入预算）。 */
+data class ToolSpec(
+    val name: String,
+    val description: String,
+    val parameters: JsonObject,
+)
+
+/** 模型要求调用的一次工具（arguments 原样保留，由 Bridge 决定如何执行）。 */
+data class ToolCall(val id: String, val name: String, val argumentsJson: String)
+
+/**
+ * 上下文里的消息。比纯文本多两类字段：
+ *  - toolCalls：assistant 消息里携带的工具调用（OpenAI tool_calls / Anthropic tool_use）
+ *  - toolCallId/toolName：role=tool 时指回哪次调用（Anthropic 会转成 user+tool_result）
+ */
+data class ChatMessage(
+    val role: String,
+    val content: String,
+    val toolCalls: List<ToolCall> = emptyList(),
+    val toolCallId: String? = null,
+    val toolName: String? = null,
+)
 
 data class ChatRequest(
     val model: String,
@@ -14,11 +36,15 @@ data class ChatRequest(
     val temperature: Double? = null,
     /** null = 由客户端按 provider 默认值决定；false 显式关闭思考（DeepSeek 默认开，关掉省钱）。 */
     val thinking: Boolean? = null,
+    val tools: List<ToolSpec> = emptyList(),
 )
 
 sealed class ChatChunk {
     /** 流式增量文本。 */
     data class Delta(val text: String) : ChatChunk()
+
+    /** 模型要求调用工具（可能一轮里有多个）。 */
+    data class ToolRequest(val id: String, val name: String, val arguments: JsonObject) : ChatChunk()
 
     /** 一轮结束；text 是完整文本（由客户端累积）。 */
     data class Done(val text: String, val usage: Usage? = null, val model: String? = null) : ChatChunk()

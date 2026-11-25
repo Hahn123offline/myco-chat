@@ -10,6 +10,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -116,6 +117,70 @@ class LlmCancellationTest {
     }
 }
 
+class ToolCallParsingTest {
+    private fun home() = MycoHome(java.nio.file.Files.createTempDirectory("myco-tools"))
+
+    private fun provider(port: Int, kind: String) = ProviderProfile(
+        id = "local", kind = kind, baseUrl = "http://127.0.0.1:$port",
+        auth = AuthProfile.None,
+        models = listOf(ModelProfile(id = "m", contextWindow = 1024, maxTokens = 128)),
+    )
+
+    @Test
+    fun `openai accumulates tool_call arguments across deltas`() = runBlocking {
+        val sse = buildString {
+            append("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"function\":{\"name\":\"time_now\",\"arguments\":\"{\\\"a\\\"\"}}]}}]}\n\n")
+            append("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\":1}\"}}]}}]}\n\n")
+            append("data: [DONE]\n\n")
+        }
+        CountingHttpServer { Pair(200, sse) }.use { srv ->
+            val chunks = OpenAiCompatibleClient(provider(srv.port, "openai-completions"), CredentialResolver(home(), emptyMap()))
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "几点了")), tools = listOf(
+                    ToolSpec("time_now", "读取时间", kotlinx.serialization.json.JsonObject(emptyMap()))
+                ))).toList()
+            val call = chunks.filterIsInstance<ChatChunk.ToolRequest>().single()
+            assertEquals("call_a", call.id)
+            assertEquals("time_now", call.name)
+            assertEquals("1", call.arguments["a"]?.jsonPrimitive?.content)
+        }
+    }
+
+    @Test
+    fun `anthropic emits tool_use after input_json_delta`() = runBlocking {
+        val sse = buildString {
+            append("event: content_block_start\n")
+            append("data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"time_now\"}}\n\n")
+            append("event: content_block_delta\n")
+            append("data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"a\\\":1}\"}}\n\n")
+            append("event: content_block_stop\n")
+            append("data: {\"type\":\"content_block_stop\",\"index\":0}\n\n")
+            append("event: message_stop\n")
+            append("data: {\"type\":\"message_stop\"}\n\n")
+        }
+        CountingHttpServer { Pair(200, sse) }.use { srv ->
+            val h = home()
+            val cred = CredentialResolver(h, emptyMap())
+            cred.set("TEST_KEY", "sk-test")
+            val p = ProviderProfile(
+                id = "local", kind = "deepseek-messages", baseUrl = "http://127.0.0.1:${srv.port}",
+                auth = AuthProfile.ApiKey("TEST_KEY"),
+                models = listOf(ModelProfile(id = "m", contextWindow = 1024, maxTokens = 128)),
+            )
+            val chunks = AnthropicCompatibleClient(p, cred)
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "几点了")), tools = listOf(
+                    ToolSpec("time_now", "读取时间", kotlinx.serialization.json.JsonObject(emptyMap()))
+                ))).toList()
+            val reqs = chunks.filterIsInstance<ChatChunk.ToolRequest>()
+            assertTrue("chunks=$chunks", reqs.isNotEmpty())
+            val call = reqs.single()
+            assertEquals("toolu_1", call.id)
+            assertEquals("time_now", call.name)
+            assertEquals("1", call.arguments["a"]?.jsonPrimitive?.content)
+            assertTrue(chunks.any { it is ChatChunk.Done })
+        }
+    }
+}
+
 class LlmRetryTest {
     private fun home() = MycoHome(java.nio.file.Files.createTempDirectory("myco-retry"))
 
@@ -184,3 +249,5 @@ class LlmRetryTest {
         }
     }
 }
+
+

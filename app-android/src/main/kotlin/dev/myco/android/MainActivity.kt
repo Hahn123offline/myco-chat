@@ -232,6 +232,12 @@ private fun ChatScreen(bridge: InProcessBridge, sessionId: String, title: String
                     error = "${e.code}: ${e.message}"; streaming = null
                 }
                 is BridgeEvent.SessionUpdated -> Unit
+                is BridgeEvent.ToolStarted -> if (e.sessionId == sessionId) {
+                    lines = lines + ChatLine("system", "正在使用工具：${e.name}")
+                }
+                is BridgeEvent.ToolFinished -> if (e.sessionId == sessionId) {
+                    lines = lines + ChatLine("system", "工具 ${e.name} ${if (e.ok) "完成" else "失败"}")
+                }
             }
         }
     }
