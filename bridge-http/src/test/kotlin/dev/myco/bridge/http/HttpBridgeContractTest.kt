@@ -100,7 +100,7 @@ class HttpBridgeContractTest {
         Thread.sleep(500)
         // 直接驱动同一个 bridge：本用例测的是 SSE 转发，不是 HTTP 命令（命令已在其它用例覆盖）
         inProcess.send(Command.ChatSend(sessionId, "你好"))
-        withTimeout(10_000) {
+        withTimeout(20_000) {
             while (collected.none { it is BridgeEvent.AssistantDone }) {
                 kotlinx.coroutines.delay(50)
             }

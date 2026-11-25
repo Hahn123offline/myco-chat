@@ -16,6 +16,8 @@ class ToolDef(
     val summary: String,
     val description: String,
     val parameters: JsonObject = buildJsonObject { put("type", "object"); put("properties", buildJsonObject {}) },
+    /** 计费说明（进 UI/日志，不进模型 schema；null = 免费/本地） */
+    val costNote: String? = null,
     val execute: suspend (JsonObject) -> String,
 )
 

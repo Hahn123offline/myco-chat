@@ -38,6 +38,11 @@ fun main(args: Array<String>): Unit = runBlocking {
     val providers = ProviderStore(home)
     val credentials = CredentialResolver(home)
     val tools = ToolRegistry().apply { register(timeNowTool()) }
+    runCatching { providers.firstEnabled() }
+        .getOrNull()
+        ?.let { dev.myco.core.capability.registerDeepSeekCapabilityTools(tools, it, credentials) }
+    val capability = runCatching { providers.firstEnabled() }.getOrNull()
+        ?.let { dev.myco.core.capability.DeepSeekToolsClient.fromProvider(it, credentials) }
 
     fun clientFor(provider: ProviderProfile): ChatClient =
         if (System.getenv("MYCO_FAKE") == "1" || provider.id == "fake") FakeChatClient()
@@ -103,8 +108,8 @@ fun main(args: Array<String>): Unit = runBlocking {
                         pricing = dev.myco.core.spec.Pricing(
                             currency = "CNY",
                             inputPerMillion = 1.0,
-                            outputPerMillion = 4.0,
-                            cachedInputPerMillion = 0.02,
+                            outputPerMillion = 2.0,
+                            cachedInputPerMillion = 0.2,
                         ),
                     )
                 ),
@@ -112,8 +117,67 @@ fun main(args: Array<String>): Unit = runBlocking {
             )
             println("wrote DeepSeek provider (revision=$revision, key ref=DEEPSEEK_API_KEY)")
         }
-        "init-local" -> {
-            val baseUrl = args.getOrNull(1) ?: "http://127.0.0.1:8787/v1"
+        "tools" -> {
+            tools.list().forEach { t ->
+                println("${t.name}  ${t.summary}${t.costNote?.let { "  [成本] $it" } ?: "  [免费]"}".trimEnd())
+            }
+        }
+        "search" -> {
+            val query = args.getOrNull(1) ?: return@runBlocking usage("search <query> [count]")
+            val c = capability ?: return@runBlocking println("[failed] 需要一个 DeepSeek provider 与 key")
+            runCatching { c.search(query, args.getOrNull(2)?.toIntOrNull() ?: 10) }
+                .onSuccess { hits ->
+                    println("cost ≈ ¥${dev.myco.core.capability.CapabilityCosts.SEARCH_PER_CALL_CNY}（成功才计费）")
+                    hits.forEachIndexed { i, h ->
+                        println("${i + 1}. ${h.title}\n   ${h.url}\n   ${h.snippet.take(160)}")
+                    }
+                }
+                .onFailure { println("[failed] ${it.message}") }
+        }
+        "fetch" -> {
+            val url = args.getOrNull(1) ?: return@runBlocking usage("fetch <url>")
+            val c = capability ?: return@runBlocking println("[failed] 需要一个 DeepSeek provider 与 key")
+            runCatching { c.fetch(url) }
+                .onSuccess { page ->
+                    println("${page.title}\n---\n${page.content.take(4000)}")
+                    println("\n[成本] ≈ ¥${dev.myco.core.capability.CapabilityCosts.FETCH_PER_CALL_CNY}（成功才计费）")
+                }
+                .onFailure { println("[failed] ${it.message}") }
+        }
+        "ocr" -> {
+            val path = args.getOrNull(1) ?: return@runBlocking usage("ocr <file>")
+            val c = capability ?: return@runBlocking println("[failed] 需要一个 DeepSeek provider 与 key")
+            val file = java.nio.file.Path.of(path)
+            runCatching { c.ocr(java.nio.file.Files.readAllBytes(file), file.fileName.toString(), args.getOrNull(2) ?: "text_recognition") }
+                .onSuccess { r ->
+                    println("pages=${r.pageCount} cost ≈ ¥${dev.myco.core.capability.CapabilityCosts.ocrCost(r.pageCount)}")
+                    println(r.fullText())
+                }
+                .onFailure { println("[failed] ${it.message}") }
+        }
+        "asr" -> {
+            val path = args.getOrNull(1) ?: return@runBlocking usage("asr <audio>")
+            val c = capability ?: return@runBlocking println("[failed] 需要一个 DeepSeek provider 与 key")
+            val file = java.nio.file.Path.of(path)
+            runCatching { c.asr(java.nio.file.Files.readAllBytes(file), file.fileName.toString()) }
+                .onSuccess { r ->
+                    println("text=${r.text}")
+                    println("duration=${r.durationMs}ms cost ≈ ¥${dev.myco.core.capability.CapabilityCosts.asrCost(r.durationMs)}")
+                }
+                .onFailure { println("[failed] ${it.message}") }
+        }
+        "tts" -> {
+            val text = args.getOrNull(1) ?: return@runBlocking usage("tts <text> [out.wav]")
+            val out = java.nio.file.Path.of(args.getOrNull(2) ?: "tts.wav")
+            val c = capability ?: return@runBlocking println("[failed] 需要一个 DeepSeek provider 与 key")
+            runCatching { c.tts(text) }
+                .onSuccess { bytes ->
+                    java.nio.file.Files.write(out, bytes)
+                    println("wrote ${out.toAbsolutePath()} (${bytes.size} bytes) cost ≈ ¥${dev.myco.core.capability.CapabilityCosts.ttsCost(text.length)}")
+                }
+                .onFailure { println("[failed] ${it.message}") }
+        }
+        "init-local" -> {            val baseUrl = args.getOrNull(1) ?: "http://127.0.0.1:8787/v1"
             val current = providers.load()
             val revision = providers.save(
                 listOf(

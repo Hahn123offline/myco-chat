@@ -36,6 +36,9 @@ object BridgeHolder {
         val providers = ProviderStore(home)
         val credentials = CredentialResolver(home)
         val tools = ToolRegistry().apply { register(timeNowTool()) }
+        runCatching { providers.firstEnabled() }.getOrNull()?.let { p ->
+            dev.myco.core.capability.registerDeepSeekCapabilityTools(tools, p, credentials)
+        }
         // 没有 provider 时用假模型保证可离线跑；有 provider 就按方言接真服务（失败会明确报错，不静默造假）
         val hasProvider = runCatching { providers.load().providers.isNotEmpty() }.getOrDefault(false)
         val factory: (ProviderProfile) -> ChatClient =
