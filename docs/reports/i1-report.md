@@ -92,3 +92,14 @@
 详细证据见 [android-s0b-device.md](android-s0b-device.md)：安装、冷启动 413–651ms、provider UI 管理、
 SSE 流式（经 adb reverse + fake-sse）、历史跨进程持久化、FGS `specialUse` 通知全部通过；
 真机暴露并修复 4 个 Android-only 问题（Files.readString/writeString、明文策略、INTERNET 权限、历史 payload）。
+
+## 10. Android 侧 provider 导入/导出（本轮新增）
+
+- Bridge 新增 `Query.ProviderExport`（返回与 CLI 同格式的完整 provider 档案 + revision）与
+  `Command.ProviderReplace(profiles, expectedRevision)`（整份替换、revision 冲突即拒）。
+- 两种传输都实现；测试：core 的 export→replace roundtrip、http-sse 的导出/导入。
+- Android 设置页新增「导出 / 导入」按钮，走系统文件选择器（SAF）：
+  - 导出：`CreateDocument("application/json")` → 写 `{schemaVersion,revision,providers}`（**不含密钥值**）；
+  - 导入：`OpenDocument()` → 兼容整包/裸数组 → `ProviderReplace` → 重建 Bridge。
+- 真机验证到「按钮存在且可点」；系统文件选择器的完整落盘流程**尚未 e2e 测**（下一轮或以后补）。
+- 测试总数：`:core:test` **39** + `:bridge-http:test` **6** = **45/45 绿**。
