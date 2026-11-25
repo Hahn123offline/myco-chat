@@ -133,6 +133,18 @@ class HttpBridgeContractTest {
     }
 
     @Test
+    fun `provider export and replace over http`() = runBlocking {
+        val exported = http.query(Query.ProviderExport) as QueryResult.Ok
+        val obj = exported.data.jsonObject
+        val rev = obj["revision"]!!.jsonPrimitive.content.toLong()
+        val list = dev.myco.core.spec.MycoJson.decodeFromJsonElement(
+            kotlinx.serialization.builtins.ListSerializer(ProviderProfile.serializer()),
+            obj["providers"]!!,
+        )
+        assertTrue(http.send(Command.ProviderReplace(list, expectedRevision = rev)) is CommandResult.Ok)
+    }
+
+    @Test
     fun `bad token is rejected`() = runBlocking {
         val unauth = HttpBridgeClient(server.baseUrl, "wrong")
         val res = runCatching { unauth.query(Query.SessionList()) }

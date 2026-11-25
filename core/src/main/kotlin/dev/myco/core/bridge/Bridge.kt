@@ -30,6 +30,9 @@ sealed class Command {
 
     /** 取消该会话正在跑的一轮；部分文本会按"已停止"落盘，不假装完成。 */
     data class ChatStop(val sessionId: String) : Command()
+
+    /** 导入：整份替换 provider 列表（GUI 侧文件选择后调用）；expectedRevision 冲突则拒绝。 */
+    data class ProviderReplace(val profiles: List<ProviderProfile>, val expectedRevision: Long) : Command()
 }
 
 sealed class Query {
@@ -37,6 +40,9 @@ sealed class Query {
     data class SessionEvents(val sessionId: String, val fromSeq: Long = 0) : Query()
     data object Providers : Query()
     data object DoctorRun : Query()
+
+    /** 导出：完整 provider 档案（含 spec 字段），GUI 负责写文件；与 CLI 的 provider-export 同格式。 */
+    data object ProviderExport : Query()
 }
 
 sealed class BridgeEvent {

@@ -4,7 +4,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,7 +54,10 @@ import dev.myco.core.bridge.Query
 import dev.myco.core.bridge.QueryResult
 import dev.myco.core.spec.AuthProfile
 import dev.myco.core.spec.ModelProfile
+import dev.myco.core.spec.MycoJson
 import dev.myco.core.spec.ProviderProfile
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -270,6 +275,47 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
     }
     LaunchedEffect(Unit) { reload() }
 
+    // 导入/导出走系统文件选择器：不依赖 adb，也不把密钥写进文件（auth 只有 ref）。
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val res = bridge.query(Query.ProviderExport)
+                if (res is QueryResult.Ok) {
+                    runCatching {
+                        context.contentResolver.openOutputStream(uri)?.use {
+                            it.write(res.data.toString().toByteArray(Charsets.UTF_8))
+                        }
+                    }.onSuccess { message = "已导出 provider 文件（不含密钥值）" }
+                        .onFailure { message = "导出失败：${it.message}" }
+                } else message = "导出失败：读取 provider 失败"
+            }
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                runCatching {
+                    val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                        ?: error("空文件")
+                    val root = MycoJson.parseToJsonElement(text).jsonObject
+                    val payload = root["providers"] ?: root["data"] ?: root
+                    val list = when (payload) {
+                        is JsonArray -> MycoJson.decodeFromJsonElement(ListSerializer(ProviderProfile.serializer()), payload)
+                        is JsonObject -> MycoJson.decodeFromJsonElement(
+                            dev.myco.core.spec.ProviderFile.serializer(), payload
+                        ).providers
+                        else -> error("不认识的 JSON 形状")
+                    }
+                    val r = bridge.send(Command.ProviderReplace(list, revision))
+                    if (r is CommandResult.Err) error("${r.code}: ${r.message}")
+                    BridgeHolder.rebuild(context)
+                    reload()
+                    message = "已导入 ${list.size} 个 provider"
+                }.onFailure { message = "导入失败：${it.message}" }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -317,6 +363,12 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { discoverStatus = null; editor = ProviderEditor.localTemplate() }) { Text("加本地模板") }
                     OutlinedButton(onClick = { discoverStatus = null; editor = ProviderEditor.deepseekTemplate() }) { Text("加 DeepSeek") }
+                }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { exportLauncher.launch("myco-providers.json") }) { Text("导出") }
+                    OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }) { Text("导入") }
                 }
             }
             item { HorizontalDivider() }

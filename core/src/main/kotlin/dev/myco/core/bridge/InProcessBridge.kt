@@ -86,6 +86,16 @@ class InProcessBridge(
                     },
                 )
         }
+        is Command.ProviderReplace -> {
+            runCatching { providers.save(cmd.profiles, cmd.expectedRevision) }
+                .fold(
+                    onSuccess = { rev -> CommandResult.Ok(buildJsonObject { put("revision", rev) }) },
+                    onFailure = { e ->
+                        val code = if (e is dev.myco.core.settings.SettingsConflictException) "SETTINGS_CONFLICT" else "PROVIDER_CONFIG"
+                        CommandResult.Err(code, e.message ?: "导入失败")
+                    },
+                )
+        }
     }
 
     private fun providerSave(cmd: Command.ProviderSave): CommandResult {
@@ -233,6 +243,18 @@ class InProcessBridge(
             QueryResult.Ok(buildJsonObject {
                 put("revision", snap.revision)
                 put("providers", buildJsonArray { snap.providers.forEach { add(providerJson(it)) } })
+            })
+        }
+        Query.ProviderExport -> {
+            val snap = providers.load()
+            val listJson = dev.myco.core.spec.MycoJson.encodeToJsonElement(
+                kotlinx.serialization.builtins.ListSerializer(ProviderProfile.serializer()),
+                snap.providers,
+            )
+            QueryResult.Ok(buildJsonObject {
+                put("schemaVersion", 1)
+                put("revision", snap.revision)
+                put("providers", listJson)
             })
         }
         Query.DoctorRun -> QueryResult.Ok(buildJsonArray {

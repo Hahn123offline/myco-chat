@@ -116,6 +116,19 @@ class HttpBridgeServer(
             "chat.stop" -> Command.ChatStop(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
             )
+            "provider.replace" -> {
+                val arr = payload["providers"] as? kotlinx.serialization.json.JsonArray
+                    ?: return json(ex, 400, err("PAYLOAD", "missing providers array"))
+                val list = runCatching {
+                    dev.myco.core.spec.MycoJson.decodeFromJsonElement(
+                        kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.ProviderProfile.serializer()), arr
+                    )
+                }.getOrElse { return json(ex, 400, err("PAYLOAD", "bad providers: ${it.message}")) }
+                Command.ProviderReplace(
+                    profiles = list,
+                    expectedRevision = payload["expectedRevision"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
+                )
+            }
             else -> return json(ex, 404, err("UNKNOWN_COMMAND", name))
         }
         val result = runBlocking { bridge.send(cmd) }
@@ -133,6 +146,7 @@ class HttpBridgeServer(
                 fromSeq = payload["fromSeq"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
             )
             "/providers" -> Query.Providers
+            "/provider.export" -> Query.ProviderExport
             "/doctor" -> Query.DoctorRun
             else -> return json(ex, 404, err("UNKNOWN_QUERY", name))
         }

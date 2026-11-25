@@ -57,6 +57,13 @@ class HttpBridgeClient(
                 ))
             }
             is Command.ChatStop -> "chat.stop" to buildJsonObject { put("sessionId", cmd.sessionId) }
+            is Command.ProviderReplace -> "provider.replace" to buildJsonObject {
+                put("providers", dev.myco.core.spec.MycoJson.encodeToJsonElement(
+                    kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.ProviderProfile.serializer()),
+                    cmd.profiles,
+                ))
+                put("expectedRevision", cmd.expectedRevision)
+            }
         }
         val body = post("/command/$name", payload)
         return if (body["ok"]?.jsonPrimitive?.content == "true") {
@@ -78,6 +85,7 @@ class HttpBridgeClient(
                 put("sessionId", q.sessionId); put("fromSeq", q.fromSeq)
             }
             Query.Providers -> "/providers" to buildJsonObject { }
+            Query.ProviderExport -> "/provider.export" to buildJsonObject { }
             Query.DoctorRun -> "/doctor" to buildJsonObject { }
         }
         val body = post("/query$name", payload)

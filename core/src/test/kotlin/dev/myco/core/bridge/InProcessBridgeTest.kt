@@ -190,6 +190,23 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `provider export and replace roundtrip`() = runBlocking {
+        val f = Fixture()
+        val exported = f.bridge.query(Query.ProviderExport) as QueryResult.Ok
+        val obj = exported.data.jsonObject
+        val rev = obj["revision"]!!.jsonPrimitive.content.toLong()
+        val list = dev.myco.core.spec.MycoJson.decodeFromJsonElement(
+            kotlinx.serialization.builtins.ListSerializer(ProviderProfile.serializer()),
+            obj["providers"]!!,
+        )
+        assertTrue(list.isNotEmpty())
+        val res = f.bridge.send(Command.ProviderReplace(list, expectedRevision = rev))
+        assertTrue(res is CommandResult.Ok)
+        val after = f.bridge.query(Query.Providers) as QueryResult.Ok
+        assertEquals(rev + 1, after.data.jsonObject["revision"]!!.jsonPrimitive.content.toLong())
+    }
+
+    @Test
     fun `session list query respects app filter`() = runBlocking {
         val f = Fixture()
         f.sessions.create("chat", "chat-default")
