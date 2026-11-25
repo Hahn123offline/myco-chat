@@ -11,6 +11,7 @@ import java.util.EnumSet
 class MycoHome(val root: Path) {
     val store: Path = root.resolve("store")
     val sessions: Path = store.resolve("sessions")
+    val attachments: Path = store.resolve("attachments")
     val config: Path = root.resolve("config")
     val logs: Path = root.resolve("logs")
     val providersFile: Path = config.resolve("providers.json")
@@ -18,6 +19,7 @@ class MycoHome(val root: Path) {
 
     fun ensureLayout() {
         Files.createDirectories(sessions)
+        Files.createDirectories(attachments)
         Files.createDirectories(config)
         Files.createDirectories(logs)
     }

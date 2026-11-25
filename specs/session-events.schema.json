@@ -82,7 +82,22 @@
           "required": ["text"],
           "properties": {
             "text": { "type": "string" },
-            "source": { "type": "string", "enum": ["human", "agent", "memory", "tool", "env"] }
+            "source": { "type": "string", "enum": ["human", "agent", "memory", "tool", "env"] },
+            "attachments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "name", "mime", "size", "kind"],
+                "properties": {
+                  "id": { "type": "string", "minLength": 1 },
+                  "name": { "type": "string" },
+                  "mime": { "type": "string" },
+                  "size": { "type": "integer", "minimum": 0 },
+                  "kind": { "type": "string", "enum": ["image", "text", "file"] }
+                }
+              }
+            }
           }
         }
       }

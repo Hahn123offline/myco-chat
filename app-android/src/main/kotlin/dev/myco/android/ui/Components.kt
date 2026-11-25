@@ -225,6 +225,7 @@ fun ChatComposer(
     onStop: () -> Unit,
     streaming: Boolean,
     enabled: Boolean = true,
+    onAttach: (() -> Unit)? = null,
 ) {
     GlassSurface(Modifier.fillMaxWidth(), RoundedCornerShape(MycoRadius.sheet)) {
         Row(
@@ -232,6 +233,11 @@ fun ChatComposer(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
         ) {
+            if (onAttach != null) {
+                OutlinedButton(onClick = onAttach, shape = RoundedCornerShape(MycoRadius.control)) {
+                    Text("＋", fontSize = 18.sp)
+                }
+            }
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,

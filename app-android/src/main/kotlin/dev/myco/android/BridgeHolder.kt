@@ -43,6 +43,7 @@ object BridgeHolder {
         val hasProvider = runCatching { providers.load().providers.isNotEmpty() }.getOrDefault(false)
         val factory: (ProviderProfile) -> ChatClient =
             if (hasProvider) { p -> ChatClients.createOrFailed(p, credentials) } else { { FakeChatClient() } }
-        bridge = InProcessBridge(home, sessions, providers, credentials, tools, factory)
+        bridge = InProcessBridge(home, sessions, providers, credentials, tools, dev.myco.core.attachment.AttachmentStore(home), factory)
     }
 }
+

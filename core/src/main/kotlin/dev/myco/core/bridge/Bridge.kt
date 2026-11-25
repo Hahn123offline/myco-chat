@@ -4,13 +4,26 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import dev.myco.core.spec.ProviderProfile
+import dev.myco.core.spec.AttachmentRef
 
 /**
  * GUI ↔ 核心的唯一接口（见 specs/bridge.contract.md）。
  * 两种传输：in-process（手机/桌面原生）与 http-sse（浏览器/远程）。
  */
 sealed class Command {
-    data class ChatSend(val sessionId: String, val text: String) : Command()
+    data class ChatSend(
+        val sessionId: String,
+        val text: String,
+        val attachments: List<AttachmentRef> = emptyList(),
+    ) : Command()
+
+    /** GUI 选完文件后先存进应用私有目录；返回 AttachmentRef 的 JSON。base64 只在传输层出现。 */
+    data class AttachmentSave(
+        val sessionId: String,
+        val name: String,
+        val mime: String,
+        val base64: String,
+    ) : Command()
     data class SessionCreate(
         val app: String = "chat",
         val preset: String = "chat-default",

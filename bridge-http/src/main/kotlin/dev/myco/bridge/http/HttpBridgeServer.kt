@@ -80,9 +80,25 @@ class HttpBridgeServer(
                 preset = payload["preset"]?.jsonPrimitive?.content ?: "chat-default",
                 title = payload["title"]?.jsonPrimitive?.content ?: "新会话",
             )
-            "chat.send" -> Command.ChatSend(
+            "chat.send" -> {
+                val attachments = payload["attachments"]?.let { arr ->
+                    runCatching {
+                        dev.myco.core.spec.MycoJson.decodeFromJsonElement(
+                            kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.AttachmentRef.serializer()), arr
+                        )
+                    }.getOrElse { return json(ex, 400, err("PAYLOAD", "bad attachments: ${it.message}")) }
+                } ?: emptyList()
+                Command.ChatSend(
+                    sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                    text = payload["text"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing text")),
+                    attachments = attachments,
+                )
+            }
+            "attachment.save" -> Command.AttachmentSave(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
-                text = payload["text"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing text")),
+                name = payload["name"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing name")),
+                mime = payload["mime"]?.jsonPrimitive?.content ?: "application/octet-stream",
+                base64 = payload["base64"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing base64")),
             )
             "provider.save" -> {
                 val profileJson = payload["profile"] ?: return json(ex, 400, err("PAYLOAD", "missing profile"))

@@ -32,5 +32,16 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="myco companion: keeps the local agent core available for chat replies and best-effort reminders" />
         </service>
+
+        <!-- 拍照只把临时文件写进自己的 cache，再经 FileProvider 交给系统相机；不申请存储权限 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

@@ -48,13 +48,26 @@ fun main(args: Array<String>): Unit = runBlocking {
         if (System.getenv("MYCO_FAKE") == "1" || provider.id == "fake") FakeChatClient()
         else ChatClients.createOrFailed(provider, credentials)
 
-    val bridge = InProcessBridge(home, sessions, providers, credentials, tools, ::clientFor)
+    val bridge = InProcessBridge(home, sessions, providers, credentials, tools, dev.myco.core.attachment.AttachmentStore(home), ::clientFor)
+    val attachments = dev.myco.core.attachment.AttachmentStore(home)
 
     when (args.firstOrNull()) {
         null, "help", "--help" -> printHelp()
         "doctor" -> doctor(home, sessions, providers, credentials, tools)
         "sessions" -> sessions.list().forEach {
             println("${it.id}  ${it.app}/${it.preset}  ${it.title}  ${java.time.Instant.ofEpochMilli(it.createdAt)}")
+        }
+        "chat-file" -> {
+            val sid = args.getOrNull(1) ?: return@runBlocking usage("chat-file <sessionId> <path> [text...]")
+            val path = args.getOrNull(2)?.let { java.nio.file.Path.of(it) }
+                ?: return@runBlocking usage("chat-file <sessionId> <path> [text...]")
+            val text = args.drop(3).joinToString(" ").ifBlank { "看看这个附件" }
+            val bytes = java.nio.file.Files.readAllBytes(path)
+            val mime = guessMime(path.fileName.toString())
+            val ref = runCatching { attachments.save(sid, path.fileName.toString(), mime, bytes) }
+                .getOrElse { println("[failed] ${it.message}"); return@runBlocking }
+            println("attached ${ref.name} (${ref.kind}, ${ref.size} bytes, $mime)")
+            chat(bridge, sid, text, listOf(ref))
         }
         "rename" -> {
             val id = args.getOrNull(1) ?: return@runBlocking usage("rename <sessionId> <title>")
@@ -267,7 +280,28 @@ fun main(args: Array<String>): Unit = runBlocking {
     Unit
 }
 
-private suspend fun chat(bridge: InProcessBridge, sessionId: String, text: String) {
+private fun guessMime(name: String): String = when (name.substringAfterLast('.', "").lowercase()) {
+    "png" -> "image/png"
+    "jpg", "jpeg" -> "image/jpeg"
+    "webp" -> "image/webp"
+    "gif" -> "image/gif"
+    "bmp" -> "image/bmp"
+    "pdf" -> "application/pdf"
+    "txt", "log" -> "text/plain"
+    "md", "markdown" -> "text/markdown"
+    "json" -> "application/json"
+    "csv" -> "text/csv"
+    "wav" -> "audio/wav"
+    "ogg", "opus" -> "audio/ogg"
+    else -> "application/octet-stream"
+}
+
+private suspend fun chat(
+    bridge: InProcessBridge,
+    sessionId: String,
+    text: String,
+    attachments: List<dev.myco.core.spec.AttachmentRef> = emptyList(),
+) {
     println("--- stream ---")
     val printer = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch(
         start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED
@@ -283,7 +317,7 @@ private suspend fun chat(bridge: InProcessBridge, sessionId: String, text: Strin
             }
         }
     }
-    val result = bridge.send(Command.ChatSend(sessionId, text))
+    val result = bridge.send(Command.ChatSend(sessionId, text, attachments))
     kotlinx.coroutines.delay(100)
     printer.cancel()
     if (result is dev.myco.core.bridge.CommandResult.Err) println("[failed] ${result.code}: ${result.message}")
@@ -339,3 +373,4 @@ private fun printHelp() {
 private fun usage(msg: String) {
     println("usage: $msg")
 }
+

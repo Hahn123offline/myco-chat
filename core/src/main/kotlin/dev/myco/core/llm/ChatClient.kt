@@ -16,10 +16,14 @@ data class ToolSpec(
 /** 模型要求调用的一次工具（arguments 原样保留，由 Bridge 决定如何执行）。 */
 data class ToolCall(val id: String, val name: String, val argumentsJson: String)
 
+/** 进模型上下文的图片（base64；只在内存里，不写事件日志）。 */
+data class ChatImage(val mediaType: String, val base64: String)
+
 /**
  * 上下文里的消息。比纯文本多两类字段：
  *  - toolCalls：assistant 消息里携带的工具调用（OpenAI tool_calls / Anthropic tool_use）
  *  - toolCallId/toolName：role=tool 时指回哪次调用（Anthropic 会转成 user+tool_result）
+ *  - images：user 消息里的图片（vision）
  */
 data class ChatMessage(
     val role: String,
@@ -27,6 +31,7 @@ data class ChatMessage(
     val toolCalls: List<ToolCall> = emptyList(),
     val toolCallId: String? = null,
     val toolName: String? = null,
+    val images: List<ChatImage> = emptyList(),
 )
 
 data class ChatRequest(

@@ -197,6 +197,22 @@ class OpenAiCompatibleClient(
                 put("tool_call_id", m.toolCallId ?: "")
                 put("content", m.content)
             }
+            m.images.isNotEmpty() -> {
+                // vision：content 变成 parts 数组
+                put("content", buildJsonArray {
+                    if (m.content.isNotEmpty()) {
+                        add(buildJsonObject { put("type", "text"); put("text", m.content) })
+                    }
+                    m.images.forEach { img ->
+                        add(buildJsonObject {
+                            put("type", "image_url")
+                            put("image_url", buildJsonObject {
+                                put("url", "data:${img.mediaType};base64,${img.base64}")
+                            })
+                        })
+                    }
+                })
+            }
             m.toolCalls.isNotEmpty() -> {
                 put("content", if (m.content.isEmpty()) kotlinx.serialization.json.JsonNull else kotlinx.serialization.json.JsonPrimitive(m.content))
                 put("tool_calls", buildJsonArray {

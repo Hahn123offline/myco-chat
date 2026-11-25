@@ -29,6 +29,7 @@ class InProcessBridgeTest {
         val providers = ProviderStore(home)
         val credentials = CredentialResolver(home, emptyMap())
         val tools = ToolRegistry()
+        val attachments = dev.myco.core.attachment.AttachmentStore(home)
         val bridge: InProcessBridge
 
         init {
@@ -47,7 +48,7 @@ class InProcessBridgeTest {
                 )
             }
             val factory: (ProviderProfile) -> ChatClient = { client }
-            bridge = InProcessBridge(home, sessions, providers, credentials, tools, factory)
+            bridge = InProcessBridge(home, sessions, providers, credentials, tools, attachments, factory)
         }
     }
 
@@ -208,6 +209,64 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `text attachment is inlined and persisted`() = runBlocking {
+        var lastRequest: dev.myco.core.llm.ChatRequest? = null
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    lastRequest = request
+                    emit(dev.myco.core.llm.ChatChunk.Delta("收到"))
+                    emit(dev.myco.core.llm.ChatChunk.Done("收到"))
+                }
+        }
+        val f = Fixture(client = client)
+        val meta = f.sessions.create("chat", "chat-default")
+        val ref = f.attachments.save(meta.id, "note.txt", "text/plain", "附件里的秘密内容".toByteArray())
+        val res = f.bridge.send(Command.ChatSend(meta.id, "看看附件", listOf(ref)))
+        assertTrue(res is CommandResult.Ok)
+        val userMessage = lastRequest!!.messages.last { it.role == "user" }
+        assertTrue(userMessage.content.contains("附件里的秘密内容"))
+        assertTrue(userMessage.content.contains("note.txt"))
+        val persisted = f.sessions.read(meta.id).filterIsInstance<SessionEvent.UserMessage>().last()
+        assertEquals(1, persisted.data.attachments.size)
+        assertEquals(ref.id, persisted.data.attachments[0].id)
+    }
+
+    @Test
+    fun `image attachment is passed as vision input`() = runBlocking {
+        var lastRequest: dev.myco.core.llm.ChatRequest? = null
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    lastRequest = request
+                    emit(dev.myco.core.llm.ChatChunk.Delta("看到了"))
+                    emit(dev.myco.core.llm.ChatChunk.Done("看到了"))
+                }
+        }
+        val f = Fixture(client = client)
+        val meta = f.sessions.create("chat", "chat-default")
+        // 假 PNG 字节即可（序列化层不校验图片格式）
+        val ref = f.attachments.save(meta.id, "a.png", "image/png", byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47))
+        val res = f.bridge.send(Command.ChatSend(meta.id, "描述这张图", listOf(ref)))
+        assertTrue(res is CommandResult.Ok)
+        val userMessage = lastRequest!!.messages.last { it.role == "user" }
+        assertEquals(1, userMessage.images.size)
+        assertEquals("image/png", userMessage.images[0].mediaType)
+        assertTrue(userMessage.images[0].base64.isNotEmpty())
+    }
+
+    @Test
+    fun `missing attachment is rejected before a turn starts`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default")
+        val ghost = dev.myco.core.spec.AttachmentRef("nope", "ghost.txt", "text/plain", 1, "text")
+        val res = f.bridge.send(Command.ChatSend(meta.id, "hi", listOf(ghost)))
+        assertTrue(res is CommandResult.Err)
+        assertEquals("ATTACHMENT_NOT_FOUND", (res as CommandResult.Err).code)
+        assertTrue(f.sessions.read(meta.id).none { it is SessionEvent.TurnStart })
+    }
+
+    @Test
     fun `tool loop executes registry and feeds result back`() = runBlocking {
         val client = object : ChatClient {
             var calls = 0
@@ -286,3 +345,4 @@ class InProcessBridgeTest {
         assertTrue(chatOnly is QueryResult.Ok)
     }
 }
+

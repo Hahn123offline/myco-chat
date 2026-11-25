@@ -33,6 +33,7 @@ class InProcessBridge(
     private val providers: ProviderStore,
     private val credentials: CredentialResolver,
     private val tools: ToolRegistry,
+    private val attachments: dev.myco.core.attachment.AttachmentStore,
     private val clientFactory: (ProviderProfile) -> ChatClient,
 ) : Bridge {
 
@@ -51,6 +52,20 @@ class InProcessBridge(
             val meta = sessions.create(cmd.app, cmd.preset, cmd.title)
             _events.tryEmit(BridgeEvent.SessionUpdated(meta.id))
             CommandResult.Ok(buildJsonObject { put("sessionId", meta.id) })
+        }
+        is Command.AttachmentSave -> {
+            runCatching {
+                val bytes = java.util.Base64.getDecoder().decode(cmd.base64)
+                attachments.save(cmd.sessionId, cmd.name, cmd.mime, bytes)
+            }.fold(
+                onSuccess = { ref ->
+                    CommandResult.Ok(buildJsonObject {
+                        put("id", ref.id); put("name", ref.name); put("mime", ref.mime)
+                        put("size", ref.size); put("kind", ref.kind)
+                    })
+                },
+                onFailure = { CommandResult.Err("ATTACHMENT_SAVE", it.message ?: "保存附件失败") },
+            )
         }
         is Command.ChatSend -> chatSend(cmd)
         is Command.ChatStop -> chatStop(cmd)
@@ -181,11 +196,34 @@ class InProcessBridge(
         val history = runCatching { sessions.read(cmd.sessionId) }
             .getOrElse { return CommandResult.Err("SESSION_NOT_FOUND", "会话不存在：${cmd.sessionId}") }
 
+        // 附件在本轮开始前一次性读入（失败则整轮拒绝，不写半截 turn）
+        val prepared = runCatching {
+            val inline = StringBuilder(cmd.text)
+            val images = mutableListOf<dev.myco.core.llm.ChatImage>()
+            for (ref in cmd.attachments) {
+                when (ref.kind) {
+                    "image" -> {
+                        val b64 = java.util.Base64.getEncoder().encodeToString(attachments.read(cmd.sessionId, ref))
+                        images += dev.myco.core.llm.ChatImage(ref.mime, b64)
+                    }
+                    "text" -> {
+                        inline.append("\n\n[附件：${ref.name}]\n")
+                            .append(attachments.textContent(cmd.sessionId, ref))
+                    }
+                    else -> inline.append("\n\n[附件：${ref.name}（${ref.mime}，${ref.size} 字节）未解析，仅元数据]")
+                }
+            }
+            if (inline.isBlank() && images.isNotEmpty()) inline.append("（见图片）")
+            inline.toString() to images
+        }.getOrElse { return CommandResult.Err("ATTACHMENT_NOT_FOUND", it.message ?: "附件不可读") }
+
         val turn = history.count { it is SessionEvent.TurnStart }.toLong() + 1
         sessions.append(cmd.sessionId, SessionEvent.TurnStart(data = SessionEvent.TurnStart.Data(turn)))
         sessions.append(
             cmd.sessionId,
-            SessionEvent.UserMessage(data = SessionEvent.UserMessage.Data(cmd.text, source = "human"))
+            SessionEvent.UserMessage(
+                data = SessionEvent.UserMessage.Data(cmd.text, source = "human", attachments = cmd.attachments)
+            )
         )
 
         val client = clientFactory(provider)
@@ -196,7 +234,7 @@ class InProcessBridge(
         var finished = false
         // 当前这一步的文本（取消时只落这一段，避免和已落盘的中途消息重复）
         val currentStep = StringBuilder()
-        var messages = buildMessages(history) + ChatMessage("user", cmd.text)
+        var messages = buildMessages(history) + ChatMessage("user", prepared.first, images = prepared.second)
 
         // 把"流式 + 工具循环"单独放一个 job：停止 = 取消它；runChat 自己不被取消，能正常收尾
         val collector = scope.async {
@@ -430,7 +468,15 @@ class InProcessBridge(
                 put("id", e.data.id); put("title", e.data.title); put("app", e.data.app); put("formatVersion", e.data.formatVersion)
             })
             is SessionEvent.TurnStart -> put("data", buildJsonObject { put("turn", e.data.turn) })
-            is SessionEvent.UserMessage -> put("data", buildJsonObject { put("text", e.data.text) })
+            is SessionEvent.UserMessage -> put("data", buildJsonObject {
+                put("text", e.data.text)
+                if (e.data.attachments.isNotEmpty()) {
+                    put("attachments", dev.myco.core.spec.MycoJson.encodeToJsonElement(
+                        kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.AttachmentRef.serializer()),
+                        e.data.attachments,
+                    ))
+                }
+            })
             is SessionEvent.AssistantMessage -> put("data", buildJsonObject { put("text", e.data.text) })
             is SessionEvent.ToolCall -> put("data", buildJsonObject { put("name", e.data.name); put("args", e.data.args) })
             is SessionEvent.ToolResult -> put("data", buildJsonObject {

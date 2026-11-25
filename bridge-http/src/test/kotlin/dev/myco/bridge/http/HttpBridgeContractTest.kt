@@ -42,7 +42,7 @@ class HttpBridgeContractTest {
     private val credentials = CredentialResolver(home, emptyMap())
     private val tools = ToolRegistry()
     private val factory: (ProviderProfile) -> ChatClient = { FakeChatClient(tickMs = 1) }
-    private val inProcess = InProcessBridge(home, sessions, providers, credentials, tools, factory)
+    private val inProcess = InProcessBridge(home, sessions, providers, credentials, tools, dev.myco.core.attachment.AttachmentStore(home), factory)
     private val server = HttpBridgeServer(inProcess, token = "test-token").start()
     private val http = HttpBridgeClient(server.baseUrl, "test-token")
 
@@ -163,3 +163,4 @@ class HttpBridgeContractTest {
             }
         }
 }
+

@@ -43,6 +43,16 @@ class HttpBridgeClient(
             is Command.SessionRestore -> "session.restore" to buildJsonObject { put("sessionId", cmd.sessionId) }
             is Command.ChatSend -> "chat.send" to buildJsonObject {
                 put("sessionId", cmd.sessionId); put("text", cmd.text)
+                if (cmd.attachments.isNotEmpty()) {
+                    put("attachments", dev.myco.core.spec.MycoJson.encodeToJsonElement(
+                        kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.AttachmentRef.serializer()),
+                        cmd.attachments,
+                    ))
+                }
+            }
+            is Command.AttachmentSave -> "attachment.save" to buildJsonObject {
+                put("sessionId", cmd.sessionId); put("name", cmd.name)
+                put("mime", cmd.mime); put("base64", cmd.base64)
             }
             is Command.ProviderSave -> "provider.save" to buildJsonObject {
                 put("profile", dev.myco.core.spec.MycoJson.encodeToJsonElement(

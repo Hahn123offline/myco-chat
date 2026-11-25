@@ -51,7 +51,11 @@ sealed class SessionEvent {
         val data: Data,
     ) : SessionEvent() {
         @Serializable
-        data class Data(val text: String, val source: String? = null)
+        data class Data(
+            val text: String,
+            val source: String? = null,
+            val attachments: List<dev.myco.core.spec.AttachmentRef> = emptyList(),
+        )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
         override fun withAt(at: Long) = copy(at = at)

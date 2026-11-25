@@ -235,7 +235,25 @@ class AnthropicCompatibleClient(
             }
             else -> {
                 put("role", m.role)
-                put("content", m.content)
+                if (m.images.isEmpty()) {
+                    put("content", m.content)
+                } else {
+                    put("content", buildJsonArray {
+                        if (m.content.isNotEmpty()) {
+                            add(buildJsonObject { put("type", "text"); put("text", m.content) })
+                        }
+                        m.images.forEach { img ->
+                            add(buildJsonObject {
+                                put("type", "image")
+                                put("source", buildJsonObject {
+                                    put("type", "base64")
+                                    put("media_type", img.mediaType)
+                                    put("data", img.base64)
+                                })
+                            })
+                        }
+                    })
+                }
             }
         }
     }

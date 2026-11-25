@@ -58,7 +58,7 @@ E:\11-15\tools\gradle-8.9\bin\gradle.bat -p . :app-android:assembleDebug
 
 CLI 命令：`doctor` / `sessions` / `new [title]` / `providers` / `discover <providerId>` / `chat <id> <text...>` /
 `demo [text...]` / `serve [port]`（http-sse Bridge）/ `provider-export <path>` / `provider-import <path>` / `init-local [baseUrl]`。
-测试：`:core:test` 54 条 + `:bridge-http:test` 6 条（共 60）。
+测试：`:core:test` 64 条 + `:bridge-http:test` 6 条（共 70）。
 
 ## 已验证（S0-a）
 

@@ -28,6 +28,7 @@ private class CountingHttpServer(
 ) : AutoCloseable {
     private val server = ServerSocket(0)
     private val counter = AtomicInteger(0)
+    private val lastBodyRef = java.util.concurrent.atomic.AtomicReference("")
     val port: Int = server.localPort
 
     private val worker = thread(isDaemon = true) {
@@ -36,13 +37,27 @@ private class CountingHttpServer(
                 server.accept().use { socket ->
                     val reader = BufferedReader(InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1))
                     reader.readLine() // request line
+                    var contentLength = 0
                     while (true) {
                         val line = reader.readLine() ?: break
                         if (line.isEmpty()) break
+                        if (line.lowercase().startsWith("content-length:")) {
+                            contentLength = line.substringAfter(':').trim().toIntOrNull() ?: 0
+                        }
                     }
+                    val body = StringBuilder()
+                    var remaining = contentLength
+                    val chars = CharArray(4096)
+                    while (remaining > 0) {
+                        val n = reader.read(chars, 0, minOf(chars.size, remaining))
+                        if (n < 0) break
+                        body.append(chars, 0, n)
+                        remaining -= n
+                    }
+                    lastBodyRef.set(body.toString())
                     val attempt = counter.incrementAndGet()
-                    val (status, body) = responder(attempt)
-                    val bytes = body.toByteArray(StandardCharsets.UTF_8)
+                    val (status, bodyText) = responder(attempt)
+                    val bytes = bodyText.toByteArray(StandardCharsets.UTF_8)
                     val out = socket.getOutputStream()
                     val reason = if (status == 200) "OK" else "ERROR"
                     val header = "HTTP/1.1 $status $reason\r\nContent-Type: text/event-stream\r\n" +
@@ -56,6 +71,7 @@ private class CountingHttpServer(
     }
 
     fun requests(): Int = counter.get()
+    fun lastBody(): String = lastBodyRef.get()
 
     override fun close() {
         runCatching { server.close() }
@@ -126,6 +142,12 @@ class ToolCallParsingTest {
         models = listOf(ModelProfile(id = "m", contextWindow = 1024, maxTokens = 128)),
     )
 
+    private fun anthropicProvider(port: Int) = ProviderProfile(
+        id = "local", kind = "deepseek-messages", baseUrl = "http://127.0.0.1:$port",
+        auth = AuthProfile.ApiKey("TEST_KEY"),
+        models = listOf(ModelProfile(id = "m", contextWindow = 1024, maxTokens = 128)),
+    )
+
     @Test
     fun `openai accumulates tool_call arguments across deltas`() = runBlocking {
         val sse = buildString {
@@ -161,12 +183,7 @@ class ToolCallParsingTest {
             val h = home()
             val cred = CredentialResolver(h, emptyMap())
             cred.set("TEST_KEY", "sk-test")
-            val p = ProviderProfile(
-                id = "local", kind = "deepseek-messages", baseUrl = "http://127.0.0.1:${srv.port}",
-                auth = AuthProfile.ApiKey("TEST_KEY"),
-                models = listOf(ModelProfile(id = "m", contextWindow = 1024, maxTokens = 128)),
-            )
-            val chunks = AnthropicCompatibleClient(p, cred)
+            val chunks = AnthropicCompatibleClient(anthropicProvider(srv.port), cred)
                 .stream(ChatRequest("m", listOf(ChatMessage("user", "几点了")), tools = listOf(
                     ToolSpec("time_now", "读取时间", kotlinx.serialization.json.JsonObject(emptyMap()))
                 ))).toList()
@@ -177,6 +194,40 @@ class ToolCallParsingTest {
             assertEquals("time_now", call.name)
             assertEquals("1", call.arguments["a"]?.jsonPrimitive?.content)
             assertTrue(chunks.any { it is ChatChunk.Done })
+        }
+    }
+
+    @Test
+    fun `openai serializes image as data url part`() = runBlocking {
+        CountingHttpServer { Pair(200, "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n") }.use { srv ->
+            OpenAiCompatibleClient(provider(srv.port, "openai-completions"), CredentialResolver(home(), emptyMap()))
+                .stream(
+                    ChatRequest("m", listOf(
+                        ChatMessage("user", "描述这张图", images = listOf(ChatImage("image/png", "QUJD")))
+                    ))
+                ).toList()
+            val body = srv.lastBody()
+            assertTrue(body.contains("\"type\":\"image_url\""))
+            assertTrue(body.contains("data:image/png;base64,QUJD"))
+        }
+    }
+
+    @Test
+    fun `anthropic serializes image as base64 source block`() = runBlocking {
+        CountingHttpServer { Pair(200, "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n") }.use { srv ->
+            val h = home()
+            val cred = CredentialResolver(h, emptyMap())
+            cred.set("TEST_KEY", "sk-test")
+            AnthropicCompatibleClient(anthropicProvider(srv.port), cred)
+                .stream(
+                    ChatRequest("m", listOf(
+                        ChatMessage("user", "描述这张图", images = listOf(ChatImage("image/jpeg", "QUJD")))
+                    ))
+                ).toList()
+            val body = srv.lastBody()
+            assertTrue(body.contains("\"type\":\"image\""))
+            assertTrue(body.contains("\"media_type\":\"image/jpeg\""))
+            assertTrue(body.contains("\"data\":\"QUJD\""))
         }
     }
 }
@@ -249,5 +300,6 @@ class LlmRetryTest {
         }
     }
 }
+
 
 

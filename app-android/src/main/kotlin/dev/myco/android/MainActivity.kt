@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
@@ -375,6 +377,60 @@ private fun ChatScreen(
     var streaming by remember { mutableStateOf<String?>(null) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var pending by remember { mutableStateOf<List<dev.myco.core.spec.AttachmentRef>>(emptyList()) }
+    var showAttachSheet by remember { mutableStateOf(false) }
+    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val context = LocalContext.current
+
+    fun attachUri(uri: android.net.Uri) {
+        scope.launch {
+            runCatching {
+                val resolver = context.contentResolver
+                val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("读取附件失败")
+                val mime = resolver.getType(uri) ?: "application/octet-stream"
+                val name = displayName(context, uri)
+                val r = bridge.send(
+                    Command.AttachmentSave(
+                        sessionId = sessionId,
+                        name = name,
+                        mime = mime,
+                        base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP),
+                    )
+                )
+                if (r is CommandResult.Err) error("${r.code}: ${r.message}")
+                val o = (r as CommandResult.Ok).data as JsonObject
+                dev.myco.core.spec.AttachmentRef(
+                    id = o["id"]!!.jsonPrimitive.content,
+                    name = o["name"]!!.jsonPrimitive.content,
+                    mime = o["mime"]!!.jsonPrimitive.content,
+                    size = o["size"]!!.jsonPrimitive.content.toLong(),
+                    kind = o["kind"]!!.jsonPrimitive.content,
+                )
+            }.onSuccess { pending = pending + it }
+                .onFailure { error = "附件失败：${it.message}" }
+        }
+    }
+
+    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { attachUri(it) }
+    }
+    val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { attachUri(it) }
+    }
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        if (ok) cameraUri?.let { attachUri(it) }
+    }
+    fun launchCamera() {
+        runCatching {
+            val dir = java.io.File(context.cacheDir, "camera").apply { mkdirs() }
+            val file = java.io.File(dir, "camera_${System.currentTimeMillis()}.jpg")
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context, "${context.packageName}.fileprovider", file
+            )
+            cameraUri = uri
+            takePicture.launch(uri)
+        }.onFailure { error = "相机不可用：${it.message}" }
+    }
 
     LaunchedEffect(sessionId) {
         val res = bridge.query(Query.SessionEvents(sessionId, 0))
@@ -404,11 +460,12 @@ private fun ChatScreen(
 
     fun send() {
         val text = input.trim()
-        if (text.isEmpty() || streaming != null) return
-        input = ""; error = null
-        lines = lines + ChatLine("user", text)
+        if ((text.isEmpty() && pending.isEmpty()) || streaming != null) return
+        val outgoing = pending
+        input = ""; pending = emptyList(); error = null
+        lines = lines + ChatLine("user", text + if (outgoing.isEmpty()) "" else "\n" + outgoing.joinToString("\n") { "[附件] ${it.name}" })
         scope.launch {
-            val r = bridge.send(Command.ChatSend(sessionId, text))
+            val r = bridge.send(Command.ChatSend(sessionId, text, outgoing))
             if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
         }
     }
@@ -467,6 +524,25 @@ private fun ChatScreen(
                     InlineError(error!!)
                 }
             }
+            if (pending.isNotEmpty()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m),
+                    horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
+                    ) {
+                        pending.forEach { ref ->
+                            androidx.compose.material3.AssistChip(
+                                onClick = { pending = pending - ref },
+                                label = { Text(ref.name, maxLines = 1) },
+                            )
+                        }
+                    }
+                    TextButton(onClick = { pending = emptyList() }) { Text("清空") }
+                }
+            }
             Box(Modifier.padding(MycoSpacing.m)) {
                 ChatComposer(
                     value = input,
@@ -474,7 +550,36 @@ private fun ChatScreen(
                     onSend = { send() },
                     onStop = { scope.launch { bridge.send(Command.ChatStop(sessionId)) } },
                     streaming = streaming != null,
+                    enabled = input.isNotBlank() || pending.isNotEmpty(),
+                    onAttach = { showAttachSheet = true },
                 )
+            }
+        }
+    }
+
+    if (showAttachSheet) {
+        val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { showAttachSheet = false },
+            sheetState = sheetState,
+        ) {
+            Column(Modifier.fillMaxWidth().padding(MycoSpacing.l)) {
+                Text("添加附件", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "附件只存在本机应用私有目录；发送时才会进入模型上下文。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = MycoSpacing.s),
+                )
+                TextButton(onClick = { showAttachSheet = false; launchCamera() }) { Text("拍照") }
+                TextButton(onClick = {
+                    showAttachSheet = false
+                    pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }) { Text("相册") }
+                TextButton(onClick = {
+                    showAttachSheet = false
+                    pickFile.launch(arrayOf("*/*"))
+                }) { Text("文件") }
             }
         }
     }
@@ -902,6 +1007,19 @@ private fun parseProviders(doc: JsonObject?): List<ProviderUi> {
 
 // ---------- JSON 解析 ----------
 
+private fun displayName(context: android.content.Context, uri: android.net.Uri): String {
+    val fallback = uri.lastPathSegment?.substringAfterLast('/') ?: "attachment"
+    return runCatching {
+        context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) {
+                val idx = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (idx >= 0) c.getString(idx)
+                else fallback
+            } else fallback
+        } ?: fallback
+    }.getOrDefault(fallback)
+}
+
 private fun parseSessions(arr: JsonArray?): List<SessionRow> = arr.orEmpty().mapNotNull { el ->
     val o = el as? JsonObject ?: return@mapNotNull null
     SessionRow(
@@ -915,7 +1033,17 @@ private fun parseSessions(arr: JsonArray?): List<SessionRow> = arr.orEmpty().map
 private fun parseLines(arr: JsonArray?): List<ChatLine> = arr.orEmpty().mapNotNull { el ->
     val o = el as? JsonObject ?: return@mapNotNull null
     when (o["type"]?.jsonPrimitive?.content) {
-        "user/message" -> ChatLine("user", o["data"]?.jsonObject?.get("text")?.jsonPrimitive?.content ?: "")
+        "user/message" -> {
+            val data = o["data"] as? JsonObject
+            val text = data?.get("text")?.jsonPrimitive?.content ?: ""
+            val names = (data?.get("attachments") as? JsonArray)?.mapNotNull {
+                (it as? JsonObject)?.get("name")?.jsonPrimitive?.content
+            }.orEmpty()
+            ChatLine(
+                "user",
+                text + if (names.isEmpty()) "" else "\n" + names.joinToString("\n") { "[附件] $it" },
+            )
+        }
         "assistant/message" -> ChatLine("assistant", o["data"]?.jsonObject?.get("text")?.jsonPrimitive?.content ?: "")
         else -> null
     }
