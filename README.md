@@ -13,6 +13,7 @@ Android 壳与 GUI 还没开始。
 specs/                 语言无关契约（JSON Schema + Bridge 契约 + fixtures）
 core/                  Kotlin JVM 内核（session / provider / llm / bridge / tools / doctor）
 app-desktop/           S0 的 CLI 壳（开发验证用；GUI 之后换 Compose）
+app-android/           Android Compose 壳（会话列表 / 聊天页 / 设置页 + FGS 骨架）
 tools/fake-sse/        本地假模型服务（OpenAI 兼容 SSE，不联网、不调真模型）
 docs/design/           设计简报、决策记录、I0 方案、状态摘要
 docs/recon/            8 份考古/调研
@@ -47,6 +48,10 @@ E:\11-15\tools\gradle-8.9\bin\gradle.bat -p . :tools:fake-sse:installDist :app-d
 # 5) 流式对话（事件落盘 + 增量打印）
 .\app-desktop\build\install\app-desktop\bin\app-desktop.bat new 测试会话
 .\app-desktop\build\install\app-desktop\bin\app-desktop.bat chat <sessionId> 你好
+
+# 6) Android debug APK（无需 AVD；真机安装走一次性窗口）
+E:\11-15\tools\gradle-8.9\bin\gradle.bat -p . :app-android:assembleDebug
+# 产物：app-android/build/outputs/apk/debug/app-android-debug.apk
 ```
 
 CLI 命令：`doctor` / `sessions` / `new [title]` / `providers` / `chat <id> <text...>` / `demo [text...]` / `init-local [baseUrl]`。

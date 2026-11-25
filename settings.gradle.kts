@@ -28,4 +28,4 @@ dependencyResolutionManagement {
 include(":core")
 include(":tools:fake-sse")
 include(":app-desktop")
-// include(":app-android")  // S0-b: 需要 AGP + Compose，下一步加
+include(":app-android")

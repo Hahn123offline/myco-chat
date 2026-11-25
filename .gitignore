@@ -19,3 +19,7 @@
 __pycache__/
 *.pyc
 
+
+# Android local config
+local.properties
+

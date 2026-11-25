@@ -40,7 +40,22 @@
 4. **Windows 控制台中文乱码**：JVM stdout 默认编码不是 UTF-8。
    → 两个 application 模块加 `-Dfile.encoding/stdout.encoding/stderr.encoding=UTF-8`。
 
-## 4. 下一步（S0-b）
+## 4. S0-b Android 壳（代码已落地，真机未验证）
+
+| 项 | 结果 | 备注 |
+|---|---|---|
+| `:app-android:assembleDebug` | **成功** | AGP 8.7.3 + Kotlin 2.0.21 + Compose BOM 2024.10.01 |
+| debug APK | **9,624 KB** | 未开 R8/minify，**不能当最终包体**；release 体积待测 |
+| minSdk / targetSdk / compileSdk | 26 / 35 / 35 | java.nio.file 需要 26 |
+| 前台服务 | `specialUse` + subType 文案已声明 | A7/A8 口径；Play 不适用（侧载） |
+| UI | Compose：会话列表 / 聊天页 / 设置页（doctor + FGS 开关） | 模型先接 `FakeChatClient`（离线可复现） |
+| 真机/emulator 验证 | **未做** | 本机无 AVD、无 system-image；需 A8 的一次性真机窗口 |
+| 冷启动 / RSS / 24h 存活 | **未测** | 同上 |
+
+> 下一步的真机窗口（10–20 分钟）：`adb install -r app-android-debug.apk` → 新建会话 → 发消息 → 杀进程重开历史还在 → 启动前台服务看通知 → 导出 `doctor`。
+> 窗口之前不占用用户手机（A8）。
+
+## 5. 下一步（S0-b 剩余）
 
 1. `app-android/`：Compose 壳（会话列表 + 聊天页 + 设置入口）、FGS 骨架、`Bridge` 用 in-process 实现。
 2. 真机窗口（提前约，10–20 分钟）：装一次 → 发消息 → 杀进程重开历史还在 → 导出诊断。

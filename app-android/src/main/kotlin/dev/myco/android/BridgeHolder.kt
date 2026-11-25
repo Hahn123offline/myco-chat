@@ -1,0 +1,36 @@
+package dev.myco.android
+
+import android.content.Context
+import dev.myco.core.MycoHome
+import dev.myco.core.bridge.InProcessBridge
+import dev.myco.core.llm.ChatClient
+import dev.myco.core.llm.FakeChatClient
+import dev.myco.core.provider.CredentialResolver
+import dev.myco.core.provider.ProviderStore
+import dev.myco.core.session.SessionStore
+import dev.myco.core.spec.ProviderProfile
+import dev.myco.core.tools.ToolRegistry
+import dev.myco.core.tools.timeNowTool
+import java.io.File
+
+/**
+ * S0-b：Android 侧用 in-process Bridge（不开本地服务器）。
+ * 模型先用 FakeChatClient（离线可复现）；接真 provider 在 I1，读同一份 ProviderStore。
+ */
+object BridgeHolder {
+    lateinit var bridge: InProcessBridge
+        private set
+    lateinit var home: MycoHome
+        private set
+
+    fun init(context: Context) {
+        if (::bridge.isInitialized) return
+        home = MycoHome(File(context.filesDir, "myco").toPath()).also { it.ensureLayout() }
+        val sessions = SessionStore(home)
+        val providers = ProviderStore(home)
+        val credentials = CredentialResolver(home)
+        val tools = ToolRegistry().apply { register(timeNowTool()) }
+        val factory: (ProviderProfile) -> ChatClient = { FakeChatClient() }
+        bridge = InProcessBridge(home, sessions, providers, credentials, tools, factory)
+    }
+}
