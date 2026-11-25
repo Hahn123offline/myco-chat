@@ -31,7 +31,19 @@
    现象：重启后会话为空（数据其实在）。
    修复：`eventJson` 补 `data{text,...}`；加单测断言历史查询包含消息文本。
 
-## 3. 测量说明
+## 3. release（R8）测量
+
+| 指标 | debug | release（R8 + shrinkResources） |
+|---|---|---|
+| APK | 9.5 MB | **1.13 MB**（用 debug keystore 临时签名安装测的，不用于分发） |
+| 冷启动 | 413–651 ms | **120 ms** |
+| PSS | 147 MB | **79.6 MB** |
+| RSS | 274 MB | **204.7 MB** |
+
+> 结论：R8 后包体降 88%、冷启动降 ~70%、PSS 降 ~46%。RSS 仍高于 120MB 目标，但包含共享页；
+> 下一步要么接受（手机 12GB 足够），要么用 baseline profile 再压启动/内存。安装后 UI 与历史持久化正常（release 也验证过）。
+
+## 4. 测量说明
 
 - 以上是**这台机**的数字；4800mAh、性能不弱，但不能当普遍结论（A8）。
 - RSS 274MB 超了 S0 设定的 120MB 目标，但这是 **debug + Compose + 未裁剪** 的包；release（R8/minify、去掉 tooling）再测一次才有意义。

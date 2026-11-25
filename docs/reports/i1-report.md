@@ -82,6 +82,10 @@
 | 流式对话（Anthropic Messages 方言） | **成功**：两轮真实回复，SSE 增量正常 |
 | usage / costUsd | **成功**：input=5 / output=15 tokens → `costUsd=6.5e-5`（按 profile.pricing 的 CNY 单价算出），同时写入 `assistant/message` 与 `turn/end` |
 | 发现路径坑 | 模型清单在站点根 `/models`，不在 `/anthropic/v1/models`；`ModelDiscovery` 已改为对 `/anthropic` 基址同时尝试根路径与基址路径 |
+| **OpenAI 兼容**（`kind=openai-completions`, base `https://api.deepseek.com`） | **成功**：`/models` 发现两个模型；`/chat/completions` 流式回复正常；usage input=34/output=12、costUsd=8.2e-5 |
+
+> 两种方言都对着真实 DeepSeek API 跑通了；OpenAI 那次特意只保留一个 `openai-completions` provider，
+> 确保走的是 OpenAI 分支（provider 工厂按 kind 选客户端）。
 
 ## 9. 真机（Android 15 / API 35）已完成
 
