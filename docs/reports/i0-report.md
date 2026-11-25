@@ -54,13 +54,13 @@
 - **CLI**：`provider-export <path>` / `provider-import <path>`（兼容导出信封与裸 `providers` 数组），导入走 revision 检查。
 - 冒烟：`init-local` → `provider-export` → `provider-import`（revision 1→2）→ `providers` 列表正确。
 
-## 6. 当前测试与构建
+## 6. 当前测试与构建（最终以 [i0-i1-final.md](i0-i1-final.md) 为准）
 
 ```
-:core:test         28 passed
-:bridge-http:test   5 passed
+:core:test         39 passed（含后续 I1 增量）
+:bridge-http:test   6 passed
 :app-desktop:installDist      ok
-:app-android:assembleDebug    ok（debug APK ≈9.5MB，未开 R8）
+:app-android:assembleDebug / assembleRelease  ok（debug ≈9.5MB，release R8 ≈1.13MB）
 ```
 
 ## 7. 下一个需要用户决策的边界
