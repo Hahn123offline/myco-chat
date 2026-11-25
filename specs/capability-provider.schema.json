@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://myco.dev/specs/capability-provider.schema.json",
+  "title": "myco CapabilityProvider（search / fetch / ocr / asr / tts）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "vendor", "auth", "capabilities"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+    "vendor": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "maxLength": 64 },
+    "auth": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "ref"],
+          "properties": {
+            "type": { "type": "string", "const": "api-key" },
+            "ref": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": { "type": { "type": "string", "const": "none" } }
+        }
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "search": { "$ref": "#/$defs/cap" },
+        "fetch": { "$ref": "#/$defs/cap" },
+        "ocr": { "$ref": "#/$defs/cap" },
+        "asr": { "$ref": "#/$defs/cap" },
+        "tts": { "$ref": "#/$defs/cap" }
+      }
+    },
+    "enabled": { "type": "boolean" }
+  },
+  "$defs": {
+    "cap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint", "priceUnit"],
+      "properties": {
+        "endpoint": { "type": "string", "format": "uri" },
+        "priceUnit": {
+          "type": "string",
+          "enum": ["per-success-call", "per-1000-pages", "per-second", "per-char", "per-token"]
+        },
+        "maxSeconds": { "type": "integer", "minimum": 1 },
+        "voices": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string", "maxLength": 200 }
+      }
+    }
+  }
+}

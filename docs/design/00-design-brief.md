@@ -353,6 +353,8 @@ DSH 的 Models 页手写了 ≈160 KB TSX/TS；myco **schema 驱动 + 3 个自�
 删除：只清自己派生的 <ROUTE>_API_KEY；别人的 key 不动
 行状态：由「档案 / 设置 / 凭据」三方快照合成，永远一致；保存失败保留草稿 + 展示 Host 诊断
 两个动作要分开：「仅此会话用这个模型」 vs 「设为所有新会话默认」
+同步（A6）：模型 profile 走版本链 + 本地 journal；可一键读取对面的包并预览 diff；
+推送到对面需两边各确认一次；撤回只改本机；密钥只同步 `auth.ref`，不同步值
 ```
 
 ---
@@ -474,6 +476,7 @@ pending = 未读（按 activity 三档水位） + 惦记（open note） + 积压
 - `decide(input)` 是**纯函数**：`{action: deliver|queue|drop, channel, suppressReason, wake, holdMs, queueKey, explain}`；
   `drop` 只留给去重/过期，其余一律降级（进队列，不丢）。
 - 队列**落盘**（`~/.myco/delivery.jsonl`）+ 启动重放未 ack（前代纯内存，崩溃即丢）。
+- **常驻是尽力而为（A7）**：不承诺 24/7；打开即追平（积压合并成一条摘要）；定时检查只做 best-effort，没值得说的不产生 turn；产品措辞写"打开时她一定在，不打开时尽力而为"。
 - 预算：小时 N + **天** M（前代缺天预算），杀 switch 必须有。
 - 感知与发送权分开：感知只决定「她知道了什么」，是否开口仍走裁决 + 预算。
 - **发出权只有 chat**：work 只发任务完成通知；它向 chat 暴露的只有「他在忙什么」这类环境事实。
@@ -527,10 +530,12 @@ capture(opts): Promise<Frame>   // 像素、秒级、贵、有配额、带失败
 
 ## 10. 决策状态
 
-**D1–D8 + A1–A5 已拍板；D9（运行时）与 D10（双 app 共享形态）待点头**，权威记录见 [20-decision-record.md](20-decision-record.md)。
-D9 的完整对比在 [runtime-options.md](../recon/runtime-options.md)：推荐 **Kotlin/JVM 单核心 + Compose 壳 + Gradle 模块插件**（89/100），
-备选 RN+Hermes（70）；调研同时给出 1 周 spike 的三项机器可判判据。
-若 D9 按推荐走：本简报 §2.2 的 `packages/*` 落点改为 Gradle 多模块（结构不变），TS 仅保留在桌面 Web 预览壳。
+**全部拍板**：D1–D10 + A1–A7（见 [决策记录](20-decision-record.md)）。
+要点：桌面 daemon 仅是开发/预览载体（A4 离线独立是硬要求）；**D9=Kotlin/JVM 单核心**（Play 论证降权、侧载分发、动态插件推迟）；
+D10=两个 APK 各自完整内核 + 显式同步；A6=版本链 + 本地 journal 的拉取/推送/撤回模型；A7=常驻"尽力而为"。
+
+**T0 已交付**：[`specs/`](../../specs/README.md)——provider/capability/plugin/session-events 四份 JSON Schema + Bridge 契约 + 23 条 fixture，
+`python specs/validate_fixtures.py` 23/23 通过。下一步是 **S0 walking skeleton**（见 [I0 方案](30-i0-plan.md) §8），无需再做一次性 spike。
 
 原候选清单 [10-open-questions.md](10-open-questions.md) 保留为决策背景（已标注每条结论），不再作为待办。
 

@@ -1,0 +1,264 @@
+[
+  {
+    "schema": "provider-profile.schema.json",
+    "cases": [
+      {
+        "name": "minimal-local-openai-compatible",
+        "valid": true,
+        "doc": {
+          "id": "local",
+          "kind": "openai-completions",
+          "displayName": "本地 OpenAI 兼容",
+          "baseUrl": "http://127.0.0.1:8000/v1",
+          "auth": { "type": "none" },
+          "models": [
+            { "id": "qwen3-8b", "contextWindow": 32768, "maxTokens": 4096, "input": ["text"] }
+          ],
+          "roles": { "chat": "qwen3-8b", "fast": "qwen3-8b" }
+        }
+      },
+      {
+        "name": "deepseek-with-reasoning-and-compat",
+        "valid": true,
+        "doc": {
+          "id": "deepseek",
+          "kind": "deepseek-messages",
+          "baseUrl": "https://api.deepseek.com/anthropic",
+          "auth": { "type": "api-key", "ref": "DEEPSEEK_API_KEY" },
+          "models": [
+            {
+              "id": "deepseek-flash",
+              "name": "DeepSeek V4.1 Flash",
+              "contextWindow": 1000000,
+              "maxTokens": 384000,
+              "input": ["text", "image"],
+              "reasoning": { "efforts": { "off": null, "low": "low", "high": "high" }, "default": "off" }
+            }
+          ],
+          "roles": { "chat": "deepseek-flash", "vision": "deepseek-flash" },
+          "compat": { "supportsDeveloperRole": false, "maxTokensField": "max_tokens" },
+          "limits": { "streamIdleTimeoutMs": 300000 },
+          "retry": { "mode": "normal", "maxRetries": 2 },
+          "enabled": true
+        }
+      },
+      {
+        "name": "invalid-id-uppercase",
+        "valid": false,
+        "doc": {
+          "id": "DeepSeek",
+          "kind": "deepseek-messages",
+          "auth": { "type": "none" },
+          "models": [{ "id": "m", "contextWindow": 1, "maxTokens": 1 }]
+        }
+      },
+      {
+        "name": "invalid-api-key-missing-ref",
+        "valid": false,
+        "doc": {
+          "id": "x",
+          "kind": "openai-completions",
+          "auth": { "type": "api-key" },
+          "models": [{ "id": "m", "contextWindow": 1, "maxTokens": 1 }]
+        }
+      },
+      {
+        "name": "invalid-empty-models",
+        "valid": false,
+        "doc": {
+          "id": "x",
+          "kind": "openai-completions",
+          "auth": { "type": "none" },
+          "models": []
+        }
+      },
+      {
+        "name": "invalid-unknown-field",
+        "valid": false,
+        "doc": {
+          "id": "x",
+          "kind": "openai-completions",
+          "auth": { "type": "none" },
+          "models": [{ "id": "m", "contextWindow": 1, "maxTokens": 1 }],
+          "secret": "sk-should-not-be-here"
+        }
+      }
+    ]
+  },
+  {
+    "schema": "capability-provider.schema.json",
+    "cases": [
+      {
+        "name": "deepseek-tools-valid",
+        "valid": true,
+        "doc": {
+          "id": "deepseek-tools",
+          "vendor": "deepseek",
+          "auth": { "type": "api-key", "ref": "DEEPSEEK_API_KEY" },
+          "capabilities": {
+            "search": { "endpoint": "https://api.deepseek.com/v1/tools/search", "priceUnit": "per-success-call" },
+            "ocr": { "endpoint": "https://api.deepseek.com/v1/tools/ocr", "priceUnit": "per-1000-pages" },
+            "asr": { "endpoint": "https://api.deepseek.com/v1/tools/asr", "priceUnit": "per-second", "maxSeconds": 120 },
+            "tts": { "endpoint": "https://api.deepseek.com/v1/tools/tts", "priceUnit": "per-char", "voices": ["stella", "tide"] }
+          }
+        }
+      },
+      {
+        "name": "invalid-empty-capabilities",
+        "valid": false,
+        "doc": {
+          "id": "x",
+          "vendor": "v",
+          "auth": { "type": "none" },
+          "capabilities": {}
+        }
+      },
+      {
+        "name": "invalid-price-unit",
+        "valid": false,
+        "doc": {
+          "id": "x",
+          "vendor": "v",
+          "auth": { "type": "none" },
+          "capabilities": {
+            "search": { "endpoint": "https://a.example/s", "priceUnit": "per-fortune" }
+          }
+        }
+      },
+      {
+        "name": "invalid-unknown-capability",
+        "valid": false,
+        "doc": {
+          "id": "x",
+          "vendor": "v",
+          "auth": { "type": "none" },
+          "capabilities": {
+            "hologram": { "endpoint": "https://a.example/h", "priceUnit": "per-token" }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "schema": "plugin-manifest.schema.json",
+    "cases": [
+      {
+        "name": "persona-valid",
+        "valid": true,
+        "doc": {
+          "id": "persona",
+          "version": "0.1.0",
+          "entry": "./src/index",
+          "displayName": "人格卡",
+          "tools": ["persona_get", "persona_set"],
+          "slots": [{ "id": "persona.store", "kind": "llm.chat" }],
+          "requires": { "plugins": [], "capabilities": ["llm.chat"] },
+          "budget": { "toolsChars": 1200 }
+        }
+      },
+      {
+        "name": "invalid-missing-version",
+        "valid": false,
+        "doc": { "id": "x", "entry": "./src/index" }
+      },
+      {
+        "name": "invalid-tools-not-strings",
+        "valid": false,
+        "doc": { "id": "x", "version": "0.1.0", "entry": "./src/index", "tools": [{ "name": "a" }] }
+      },
+      {
+        "name": "invalid-entry-not-relative",
+        "valid": false,
+        "doc": { "id": "x", "version": "0.1.0", "entry": "src/index" }
+      },
+      {
+        "name": "invalid-bad-slot-kind",
+        "valid": false,
+        "doc": {
+          "id": "x",
+          "version": "0.1.0",
+          "entry": "./src/index",
+          "slots": [{ "id": "s", "kind": "llm.telepathy" }]
+        }
+      }
+    ]
+  },
+  {
+    "schema": "session-events.schema.json",
+    "cases": [
+      {
+        "name": "user-message-valid",
+        "valid": true,
+        "doc": { "type": "user/message", "seq": 3, "at": 1793000000000, "data": { "text": "在吗", "source": "human" } }
+      },
+      {
+        "name": "assistant-message-with-usage-valid",
+        "valid": true,
+        "doc": {
+          "type": "assistant/message",
+          "seq": 4,
+          "at": 1793000001000,
+          "data": {
+            "text": "在。",
+            "model": "deepseek-flash",
+            "usage": { "inputTokens": 1200, "outputTokens": 8, "cachedTokens": 1000, "costUsd": 0.0002 }
+          }
+        }
+      },
+      {
+        "name": "session-start-valid",
+        "valid": true,
+        "doc": {
+          "type": "session/start",
+          "seq": 0,
+          "at": 1793000000000,
+          "data": {
+            "id": "01J8Z6K3Q9",
+            "title": "新会话",
+            "createdAt": 1793000000000,
+            "app": "chat",
+            "preset": "chat-default",
+            "formatVersion": 1
+          }
+        }
+      },
+      {
+        "name": "invalid-unknown-type",
+        "valid": false,
+        "doc": { "type": "message/user", "seq": 1, "at": 1, "data": { "text": "x" } }
+      },
+      {
+        "name": "invalid-negative-seq",
+        "valid": false,
+        "doc": { "type": "turn/start", "seq": -1, "at": 1, "data": { "turn": 0 } }
+      },
+      {
+        "name": "invalid-user-message-missing-text",
+        "valid": false,
+        "doc": { "type": "user/message", "seq": 1, "at": 1, "data": { "source": "human" } }
+      },
+      {
+        "name": "invalid-format-version-2",
+        "valid": false,
+        "doc": {
+          "type": "session/start",
+          "seq": 0,
+          "at": 1,
+          "data": {
+            "id": "s",
+            "title": "t",
+            "createdAt": 1,
+            "app": "work",
+            "preset": "work-default",
+            "formatVersion": 2
+          }
+        }
+      },
+      {
+        "name": "invalid-tool-result-missing-ok",
+        "valid": false,
+        "doc": { "type": "tool/result", "seq": 2, "at": 1, "data": { "name": "time_now", "text": "12:00" } }
+      }
+    ]
+  }
+]

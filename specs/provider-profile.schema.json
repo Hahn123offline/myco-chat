@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://myco.dev/specs/provider-profile.schema.json",
+  "title": "myco ProviderProfile（chat 家族）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "auth", "models"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$" },
+    "kind": { "type": "string", "enum": ["deepseek-messages", "openai-completions", "openai-responses"] },
+    "displayName": { "type": "string", "maxLength": 64 },
+    "baseUrl": { "type": "string", "format": "uri" },
+    "auth": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "ref"],
+          "properties": {
+            "type": { "type": "string", "const": "api-key" },
+            "ref": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": { "type": { "type": "string", "const": "none" } }
+        }
+      ]
+    },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "contextWindow", "maxTokens"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "maxLength": 64 },
+          "contextWindow": { "type": "integer", "minimum": 1 },
+          "maxTokens": { "type": "integer", "minimum": 1 },
+          "input": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "enum": ["text", "image"] }
+          },
+          "reasoning": {
+            "oneOf": [
+              { "type": "boolean", "const": false },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["efforts"],
+                "properties": {
+                  "efforts": {
+                    "type": "object",
+                    "additionalProperties": { "type": ["string", "null"] }
+                  },
+                  "default": { "type": ["string", "null"] }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contextWindow": { "type": "integer", "minimum": 1 },
+        "maxTokens": { "type": "integer", "minimum": 1 },
+        "input": { "type": "array", "minItems": 1, "items": { "type": "string", "enum": ["text", "image"] } }
+      }
+    },
+    "compat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "supportsDeveloperRole": { "type": "boolean" },
+        "maxTokensField": { "type": "string", "enum": ["max_tokens", "max_completion_tokens"] },
+        "supportsReasoningEffort": { "type": "boolean" },
+        "thinkingFormat": { "type": "string", "enum": ["none", "deepseek"] }
+      }
+    },
+    "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeoutMs": { "type": "integer", "minimum": 1 },
+        "streamIdleTimeoutMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "retry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["normal", "always"] },
+        "maxRetries": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "enabled": { "type": "boolean" }
+  }
+}

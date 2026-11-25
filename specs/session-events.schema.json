@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://myco.dev/specs/session-events.schema.json",
+  "title": "myco 会话事件（单行 JSONL 的一条）",
+  "$defs": {
+    "env": {
+      "type": "object",
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "type": "string" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "createdAt", "app", "preset", "formatVersion"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "maxLength": 200 },
+        "createdAt": { "type": "integer", "minimum": 0 },
+        "app": { "type": "string", "enum": ["chat", "work"] },
+        "preset": { "type": "string", "minLength": 1 },
+        "formatVersion": { "type": "integer", "const": 1 },
+        "workspaceId": { "type": "string", "minLength": 1 },
+        "deviceId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inputTokens": { "type": "integer", "minimum": 0 },
+        "outputTokens": { "type": "integer", "minimum": 0 },
+        "cachedTokens": { "type": "integer", "minimum": 0 },
+        "costUsd": { "type": "number", "minimum": 0 }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "session/start" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": { "$ref": "#/$defs/meta" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "turn/start" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["turn"],
+          "properties": { "turn": { "type": "integer", "minimum": 0 } }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "user/message" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": {
+            "text": { "type": "string" },
+            "source": { "type": "string", "enum": ["human", "agent", "memory", "tool", "env"] }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "assistant/message" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": {
+            "text": { "type": "string" },
+            "model": { "type": "string" },
+            "usage": { "$ref": "#/$defs/usage" }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "tool/call" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "args"],
+          "properties": {
+            "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+            "args": { "type": "object" }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "tool/result" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "ok", "text"],
+          "properties": {
+            "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+            "ok": { "type": "boolean" },
+            "text": { "type": "string" },
+            "reason": { "type": "string" }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "system/inject" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": { "text": { "type": "string", "maxLength": 2000 }, "tier": { "type": "string", "enum": ["dynamic"] } }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "seq", "at", "data"],
+      "properties": {
+        "type": { "const": "turn/end" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "at": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["turn", "steps"],
+          "properties": {
+            "turn": { "type": "integer", "minimum": 0 },
+            "steps": { "type": "integer", "minimum": 0 },
+            "costUsd": { "type": "number", "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

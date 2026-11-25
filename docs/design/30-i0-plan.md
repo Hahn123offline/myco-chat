@@ -1,11 +1,12 @@
-# I0 实施方案（骨架 · 待 D9 与开工点头）
+# I0 实施方案（骨架 · D9 已定 Kotlin/JVM；T0 已交付，待开工点头）
 
 > 前置：D1=A（桌面 daemon + Web 先跑，设计移动端原生）、D2=A（自研薄内核）、D3=两个 app 共享存储、
-> D4+A2=MVP 到 I2（多会话 chat）、**A4=离线独立是硬要求**、A5=GUI 模块化。决策见 [决策记录](20-decision-record.md)。
+> D4+A2=MVP 到 I2（多会话 chat）、**A4=离线独立是硬要求**、A5=GUI 模块化、A6=同步模型、
+> D9=Kotlin/JVM 单核心（Play 论证降权，分发侧载）、D10=两个 APK + 显式同步。
+> 决策见 [决策记录](20-decision-record.md)。
 >
-> ⚠ **D9（手机内核载体/技术栈）未拍板前，本计划只执行 §3 的"语言无关契约"部分，不写绑死某栈的产品代码。**
-> 若 D9 按推荐走（Kotlin/JVM 单核心），本文件的命令与目录改为 **Gradle 多模块**（`settings.gradle.kts` + `core/` + `app-android/` + `app-desktop/`），
-> 契约与验收内容不变。当前环境已具备：JDK 21、Android SDK（`%LOCALAPPDATA%\Android\Sdk`）、Android Studio。
+> **T0（语言无关契约）已交付**：[`specs/`](../../specs/README.md)——4 份 JSON Schema + Bridge 契约 + 23 条 fixture，
+> `python specs/validate_fixtures.py` 23/23 通过。下一步是 S0 walking skeleton。
 > 本文是**施工图**，不含业务代码。开工条件：D9 拍板 + 用户对本文点头（或改需求）。
 
 ## 0. I0 的验收定义（一句话）
@@ -174,16 +175,61 @@ myco 0.0.0 · home E:\myco-home
 |---|---|
 | 内核过早变"重"（重演 14 服务） | 只实现本文件 §3 的接口；新增接缝必须有第二个使用者 |
 | 移动端约束被桌面实现带偏 | 契约按"离线独立 + in-process Bridge + mobile-first"写；路径/通知/耗电在 I0 就跑在抽象后 |
-| 技术栈选错（最大风险，见 D9） | **先契约后实现**：T0 与栈无关；D9 拍板前不写产品代码 |
+| 技术栈选错（最大风险） | 已用 T0（语言无关契约）+ D9 调研压掉；S0 用真实代码竖切验证，不写一次性 spike |
+| 动态插件诱惑（侧载后失去 Play 约束） | 明确推迟：编译期模块 + `PluginLoader` 接缝；没有真实需求不做动态 dex |
 | GUI 又变成"后端的一部分" | Bridge 是唯一接口 + headless 测试进 CI；GUI 模块独立目录，可整体删除 |
 | 事件日志格式以后要改 | `formatVersion` + 读侧拒绝未知版本；迁移链等第一次破坏性变更再上 |
 | 与 DSH 学歪（手写设置页） | I1 设置页按 schema 生成，禁止手写表单 |
 | 凭证在 Windows 上的安全预期 | I0 只用 env + 文件（0600/ACL 告警），不做"看起来安全"的假象 |
 
-## 8. 开工前只差两件事
+## 8. 下一步：S0 walking skeleton（替代一次性 spike）
 
-1. **D9 拍板**（运行时/内核载体；正在做完整对比 [runtime-options](recon/runtime-options.md)）——它决定 T1 之后用什么写。
-2. 你说"开工"（或先只批准 T0，把与语言无关的契约定稿先做掉）。
+**不做一次性 spike**（MVP 很小、成熟实现很多，验证代码会变成垃圾）。改成**真实产品代码的最小竖切**，
+3–5 天，边建边测；测下来的数字直接进 I0 的验收基线。
 
-T0 不需要 D9，随时可以先做：产出 5 份 JSON Schema + Bridge 契约 + fixture，任何人拿任选技术栈都能照它实现。
-其余任务完成即给一段可直接跑的验收；中途不引入未列依赖、不改本文边界。
+### S0 交付物
+
+```
+myco/                            Gradle 多模块
+  settings.gradle.kts
+  core/                          Kotlin JVM 库（Android/桌面共用）
+    spec/                        按 specs/ 生成或手写的契约类型（kotlinx.serialization）
+    session/                     JSONL 事件日志读写 + seq 分配 + 版本守卫
+    provider/                    profile 解析 + 凭据 ref 解析（值不进日志）
+    llm/                         OpenAI 兼容 SSE 客户端（只依赖 java.net.http）
+    bridge/                      Bridge 接口 + in-process 实现
+    tools/                       注册表 + 1 个演示工具 time_now
+  app-android/                   Compose 壳：会话列表 + 聊天页 + 设置入口 + FGS 骨架
+  app-desktop/                   JVM 壳（Ktor 可选）：开发/预览用
+  tools/fake-sse/                假模型服务（本地 SSE，用于 spike 测量，不调真模型）
+```
+
+### 要测的三件真不确定的事（其余都是成熟实现，不测）
+
+| # | 不确定性 | S0 怎么测 | 判据（不过就改方案） |
+|---|---|---|---|
+| 1 | **国产 ROM 上的后台存活与耗电** | 真机跑 FGS + 常驻通知 + 每 15min 检查，24h | 24h 存活 ≥95%；耗电 ≤3%/24h；被 kill 能自恢复 |
+| 2 | **低端机上的流式体验与包体** | fake SSE 流式出字；测冷启动/内存/APK 体积 | 首 token p50<2s；冷启动≤1.5s；RSS≤120MB；arm64 增量≤12MB |
+| 3 | **前代 Kotlin 代码的移植摩擦力** | 从 trace-memory 抠出事件日志 + 一个 provider codec 塞进 core，跑通 | 不引入 Android 依赖；单测可跑；改动量可接受（<500 行） |
+
+> SQLite、JSON Schema、SSE、通知在 Android 上都是成熟实现，**不花时间做 spike**；直接按官方最佳实践写。
+
+### S0 的验收（可自动/可复现）
+
+```
+./gradlew :core:test           # 事件日志 + provider + bridge 契约测试
+./gradlew :app-desktop:run     # 桌面壳连 fake-sse，看到流式回复
+./gradlew :app-android:assembleDebug
+adb install ...                # 真机：会话列表 → 新建会话 → 发消息 → 流出 → 杀进程重开历史还在
+```
+外加一页 `docs/reports/s0-measurements.md`：包体、冷启动、RSS、24h 存活与耗电、移植行数。
+
+### 之后
+
+S0 通过 → 按 T1–T6 继续 I0（kernel/settings/session-store/bridge/doctor/chat 空壳），
+只是"技术栈待定"的句子删掉，其余不变。
+
+## 9. 开工前只差一句"开工"
+
+T0 已交付（specs/ 23/23）；D9/D10 已定；S0 方案与判据如上。
+你说"开工"，我先做 S0；若你想先看 Gradle 骨架再决定，我就只提交骨架 + 一份 `gradlew tasks` 输出。

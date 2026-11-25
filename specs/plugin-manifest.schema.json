@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://myco.dev/specs/plugin-manifest.schema.json",
+  "title": "myco 插件清单",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "entry"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$" },
+    "entry": { "type": "string", "pattern": "^\\./" },
+    "displayName": { "type": "string", "maxLength": 64 },
+    "tools": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.]*$" },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "llm.chat",
+              "llm.embed",
+              "capability.search",
+              "capability.fetch",
+              "capability.ocr",
+              "capability.asr",
+              "capability.tts",
+              "perceive.snapshot",
+              "perceive.capture"
+            ]
+          }
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plugins": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" } },
+        "capabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "toolsChars": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
