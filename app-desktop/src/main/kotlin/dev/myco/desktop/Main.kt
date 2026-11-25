@@ -21,13 +21,15 @@ import dev.myco.core.tools.ToolRegistry
 import dev.myco.core.tools.timeNowTool
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.nio.file.Files
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 
 /**
  * S0 桌面/CLI 壳：验证 core 与 bridge 能跑通一轮（含流式）。
  * GUI 之后换成 Compose，这里只保证 headless 可用。
  */
-fun main(args: Array<String>) = runBlocking {
+fun main(args: Array<String>): Unit = runBlocking {
     val home = MycoHome.resolveDefault()
     home.ensureLayout()
     val sessions = SessionStore(home)
@@ -110,8 +112,13 @@ fun main(args: Array<String>) = runBlocking {
                 }
                 .onFailure { println("[failed] ${it.message}") }
         }
+        "serve" -> {
+            val port = args.getOrNull(1)?.toIntOrNull() ?: 8788
+            serve(home, bridge, port)
+        }
         else -> usage("unknown command: ${args.firstOrNull()}")
     }
+    Unit
 }
 
 private suspend fun chat(bridge: InProcessBridge, sessionId: String, text: String) {
@@ -132,6 +139,22 @@ private suspend fun chat(bridge: InProcessBridge, sessionId: String, text: Strin
     kotlinx.coroutines.delay(100)
     printer.cancel()
     if (result is dev.myco.core.bridge.CommandResult.Err) println("[failed] ${result.code}: ${result.message}")
+}
+
+private fun serve(home: MycoHome, bridge: dev.myco.core.bridge.InProcessBridge, port: Int) {
+    val token = UUID.randomUUID().toString()
+    val server = dev.myco.bridge.http.HttpBridgeServer(bridge, token, port).start()
+    val runtimeFile = home.root.resolve("runtime.json")
+    Files.createDirectories(home.root)
+    Files.writeString(
+        runtimeFile,
+        """{"url":"${server.baseUrl}","token":"$token","pid":${ProcessHandle.current().pid()},"startedAt":${System.currentTimeMillis()}}""",
+    )
+    System.err.println("http-sse bridge: ${server.baseUrl}")
+    System.err.println("token: $token  (runtime: $runtimeFile)")
+    System.err.println("try: curl -s ${server.baseUrl}/query/session.list -X POST -H \"Authorization: Bearer $token\" -d '{}'")
+    Runtime.getRuntime().addShutdownHook(Thread { runCatching { server.close() } })
+    Thread.currentThread().join()
 }
 
 private fun doctor(
@@ -159,6 +182,7 @@ private fun printHelp() {
           discover <providerId>  显式"获取可用模型"（不自动探测）
           chat <id> <text...>    发一条消息（流式）
           demo [text...]         用现有/新建会话跑一次 demo
+          serve [port]           启动 http-sse Bridge（浏览器/远程/调试；默认 8788）
           init-local [baseUrl]   写入本地 OpenAI 兼容 provider 模板（默认 fake-sse :8787）
         """.trimIndent()
     )

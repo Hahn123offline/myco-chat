@@ -235,17 +235,29 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var checks by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var providersInfo by remember { mutableStateOf<String>("（未读取）") }
     var running by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val res = bridge.query(Query.DoctorRun)
         checks = if (res is QueryResult.Ok) parseChecks(res.data as? JsonArray) else emptyList()
+        val prov = bridge.query(Query.Providers)
+        providersInfo = if (prov is QueryResult.Ok) {
+            val arr = prov.data as? JsonArray
+            if (arr.isNullOrEmpty()) "未配置 provider（当前用假模型）" else arr.joinToString("\n") { el ->
+                val o = el as? JsonObject
+                val id = o?.get("id")?.jsonPrimitive?.content ?: "?"
+                val kind = o?.get("kind")?.jsonPrimitive?.content ?: "?"
+                "$id ($kind)"
+            }
+        } else "读取失败"
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("设置") }, navigationIcon = { TextButton(onClick = onBack) { Text("返回") } }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("模型", style = MaterialTheme.typography.titleMedium)
-            Text("S0-b 使用假模型（离线、可复现）。provider 管理与真实 SSE 在 I1。", style = MaterialTheme.typography.bodyMedium)
+            Text(providersInfo, style = MaterialTheme.typography.bodySmall)
+            Text("S0-b：无 provider 时用假模型（离线）。真实 SSE/DeepSeek 方言在 I1 接线。", style = MaterialTheme.typography.bodyMedium)
             HorizontalDivider()
             Text("常驻（A7：不承诺 24/7，尽力而为）", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

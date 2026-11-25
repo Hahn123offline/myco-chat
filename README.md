@@ -11,12 +11,14 @@ Android 壳与 GUI 还没开始。
 
 ```
 specs/                 语言无关契约（JSON Schema + Bridge 契约 + fixtures）
-core/                  Kotlin JVM 内核（session / provider / llm / bridge / tools / doctor）
-app-desktop/           S0 的 CLI 壳（开发验证用；GUI 之后换 Compose）
+core/                  Kotlin JVM 内核（session / provider / llm / bridge / tools / doctor / settings）
+bridge-http/           http-sse 传输（浏览器/远程/调试；JVM-only）
+app-desktop/           S0 的 CLI 壳（doctor/sessions/new/chat/demo/discover/serve）
 app-android/           Android Compose 壳（会话列表 / 聊天页 / 设置页 + FGS 骨架）
 tools/fake-sse/        本地假模型服务（OpenAI 兼容 SSE，不联网、不调真模型）
 docs/design/           设计简报、决策记录、I0 方案、状态摘要
 docs/recon/            8 份考古/调研
+docs/reports/          每阶段测量与验收
 ```
 
 ## 环境（本机已具备）
@@ -54,7 +56,9 @@ E:\11-15\tools\gradle-8.9\bin\gradle.bat -p . :app-android:assembleDebug
 # 产物：app-android/build/outputs/apk/debug/app-android-debug.apk
 ```
 
-CLI 命令：`doctor` / `sessions` / `new [title]` / `providers` / `chat <id> <text...>` / `demo [text...]` / `init-local [baseUrl]`。
+CLI 命令：`doctor` / `sessions` / `new [title]` / `providers` / `discover <providerId>` / `chat <id> <text...>` /
+`demo [text...]` / `serve [port]`（http-sse Bridge）/ `init-local [baseUrl]`。
+测试：`:core:test` 26 条 + `:bridge-http:test` 4 条。
 
 ## 已验证（S0-a）
 

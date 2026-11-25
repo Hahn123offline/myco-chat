@@ -65,7 +65,7 @@ class Doctor(
             Check("tools", status, "$n 个 / $chars 字符（上限 $BUDGET_CHARS）")
         }.getOrElse { Check("tools", CheckStatus.ERROR, "注册表异常：${it.message}") }
 
-        checks += Check("bridge", CheckStatus.OK, "in-process 已就绪（http-sse 在 I0 T5 加）")
+        checks += Check("bridge", CheckStatus.OK, "in-process 已就绪；http-sse 需运行 `myco serve`（桌面/远程）")
         return checks
     }
 
