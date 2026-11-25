@@ -43,16 +43,27 @@
 4. **junit 测试 worker 被非守护线程挂住**：`HttpServer` 的 cached pool → 改 daemon 线程工厂 + `close()` 里 `shutdownNow()`。
 5. **`encodeDefaults=true` + 可空字段**（上一轮）：`explicitNulls=false` 省略 null。
 
-## 5. 当前测试与构建
+## 5. provider 管理（本轮新增）
+
+- **Bridge 新命令**：`ProviderSave(profile, expectedRevision)`、`ProviderDelete(id, expectedRevision)`、`CredentialSet(ref, value)`；
+  `Query.Providers` 升级为 `{revision, providers:[{...auth, credential:{configured,source,writable}}]}`（**不含密钥值**）。
+  in-process 与 http-sse 两种传输都实现，并有测试覆盖（HTTP 版本断言"值不回显"）。
+- **凭据写入**：`CredentialResolver.set/delete` 原子写 `credentials.json`，0600 尽力而为；只写不读。
+- **Android 设置页**：provider 列表（kind/baseUrl/models/密钥状态）→ 加本地模板/加 DeepSeek 模板 → 编辑对话框（id/baseUrl/模型/上下文/最大输出/密钥引用）→
+  删除确认 → 设置密钥对话框；保存后自动 `BridgeHolder.rebuild()`，新 provider 立刻生效（不用重启）。
+- **CLI**：`provider-export <path>` / `provider-import <path>`（兼容导出信封与裸 `providers` 数组），导入走 revision 检查。
+- 冒烟：`init-local` → `provider-export` → `provider-import`（revision 1→2）→ `providers` 列表正确。
+
+## 6. 当前测试与构建
 
 ```
-:core:test        26 passed
-:bridge-http:test  4 passed
+:core:test         28 passed
+:bridge-http:test   5 passed
 :app-desktop:installDist      ok
-:app-android:assembleDebug    ok（debug APK ≈9.6MB，未开 R8）
+:app-android:assembleDebug    ok（debug APK ≈9.5MB，未开 R8）
 ```
 
-## 6. 下一个需要用户决策的边界
+## 7. 下一个需要用户决策的边界
 
 I1 的"真链路"必须打一次真实模型，但：
 

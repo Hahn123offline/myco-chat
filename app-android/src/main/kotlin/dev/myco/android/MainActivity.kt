@@ -13,10 +13,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +50,9 @@ import dev.myco.core.bridge.CommandResult
 import dev.myco.core.bridge.InProcessBridge
 import dev.myco.core.bridge.Query
 import dev.myco.core.bridge.QueryResult
+import dev.myco.core.spec.AuthProfile
+import dev.myco.core.spec.ModelProfile
+import dev.myco.core.spec.ProviderProfile
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -235,54 +242,302 @@ private fun SettingsScreen(bridge: InProcessBridge, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var checks by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var providersInfo by remember { mutableStateOf<String>("（未读取）") }
+    var providers by remember { mutableStateOf<List<ProviderUi>>(emptyList()) }
+    var revision by remember { mutableStateOf(0L) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var editor by remember { mutableStateOf<ProviderEditor?>(null) }
+    var deleteTarget by remember { mutableStateOf<ProviderUi?>(null) }
+    var keyTarget by remember { mutableStateOf<ProviderUi?>(null) }
     var running by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val res = bridge.query(Query.DoctorRun)
-        checks = if (res is QueryResult.Ok) parseChecks(res.data as? JsonArray) else emptyList()
+    suspend fun reload() {
+        val doctorRes = bridge.query(Query.DoctorRun)
+        checks = if (doctorRes is QueryResult.Ok) parseChecks(doctorRes.data as? JsonArray) else emptyList()
         val prov = bridge.query(Query.Providers)
-        providersInfo = if (prov is QueryResult.Ok) {
-            val arr = prov.data as? JsonArray
-            if (arr.isNullOrEmpty()) "未配置 provider（当前用假模型）" else arr.joinToString("\n") { el ->
-                val o = el as? JsonObject
-                val id = o?.get("id")?.jsonPrimitive?.content ?: "?"
-                val kind = o?.get("kind")?.jsonPrimitive?.content ?: "?"
-                "$id ($kind)"
-            }
-        } else "读取失败"
+        if (prov is QueryResult.Ok) {
+            val obj = prov.data as? JsonObject
+            revision = obj?.get("revision")?.jsonPrimitive?.longOrNull ?: 0L
+            providers = parseProviders(obj)
+        }
     }
+    LaunchedEffect(Unit) { reload() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("设置") }, navigationIcon = { TextButton(onClick = onBack) { Text("返回") } }) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("模型", style = MaterialTheme.typography.titleMedium)
-            Text(providersInfo, style = MaterialTheme.typography.bodySmall)
-            Text("S0-b：无 provider 时用假模型（离线）。真实 SSE/DeepSeek 方言在 I1 接线。", style = MaterialTheme.typography.bodyMedium)
-            HorizontalDivider()
-            Text("常驻（A7：不承诺 24/7，尽力而为）", style = MaterialTheme.typography.titleMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = {
-                    context.startForegroundService(Intent(context, MycoForegroundService::class.java))
-                    running = true
-                }) { Text("启动前台服务") }
-                OutlinedButton(onClick = {
-                    context.stopService(Intent(context, MycoForegroundService::class.java))
-                    running = false
-                }) { Text("停止") }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("设置") },
+                navigationIcon = { TextButton(onClick = onBack) { Text("返回") } },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            item { Text("模型提供方", style = MaterialTheme.typography.titleMedium) }
+            item { Text("revision=$revision · 保存冲突会提示重试", style = MaterialTheme.typography.bodySmall) }
+            if (message != null) item {
+                Text(message!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
-            Text(if (running) "已请求启动（通知栏应出现常驻通知）" else "未启动", style = MaterialTheme.typography.bodySmall)
-            HorizontalDivider()
-            Text("自检", style = MaterialTheme.typography.titleMedium)
-            if (checks.isEmpty()) {
-                CircularProgressIndicator(Modifier.height(24.dp))
-            } else {
-                checks.forEach { (name, status) ->
-                    Row { Text(name, Modifier.width(96.dp)); Text(status, style = MaterialTheme.typography.bodySmall) }
+            if (providers.isEmpty()) item {
+                Text("还没有 provider（当前用假模型，可离线跑）", style = MaterialTheme.typography.bodySmall)
+            }
+            items(providers, key = { it.id }) { p ->
+                Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text(
+                        "${p.displayName.ifBlank { p.id }}  (${p.kind})",
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(p.baseUrl, style = MaterialTheme.typography.bodySmall)
+                    Text("models: " + p.models.joinToString { it.id }, style = MaterialTheme.typography.bodySmall)
+                    if (p.authRef != null) {
+                        Text(
+                            if (p.configured) "密钥：已配置（不回显）" else "密钥：缺失 ${p.authRef}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (p.configured) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(onClick = { editor = p.toEditor() }) { Text("编辑") }
+                        if (p.authRef != null) TextButton(onClick = { keyTarget = p }) { Text("设置密钥") }
+                        TextButton(onClick = { deleteTarget = p }) { Text("删除") }
+                    }
+                    HorizontalDivider()
                 }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { editor = ProviderEditor.localTemplate() }) { Text("加本地模板") }
+                    OutlinedButton(onClick = { editor = ProviderEditor.deepseekTemplate() }) { Text("加 DeepSeek") }
+                }
+            }
+            item { HorizontalDivider() }
+            item { Text("常驻（A7：不承诺 24/7，尽力而为）", style = MaterialTheme.typography.titleMedium) }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        context.startForegroundService(Intent(context, MycoForegroundService::class.java))
+                        running = true
+                    }) { Text("启动前台服务") }
+                    OutlinedButton(onClick = {
+                        context.stopService(Intent(context, MycoForegroundService::class.java))
+                        running = false
+                    }) { Text("停止") }
+                }
+            }
+            item {
+                Text(if (running) "已请求启动（通知栏应出现常驻通知）" else "未启动", style = MaterialTheme.typography.bodySmall)
+            }
+            item { HorizontalDivider() }
+            item { Text("自检", style = MaterialTheme.typography.titleMedium) }
+            if (checks.isEmpty()) item { CircularProgressIndicator(Modifier.height(24.dp)) }
+            else items(checks) { pair ->
+                Row { Text(pair.first, Modifier.width(96.dp)); Text(pair.second, style = MaterialTheme.typography.bodySmall) }
             }
         }
     }
+
+    editor?.let { ed ->
+        ProviderEditDialog(
+            initial = ed,
+            onDismiss = { editor = null },
+            onSave = { updated ->
+                scope.launch {
+                    val res = bridge.send(Command.ProviderSave(updated.toProfile(), revision))
+                    message = if (res is CommandResult.Err) "${res.code}: ${res.message}" else null
+                    if (res is CommandResult.Ok) {
+                        editor = null
+                        BridgeHolder.rebuild(context)
+                    }
+                    reload()
+                }
+            },
+        )
+    }
+
+    deleteTarget?.let { p ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("删除 ${p.id}？") },
+            text = { Text("只从 providers.json 移除；已派生的密钥引用不动。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleteTarget = null
+                    scope.launch {
+                        val r = bridge.send(Command.ProviderDelete(p.id, revision))
+                        if (r is CommandResult.Err) message = "${r.code}: ${r.message}"
+                        BridgeHolder.rebuild(context)
+                        reload()
+                    }
+                }) { Text("删除") }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("取消") } },
+        )
+    }
+
+    keyTarget?.let { p ->
+        val ref = p.authRef
+        if (ref != null) {
+            KeyDialog(
+                ref = ref,
+                onDismiss = { keyTarget = null },
+                onSave = { value ->
+                    keyTarget = null
+                    scope.launch {
+                        val r = bridge.send(Command.CredentialSet(ref, value))
+                        message = if (r is CommandResult.Err) "${r.code}: ${r.message}" else "密钥已保存（不回显）"
+                        reload()
+                    }
+                },
+            )
+        }
+    }
 }
+
+@Composable
+private fun ProviderEditDialog(
+    initial: ProviderEditor,
+    onDismiss: () -> Unit,
+    onSave: (ProviderEditor) -> Unit,
+) {
+    var form by remember(initial) { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (initial.originalId == null) "添加提供方" else "编辑 ${initial.originalId}") },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()).heightIn(max = 420.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text("kind: ${form.kind}", style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(form.id, { form = form.copy(id = it) }, label = { Text("Provider ID") }, singleLine = true)
+                OutlinedTextField(form.baseUrl, { form = form.copy(baseUrl = it) }, label = { Text("Base URL") }, singleLine = true)
+                OutlinedTextField(form.modelId, { form = form.copy(modelId = it) }, label = { Text("模型 id") }, singleLine = true)
+                OutlinedTextField(form.contextWindow, { form = form.copy(contextWindow = it) }, label = { Text("上下文窗口") }, singleLine = true)
+                OutlinedTextField(form.maxTokens, { form = form.copy(maxTokens = it) }, label = { Text("最大输出") }, singleLine = true)
+                OutlinedTextField(form.ref, { form = form.copy(ref = it) }, label = { Text("密钥引用（留空=无鉴权）") }, singleLine = true)
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(form) }) { Text("保存") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
+}
+
+@Composable
+private fun KeyDialog(ref: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var value by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("设置密钥 $ref") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("只写不读；保存后只显示“已配置”。", style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(value, { value = it }, label = { Text("API key") }, singleLine = true)
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = value.isNotBlank(), onClick = { onSave(value.trim()) }) { Text("保存") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
+}
+
+// ---------- provider 编辑模型 ----------
+
+private data class ModelUi(val id: String, val contextWindow: Long, val maxTokens: Long)
+
+private data class ProviderUi(
+    val id: String,
+    val kind: String,
+    val displayName: String,
+    val baseUrl: String,
+    val authRef: String?,
+    val configured: Boolean,
+    val models: List<ModelUi>,
+) {
+    fun toEditor(): ProviderEditor = ProviderEditor(
+        originalId = id,
+        id = id,
+        kind = kind,
+        displayName = displayName,
+        baseUrl = baseUrl,
+        modelId = models.firstOrNull()?.id ?: "",
+        contextWindow = (models.firstOrNull()?.contextWindow ?: 32768).toString(),
+        maxTokens = (models.firstOrNull()?.maxTokens ?: 4096).toString(),
+        ref = authRef ?: "",
+    )
+}
+
+private data class ProviderEditor(
+    val originalId: String?,
+    val id: String,
+    val kind: String,
+    val displayName: String,
+    val baseUrl: String,
+    val modelId: String,
+    val contextWindow: String,
+    val maxTokens: String,
+    val ref: String,
+) {
+    fun toProfile(): ProviderProfile = ProviderProfile(
+        id = id.trim(),
+        kind = kind,
+        displayName = displayName.ifBlank { null },
+        baseUrl = baseUrl.trim().ifBlank { null },
+        auth = if (ref.isBlank()) AuthProfile.None else AuthProfile.ApiKey(ref.trim()),
+        models = listOf(
+            ModelProfile(
+                id = modelId.trim(),
+                contextWindow = contextWindow.toLongOrNull() ?: 32768L,
+                maxTokens = maxTokens.toLongOrNull() ?: 4096L,
+            )
+        ),
+        roles = mapOf("chat" to modelId.trim(), "fast" to modelId.trim()),
+    )
+
+    companion object {
+        fun localTemplate() = ProviderEditor(
+            originalId = null, id = "local", kind = "openai-completions",
+            displayName = "本地 OpenAI 兼容", baseUrl = "http://10.0.2.2:8787/v1",
+            modelId = "fake-chat", contextWindow = "32768", maxTokens = "4096", ref = "",
+        )
+
+        fun deepseekTemplate() = ProviderEditor(
+            originalId = null, id = "deepseek", kind = "deepseek-messages",
+            displayName = "DeepSeek 官方", baseUrl = "https://api.deepseek.com/anthropic",
+            modelId = "deepseek-flash", contextWindow = "1000000", maxTokens = "384000",
+            ref = "DEEPSEEK_API_KEY",
+        )
+    }
+}
+
+private fun parseProviders(doc: JsonObject?): List<ProviderUi> {
+    val arr = doc?.get("providers") as? JsonArray ?: return emptyList()
+    return arr.mapNotNull { el ->
+        val o = el as? JsonObject ?: return@mapNotNull null
+        val auth = o["auth"] as? JsonObject
+        val credential = o["credential"] as? JsonObject
+        val models = (o["models"] as? JsonArray)?.mapNotNull { mEl ->
+            val m = mEl as? JsonObject ?: return@mapNotNull null
+            ModelUi(
+                id = m["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+                contextWindow = m["contextWindow"]?.jsonPrimitive?.longOrNull ?: 0L,
+                maxTokens = m["maxTokens"]?.jsonPrimitive?.longOrNull ?: 0L,
+            )
+        } ?: emptyList()
+        ProviderUi(
+            id = o["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
+            kind = o["kind"]?.jsonPrimitive?.content ?: "",
+            displayName = o["displayName"]?.jsonPrimitive?.content ?: "",
+            baseUrl = o["baseUrl"]?.jsonPrimitive?.content ?: "",
+            authRef = if (auth?.get("type")?.jsonPrimitive?.content == "api-key") auth["ref"]?.jsonPrimitive?.content else null,
+            configured = credential?.get("configured")?.jsonPrimitive?.content == "true",
+            models = models,
+        )
+    }
+}
+
+// ---------- JSON 解析 ----------
 
 // ---------- JSON 解析 ----------
 

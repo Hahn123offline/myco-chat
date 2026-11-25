@@ -21,9 +21,11 @@ import dev.myco.core.tools.ToolRegistry
 import dev.myco.core.tools.timeNowTool
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
 import java.util.UUID
-import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.jsonObject
 
 /**
  * S0 桌面/CLI 壳：验证 core 与 bridge 能跑通一轮（含流式）。
@@ -111,6 +113,35 @@ fun main(args: Array<String>): Unit = runBlocking {
                     }
                 }
                 .onFailure { println("[failed] ${it.message}") }
+        }
+        "provider-export" -> {
+            val path = args.getOrNull(1) ?: home.root.resolve("providers-export.json").toString()
+            val snap = providers.load()
+            Files.writeString(
+                java.nio.file.Path.of(path),
+                """{"schemaVersion":1,"revision":${snap.revision},"providers":${dev.myco.core.spec.MycoJson.encodeToString(
+                    kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.ProviderProfile.serializer()), snap.providers
+                )}}""",
+            )
+            println("exported ${snap.providers.size} providers → $path")
+        }
+        "provider-import" -> {
+            val path = args.getOrNull(1) ?: return@runBlocking usage("provider-import <path>")
+            val text = Files.readString(java.nio.file.Path.of(path))
+            val root = dev.myco.core.spec.MycoJson.parseToJsonElement(text).jsonObject
+            val payload = root["providers"] ?: root["data"] ?: root
+            val list: List<ProviderProfile> = when (payload) {
+                is kotlinx.serialization.json.JsonArray -> dev.myco.core.spec.MycoJson.decodeFromJsonElement(
+                    ListSerializer(ProviderProfile.serializer()), payload
+                )
+                is kotlinx.serialization.json.JsonObject -> dev.myco.core.spec.MycoJson.decodeFromJsonElement(
+                    dev.myco.core.spec.ProviderFile.serializer(), payload
+                ).providers
+                else -> return@runBlocking usage("provider-import: 不认识的 JSON 形状")
+            }
+            val current = providers.load()
+            val rev = providers.save(list, expectedRevision = current.revision)
+            println("imported ${list.size} providers (revision=$rev)")
         }
         "serve" -> {
             val port = args.getOrNull(1)?.toIntOrNull() ?: 8788

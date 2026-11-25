@@ -46,6 +46,48 @@ class InProcessBridge(
             CommandResult.Ok(buildJsonObject { put("sessionId", meta.id) })
         }
         is Command.ChatSend -> chatSend(cmd)
+        is Command.ProviderSave -> providerSave(cmd)
+        is Command.ProviderDelete -> providerDelete(cmd)
+        is Command.CredentialSet -> {
+            runCatching { credentials.set(cmd.ref, cmd.value) }
+                .fold(
+                    onSuccess = { CommandResult.Ok() },
+                    onFailure = { CommandResult.Err("INVALID_CREDENTIAL", it.message ?: "写入失败") },
+                )
+        }
+    }
+
+    private fun providerSave(cmd: Command.ProviderSave): CommandResult {
+        val current = runCatching { providers.load() }
+            .getOrElse { return CommandResult.Err("PROVIDER_CONFIG", it.message ?: "读取失败") }
+        val merged = current.providers.toMutableList()
+        val idx = merged.indexOfFirst { it.id == cmd.profile.id }
+        if (idx >= 0) merged[idx] = cmd.profile else merged += cmd.profile
+        return try {
+            val rev = providers.save(merged, cmd.expectedRevision)
+            CommandResult.Ok(buildJsonObject { put("revision", rev) })
+        } catch (e: dev.myco.core.settings.SettingsConflictException) {
+            CommandResult.Err("SETTINGS_CONFLICT", e.message ?: "revision 冲突")
+        } catch (e: Exception) {
+            CommandResult.Err("PROVIDER_CONFIG", e.message ?: "保存失败")
+        }
+    }
+
+    private fun providerDelete(cmd: Command.ProviderDelete): CommandResult {
+        val current = runCatching { providers.load() }
+            .getOrElse { return CommandResult.Err("PROVIDER_CONFIG", it.message ?: "读取失败") }
+        val filtered = current.providers.filterNot { it.id == cmd.id }
+        if (filtered.size == current.providers.size) {
+            return CommandResult.Err("PROVIDER_NOT_FOUND", "provider 不存在：${cmd.id}")
+        }
+        return try {
+            val rev = providers.save(filtered, cmd.expectedRevision)
+            CommandResult.Ok(buildJsonObject { put("revision", rev) })
+        } catch (e: dev.myco.core.settings.SettingsConflictException) {
+            CommandResult.Err("SETTINGS_CONFLICT", e.message ?: "revision 冲突")
+        } catch (e: Exception) {
+            CommandResult.Err("PROVIDER_CONFIG", e.message ?: "保存失败")
+        }
     }
 
     private suspend fun chatSend(cmd: Command.ChatSend): CommandResult {
@@ -118,22 +160,52 @@ class InProcessBridge(
             QueryResult.Ok(buildJsonArray { events.forEach { add(eventJson(it)) } })
         }
         Query.Providers -> {
-            val list = providers.load().providers
-            QueryResult.Ok(buildJsonArray {
-                list.forEach { p ->
-                    add(buildJsonObject {
-                        put("id", p.id)
-                        put("kind", p.kind)
-                        put("enabled", p.enabled)
-                        put("models", buildJsonArray { p.models.forEach { m -> add(kotlinx.serialization.json.JsonPrimitive(m.id)) } })
-                    })
-                }
+            val snap = providers.load()
+            QueryResult.Ok(buildJsonObject {
+                put("revision", snap.revision)
+                put("providers", buildJsonArray { snap.providers.forEach { add(providerJson(it)) } })
             })
         }
         Query.DoctorRun -> QueryResult.Ok(buildJsonArray {
             doctor.run().forEach { c ->
                 add(buildJsonObject { put("name", c.name); put("status", c.status.name); put("detail", c.detail) })
             }
+        })
+    }
+
+    private fun providerJson(p: ProviderProfile): JsonElement = buildJsonObject {
+        put("id", p.id)
+        put("kind", p.kind)
+        put("displayName", p.displayName ?: "")
+        put("baseUrl", p.baseUrl ?: "")
+        put("enabled", p.enabled)
+        put("auth", when (val a = p.auth) {
+            is dev.myco.core.spec.AuthProfile.ApiKey -> buildJsonObject {
+                put("type", "api-key"); put("ref", a.ref)
+            }
+            dev.myco.core.spec.AuthProfile.None -> buildJsonObject { put("type", "none") }
+        })
+        put("models", buildJsonArray {
+            p.models.forEach { m ->
+                add(buildJsonObject {
+                    put("id", m.id)
+                    put("name", m.name ?: "")
+                    put("contextWindow", m.contextWindow)
+                    put("maxTokens", m.maxTokens)
+                    put("input", buildJsonArray { m.input.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } })
+                })
+            }
+        })
+        put("credential", when (val a = p.auth) {
+            is dev.myco.core.spec.AuthProfile.ApiKey -> {
+                val status = credentials.describe(a.ref)
+                buildJsonObject {
+                    put("configured", status.configured)
+                    put("source", status.source ?: "")
+                    put("writable", status.writable)
+                }
+            }
+            dev.myco.core.spec.AuthProfile.None -> buildJsonObject { put("configured", true); put("source", "none") }
         })
     }
 

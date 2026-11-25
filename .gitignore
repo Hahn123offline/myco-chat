@@ -23,3 +23,15 @@ __pycache__/
 # Android local config
 local.properties
 
+
+# 本地调试数据
+/.myco-dev*/
+
+
+# 密钥/环境文件（永不入库）
+*.key
+*.pem
+.env
+.env.*
+secrets*
+

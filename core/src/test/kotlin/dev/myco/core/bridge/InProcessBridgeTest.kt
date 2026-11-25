@@ -12,6 +12,9 @@ import dev.myco.core.spec.ModelProfile
 import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.tools.ToolRegistry
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -94,6 +97,45 @@ class InProcessBridgeTest {
         assertEquals(listOf(1L, 2L), turns.map { it.data.turn })
         val assistants = f.sessions.read(meta.id).filterIsInstance<SessionEvent.AssistantMessage>()
         assertEquals(2, assistants.size)
+    }
+
+    @Test
+    fun `provider save delete and revision conflict via bridge`() = runBlocking {
+        val f = Fixture(withProvider = false)
+        val p = ProviderProfile(
+            id = "deepseek", kind = "deepseek-messages",
+            baseUrl = "https://api.deepseek.com/anthropic",
+            auth = AuthProfile.ApiKey("DEEPSEEK_API_KEY"),
+            models = listOf(ModelProfile(id = "deepseek-flash", contextWindow = 1_000_000, maxTokens = 384_000)),
+        )
+        val saved = f.bridge.send(Command.ProviderSave(p, expectedRevision = 0))
+        assertTrue(saved is CommandResult.Ok)
+        val rev = ((saved as CommandResult.Ok).data as kotlinx.serialization.json.JsonObject)["revision"]!!.jsonPrimitive.content.toLong()
+
+        // 用过期 revision 再写 → 明确冲突，不静默覆盖
+        val stale = f.bridge.send(Command.ProviderSave(p.copy(displayName = "x"), expectedRevision = 0))
+        assertTrue(stale is CommandResult.Err)
+        assertEquals("SETTINGS_CONFLICT", (stale as CommandResult.Err).code)
+
+        val providersQuery = f.bridge.query(Query.Providers) as QueryResult.Ok
+        assertTrue(providersQuery.data.jsonObject["providers"]!!.jsonArray.any {
+            it.jsonObject["id"]?.jsonPrimitive?.content == "deepseek"
+        })
+
+        val deleted = f.bridge.send(Command.ProviderDelete("deepseek", expectedRevision = rev))
+        assertTrue(deleted is CommandResult.Ok)
+        val missing = f.bridge.send(Command.ProviderDelete("deepseek", expectedRevision = rev + 1))
+        assertTrue(missing is CommandResult.Err)
+        assertEquals("PROVIDER_NOT_FOUND", (missing as CommandResult.Err).code)
+    }
+
+    @Test
+    fun `credential set is write only`() = runBlocking {
+        val f = Fixture(withProvider = false)
+        val set = f.bridge.send(Command.CredentialSet("MYCO_TEST_KEY", "sk-very-secret"))
+        assertTrue(set is CommandResult.Ok)
+        val providersQuery = f.bridge.query(Query.Providers) as QueryResult.Ok
+        assertTrue(!providersQuery.data.toString().contains("sk-very-secret"))
     }
 
     @Test

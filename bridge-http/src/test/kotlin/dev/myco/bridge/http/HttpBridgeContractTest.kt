@@ -113,6 +113,26 @@ class HttpBridgeContractTest {
     }
 
     @Test
+    fun `provider save and credential set over http, value never echoed`() = runBlocking {
+        val profile = ProviderProfile(
+            id = "deepseek-http", kind = "deepseek-messages",
+            baseUrl = "https://api.deepseek.com/anthropic",
+            auth = AuthProfile.ApiKey("MYCO_HTTP_TEST_KEY"),
+            models = listOf(ModelProfile(id = "deepseek-flash", contextWindow = 1_000_000, maxTokens = 384_000)),
+        )
+        val snapshot = http.query(Query.Providers) as QueryResult.Ok
+        val rev = snapshot.data.jsonObject["revision"]!!.jsonPrimitive.content.toLong()
+        assertTrue(http.send(Command.ProviderSave(profile, expectedRevision = rev)) is CommandResult.Ok)
+        assertTrue(http.send(Command.CredentialSet("MYCO_HTTP_TEST_KEY", "sk-http-secret")) is CommandResult.Ok)
+
+        val after = http.query(Query.Providers) as QueryResult.Ok
+        val text = after.data.toString()
+        assertTrue(text.contains("deepseek-http"))
+        assertTrue(!text.contains("sk-http-secret"))
+        assertTrue(text.contains("\"configured\":true") || text.contains("\"configured\": true"))
+    }
+
+    @Test
     fun `bad token is rejected`() = runBlocking {
         val unauth = HttpBridgeClient(server.baseUrl, "wrong")
         val res = runCatching { unauth.query(Query.SessionList()) }

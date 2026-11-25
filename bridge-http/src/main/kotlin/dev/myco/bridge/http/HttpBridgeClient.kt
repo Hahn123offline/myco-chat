@@ -39,6 +39,18 @@ class HttpBridgeClient(
             is Command.ChatSend -> "chat.send" to buildJsonObject {
                 put("sessionId", cmd.sessionId); put("text", cmd.text)
             }
+            is Command.ProviderSave -> "provider.save" to buildJsonObject {
+                put("profile", dev.myco.core.spec.MycoJson.encodeToJsonElement(
+                    dev.myco.core.spec.ProviderProfile.serializer(), cmd.profile
+                ))
+                put("expectedRevision", cmd.expectedRevision)
+            }
+            is Command.ProviderDelete -> "provider.delete" to buildJsonObject {
+                put("id", cmd.id); put("expectedRevision", cmd.expectedRevision)
+            }
+            is Command.CredentialSet -> "credential.set" to buildJsonObject {
+                put("ref", cmd.ref); put("value", cmd.value)
+            }
         }
         val body = post("/command/$name", payload)
         return if (body["ok"]?.jsonPrimitive?.content == "true") {

@@ -26,6 +26,11 @@ object BridgeHolder {
 
     fun init(context: Context) {
         if (::bridge.isInitialized) return
+        rebuild(context)
+    }
+
+    /** provider 增删后重建：让 clientFactory 立刻按新配置生效（内核无跨轮状态，重建安全）。 */
+    fun rebuild(context: Context) {
         home = MycoHome(File(context.filesDir, "myco").toPath()).also { it.ensureLayout() }
         val sessions = SessionStore(home)
         val providers = ProviderStore(home)

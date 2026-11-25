@@ -84,6 +84,26 @@ class HttpBridgeServer(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
                 text = payload["text"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing text")),
             )
+            "provider.save" -> {
+                val profileJson = payload["profile"] ?: return json(ex, 400, err("PAYLOAD", "missing profile"))
+                val profile = runCatching {
+                    dev.myco.core.spec.MycoJson.decodeFromJsonElement(
+                        dev.myco.core.spec.ProviderProfile.serializer(), profileJson
+                    )
+                }.getOrElse { return json(ex, 400, err("PAYLOAD", "bad profile: ${it.message}")) }
+                Command.ProviderSave(
+                    profile = profile,
+                    expectedRevision = payload["expectedRevision"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
+                )
+            }
+            "provider.delete" -> Command.ProviderDelete(
+                id = payload["id"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing id")),
+                expectedRevision = payload["expectedRevision"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
+            )
+            "credential.set" -> Command.CredentialSet(
+                ref = payload["ref"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing ref")),
+                value = payload["value"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing value")),
+            )
             else -> return json(ex, 404, err("UNKNOWN_COMMAND", name))
         }
         val result = runBlocking { bridge.send(cmd) }
