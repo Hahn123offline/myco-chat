@@ -13,6 +13,7 @@
 | [trace-memory.md](trace-memory.md) | `reference/trace-memory` | `freshness`/`coverage` 语义契约、`block/visit/view`、三值 NULL、唯一出网点 fail-closed |
 | [mobile-agent-landscape.md](mobile-agent-landscape.md) | Android 平台与手机 agent 生态（第二轮补） | 常驻只能 FGS(specialUse)+通知；截图 ~333ms 限速；Play 禁止运行时下载可执行文件（proot 受影响）；移动端 10 条约束 |
 | [runtime-options.md](runtime-options.md) | 运行时选型（建议 D9 拍板用） | 7 候选五维打分：Kotlin/JVM 单核心 89 分最高；nodejs-mobile/CodePush/RN SSE 的否决证据；1 周 spike 判据 |
+| [deepseek-chat-demo-ui.md](deepseek-chat-demo-ui.md) | 官方 `deepseek-ai/chat-demo`（MIT） | chat 壳的结构参考：回复五态、贴底滚动、首 token 三段反馈、移动键盘、会话分组；但它没有 provider 管理 |
 
 > 证据分级不统一是这批材料的通病（dsh-icl 自己就有两套互斥的 E0–E4 定义）。
 > 本目录各报告已各自声明口径；引用数字前先看它的口径表。
