@@ -112,10 +112,7 @@ class SessionStore(private val home: MycoHome) {
 
     private fun appendLine(dir: Path, event: SessionEvent) {
         val line = MycoJson.encodeToString(SessionEvent.serializer(), event) + "\n"
-        Files.writeString(
-            dir.resolve(FILE_NAME), line, StandardCharsets.UTF_8,
-            StandardOpenOption.CREATE, StandardOpenOption.APPEND
-        )
+        dev.myco.core.io.TextFiles.append(dir.resolve(FILE_NAME), line)
     }
 
     private fun sessionDir(sessionId: String): Path = home.sessions.resolve(sessionId)

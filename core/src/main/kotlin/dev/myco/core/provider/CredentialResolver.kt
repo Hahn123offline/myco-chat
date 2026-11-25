@@ -67,7 +67,7 @@ class CredentialResolver(
         Files.createDirectories(home.credentialsFile.toAbsolutePath().parent)
         val tmp = home.credentialsFile.resolveSibling("credentials.json.tmp")
         val json = JsonObject(records.mapValues { (_, v) -> JsonPrimitive(v) })
-        Files.writeString(tmp, json.toString())
+        dev.myco.core.io.TextFiles.write(tmp, json.toString())
         try {
             val perms = java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")
             Files.setPosixFilePermissions(tmp, perms)
@@ -81,7 +81,7 @@ class CredentialResolver(
         if (!Files.exists(home.credentialsFile)) return emptyMap()
         MycoHome.permissionWarning(home.credentialsFile)?.let { System.err.println("[warn] $it") }
         return try {
-            val root = Json.parseToJsonElement(Files.readString(home.credentialsFile)).jsonObject
+            val root = Json.parseToJsonElement(dev.myco.core.io.TextFiles.read(home.credentialsFile)).jsonObject
             root.mapValues { (_, v) -> v.jsonPrimitive.content }
         } catch (e: Exception) {
             System.err.println("[warn] credentials.json 解析失败，按未配置处理：${e.message}")
@@ -89,3 +89,5 @@ class CredentialResolver(
         }
     }
 }
+
+

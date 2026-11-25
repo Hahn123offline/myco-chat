@@ -80,6 +80,38 @@ fun main(args: Array<String>): Unit = runBlocking {
             println("session=${meta.id}")
             chat(bridge, meta.id, text)
         }
+        "init-deepseek" -> {
+            val baseUrl = args.getOrNull(1) ?: "https://api.deepseek.com/anthropic"
+            val current = providers.load()
+            val revision = providers.save(
+                listOf(
+                    ProviderProfile(
+                        id = "deepseek",
+                        kind = "deepseek-messages",
+                        displayName = "DeepSeek 官方",
+                        baseUrl = baseUrl,
+                        auth = AuthProfile.ApiKey("DEEPSEEK_API_KEY"),
+                        models = listOf(
+                            ModelProfile(
+                                id = "deepseek-flash",
+                                name = "DeepSeek V4.1 Flash",
+                                contextWindow = 1_000_000,
+                                maxTokens = 384_000,
+                            )
+                        ),
+                        roles = mapOf("chat" to "deepseek-flash", "fast" to "deepseek-flash"),
+                        pricing = dev.myco.core.spec.Pricing(
+                            currency = "CNY",
+                            inputPerMillion = 1.0,
+                            outputPerMillion = 4.0,
+                            cachedInputPerMillion = 0.02,
+                        ),
+                    )
+                ),
+                expectedRevision = current.revision,
+            )
+            println("wrote DeepSeek provider (revision=$revision, key ref=DEEPSEEK_API_KEY)")
+        }
         "init-local" -> {
             val baseUrl = args.getOrNull(1) ?: "http://127.0.0.1:8787/v1"
             val current = providers.load()

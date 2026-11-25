@@ -525,7 +525,7 @@ private data class ProviderEditor(
     companion object {
         fun localTemplate() = ProviderEditor(
             originalId = null, id = "local", kind = "openai-completions",
-            displayName = "本地 OpenAI 兼容", baseUrl = "http://10.0.2.2:8787/v1",
+            displayName = "本地 OpenAI 兼容", baseUrl = "http://127.0.0.1:8787/v1",
             modelId = "fake-chat", contextWindow = "32768", maxTokens = "4096", ref = "",
         )
 

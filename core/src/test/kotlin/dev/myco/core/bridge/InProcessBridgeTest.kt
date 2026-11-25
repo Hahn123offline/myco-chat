@@ -175,6 +175,21 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `session events query includes message payload for history replay`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default")
+        f.bridge.send(Command.ChatSend(meta.id, "历史测试"))
+        val res = f.bridge.query(Query.SessionEvents(meta.id, 0)) as QueryResult.Ok
+        val texts = (res.data as kotlinx.serialization.json.JsonArray).mapNotNull { el ->
+            val o = el.jsonObject
+            if (o["type"]?.jsonPrimitive?.content == "user/message") {
+                (o["data"] as? kotlinx.serialization.json.JsonObject)?.get("text")?.jsonPrimitive?.content
+            } else null
+        }
+        assertTrue(texts.contains("历史测试"))
+    }
+
+    @Test
     fun `session list query respects app filter`() = runBlocking {
         val f = Fixture()
         f.sessions.create("chat", "chat-default")

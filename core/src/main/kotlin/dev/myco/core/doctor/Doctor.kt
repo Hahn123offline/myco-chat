@@ -29,7 +29,7 @@ class Doctor(
         checks += runCatching {
             Files.createDirectories(home.store)
             val probe = home.store.resolve(".write-probe")
-            Files.writeString(probe, "ok")
+            dev.myco.core.io.TextFiles.write(probe, "ok")
             Files.deleteIfExists(probe)
             Check("store", CheckStatus.OK, "可写：${home.root}")
         }.getOrElse { Check("store", CheckStatus.ERROR, "不可写：${it.message}") }
@@ -91,3 +91,4 @@ class Doctor(
         const val BUDGET_CHARS = 24_000
     }
 }
+

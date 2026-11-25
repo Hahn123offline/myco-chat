@@ -28,7 +28,7 @@ class SettingsStore(private val file: Path) {
     fun read(): SettingsDoc = synchronized(lock) {
         if (!Files.exists(file)) return SettingsDoc(0, JsonObject(emptyMap()))
         val root = try {
-            Json.parseToJsonElement(Files.readString(file))
+            Json.parseToJsonElement(dev.myco.core.io.TextFiles.read(file))
         } catch (e: Exception) {
             throw SettingsConflictException("设置文件损坏：$file（${e.message}）")
         }
@@ -60,10 +60,12 @@ class SettingsStore(private val file: Path) {
         }
         Files.createDirectories(file.toAbsolutePath().parent)
         val tmp = file.resolveSibling(file.fileName.toString() + ".tmp")
-        Files.writeString(tmp, envelope.toString())
+        dev.myco.core.io.TextFiles.write(tmp, envelope.toString())
         Files.move(tmp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         next
     }
 
     fun exists(): Boolean = Files.exists(file)
 }
+
+

@@ -287,6 +287,19 @@ class InProcessBridge(
         put("type", typeName(e))
         put("seq", e.seq)
         put("at", e.at)
+        // 历史回放需要 payload；至少把消息文本带出去（GUI 靠它渲染历史）
+        when (e) {
+            is SessionEvent.SessionStart -> put("data", buildJsonObject {
+                put("id", e.data.id); put("title", e.data.title); put("app", e.data.app); put("formatVersion", e.data.formatVersion)
+            })
+            is SessionEvent.TurnStart -> put("data", buildJsonObject { put("turn", e.data.turn) })
+            is SessionEvent.UserMessage -> put("data", buildJsonObject { put("text", e.data.text) })
+            is SessionEvent.AssistantMessage -> put("data", buildJsonObject { put("text", e.data.text) })
+            is SessionEvent.ToolCall -> put("data", buildJsonObject { put("name", e.data.name) })
+            is SessionEvent.ToolResult -> put("data", buildJsonObject { put("name", e.data.name); put("ok", e.data.ok); put("text", e.data.text) })
+            is SessionEvent.SystemInject -> put("data", buildJsonObject { put("text", e.data.text) })
+            is SessionEvent.TurnEnd -> put("data", buildJsonObject { put("turn", e.data.turn); put("steps", e.data.steps) })
+        }
     }
 
     private fun typeName(e: SessionEvent): String = when (e) {

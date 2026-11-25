@@ -32,13 +32,18 @@ object ModelDiscovery {
         val base = provider.baseUrl?.takeIf { it.isNotBlank() }
             ?: throw ModelDiscoveryException("provider ${provider.id} 缺少 baseUrl")
         val key = credentials.resolveFor(provider.auth)
-        val candidates = when (provider.kind) {
-            "deepseek-messages" -> listOf("/v1/models", "/models")
-            else -> if (base.trimEnd('/').endsWith("/v1")) listOf("/models") else listOf("/models", "/v1/models")
-        }
+        val normalized = base.trimEnd('/')
+        // DeepSeek 的 Anthropic 兼容基址是 /anthropic，但模型清单在站点根 /models；
+        // 两类路径都试，404 才换下一条（鉴权/网络错误立刻抛出）。
+        val origin = normalized.removeSuffix("/anthropic")
+        val candidates = (when (provider.kind) {
+            "deepseek-messages" -> listOf("/models", "/v1/models")
+            else -> if (normalized.endsWith("/v1")) listOf("/models") else listOf("/models", "/v1/models")
+        }).flatMap { path ->
+            if (origin != normalized && !normalized.contains("/v1")) listOf(origin + path, normalized + path) else listOf(normalized + path)
+        }.distinct()
         var lastError: String? = null
-        for (path in candidates) {
-            val url = base.trimEnd('/') + path
+        for (url in candidates) {
             val result = runCatching { fetch(url, provider, key) }
             if (result.isSuccess) return result.getOrThrow()
             val e = result.exceptionOrNull()
