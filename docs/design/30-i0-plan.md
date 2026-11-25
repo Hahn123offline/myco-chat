@@ -4,6 +4,8 @@
 > D4+A2=MVP 到 I2（多会话 chat）、**A4=离线独立是硬要求**、A5=GUI 模块化。决策见 [决策记录](20-decision-record.md)。
 >
 > ⚠ **D9（手机内核载体/技术栈）未拍板前，本计划只执行 §3 的"语言无关契约"部分，不写绑死某栈的产品代码。**
+> 若 D9 按推荐走（Kotlin/JVM 单核心），本文件的命令与目录改为 **Gradle 多模块**（`settings.gradle.kts` + `core/` + `app-android/` + `app-desktop/`），
+> 契约与验收内容不变。当前环境已具备：JDK 21、Android SDK（`%LOCALAPPDATA%\Android\Sdk`）、Android Studio。
 > 本文是**施工图**，不含业务代码。开工条件：D9 拍板 + 用户对本文点头（或改需求）。
 
 ## 0. I0 的验收定义（一句话）

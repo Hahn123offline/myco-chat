@@ -527,12 +527,11 @@ capture(opts): Promise<Frame>   // 像素、秒级、贵、有配额、带失败
 
 ## 10. 决策状态
 
-**D1–D8 已于 2026-11-25 全部拍板**，权威记录见 [20-decision-record.md](20-decision-record.md)。
+**D1–D8 + A1–A5 已拍板；D9（运行时）与 D10（双 app 共享形态）待点头**，权威记录见 [20-decision-record.md](20-decision-record.md)。
+D9 的完整对比在 [runtime-options.md](../recon/runtime-options.md)：推荐 **Kotlin/JVM 单核心 + Compose 壳 + Gradle 模块插件**（89/100），
+备选 RN+Hermes（70）；调研同时给出 1 周 spike 的三项机器可判判据。
+若 D9 按推荐走：本简报 §2.2 的 `packages/*` 落点改为 Gradle 多模块（结构不变），TS 仅保留在桌面 Web 预览壳。
+
 原候选清单 [10-open-questions.md](10-open-questions.md) 保留为决策背景（已标注每条结论），不再作为待办。
 
-仍未定、但**不阻塞 I0** 的四条（记录在决策记录末尾）：
-
-1. 手机上的内核载体（WebView + 内嵌运行时 / Termux+proot / 原生壳连本机 daemon）——等移动端底盘调研。
-2. 两个 app 共享存储的粒度（一份库 + 各自策略 vs 两份库 + 单向同步）——当前倾向一份库。
-3. provider 配置是否两 app 共享——当前倾向共享。
-4. 桌面版的定位——当前只承诺"开发与预览载体"。
+仍未定、但**不阻塞 T0（语言无关契约）**的条目：D9、D10，以及 D10 附带的同步协议细节、provider 配置共享粒度、桌面版定位。都在决策记录末尾。

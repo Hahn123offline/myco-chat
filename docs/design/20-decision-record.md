@@ -188,25 +188,52 @@ I5 之前研究 DSH GO / 太墟 的实现再定（记录在 [runtime-options](re
 
 ---
 
-## 仍未定（不阻塞，记录在案）
+## 第三轮候选（2026-11-25 21:15，待拍板）
 
-1. **D9 手机上的内核载体**（I2 之后、做手机壳之前必须定；不阻塞 I0 的契约部分，但阻塞 I0 的技术栈）：
-   `mobile-agent-landscape` 收窄了路：nodejs-mobile 官方停在 Node 18（2024-10），Play 禁止运行时下载可执行文件，targetSdk 35+ 还要 16KB page。
-   **A4 已把它升级成硬约束：候选方案必须能"单手机离线完整运行"。** 候选：
+### D9【推荐 A】运行时：Kotlin/JVM 单核心
 
-   | 方案 | 得到什么 | 代价 |
-   |---|---|---|
-   | Kotlin/JVM 内核 + Compose（桌面用 Compose Desktop 共享 core） | 移动端最稳；FGS/通知/SQLite/无障碍原生；桌面预览同语言 | 失去 TS 生态（MCP 需 Kotlin 重写）；插件以编译期模块为主 |
-   | Kotlin Multiplatform（common core + Android/Desktop UI） | 同上 + 一份 core 两平台 | KMP 工具链成本；桌面 UI 与 Android UI 仍要各写 |
-   | React Native + Hermes 承载 TS core | 复用 TS 内核；一份代码两端（桌面可走 RN-Web/Electron） | Node API 缺失要适配层；包体/耗电/观感待实测 |
-   | 原生壳 + 内嵌 Node（nodejs-mobile/分叉） | 原样复用 TS 内核 | Node 18 太旧；SQLite native 模块要自己编；包体与耗电未知 |
-   | 原生壳 + 轻 JS 引擎（QuickJS/Hermes 嵌入） | 包体小、可控 | fs/net/sqlite 绑定全要自己写，等于自研运行时 |
-   | Flutter + Dart core | 跨端 UI 成熟 | Dart 生态与插件能力弱于 JVM；TS 资产清零 |
+调研产出：[runtime-options.md](recon/runtime-options.md)（244 行，含 7 候选、证据表、Play 政策、spike 判据）。
 
-   正在做完整对比：[runtime-options.md](recon/runtime-options.md)（含 Play 政策、包体/耗电证据、spike 方案）。
-   **倾向**：先把"契约与存储格式"做成语言无关的规格（JSON Schema / 事件表 / Bridge 接口），
-   再用 2–3 天 spike 在 Kotlin 与 RN/Hermes 之间二选一；**不先写 TS 产品代码**，避免返工。
-2. **两个 app 的存储共享粒度**：memory.db 一份 + 各自 policy（当前倾向）；还是两份库 + 单向同步（更隔离但会"记忆分家"）。
+**推荐 A = Kotlin/JVM 单核心**：
+- `core` 是纯 JVM Kotlin 库（Android 与桌面都跑 JVM）；Android 用 Compose 原生壳；桌面用 JVM + Ktor（HTTP/SSE）做开发/预览壳。
+- 插件 = **编译期 Gradle 模块 + 运行时注册表**；按 KMP 结构预留（A/B 同栈，只改构建形态，不构成分歧）。
+- 五维加权：A 89 / B 88 / F 74.5 / G 70.5 / C 70 / D 61.5 / E 58.5。
+
+**三条决定性理由**：
+1. 离线单机所需能力（FGS `specialUse`、通知、无障碍、SQLite、Keystore、文件）**全是 Android 原生 API**；RN/Flutter/内嵌 Node 最终仍要写同一层 Kotlin 胶水，还额外背一个运行时（包体/内存/耗电/16KB/Play 政策）。
+2. **前代代码是资产**：trace-memory 353 个非测试 Java 文件 / 110 测试，其中只有 78 个（22%）import `android.*`——Kotlin/JVM 是**移植**而不是重写；而 myco 仓库目前只有 docs + reference，现在换栈成本≈0。
+3. Play 禁止运行时下载可执行代码（例外只有 VM/解释器且须 "indirect access"，如 WebView JS）→ 手机上的「一切皆插件」只能 = **编译期模块 + 运行时注册表 + 可下发数据插件**。这与 trace-memory 的 `Module` / `HostContext.effect()` 契约同构。
+
+**否决证据（摘要）**：nodejs-mobile 官方 npm 仍是 18.20.4（2024-10，unpacked 375MB）；Node 22 仅社区 fork（libnode ~88MB/2 ABI）；`node:sqlite` 需 Node≥22.5 且实验；App Center/CodePush 2025-03-31 停服；RN 内置 fetch 无 `response.body`（SSE 要 native/polyfill）。
+
+**影响**：
+- 00-design-brief 与 30-i0-plan 里所有 TS/Node 落点要改成 **Kotlin/Gradle 多模块**；TS 只保留在"桌面 Web 预览壳"。
+- 插件机制从"动态 import"改成"Gradle 模块 + 注册表"；插件市场若以后要，只能走侧载/自带渠道。
+- I0 的 T0（语言无关契约）不变，仍是第一步；T1 起按 Kotlin 落地。
+
+**待你点头**：是否按 A 走；是否先跑 1 周 spike（判据在报告 §6：Android 单机 SSE+SQLite+FGS 24h、包体/启动/内存/耗电、插件与预览迭代速度）。
+
+### D10【新】双 app 的安装与共享形态（Android 上不是免费的）
+
+**问题**：Android 独立 APK = 独立 UID + scoped storage，`sharedUserId` 已废弃。所以"两个 app 共享记忆文件"没法直接成立。候选：
+
+| 方案 | 独立性 | 共享实时性 | 代价 |
+|---|---|---|---|
+| 一包双 launcher 入口（一个 APK 两个图标） | 差（必须同时安装） | 完美（同 UID 同一份库） | 违背"两个 app 不一定同时存在" |
+| 两个 APK，各自完整内核 + **显式导出/导入（增量游标 + 签名校验）** | **好（各自可独立运行）** | 最终一致（手动或后台同步） | 需要同步协议与冲突规则；认知上"共享"变成"同步" |
+| 两个 APK + 同签名 **ContentProvider** 实时共享 | 中（缺一方时降级） | 好 | 跨进程 DB 并发、权限、双写者冲突；实现复杂 |
+| 一个"core app" + 两个薄壳 | 差（core 是硬依赖） | 好 | 违背 A4（不能有必需依赖） |
+
+**倾向**：**两个 APK，各自完整内核（都内置 core 库），共享 = 显式同步**（记忆条目/人格卡/事件游标，签名校验 + 幂等 + ULID）。
+这样：离线独立成立、不互锁成立、两 app 不同时存在成立；代价是"共享"是最终一致的，不是同一份文件。
+若以后确实需要实时共享，再上同签名 ContentProvider，且仅作为可选增强。
+
+**待你确认**：接受把"共享记忆文件"实现为"同一 schema + 增量同步"（物理各自持有）吗？
+
+## 其余未定（不阻塞，记录在案）
+
+1. **D9 / D10 待你点头**（见上节）。
+2. **同步协议细节**（若 D10 选"显式同步"）：冲突规则、游标语义、人格卡/记忆/事件的同步粒度——I3 前定。
 3. **provider 配置是否两 app 共享**：倾向共享（一份 key、一份模型目录），app 只覆盖默认模型。
 4. **桌面版的定位**：开发/预览/测试载体（A4 已明确不得成为手机端依赖）。
 
