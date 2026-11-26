@@ -23,9 +23,10 @@ class MycoForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val text = intent?.getStringExtra(EXTRA_TEXT) ?: "本地内核在运行（尽力而为，不承诺常驻）"
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("myco")
-            .setContentText("本地内核在运行（尽力而为，不承诺常驻）")
+            .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setOngoing(true)
             .build()
@@ -38,6 +39,7 @@ class MycoForegroundService : Service() {
     companion object {
         const val CHANNEL_ID = "myco.presence"
         const val NOTIFICATION_ID = 1001
+        const val EXTRA_TEXT = "text"
         private val active = java.util.concurrent.atomic.AtomicInteger(0)
 
         /** 生成期间临时持有前台服务，防止切后台被系统冻结/杀进程。 */
@@ -56,4 +58,5 @@ class MycoForegroundService : Service() {
         }
     }
 }
+
 

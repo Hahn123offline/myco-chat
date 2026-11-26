@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -491,6 +493,7 @@ fun ChatMessages(
     }
     val expandedProcess = remember { androidx.compose.runtime.mutableStateMapOf<Long, Boolean>() }
     val expandedTools = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
+    val maxGroupHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.5f).coerceAtMost(400.dp)
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
         .groupBy { it.nodeId!! }
         .mapValues { (_, list) -> list.sortedBy { it.version } }
@@ -529,14 +532,14 @@ fun ChatMessages(
                     )
                 }
                 if (expandedProcess[turn] == true) {
-                    entries.forEachIndexed { entryIndex, entry ->
-                        item(key = "pe-$turn-$entryIndex") {
-                            TimelineEntryRow(
-                                entry = entry,
-                                expanded = expandedTools["$turn-$entryIndex"] == true,
-                                onToggle = { expandedTools["$turn-$entryIndex"] = expandedTools["$turn-$entryIndex"] != true },
-                            )
-                        }
+                    item(key = "pb-$turn") {
+                        TimelineBody(
+                            entries = entries,
+                            keyPrefix = "$turn",
+                            expandedTools = expandedTools,
+                            maxHeight = maxGroupHeight,
+                            autoScroll = false,
+                        )
                     }
                 }
             }
@@ -571,14 +574,14 @@ fun ChatMessages(
         if (liveEntries.isNotEmpty() || streamingText != null) {
             if (liveEntries.isNotEmpty()) {
                 stickyHeader(key = "live-ph") { TimelineHeaderRow(entries = liveEntries, expanded = true, onToggle = {}, live = true) }
-                liveEntries.forEachIndexed { entryIndex, entry ->
-                    item(key = "live-pe-$entryIndex") {
-                        TimelineEntryRow(
-                            entry = entry,
-                            expanded = expandedTools["live-$entryIndex"] == true,
-                            onToggle = { expandedTools["live-$entryIndex"] = expandedTools["live-$entryIndex"] != true },
-                        )
-                    }
+                item(key = "live-pb") {
+                    TimelineBody(
+                        entries = liveEntries,
+                        keyPrefix = "live",
+                        expandedTools = expandedTools,
+                        maxHeight = maxGroupHeight,
+                        autoScroll = true,
+                    )
                 }
             }
             if (streamingText != null) {
@@ -591,6 +594,32 @@ fun ChatMessages(
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun TimelineBody(
+    entries: List<TimelineEntry>,
+    keyPrefix: String,
+    expandedTools: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Boolean>,
+    maxHeight: androidx.compose.ui.unit.Dp,
+    autoScroll: Boolean,
+) {
+    val scroll = rememberScrollState()
+    androidx.compose.runtime.LaunchedEffect(entries.size) {
+        if (autoScroll) scroll.animateScrollTo(scroll.maxValue)
+    }
+    Column(
+        Modifier.fillMaxWidth().heightIn(max = maxHeight).verticalScroll(scroll),
+    ) {
+        entries.forEachIndexed { entryIndex, entry ->
+            val key = "$keyPrefix-$entryIndex"
+            TimelineEntryRow(
+                entry = entry,
+                expanded = expandedTools[key] == true,
+                onToggle = { expandedTools[key] = expandedTools[key] != true },
+            )
+        }
+    }
+}
+
 @Composable
 private fun TimelineHeaderRow(
     entries: List<TimelineEntry>,
@@ -1010,6 +1039,8 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
 
 
 
