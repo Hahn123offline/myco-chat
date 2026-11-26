@@ -77,6 +77,7 @@ import dev.myco.android.ui.MycoRadius
 import dev.myco.android.ui.MycoSpacing
 import dev.myco.android.ui.SearchField
 import dev.myco.android.ui.SessionListItem
+import dev.myco.android.ui.SettingsCard
 import dev.myco.android.ui.SettingsRow
 import dev.myco.android.ui.MycoTheme
 import dev.myco.android.ui.MycoTopBar
@@ -918,37 +919,36 @@ private fun SettingsScreen(
         ) {
             item { SearchField(value = settingsQuery, onValueChange = { settingsQuery = it }, placeholder = "搜索设置") }
             if (showAppearance) {
-            item { SectionHeader("外观") }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s)) {
-                    ThemeMode.values().forEach { mode ->
-                        FilterChip(
-                            selected = themeMode == mode,
-                            onClick = { onThemeChange(mode) },
-                            label = {
-                                Text(
-                                    when (mode) {
-                                        ThemeMode.SYSTEM -> "跟随系统"
-                                        ThemeMode.LIGHT -> "浅色"
-                                        ThemeMode.DARK -> "深色"
-                                    }
-                                )
-                            },
-                        )
+                SettingsCard("外观") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s)) {
+                        ThemeMode.values().forEach { mode ->
+                            FilterChip(
+                                selected = themeMode == mode,
+                                onClick = { onThemeChange(mode) },
+                                label = {
+                                    Text(
+                                        when (mode) {
+                                            ThemeMode.SYSTEM -> "跟随系统"
+                                            ThemeMode.LIGHT -> "浅色"
+                                            ThemeMode.DARK -> "深色"
+                                        }
+                                    )
+                                },
+                            )
+                        }
                     }
                 }
             }
-            item { Divider() }
             }
             if (showSession) {
-            item { SectionHeader("会话") }
             item {
-                SettingsRow("归档会话", "已从抽屉隐藏，可取消归档", onClick = { onOpenBin(BinKind.ARCHIVED) })
+                SettingsCard("会话") {
+                    SettingsRow("归档会话", "已从抽屉隐藏，可取消归档", onClick = { onOpenBin(BinKind.ARCHIVED) })
+                    Divider()
+                    SettingsRow("回收站", "软删的会话，可恢复或永久删除", onClick = { onOpenBin(BinKind.DELETED) })
+                }
             }
-            item {
-                SettingsRow("回收站", "软删的会话，可恢复或永久删除", onClick = { onOpenBin(BinKind.DELETED) })
-            }
-            item { Divider() }
             }
             if (showProvider) {
             item { SectionHeader("模型提供方") }
@@ -1000,29 +1000,40 @@ private fun SettingsScreen(
             item { HorizontalDivider() }
             }
             if (showFgs) {
-            item { Text("常驻（A7：不承诺 24/7，尽力而为）", style = MaterialTheme.typography.titleMedium) }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
-                        context.startForegroundService(Intent(context, MycoForegroundService::class.java))
-                        running = true
-                    }) { Text("启动前台服务") }
-                    OutlinedButton(onClick = {
-                        context.stopService(Intent(context, MycoForegroundService::class.java))
-                        running = false
-                    }) { Text("停止") }
+                SettingsCard("常驻（A7：不承诺 24/7，尽力而为）") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = {
+                            context.startForegroundService(Intent(context, MycoForegroundService::class.java))
+                            running = true
+                        }) { Text("启动前台服务") }
+                        OutlinedButton(onClick = {
+                            context.stopService(Intent(context, MycoForegroundService::class.java))
+                            running = false
+                        }) { Text("停止") }
+                    }
+                    Text(
+                        if (running) "已请求启动（通知栏应出现常驻通知）" else "未启动",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = MycoSpacing.xs),
+                    )
                 }
             }
-            item {
-                Text(if (running) "已请求启动（通知栏应出现常驻通知）" else "未启动", style = MaterialTheme.typography.bodySmall)
-            }
-            item { HorizontalDivider() }
             }
             if (showDoctor) {
-            item { Text("自检", style = MaterialTheme.typography.titleMedium) }
-            if (checks.isEmpty()) item { CircularProgressIndicator(Modifier.height(24.dp)) }
-            else items(checks) { pair ->
-                Row { Text(pair.first, Modifier.width(96.dp)); Text(pair.second, style = MaterialTheme.typography.bodySmall) }
+            item {
+                SettingsCard("自检") {
+                    if (checks.isEmpty()) {
+                        CircularProgressIndicator(Modifier.height(24.dp))
+                    } else {
+                        checks.forEach { pair ->
+                            Row(Modifier.padding(vertical = 2.dp)) {
+                                Text(pair.first, Modifier.width(96.dp))
+                                Text(pair.second, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
             }
             }
         }

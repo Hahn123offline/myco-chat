@@ -117,6 +117,20 @@ fun GlassSurface(
     ) { content() }
 }
 
+/** 设置分组卡片：统一标题 + 不透明渐变表面。 */
+@Composable
+fun SettingsCard(
+    title: String,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        SectionHeader(title)
+        GlassSurface(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.s), content = content)
+        }
+    }
+}
+
 @Composable
 fun SectionHeader(text: String) {
     Text(
