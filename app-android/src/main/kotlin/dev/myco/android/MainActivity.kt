@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
@@ -33,16 +34,22 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,8 +62,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.myco.android.ui.AppMode
-import dev.myco.android.ui.AppPrefs
 import dev.myco.android.ui.ChatBubble
 import dev.myco.android.ui.ChatComposer
 import dev.myco.android.ui.BubbleRole
@@ -64,6 +69,7 @@ import dev.myco.android.ui.Divider
 import dev.myco.android.ui.EmptyState
 import dev.myco.android.ui.GlassSurface
 import dev.myco.android.ui.InlineError
+import dev.myco.android.ui.MycoDrawerContent
 import dev.myco.android.ui.MycoRadius
 import dev.myco.android.ui.MycoSpacing
 import dev.myco.android.ui.SearchField
@@ -100,21 +106,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         BridgeHolder.init(applicationContext)
         val initial = ThemePrefs.load(this)
-        val initialAppMode = AppPrefs.loadMode(this)
         setContent {
             var mode by remember { mutableStateOf(initial) }
-            var appMode by remember { mutableStateOf(initialAppMode) }
             MycoTheme(mode) {
                 MycoApp(
                     mode,
                     onThemeChange = {
                         mode = it
                         ThemePrefs.save(applicationContext, it)
-                    },
-                    appMode = appMode,
-                    onAppModeChange = {
-                        appMode = it
-                        AppPrefs.saveMode(applicationContext, it)
                     },
                 )
             }
@@ -123,7 +122,6 @@ class MainActivity : ComponentActivity() {
 }
 
 private sealed interface Screen {
-    data object History : Screen
     data class Chat(val id: String, val title: String) : Screen
     data object Settings : Screen
 }
@@ -131,23 +129,38 @@ private sealed interface Screen {
 private data class SessionRow(val id: String, val title: String, val createdAt: Long, val snippet: String? = null)
 private data class ChatLine(val role: String, val text: String)
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+private fun SessionRow.toUi(): dev.myco.android.ui.model.SessionItemUi {
+    val now = java.time.LocalDate.now()
+    val date = java.time.Instant.ofEpochMilli(createdAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+    val group = when {
+        date == now -> dev.myco.android.ui.model.SessionGroup.TODAY
+        date == now.minusDays(1) -> dev.myco.android.ui.model.SessionGroup.YESTERDAY
+        date.isAfter(now.minusDays(7)) -> dev.myco.android.ui.model.SessionGroup.WEEK
+        else -> dev.myco.android.ui.model.SessionGroup.EARLIER
+    }
+    return dev.myco.android.ui.model.SessionItemUi(
+        id = id,
+        title = title,
+        timeLabel = formatTime(createdAt),
+        snippet = snippet,
+        group = group,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MycoApp(
-    themeMode: ThemeMode,
-    onThemeChange: (ThemeMode) -> Unit,
-    appMode: AppMode,
-    onAppModeChange: (AppMode) -> Unit,
-) {
+private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     val bridge = BridgeHolder.bridge
     val scope = rememberCoroutineScope()
-    var screen by remember { mutableStateOf<Screen>(Screen.History) }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    var screen by remember { mutableStateOf<Screen?>(null) }
     var sessions by remember { mutableStateOf<List<SessionRow>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var rowMenu by remember { mutableStateOf<SessionRow?>(null) }
     var renameTarget by remember { mutableStateOf<SessionRow?>(null) }
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<SessionRow?>(null) }
+    val snackbar = remember { SnackbarHostState() }
 
     suspend fun refreshSessions() {
         val q = searchQuery.trim()
@@ -156,69 +169,106 @@ private fun MycoApp(
             is QueryResult.Ok -> parseSessions(res.data as? JsonArray)
             else -> emptyList()
         }
+        val current = screen
+        if (current == null && sessions.isNotEmpty()) {
+            screen = Screen.Chat(sessions.first().id, sessions.first().title)
+        } else if (searchQuery.isBlank() && current is Screen.Chat && sessions.none { it.id == current.id }) {
+            // 只在实际删除后切走；抽屉里搜索过滤不应改变当前打开的会话
+            screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
+        }
+    }
+
+    fun openMostRecent() {
+        screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
     }
 
     fun createSession() {
         scope.launch {
             val r = bridge.send(Command.SessionCreate(title = "新会话"))
+            searchQuery = ""
             refreshSessions()
             if (r is CommandResult.Ok) {
                 val id = (r.data as? JsonObject)?.get("sessionId")?.jsonPrimitive?.content
                 if (id != null) screen = Screen.Chat(id, "新会话")
             }
+            drawerState.close()
         }
     }
 
-    fun openMostRecent() {
-        val first = sessions.firstOrNull() ?: return
-        screen = Screen.Chat(first.id, first.title)
-    }
-
-    LaunchedEffect(Unit) {
-        refreshSessions()
-        if (appMode == AppMode.CHAT) openMostRecent()
-    }
+    LaunchedEffect(Unit) { refreshSessions() }
     LaunchedEffect(searchQuery) { refreshSessions() }
 
-    when (val s = screen) {
-        Screen.History -> HistoryScreen(
-            title = if (appMode == AppMode.CHAT) "历史" else "myco",
-            showBack = appMode == AppMode.CHAT && sessions.isNotEmpty(),
-            onBack = { openMostRecent() },
-            sessions = sessions,
-            query = searchQuery,
-            onQueryChange = { searchQuery = it },
-            onOpen = { screen = Screen.Chat(it.id, it.title) },
-            onLongPress = { rowMenu = it },
-            onCreate = if (appMode == AppMode.WORK) ({ createSession() }) else null,
-            onSettings = { screen = Screen.Settings },
-            appMode = appMode,
-        )
-
-        is Screen.Chat -> ChatScreen(
-            bridge = bridge,
-            sessionId = s.id,
-            title = s.title,
-            onBack = if (appMode == AppMode.WORK) ({
-                scope.launch {
-                    refreshSessions()
-                    screen = Screen.History
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = false, // MVP 只做汉堡入口；边缘滑交给系统返回，避免冲突
+        drawerContent = {
+            ModalDrawerSheet {
+                MycoDrawerContent(
+                    sessions = sessions.map { it.toUi() },
+                    selectedId = (screen as? Screen.Chat)?.id,
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    onSelect = {
+                        screen = Screen.Chat(it.id, it.title)
+                        scope.launch { drawerState.close() }
+                    },
+                    onSessionLongPress = { rowMenu = sessions.firstOrNull { s -> s.id == it.id } },
+                    onNewChat = { createSession() },
+                    onSettings = {
+                        screen = Screen.Settings
+                        scope.launch { drawerState.close() }
+                    },
+                )
+            }
+        },
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            when (val s = screen) {
+                null -> Scaffold(
+                    topBar = { MycoTopBar(title = "myco", onMenu = { scope.launch { drawerState.open() } }) },
+                ) { padding ->
+                    Box(Modifier.fillMaxSize().padding(padding)) {
+                        EmptyState(
+                            title = "开始聊天",
+                            message = "这是你的本地对话基座。历史都在左侧抽屉里。",
+                            actionLabel = "开始新对话",
+                            onAction = { createSession() },
+                        )
+                    }
                 }
-            }) else null,
-            onHistory = if (appMode == AppMode.CHAT) ({ screen = Screen.History }) else null,
-        )
-
-        Screen.Settings -> SettingsScreen(
-            bridge = bridge,
-            themeMode = themeMode,
-            onThemeChange = onThemeChange,
-            appMode = appMode,
-            onAppModeChange = {
-                searchQuery = ""
-                onAppModeChange(it)
-            },
-            onBack = { screen = Screen.History },
-        )
+                is Screen.Chat -> ChatScreen(
+                    bridge = bridge,
+                    sessionId = s.id,
+                    title = s.title,
+                    onMenu = { scope.launch { drawerState.open() } },
+                )
+                Screen.Settings -> SettingsScreen(
+                    bridge = bridge,
+                    themeMode = themeMode,
+                    onThemeChange = onThemeChange,
+                    onBack = {
+                        screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
+                    },
+                )
+            }
+            SnackbarHost(
+                hostState = snackbar,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
+            )
+            // 抽屉打开时返回只关抽屉；聊天/空态根页返回打开抽屉（不是退出 App）；设置页返回上一个会话
+            BackHandler(enabled = drawerState.isOpen) {
+                scope.launch { drawerState.close() }
+            }
+            BackHandler(enabled = drawerState.isClosed && screen is Screen.Chat) {
+                scope.launch { drawerState.open() }
+            }
+            BackHandler(enabled = drawerState.isClosed && screen == null) {
+                scope.launch { drawerState.open() }
+            }
+            BackHandler(enabled = drawerState.isClosed && screen is Screen.Settings) {
+                screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
+            }
+        }
     }
 
     rowMenu?.let { row ->
@@ -263,7 +313,7 @@ private fun MycoApp(
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text("删除会话？") },
-            text = { Text("「${row.title}」会从列表隐藏（软删，日志保留）。") },
+            text = { Text("「${row.title}」会进入回收站，可撤销。") },
             confirmButton = {
                 TextButton(onClick = {
                     val target = row
@@ -271,75 +321,20 @@ private fun MycoApp(
                     scope.launch {
                         bridge.send(Command.SessionDelete(target.id))
                         refreshSessions()
+                        val result = snackbar.showSnackbar(
+                            message = "已删除「${target.title}」",
+                            actionLabel = "撤销",
+                            duration = androidx.compose.material3.SnackbarDuration.Short,
+                        )
+                        if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                            bridge.send(Command.SessionRestore(target.id))
+                            refreshSessions()
+                        }
                     }
                 }) { Text("删除") }
             },
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("取消") } },
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Composable
-private fun HistoryScreen(
-    title: String,
-    showBack: Boolean,
-    onBack: () -> Unit,
-    sessions: List<SessionRow>,
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onOpen: (SessionRow) -> Unit,
-    onLongPress: (SessionRow) -> Unit,
-    onCreate: (() -> Unit)?,
-    onSettings: () -> Unit,
-    appMode: AppMode,
-) {
-    Scaffold(
-        topBar = {
-            MycoTopBar(
-                title = title,
-                onBack = if (showBack) onBack else null,
-                actions = { TextButton(onClick = onSettings) { Text("设置") } },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            SearchField(value = query, onValueChange = onQueryChange)
-            when {
-                sessions.isEmpty() && query.isBlank() -> EmptyState(
-                    title = if (appMode == AppMode.CHAT) "开始聊天" else "还没有会话",
-                    message = if (appMode == AppMode.CHAT) "这里是你的历史；新对话会出现在这里。" else "新建一个会话开始。",
-                    actionLabel = onCreate?.let { "新建会话" },
-                    onAction = onCreate,
-                )
-                sessions.isEmpty() -> EmptyState(
-                    title = "没有匹配",
-                    message = "换个词试试，或清空搜索。",
-                )
-                else -> LazyColumn(
-                    Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = MycoSpacing.l, vertical = MycoSpacing.s),
-                ) {
-                    items(sessions, key = { it.id }) { row ->
-                        SessionListItem(
-                            title = row.title,
-                            time = formatTime(row.createdAt),
-                            snippet = row.snippet,
-                            onClick = { onOpen(row) },
-                            onLongClick = { onLongPress(row) },
-                        )
-                        Divider()
-                    }
-                    if (onCreate != null) {
-                        item {
-                            Box(Modifier.padding(vertical = MycoSpacing.m)) {
-                                Button(onClick = onCreate) { Text("新建会话") }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -349,8 +344,7 @@ private fun ChatScreen(
     bridge: InProcessBridge,
     sessionId: String,
     title: String,
-    onBack: (() -> Unit)? = null,
-    onHistory: (() -> Unit)? = null,
+    onMenu: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var lines by remember { mutableStateOf<List<ChatLine>>(emptyList()) }
@@ -451,15 +445,7 @@ private fun ChatScreen(
     }
 
     Scaffold(
-        topBar = {
-            MycoTopBar(
-                title = title,
-                onBack = onBack,
-                actions = {
-                    if (onHistory != null) TextButton(onClick = onHistory) { Text("历史") }
-                },
-            )
-        },
+        topBar = { MycoTopBar(title = title, onMenu = onMenu) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
             val listState = rememberLazyListState()
@@ -581,8 +567,6 @@ private fun SettingsScreen(
     bridge: InProcessBridge,
     themeMode: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
-    appMode: AppMode,
-    onAppModeChange: (AppMode) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -678,29 +662,6 @@ private fun SettingsScreen(
                 }
             }
             item { Divider() }
-            item { SectionHeader("应用形态") }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s)) {
-                    FilterChip(
-                        selected = appMode == AppMode.CHAT,
-                        onClick = { onAppModeChange(AppMode.CHAT) },
-                        label = { Text("聊天（单焦点）") },
-                    )
-                    FilterChip(
-                        selected = appMode == AppMode.WORK,
-                        onClick = { onAppModeChange(AppMode.WORK) },
-                        label = { Text("工作（多会话）") },
-                    )
-                }
-            }
-            item {
-                Text(
-                    if (appMode == AppMode.CHAT) "打开就是最近一次对话；历史在顶栏「历史」里。"
-                    else "以会话列表为首页，适合多任务。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
             item { Divider() }
             item { SectionHeader("模型提供方") }
             item { Text("revision=$revision · 保存冲突会提示重试", style = MaterialTheme.typography.bodySmall) }
@@ -1052,6 +1013,9 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
 
 
 

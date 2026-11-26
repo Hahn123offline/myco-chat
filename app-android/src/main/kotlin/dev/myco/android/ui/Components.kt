@@ -56,13 +56,19 @@ import androidx.compose.ui.unit.sp
 fun MycoTopBar(
     title: String,
     onBack: (() -> Unit)? = null,
+    onMenu: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleLarge) },
         navigationIcon = {
-            if (onBack != null) {
-                TextButton(onClick = onBack) { Text("‹", fontSize = 26.sp, fontWeight = FontWeight.Medium) }
+            when {
+                onMenu != null -> TextButton(onClick = onMenu) {
+                    Text("☰", fontSize = 22.sp, fontWeight = FontWeight.Medium)
+                }
+                onBack != null -> TextButton(onClick = onBack) {
+                    Text("‹", fontSize = 26.sp, fontWeight = FontWeight.Medium)
+                }
             }
         },
         actions = actions,
