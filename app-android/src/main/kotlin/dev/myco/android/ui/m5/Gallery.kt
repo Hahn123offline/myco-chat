@@ -66,7 +66,7 @@ fun M5Gallery(dark: Boolean, onToggleDark: () -> Unit, onClose: () -> Unit) {
                 LazyColumn(
                     Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 48.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     item { ShapeSection() }
                     item { MaterialSection() }
@@ -118,19 +118,25 @@ private fun GalleryHeader(dark: Boolean, onToggleDark: () -> Unit, onClose: () -
 @Composable
 private fun Section(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
     val p = LocalM5.current.palette
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column {
-            Text(title, style = M5Type.title, color = p.text)
-            if (subtitle != null) {
-                Text(subtitle, style = M5Type.caption, color = p.textTertiary, modifier = Modifier.padding(top = 2.dp))
+    // 同级节之间留足阴影预算：卡片阴影最多外扩 12dp（LazyColumn 间距 20dp）
+    NeoSiblings(M5Space.xl) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column {
+                Text(title, style = M5Type.title, color = p.text)
+                if (subtitle != null) {
+                    Text(subtitle, style = M5Type.caption, color = p.textTertiary, modifier = Modifier.padding(top = 2.dp))
+                }
             }
-        }
-        NeoSurface(
-            modifier = Modifier.fillMaxWidth(),
-            radius = M5Radius.card,
-            contentPadding = PaddingValues(14.dp),
-        ) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
+            NeoSurface(
+                modifier = Modifier.fillMaxWidth(),
+                radius = M5Radius.card,
+                contentPadding = PaddingValues(14.dp),
+            ) {
+                // 组内同级元素（分段键、图标底、工具行）共享半间距阴影预算，互不遮挡
+                NeoSiblings(M5Space.m) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
+                }
+            }
         }
     }
 }
@@ -161,7 +167,7 @@ private fun ShapeSection() {
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column {
                 Box(Modifier.width(120.dp).height(44.dp).clip(SuperellipseShape(22.dp)).background(LocalM5.current.palette.moss)) {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -189,7 +195,7 @@ private fun ShapeSection() {
 private fun MaterialSection() {
     val p = LocalM5.current.palette
     Section("材质 · 新拟物", "投影取面板自身颜色（粉=粉影、绿=橄榄影）；按钮优先凸起；按一下看「凸起按凹 + 超椭圆波纹」") {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
             NeoSurface(
                 onClick = {},
                 radius = 22.dp,
@@ -220,9 +226,9 @@ private fun MaterialSection() {
             modifier = Modifier.fillMaxWidth(),
             radius = 18.dp,
             material = NeoMaterial.Inset,
-            contentPadding = PaddingValues(4.dp),
+            contentPadding = PaddingValues(8.dp),
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf("跟随", "浅色", "深色").forEachIndexed { i, label ->
                     val selected = i == 0
                     NeoSurface(
@@ -337,11 +343,12 @@ private fun GlassSection() {
                 Text("玻璃搜索框（抽屉顶部）", style = M5Type.body, color = p.textSecondary)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassSurface(
                 modifier = Modifier.weight(1f),
                 radius = 18.dp,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
+                onClick = {},
             ) { Text("玻璃按钮", style = M5Type.label, color = p.text) }
             NeoSurface(
                 onClick = {},
@@ -357,7 +364,7 @@ private fun GlassSection() {
 private fun LightingSection() {
     val p = LocalM5.current.palette
     Section("光照 · 边缘与高光", "同一 LightRig 下的强度档位；暗色模式只照亮玻璃，不给普通卡片加发光") {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             listOf(0.4f to "0.4", 0.8f to "0.8", 1.4f to "1.4").forEach { (i, label) ->
                 Column(Modifier.weight(1f)) {
                     GlassSurface(
@@ -372,7 +379,7 @@ private fun LightingSection() {
             }
         }
         // 光源方向：左上的高光位置受 rig 影响（此处仅展示当前 rig）
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassSurface(
                 modifier = Modifier.weight(1f).height(76.dp),
                 radius = 18.dp,
@@ -508,31 +515,38 @@ private fun ComposerSection() {
                         }
                     },
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     NeoSurface(
-                        modifier = Modifier.size(36.dp),
-                        radius = 18.dp,
+                        modifier = Modifier.size(40.dp),
+                        radius = 20.dp,
                         material = NeoMaterial.Raised,
+                        onClick = {},
                     ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.plus, Modifier.size(18.dp), p.textSecondary) } }
                     NeoSurface(
-                        radius = 15.dp,
+                        modifier = Modifier.height(40.dp),
+                        radius = 20.dp,
                         material = NeoMaterial.Raised,
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 13.dp),
+                        contentAlignment = Alignment.Center,
+                        onClick = {},
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             M5Icon(M5Icons.spark, Modifier.size(14.dp), p.textSecondary)
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(5.dp))
                             Text("DeepSeek", style = M5Type.caption, color = p.textSecondary)
                         }
                     }
                     NeoSurface(
-                        radius = 15.dp,
+                        modifier = Modifier.height(40.dp),
+                        radius = 20.dp,
                         material = NeoMaterial.Raised,
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 13.dp),
+                        contentAlignment = Alignment.Center,
+                        onClick = {},
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             M5Icon(M5Icons.clock, Modifier.size(14.dp), p.moss)
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(5.dp))
                             Text("深度思考", style = M5Type.caption, color = p.textSecondary)
                         }
                     }

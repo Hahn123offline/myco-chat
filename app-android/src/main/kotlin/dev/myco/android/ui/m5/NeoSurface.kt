@@ -17,11 +17,14 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -33,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidPath
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -45,14 +47,23 @@ import androidx.compose.ui.unit.dp
 /**
  * M5 材质原语：新拟物（Neumorphism）。
  *
- * Raised / Inset 两种结构表面 + Float 悬浮面，全部使用 Superellipse 轮廓。
- *
- * 三条视觉规则（2026-11-27 用户拍板）：
- * 1. 投影颜色取自面板自身颜色（粉气泡=粉投影，绿按钮=橄榄投影），不是全局灰绿；
- * 2. 按钮语义优先用凸起（Raised），凹陷只留给输入/槽位；
- * 3. 点击 = 凸起被按凹 + 超椭圆裁切的扩散波纹（不是矩形 ripple）。
+ * 规则（2026-11-27 拍板）：
+ * 1. 投影颜色取自面板自身颜色（粉气泡=粉影，绿按钮=橄榄影），中性表面用派生中性影；
+ * 2. 按钮语义优先凸起（Raised），凹陷只给输入/槽位；
+ * 3. 点击 = 凸起被按凹 + 超椭圆裁切的扩散波纹（不用 Material 矩形 ripple）；
+ * 4. **同级不遮挡**：用 [NeoSiblings] 声明同级间距，阴影自动缩到 gap/2 以内，
+ *    一个按钮的投影不会盖到旁边同级按钮上。
  */
 enum class NeoMaterial { Raised, Inset, Float }
+
+/** 同级阴影预算：由 [NeoSiblings] 提供，阴影最大外扩距离 = gap / 2。 */
+val LocalNeoShadowBudget = staticCompositionLocalOf<Dp?> { null }
+
+/** 声明一组同级元素（按钮/卡片）的间距；组内阴影不会超出各自半间距。 */
+@Composable
+fun NeoSiblings(gap: Dp, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalNeoShadowBudget provides gap / 2f, content = content)
+}
 
 @Composable
 fun NeoSurface(
@@ -62,24 +73,18 @@ fun NeoSurface(
     material: NeoMaterial = NeoMaterial.Raised,
     fill: Color? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    contentAlignment: Alignment = Alignment.TopStart,
     enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val p = LocalM5.current.palette
+    val budget = LocalNeoShadowBudget.current
     val shape = remember(radius, exponent) { SuperellipseShape(radius, exponent) }
     val base = fill ?: p.surface
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val press by animateFloatAsState(
-        targetValue = if (pressed && onClick != null && enabled) 1f else 0f,
-        animationSpec = if (pressed) {
-            tween(durationMillis = 90, easing = FastOutLinearInEasing)
-        } else {
-            spring(dampingRatio = 0.78f, stiffness = 520f)
-        },
-        label = "neo-press",
-    )
+    val press = rememberPressProgress(pressed && onClick != null && enabled)
     val ripple = remember { Animatable(0f) }
     var pressPos by remember { mutableStateOf(Offset.Unspecified) }
     LaunchedEffect(pressed) {
@@ -129,7 +134,7 @@ fun NeoSurface(
                 if (material == NeoMaterial.Inset) {
                     Modifier
                 } else {
-                    Modifier.neoOuterShadow(shape, radius, p, base, press, flat = material == NeoMaterial.Float)
+                    Modifier.neoOuterShadow(shape, radius, p, base, budget, press, flat = material == NeoMaterial.Float)
                 }
             )
             .clip(shape)
@@ -141,21 +146,58 @@ fun NeoSurface(
                     else -> Modifier
                 }
             )
-            .pressRipple(shape, press, ripple.value, pressPos, base)
+            .superellipseRipple(shape, press, ripple.value, pressPos, base)
             .padding(contentPadding),
+        contentAlignment = contentAlignment,
         content = content,
     )
 }
 
+@Composable
+internal fun rememberPressProgress(pressed: Boolean): Float = animateFloatAsState(
+    targetValue = if (pressed) 1f else 0f,
+    animationSpec = if (pressed) {
+        tween(durationMillis = 90, easing = FastOutLinearInEasing)
+    } else {
+        spring(dampingRatio = 0.78f, stiffness = 520f)
+    },
+    label = "m5-press",
+).value
+
+/** 超椭圆裁切的按压波纹；玻璃/新拟物共用。 */
+internal fun Modifier.superellipseRipple(
+    shape: Shape,
+    press: Float,
+    ripple: Float,
+    pressPos: Offset,
+    base: Color,
+): Modifier = drawWithContent {
+    drawContent()
+    if (press <= 0.01f || ripple <= 0f) return@drawWithContent
+    val outline = shape.createOutline(size, layoutDirection, this)
+    if (outline !is Outline.Generic) return@drawWithContent
+    val center = if (pressPos == Offset.Unspecified) this.center else pressPos
+    val radius = size.maxDimension * 1.45f * ripple
+    clipPath(outline.path) {
+        drawCircle(
+            color = lerpColor(Color.White, base, 0.12f).copy(alpha = 0.30f * press),
+            radius = radius,
+            center = center,
+        )
+    }
+}
+
 /**
- * 外阴影：亮影左上、暗影右下，颜色取自身。按下时 offset 收缩、alpha 降低，
- * 同时叠加内阴影（由 NeoSurface 调用），形成"凸起被按凹下去"的物理感。
+ * 外阴影：亮影左上、暗影右下，颜色取自身；按下时 offset 收缩、alpha 降低，
+ * 同时叠加内阴影（NeoSurface 里调用），形成"凸起被按凹下去"。
+ * [budget] 非空时，阴影最大外扩被限制在半间距内（同级互不遮挡）。
  */
 private fun Modifier.neoOuterShadow(
     shape: Shape,
     radius: Dp,
     p: M5Palette,
     base: Color,
+    budget: Dp?,
     press: Float,
     flat: Boolean,
 ): Modifier = drawBehind {
@@ -163,9 +205,14 @@ private fun Modifier.neoOuterShadow(
     if (outline !is Outline.Generic) return@drawBehind
     val path = outline.path.asAndroidPath()
     val fullOffset = (radius.toPx() * 0.34f).coerceIn(3.dp.toPx(), 13.dp.toPx())
-    val offset = fullOffset * (1f - 0.72f * press)
-    val wideBlur = (fullOffset * 1.75f).coerceAtLeast(1f)
-    val tightBlur = (fullOffset * 0.65f).coerceAtLeast(1f)
+    val budgetPx = budget?.toPx()
+    val budgetScale = if (budgetPx != null) {
+        val reach = fullOffset * 2.85f
+        if (reach > budgetPx) (budgetPx / reach).coerceAtLeast(0.18f) else 1f
+    } else 1f
+    val offset = fullOffset * budgetScale * (1f - 0.72f * press)
+    val wideBlur = (fullOffset * 1.75f * budgetScale).coerceAtLeast(1f)
+    val tightBlur = (fullOffset * 0.65f * budgetScale).coerceAtLeast(1f)
     val fade = 1f - 0.42f * press
     val light = highlightTint(base, p)
     val dark = shadowTint(base, p)
@@ -236,45 +283,6 @@ private fun Modifier.neoInsetShadow(
                 nc.restoreToCount(save2)
             }
         }
-    }
-}
-
-/** 超椭圆裁切的按压波纹（替代矩形 Material ripple）。 */
-private fun Modifier.pressRipple(
-    shape: Shape,
-    press: Float,
-    ripple: Float,
-    pressPos: Offset,
-    base: Color,
-): Modifier = drawWithContent {
-    drawContent()
-    if (press <= 0.01f || ripple <= 0f) return@drawWithContent
-    val outline = shape.createOutline(size, layoutDirection, this)
-    if (outline !is Outline.Generic) return@drawWithContent
-    val center = if (pressPos == Offset.Unspecified) this.center else pressPos
-    val radius = size.maxDimension * 1.45f * ripple
-    clipPath(outline.path) {
-        drawCircle(
-            color = lerpColor(Color.White, base, 0.12f).copy(alpha = 0.30f * press),
-            radius = radius,
-            center = center,
-        )
-    }
-}
-
-private fun DrawScope.drawBlurredPath(
-    path: android.graphics.Path,
-    color: Color,
-    blur: Float,
-    dx: Float,
-    dy: Float,
-) {
-    drawIntoCanvas { canvas ->
-        val nc = canvas.nativeCanvas
-        val save = nc.save()
-        nc.translate(dx, dy)
-        nc.drawPath(path, blurPaint(color, blur))
-        nc.restoreToCount(save)
     }
 }
 
