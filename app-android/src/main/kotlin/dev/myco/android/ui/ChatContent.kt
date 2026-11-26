@@ -3,6 +3,9 @@ package dev.myco.android.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
@@ -617,6 +621,7 @@ private fun TimelineBody(
     autoScroll: Boolean,
 ) {
     val listState = rememberLazyListState()
+    val isolation = remember(listState) { GroupBodyScrollIsolation(listState) }
     androidx.compose.runtime.LaunchedEffect(entries.size) {
         if (autoScroll && entries.isNotEmpty()) {
             listState.animateScrollToItem(entries.size - 1)
@@ -626,7 +631,17 @@ private fun TimelineBody(
         state = listState,
         modifier = Modifier.fillMaxWidth()
             .heightIn(max = maxHeight)
-            .nestedScroll(GroupBodyScrollIsolation),
+            .nestedScroll(isolation)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    try {
+                        waitForUpOrCancellation()
+                    } finally {
+                        isolation.endGesture()
+                    }
+                }
+            },
     ) {
         entries.forEachIndexed { entryIndex, entry ->
             val key = "$keyPrefix-$entryIndex"
@@ -648,18 +663,55 @@ private fun TimelineBody(
     }
 }
 
-private val GroupBodyScrollIsolation = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-    // 严格隔离：组体内滚动到边界后，同一手势的剩余位移与惯性都不交给外层（撞墙）
+private class GroupBodyScrollIsolation(
+    private val list: LazyListState,
+) : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+    private var tracking = false
+    private var startedAtEdge = false
+
+    fun endGesture() {
+        tracking = false
+        startedAtEdge = false
+    }
+
+    override fun onPreScroll(
+        available: androidx.compose.ui.geometry.Offset,
+        source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
+    ): androidx.compose.ui.geometry.Offset {
+        if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput && !tracking) {
+            tracking = true
+            startedAtEdge = when {
+                available.y > 0f -> !list.canScrollBackward
+                available.y < 0f -> !list.canScrollForward
+                else -> false
+            }
+        }
+        return androidx.compose.ui.geometry.Offset.Zero
+    }
+
     override fun onPostScroll(
         consumed: androidx.compose.ui.geometry.Offset,
         available: androidx.compose.ui.geometry.Offset,
         source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
-    ): androidx.compose.ui.geometry.Offset = available
+    ): androidx.compose.ui.geometry.Offset {
+        if (source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
+            return androidx.compose.ui.geometry.Offset.Zero
+        }
+        // 手势开始时组体已在该方向边界：本次新手势允许滚外层
+        if (startedAtEdge) return androidx.compose.ui.geometry.Offset.Zero
+        // 同一次手势从内部滚到边界：撞墙，不把剩余位移交给外层
+        return available
+    }
 
     override suspend fun onPostFling(
         consumed: androidx.compose.ui.unit.Velocity,
         available: androidx.compose.ui.unit.Velocity,
-    ): androidx.compose.ui.unit.Velocity = available
+    ): androidx.compose.ui.unit.Velocity {
+        val allowParent = startedAtEdge
+        endGesture()
+        // 从内部滚出来的惯性一律不交给外层；新手势起于边界时才允许外层滚动
+        return if (allowParent) androidx.compose.ui.unit.Velocity.Zero else available
+    }
 }
 
 @Composable
@@ -1180,6 +1232,8 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
 
 
 
