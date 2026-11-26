@@ -84,6 +84,10 @@
 14. **Markdown 非全集**：链接可点，但表格宽度/嵌套列表/公式/半截 fence 未处理。
 15. **分支切换无锚点修正**：切 user/assistant 版本后列表可能轻微位移（DSH demo 有 anchor 修正）。
 16. **发送后软键盘不自动收起**：流式期间聊天视口被压缩，观感一般。
+17. **分支切换与发送的竞态（待核实/加固）**：UI 切分支是 `scope.launch { SessionSetActiveLeaf }` 的异步命令，
+    紧跟发送时 `ChatSend` 依赖 sidecar `activeLeaf`；真实分支数据（parentId）已验证正确，但极端快速连点后
+    sidecar 可能停在非最后一次点击的分支（一次实测出现过 `2/3` 与最后可见分支不一致）。彻底解法：给
+    `ChatSend` 加显式 `leafId` 参数（请求内携带当前分支），sidecar 只作持久化用途。
 
 ## 3. 真机回归清单（Android 15，设备 7e7c5a68）
 
