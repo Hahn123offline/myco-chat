@@ -19,14 +19,13 @@
 
 ## 1. 大块（按建议优先级）
 
-### P0 长会话“死会话”闪退（新发现，最高优先）
+### P0 长会话“死会话”闪退（已修复，2026-11-26）
 - 现象：会话变长后有概率打开即闪退，无法再进入该会话。
-- 待做：复现并抓 `adb logcat` FATAL；重点怀疑：
-  1. `MycoJson` 严格解码新增可选字段失败（`ignoreUnknownKeys=false` + schema/事件演进）；
-  2. `parseChatContent` 对某类事件数据（null / 非 primitive / 超大 JSON）取值崩溃；
-  3. 事件数量大导致内存/递归（activePath 递归 `deepestLeaf` / pathOf）爆栈；
-  4. JSONL 尾部半行/损坏（当前只容忍最后一行）。
-- 验收：长会话可正常打开；损坏会话给出可恢复提示而不是崩溃。
+- 根因：工具中间步 assistant（`nodeId=null/finishReason=tool_use`）与正式回答共用 turn；`activeLeaf` 失效/切换会话中间态时 `visible` 退化为全部消息，把同一 turn 渲染出两个 `ph-$turn` → LazyColumn 重复 key 崩溃。
+- 修复：`resolveVisibleMessages` 只渲染唯一分支（失效时退回最新叶子，不再退化全量）、剔除工具中间步、key 带 index 且过程组去重、`ChatScreen` 按 `sessionId` 重建、解析/载入容错。
+- 报告：`docs/reports/p0-dead-session-report.md`；回归测试 `app-android/src/test/.../VisibleMessagesTest.kt`（5 条）。
+- 仍欠：损坏会话的可恢复提示 UI；mid-file 损坏行仍整体不可读（不崩，但空会话 + 提示）。
+
 
 ### P1 自动滚动统一进度（新反馈）
 - 现象：现在自动滚动只关心 act 段（正文/最后 item），思考段不跟随；模型输出结束时窗口会乱跳。

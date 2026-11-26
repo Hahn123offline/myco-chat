@@ -59,7 +59,10 @@ import dev.myco.android.ui.model.ToolStepUi
 import dev.myco.android.ui.model.TurnMetaUi
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -110,8 +113,12 @@ data class ChatContentState(
     val reasoning: Map<Long, String> = emptyMap(),
 )
 
-private fun JsonObject.str(key: String): String? = this[key]?.jsonPrimitive?.content
-private fun JsonObject.long(key: String): Long? = this[key]?.jsonPrimitive?.content?.toLongOrNull()
+/** 宽容取值：遇到对象/数组/null 一律当没有，绝不因为一条脏事件把整个会话渲染打断。 */
+private fun JsonElement?.asContentOrNull(): String? =
+    (this as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content
+
+private fun JsonObject.str(key: String): String? = this[key].asContentOrNull()
+private fun JsonObject.long(key: String): Long? = this[key].asContentOrNull()?.toLongOrNull()
 
 /** 事件日志 → 渲染模型（只做展示；不碰网络）。 */
 fun parseChatContent(arr: JsonArray?): ChatContentState {
@@ -177,8 +184,7 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
                 val turn = data?.long("turn") ?: return@forEach
                 val list = process.getOrPut(turn) { mutableListOf() }
                 val name = data.str("name") ?: "tool"
-                val okRaw = data?.get("ok")?.jsonPrimitive?.content ?: ""
-                val ok = okRaw.equals("true", ignoreCase = true)
+                val ok = data?.str("ok")?.let { it.equals("true", ignoreCase = true) } ?: false
                 val text = data.str("text") ?: ""
                 val sources = if (name == "web_search") parseSources(text) else emptyList()
                 if (sources.isNotEmpty()) {
@@ -441,6 +447,60 @@ private fun CodeBlock(code: String, lang: String) {
     }
 }
 
+/** 工具循环里"中间步"的助手消息：不挂在会话树上（nodeId=null），内容已进过程时间线，不能当正文再渲染一次。 */
+internal fun ChatMessageUi.isToolStepPlaceholder(): Boolean =
+    role == "assistant" && nodeId == null &&
+        (finishReason == "tool_calls" || finishReason == "tool_use")
+
+/** 聊天区最终可见的消息 + 是否来自会话树分支（树分支内每个节点只会出现一次，无需再按版本去重）。 */
+internal data class VisibleMessages(
+    val messages: List<ChatMessageUi>,
+    val fromTree: Boolean,
+)
+
+/**
+ * 决定聊天区到底渲染哪些消息。
+ *
+ * 有会话树：只能渲染 activeLeaf 回溯出来的那一条分支。activeLeaf 失效（悬空/不属于本次快照）时
+ * 退回"最新叶子"所在分支——绝不能退化成渲染全部消息，否则同一 turn 的中间步 + 正式回答会让
+ * LazyColumn 出现重复 key（"Key ph-1 was already used"）直接闪退。
+ * 无会话树（早期扁平会话）：渲染整列表，但剔除工具中间步。
+ */
+internal fun resolveVisibleMessages(all: List<ChatMessageUi>, activeLeaf: String?): VisibleMessages {
+    val usable = all.filterNot { it.isToolStepPlaceholder() }
+    if (usable.isEmpty()) return VisibleMessages(emptyList(), fromTree = false)
+    val byId = LinkedHashMap<String, ChatMessageUi>()
+    usable.forEach { m -> m.messageId?.let { byId[it] = m } }
+    if (!usable.any { it.parentId != null }) {
+        // 还没有树结构的旧会话：原样展示（messageId 可能为空，别拿它去重）
+        return VisibleMessages(usable, fromTree = false)
+    }
+    fun chain(leaf: String?): List<ChatMessageUi> {
+        if (leaf == null) return emptyList()
+        val out = ArrayDeque<ChatMessageUi>()
+        val seen = mutableSetOf<String>()
+        var cursor: String? = leaf
+        while (cursor != null && seen.add(cursor)) {
+            val m = byId[cursor] ?: break
+            out.addFirst(m)
+            cursor = m.parentId
+        }
+        return out.toList()
+    }
+    val leaf = activeLeaf?.takeIf { byId.containsKey(it) } ?: derivedLeaf(byId.values)
+    val path = chain(leaf)
+    if (path.isNotEmpty()) return VisibleMessages(path, fromTree = true)
+    // 连树也回溯不出来（数据异常）：退化为剔除中间步后的整列表，至少不崩
+    return VisibleMessages(usable, fromTree = false)
+}
+
+/** 最新的叶子：没有任何消息把它当 parentId。列表按事件顺序，所以取最后一个。 */
+private fun derivedLeaf(all: Collection<ChatMessageUi>): String? {
+    val parents = all.mapNotNull { it.parentId }.toSet()
+    return all.lastOrNull { it.messageId != null && it.messageId !in parents }?.messageId
+        ?: all.lastOrNull { it.messageId != null }?.messageId
+}
+
 /** 聊天内容渲染：助手全宽无气泡、Markdown、版本切换、过程折叠、footer、操作条。 */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -465,19 +525,6 @@ fun ChatMessages(
         if (initialActiveLeaf != null && initialActiveLeaf != activeLeaf) activeLeaf = initialActiveLeaf
     }
     val allMessages = state.messages
-    fun pathOf(leaf: String?): List<ChatMessageUi> {
-        if (leaf == null) return emptyList()
-        val byId = allMessages.mapNotNull { m -> m.messageId?.let { it to m } }.toMap()
-        val chain = ArrayDeque<ChatMessageUi>()
-        var cursor: String? = leaf
-        val seen = mutableSetOf<String>()
-        while (cursor != null && seen.add(cursor)) {
-            val m = byId[cursor] ?: break
-            chain.addFirst(m)
-            cursor = m.parentId
-        }
-        return chain.toList()
-    }
     fun deepestLeaf(startId: String): String {
         var cursor = startId
         val seen = mutableSetOf<String>()
@@ -487,14 +534,15 @@ fun ChatMessages(
         }
         return cursor
     }
-    val visible = remember(state.messages, activeLeaf) {
-        if (activeLeaf == null) state.messages else pathOf(activeLeaf).ifEmpty { state.messages }
+    val resolved = remember(state.messages, activeLeaf) {
+        resolveVisibleMessages(state.messages, activeLeaf)
     }
+    val visible = resolved.messages
     val activeVersions = remember {
         androidx.compose.runtime.mutableStateMapOf<String, Int>().apply { putAll(initialVersions) }
     }
-    androidx.compose.runtime.LaunchedEffect(activeLeaf) {
-        pathOf(activeLeaf).forEach { m ->
+    androidx.compose.runtime.LaunchedEffect(activeLeaf, resolved) {
+        resolved.messages.forEach { m ->
             if (m.role == "assistant" && m.nodeId != null) activeVersions[m.nodeId] = m.version
         }
     }
@@ -504,7 +552,6 @@ fun ChatMessages(
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
         .groupBy { it.nodeId!! }
         .mapValues { (_, list) -> list.sortedBy { it.version } }
-    var lastProcessTurn: Long? = null
 
     LazyColumn(
         state = listState,
@@ -514,6 +561,7 @@ fun ChatMessages(
         ),
         verticalArrangement = Arrangement.spacedBy(MycoSpacing.s),
     ) {
+        val renderedProcessTurns = mutableSetOf<Long>()
         visible.forEachIndexed { index, msg ->
             if (msg.role == "user") {
                 item(key = "u-$index-${msg.messageId ?: ""}") {
@@ -521,24 +569,27 @@ fun ChatMessages(
                 }
                 return@forEachIndexed
             }
-            // 中间工具步骤文本（无 nodeId 且 finishReason=tool_calls）折叠进过程，不单独渲染
-            if (msg.nodeId == null && msg.finishReason == "tool_calls") return@forEachIndexed
+            // 工具中间步（无 nodeId）已在 resolveVisibleMessages 里剔除；这里再兜一层
+            if (msg.isToolStepPlaceholder()) return@forEachIndexed
             val versions = msg.nodeId?.let { nodes[it] }.orEmpty()
-            val active = activeVersions[msg.nodeId] ?: versions.maxOfOrNull { it.version } ?: msg.version
-            // 版本链只渲染当前选中版本一次，避免同一 messageId 重复 key 或重复渲染
-            if (msg.nodeId != null && msg.version != active) return@forEachIndexed
+            // 树分支：activeLeaf 已经选定版本，路径上每个节点只会出现一次
+            // 旧扁平数据：按"当前选中/最大版本"去重，避免同一 nodeId 重复渲染
+            val active = if (resolved.fromTree) msg.version
+                else activeVersions[msg.nodeId] ?: versions.maxOfOrNull { it.version } ?: msg.version
+            if (!resolved.fromTree && msg.nodeId != null && msg.version != active) return@forEachIndexed
             val shown = msg
             val turn = msg.turn
             val entries = turn?.let { state.timelines[it] }.orEmpty()
-            if (entries.isNotEmpty() && turn != null) {
-                item(key = "ph-$turn") {
+            // 同一 turn 的过程组只渲染一次，key 带 index 保证唯一（历史数据异常也不闪退）
+            if (entries.isNotEmpty() && turn != null && renderedProcessTurns.add(turn)) {
+                item(key = "ph-$index-$turn") {
                     TimelineHeaderRow(
                         entries = entries,
                         expanded = expandedProcess[turn] ?: false,
                         onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
                     )
                 }
-                item(key = "pb-$turn") {
+                item(key = "pb-$index-$turn") {
                     androidx.compose.animation.AnimatedVisibility(
                         visible = expandedProcess[turn] == true,
                         enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
@@ -546,7 +597,7 @@ fun ChatMessages(
                     ) {
                         TimelineBody(
                             entries = entries,
-                            keyPrefix = "$turn",
+                            keyPrefix = "pb-$turn",
                             expandedTools = expandedTools,
                             maxHeight = maxGroupHeight,
                             autoScroll = false,

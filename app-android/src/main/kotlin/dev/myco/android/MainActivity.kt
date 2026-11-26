@@ -316,12 +316,14 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
             Box(Modifier.fillMaxSize()) {
                 when (val s = screen) {
                     null -> Box(Modifier.fillMaxSize()) // 启动瞬间不再闪"开始聊天"页；由 ensureDraft 接管
-                    is Screen.Chat -> ChatScreen(
-                        bridge = bridge,
-                        sessionId = s.id,
-                        title = s.title,
-                        onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
-                    )
+                    is Screen.Chat -> androidx.compose.runtime.key(s.id) {
+                        ChatScreen(
+                            bridge = bridge,
+                            sessionId = s.id,
+                            title = s.title,
+                            onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
+                        )
+                    }
                     Screen.Settings -> SettingsScreen(
                         bridge = bridge,
                         themeMode = themeMode,
@@ -539,7 +541,14 @@ private fun ChatScreen(
 
     suspend fun reload() {
         val res = bridge.query(Query.SessionEvents(sessionId, 0))
-        content = if (res is QueryResult.Ok) dev.myco.android.ui.parseChatContent(res.data as? JsonArray) else dev.myco.android.ui.ChatContentState()
+        content = runCatching {
+            if (res is QueryResult.Ok) dev.myco.android.ui.parseChatContent(res.data as? JsonArray) else dev.myco.android.ui.ChatContentState()
+        }.getOrElse {
+            // 数据异常时宁可显示空会话 + 提示，也不能把整个 App 带崩
+            error = "会话数据异常：${it.message ?: it::class.simpleName}"
+            dev.myco.android.ui.ChatContentState()
+        }
+        if (res is QueryResult.Err) error = "载入失败：${res.code}: ${res.message}"
         val sel = bridge.query(Query.SessionModel(sessionId))
         if (sel is QueryResult.Ok) {
             activeLeaf = (sel.data as? JsonObject)?.get("activeLeaf")
