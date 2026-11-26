@@ -204,21 +204,21 @@ private fun Modifier.neoOuterShadow(
     val outline = shape.createOutline(size, layoutDirection, this)
     if (outline !is Outline.Generic) return@drawBehind
     val path = outline.path.asAndroidPath()
-    val fullOffset = (radius.toPx() * 0.34f).coerceIn(3.dp.toPx(), 13.dp.toPx())
+    val fullOffset = (radius.toPx() * 0.40f).coerceIn(3.dp.toPx(), 16.dp.toPx())
     val budgetPx = budget?.toPx()
     val budgetScale = if (budgetPx != null) {
-        val reach = fullOffset * 2.85f
+        val reach = fullOffset * 3.2f
         if (reach > budgetPx) (budgetPx / reach).coerceAtLeast(0.18f) else 1f
     } else 1f
     val offset = fullOffset * budgetScale * (1f - 0.72f * press)
-    val wideBlur = (fullOffset * 1.75f * budgetScale).coerceAtLeast(1f)
-    val tightBlur = (fullOffset * 0.65f * budgetScale).coerceAtLeast(1f)
+    val wideBlur = (fullOffset * 2.0f * budgetScale).coerceAtLeast(1f)
+    val tightBlur = (fullOffset * 0.9f * budgetScale).coerceAtLeast(1f)
     val fade = 1f - 0.42f * press
     val light = highlightTint(base, p)
     val dark = shadowTint(base, p)
     val lightAlpha = (if (p.dark) 0.22f else 0.95f) * fade
     val darkWide = (if (p.dark) 0.95f else 0.55f) * fade
-    val darkTight = (if (p.dark) 0.60f else 0.42f) * fade
+    val darkTight = (if (p.dark) 0.30f else 0.20f) * fade
     if (!flat) {
         drawIntoCanvas { canvas ->
             val nc = canvas.nativeCanvas
@@ -264,8 +264,8 @@ private fun Modifier.neoInsetShadow(
             )
             op(path, android.graphics.Path.Op.DIFFERENCE)
         }
-        val offset = (radius.toPx() * 0.26f).coerceIn(2.dp.toPx(), 10.dp.toPx())
-        val blur = (offset * 1.15f).coerceAtLeast(1f)
+        val offset = (radius.toPx() * 0.30f).coerceIn(2.dp.toPx(), 12.dp.toPx())
+        val blur = (offset * 1.4f).coerceAtLeast(1f)
         val darkAlpha = (if (p.dark) 0.95f else 0.60f) * strength
         val lightAlpha = (if (p.dark) 0.32f else 0.95f) * strength
         onDrawBehind {

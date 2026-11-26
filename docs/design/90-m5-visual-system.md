@@ -90,8 +90,8 @@ fun squircleCapsule(height: Dp) = SuperellipseShape(height / 2, height / 2, 4f, 
 新拟物阴影公式 dp 化（用户 22/45 是 px 级视觉，按**面板半径**等比缩放）：
 
 ```
-offset = radius * 0.30        // 例：R=28dp → 8.4dp
-blur   = offset * 2.05        // ≈17dp
+offset = radius * 0.40        // 例：R=28dp → 11.2dp（对标 80px 圆角 / 33px 偏移 / 66px 模糊）
+blur   = offset * 2.0         // ≈22dp（模糊半径 = 0.8 × 圆角，与参考一致）
 亮影   = 光源侧（左上），alpha 0.55–0.75（深色模式降到 0.18–0.28）
 暗影   = 背光侧（右下），alpha 0.35–0.45（深色模式改为"更深"而不是"更灰"）
 ```

@@ -134,7 +134,7 @@ private fun Section(title: String, subtitle: String? = null, content: @Composabl
                 contentPadding = PaddingValues(14.dp),
             ) {
                 // 组内同级元素（分段键、图标底、工具行）共享半间距阴影预算，互不遮挡
-                NeoSiblings(M5Space.m) {
+                NeoSiblings(M5Space.xxl) {
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
                 }
             }
