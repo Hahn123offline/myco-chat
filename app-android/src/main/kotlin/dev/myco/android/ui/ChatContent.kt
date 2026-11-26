@@ -557,6 +557,7 @@ fun ChatMessages(
                             expandedTools = expandedTools,
                             maxHeight = maxGroupHeight,
                             autoScroll = false,
+                            outerState = listState,
                         )
                     }
                 }
@@ -599,6 +600,7 @@ fun ChatMessages(
                         expandedTools = expandedTools,
                         maxHeight = maxGroupHeight,
                         autoScroll = true,
+                        outerState = listState,
                     )
                 }
             }
@@ -619,6 +621,7 @@ private fun TimelineBody(
     expandedTools: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Boolean>,
     maxHeight: androidx.compose.ui.unit.Dp,
     autoScroll: Boolean,
+    outerState: LazyListState,
 ) {
     val listState = rememberLazyListState()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -645,13 +648,13 @@ private fun TimelineBody(
                                 // 手指上滑=内容向下滚(forward)；下滑=backward
                                 handling = if (dy < 0f) listState.canScrollForward else listState.canScrollBackward
                             }
-                            if (handling == true) {
-                                listState.dispatchRawDelta(-dy)
-                                change.consume()
-                                samples += change.uptimeMillis to lastY
-                                if (samples.size > 8) samples.removeAt(0)
-                            }
-                            // handling == false：手势开始就已在边界，不消费，让外层接管
+                            // 全部由我们自己分发：组体内 -> 组体；手势起点已在边界 -> 外层。
+                            // 不再交给 Compose 的自动 nested scroll/fling，避免惯性外溢。
+                            if (handling == true) listState.dispatchRawDelta(-dy)
+                            else outerState.dispatchRawDelta(-dy)
+                            change.consume()
+                            samples += change.uptimeMillis to lastY
+                            if (samples.size > 8) samples.removeAt(0)
                         }
                     }
                     if (handling == true && samples.size >= 2) {
@@ -663,7 +666,8 @@ private fun TimelineBody(
                             var speed = -velocityPxPerSec
                             while (kotlin.math.abs(speed) > 80f) {
                                 val step = speed * 0.016f
-                                val moved = listState.dispatchRawDelta(step)
+                                val target = if (handling == true) listState else outerState
+                                val moved = target.dispatchRawDelta(step)
                                 if (kotlin.math.abs(moved) < 0.5f) break
                                 speed *= 0.94f
                                 kotlinx.coroutines.delay(16)
@@ -1268,6 +1272,7 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
 
 
 
