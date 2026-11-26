@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -700,9 +701,48 @@ private fun LazyListState.isAtBottomTight(slack: Int = 2): Boolean {
         last.offset + last.size <= info.viewportEndOffset + slack
 }
 
+/**
+ * 正文区域"右滑开抽屉"手势。
+ *
+ * 只观察不消费：竖向滚动（含组体内部滚动）完全不受影响；只有水平位移明显占优且超过阈值才触发。
+ * 用 `composed` + `rememberUpdatedState` 保证流式重组不会打断进行中的手势。
+ */
+fun Modifier.swipeRightToOpenDrawer(enabled: Boolean, onOpen: () -> Unit): Modifier =
+    composed {
+        if (!enabled) return@composed this
+        val callback = androidx.compose.runtime.rememberUpdatedState(onOpen)
+        this.pointerInput(Unit) {
+            val slop = 18.dp.toPx()
+            val trigger = 96.dp.toPx()
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val startX = down.position.x
+                val startY = down.position.y
+                var horizontal = false
+                var dx = 0f
+                while (true) {
+                    // Final pass：既不影响子组件（滚动/点击），也能读到手指最终位置
+                    val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Final)
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if (!change.pressed) break
+                    dx = change.position.x - startX
+                    val dy = change.position.y - startY
+                    if (!horizontal &&
+                        kotlin.math.abs(dx) > slop &&
+                        kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.5f
+                    ) {
+                        horizontal = true
+                    }
+                }
+                if (horizontal && dx > trigger) callback.value()
+            }
+        }
+    }
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TimelineBody(    entries: List<TimelineEntry>,
+private fun TimelineBody(
+    entries: List<TimelineEntry>,
     keyPrefix: String,
     expandedTools: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Boolean>,
     maxHeight: androidx.compose.ui.unit.Dp,
@@ -839,57 +879,6 @@ private fun TimelineBody(    entries: List<TimelineEntry>,
                 }
             }
         }
-    }
-}
-
-private class GroupBodyScrollIsolation(
-    private val list: LazyListState,
-) : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-    private var tracking = false
-    private var startedAtEdge = false
-
-    fun endGesture() {
-        tracking = false
-        startedAtEdge = false
-    }
-
-    override fun onPreScroll(
-        available: androidx.compose.ui.geometry.Offset,
-        source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
-    ): androidx.compose.ui.geometry.Offset {
-        if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput && !tracking) {
-            tracking = true
-            startedAtEdge = when {
-                available.y > 0f -> !list.canScrollBackward
-                available.y < 0f -> !list.canScrollForward
-                else -> false
-            }
-        }
-        return androidx.compose.ui.geometry.Offset.Zero
-    }
-
-    override fun onPostScroll(
-        consumed: androidx.compose.ui.geometry.Offset,
-        available: androidx.compose.ui.geometry.Offset,
-        source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
-    ): androidx.compose.ui.geometry.Offset {
-        if (source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
-            return androidx.compose.ui.geometry.Offset.Zero
-        }
-        // 手势开始时组体已在该方向边界：本次新手势允许滚外层
-        if (startedAtEdge) return androidx.compose.ui.geometry.Offset.Zero
-        // 同一次手势从内部滚到边界：撞墙，不把剩余位移交给外层
-        return available
-    }
-
-    override suspend fun onPostFling(
-        consumed: androidx.compose.ui.unit.Velocity,
-        available: androidx.compose.ui.unit.Velocity,
-    ): androidx.compose.ui.unit.Velocity {
-        val allowParent = startedAtEdge
-        endGesture()
-        // 从内部滚出来的惯性一律不交给外层；新手势起于边界时才允许外层滚动
-        return if (allowParent) androidx.compose.ui.unit.Velocity.Zero else available
     }
 }
 

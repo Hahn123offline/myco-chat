@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -60,12 +61,14 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -88,6 +91,7 @@ import dev.myco.android.ui.MycoTopBar
 import dev.myco.android.ui.SectionHeader
 import dev.myco.android.ui.ThemeMode
 import dev.myco.android.ui.ThemePrefs
+import dev.myco.android.ui.swipeRightToOpenDrawer
 import dev.myco.core.bridge.Command
 import dev.myco.core.bridge.BridgeEvent
 import dev.myco.core.bridge.CommandResult
@@ -190,6 +194,8 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     var renameTarget by remember { mutableStateOf<SessionRow?>(null) }
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<SessionRow?>(null) }
+    // 预测式返回：手势进行中的进度（0..1），只用于内容预览位移，跟随后续打开抽屉
+    var backPreview by remember { mutableFloatStateOf(0f) }
     val snackbar = remember { SnackbarHostState() }
 
     suspend fun refreshSessions() {
@@ -322,6 +328,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                             sessionId = s.id,
                             title = s.title,
                             onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
+                            onSwipeOpenDrawer = if (wide) null else ({ scope.launch { drawerState.open() } }),
                         )
                     }
                     Screen.Settings -> SettingsScreen(
@@ -344,12 +351,21 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
                 )
                 if (!wide) {
-                    // 手机：抽屉打开时返回只关抽屉；聊天/空态根页返回打开抽屉（不是退出 App）
+                    // 手机：抽屉打开时返回只关抽屉
                     BackHandler(enabled = drawerState.isOpen) {
                         scope.launch { drawerState.close() }
                     }
-                    BackHandler(enabled = drawerState.isClosed && screen is Screen.Chat) {
-                        scope.launch { drawerState.open() }
+                    // 聊天根页：系统返回手势 = 打开抽屉（预测式预览：手势进度驱动内容位移，完成才真正打开）
+                    PredictiveBackHandler(enabled = drawerState.isClosed && screen is Screen.Chat) { progress ->
+                        try {
+                            progress.collect { event -> backPreview = event.progress }
+                            backPreview = 1f
+                            drawerState.open()
+                            backPreview = 0f
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            backPreview = 0f
+                            throw cancelled
+                        }
                     }
                     BackHandler(enabled = drawerState.isClosed && screen == null) {
                         scope.launch { drawerState.open() }
@@ -374,9 +390,18 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
             val drawerWidth = maxWidth * 0.84f
             ModalNavigationDrawer(
                 drawerState = drawerState,
-                gesturesEnabled = true, // 支持左右滑动开关抽屉；系统返回键仍由 BackHandler 处理
+                gesturesEnabled = true, // 支持左右滑动开关抽屉；系统返回手势由 PredictiveBackHandler 接管
                 drawerContent = { ModalDrawerSheet(Modifier.width(drawerWidth)) { drawerBody() } },
-            ) { main() }
+            ) {
+                // 预测式返回预览：手势进度让内容轻微右移/缩小，提交后才打开抽屉
+                Box(
+                    Modifier.fillMaxSize().graphicsLayer {
+                        translationX = backPreview * 56.dp.toPx()
+                        scaleX = 1f - backPreview * 0.02f
+                        scaleY = 1f - backPreview * 0.02f
+                    },
+                ) { main() }
+            }
         }
     }
 
@@ -395,10 +420,10 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     TextButton(onClick = {
                         rowMenu = null
                         scope.launch {
-                            drawerState.close()
                             val wasActive = (screen as? Screen.Chat)?.id == row.id
                             bridge.send(Command.SessionArchive(row.id, true))
-                            if (wasActive) openDraft() else refreshSessions()
+                            // 非当前会话：抽屉保持打开，便于连续整理；当前会话被归档才关抽屉进新草稿
+                            if (wasActive) { drawerState.close(); openDraft() } else refreshSessions()
                             val r = snackbar.showSnackbar(
                                 message = "已归档「${row.title}」",
                                 actionLabel = "撤销",
@@ -453,10 +478,10 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     val target = row
                     deleteTarget = null
                     scope.launch {
-                        drawerState.close()
                         val wasActive = (screen as? Screen.Chat)?.id == target.id
                         bridge.send(Command.SessionDelete(target.id))
-                        if (wasActive) openDraft() else refreshSessions()
+                        // 非当前会话：抽屉保持打开，便于连续整理；当前会话被删除才关抽屉进新草稿
+                        if (wasActive) { drawerState.close(); openDraft() } else refreshSessions()
                         val result = snackbar.showSnackbar(
                             message = "已删除「${target.title}」",
                             actionLabel = "撤销",
@@ -481,6 +506,7 @@ private fun ChatScreen(
     sessionId: String,
     title: String,
     onMenu: (() -> Unit)?,
+    onSwipeOpenDrawer: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     var content by remember { mutableStateOf(dev.myco.android.ui.ChatContentState()) }
@@ -898,7 +924,11 @@ private fun ChatScreen(
                     scope.launch { bridge.send(Command.SessionSetActiveLeaf(sessionId, leaf)) }
                 },
                 autoExpandTurn = streamingTurn,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier.weight(1f).fillMaxWidth()
+                    .swipeRightToOpenDrawer(
+                        enabled = onSwipeOpenDrawer != null,
+                        onOpen = { onSwipeOpenDrawer?.invoke() },
+                    ),
             )
             if (error != null) {
                 Box(Modifier.padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.xs)) {
