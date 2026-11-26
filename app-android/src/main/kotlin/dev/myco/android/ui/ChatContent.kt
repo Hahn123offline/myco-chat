@@ -102,7 +102,12 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
             "tool/call" -> {
                 val turn = data?.long("turn") ?: return@forEach
                 process.getOrPut(turn) { mutableListOf() } +=
-                    ToolStepUi(name = data.str("name") ?: "tool", ok = null, text = "")
+                    ToolStepUi(
+                        name = data.str("name") ?: "tool",
+                        ok = null,
+                        text = "",
+                        args = data["args"]?.toString().orEmpty(),
+                    )
             }
             "tool/result" -> {
                 val turn = data?.long("turn") ?: return@forEach
@@ -360,6 +365,7 @@ fun ChatMessages(
     state: ChatContentState,
     listState: LazyListState,
     streamingText: String?,
+    streamingReasoning: String? = null,
     onCopy: (String) -> Unit,
     onRegenerate: (ChatMessageUi) -> Unit,
     onUserLongPress: (ChatMessageUi) -> Unit = {},
@@ -370,6 +376,10 @@ fun ChatMessages(
     modifier: Modifier = Modifier,
 ) {
     var activeLeaf by remember { mutableStateOf(initialActiveLeaf) }
+    androidx.compose.runtime.LaunchedEffect(initialActiveLeaf) {
+        // 发送/重生成后 bridge 的 activeLeaf 会变化，必须同步，否则新回答不在路径上会"消失"
+        if (initialActiveLeaf != null && initialActiveLeaf != activeLeaf) activeLeaf = initialActiveLeaf
+    }
     val allMessages = state.messages
     fun pathOf(leaf: String?): List<ChatMessageUi> {
         if (leaf == null) return emptyList()
@@ -433,23 +443,19 @@ fun ChatMessages(
             if (msg.nodeId != null && msg.version != active) return@forEachIndexed
             val shown = msg
             val turn = msg.turn
-            if (turn != null && turn != lastProcessTurn) {
-                lastProcessTurn = turn
-                val process = state.processes[turn]
-                if (process != null && process.steps.isNotEmpty()) {
-                    item(key = "p-$turn") {
+            item(key = "a-$index-${shown.messageId ?: ""}") {
+                Column(Modifier.fillMaxWidth()) {
+                    val turnProcess = turn?.let { state.processes[it] }
+                    val turnReasoning = turn?.let { state.reasoning[it] }
+                    if (turn != null && (turnProcess?.steps?.isNotEmpty() == true || !turnReasoning.isNullOrBlank())) {
                         ProcessFold(
                             turn = turn,
-                            process = process,
-                            reasoning = state.reasoning[turn],
-                            expanded = expandedProcess[turn] == true,
+                            process = turnProcess,
+                            reasoning = turnReasoning,
+                            expanded = expandedProcess[turn] ?: true,
                             onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
                         )
                     }
-                }
-            }
-            item(key = "a-$index-${shown.messageId ?: ""}") {
-                Column(Modifier.fillMaxWidth()) {
                     MarkdownText(shown.text)
                     MessageActions(
                         message = shown,
@@ -474,10 +480,19 @@ fun ChatMessages(
                 }
             }
         }
-        if (streamingText != null) {
+        if (streamingText != null || streamingReasoning != null) {
             item(key = "streaming") {
                 Column(Modifier.fillMaxWidth()) {
-                    MarkdownText(streamingText + " ▍")
+                    if (!streamingReasoning.isNullOrBlank()) {
+                        ProcessFold(
+                            turn = -1,
+                            process = null,
+                            reasoning = streamingReasoning,
+                            expanded = true,
+                            onToggle = {},
+                        )
+                    }
+                    if (streamingText != null) MarkdownText(streamingText + " ▍")
                 }
             }
         }
@@ -487,7 +502,7 @@ fun ChatMessages(
 @Composable
 private fun ProcessFold(
     turn: Long,
-    process: ChatProcessUi,
+    process: ChatProcessUi?,
     reasoning: String?,
     expanded: Boolean,
     onToggle: () -> Unit,
@@ -503,36 +518,48 @@ private fun ProcessFold(
                 Text(if (expanded) "▾" else "▸", style = MaterialTheme.typography.bodyLarge)
             }
             Text(
-                "过程 · ${process.steps.size} 步",
+                if (process != null && process.steps.isNotEmpty()) "过程 · ${process.steps.size} 步" else "思考过程",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.weight(1f))
-            Text("turn $turn", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (turn >= 0) {
+                Text("turn $turn", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         if (expanded) {
             if (!reasoning.isNullOrBlank()) {
                 Text(
-                    "思考：${reasoning.take(500)}",
+                    "思考：${reasoning.take(1200)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = MycoSpacing.xs),
                 )
             }
-            process.steps.forEach { step ->
+            process?.steps?.forEach { step ->
                 Text(
                     "· ${step.name} ${if (step.ok == false) "失败" else ""}",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (step.ok == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                 )
-                if (step.text.isNotBlank()) {
+                if (step.args.isNotBlank()) {
                     Text(
-                        step.text.take(200),
+                        "参数：${step.args.take(300)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
+                        maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(start = MycoSpacing.m),
+                    )
+                }
+                if (step.text.isNotBlank()) {
+                    Text(
+                        "结果：${step.text.take(1200)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 8,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = MycoSpacing.m, top = 2.dp),
                     )
                 }
             }
@@ -578,6 +605,10 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
 
 
 

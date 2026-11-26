@@ -184,6 +184,8 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     var sessions by remember { mutableStateOf<List<SessionRow>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var rowMenu by remember { mutableStateOf<SessionRow?>(null) }
+    var batchMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var renameTarget by remember { mutableStateOf<SessionRow?>(null) }
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<SessionRow?>(null) }
@@ -247,14 +249,62 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
             query = searchQuery,
             onQueryChange = { searchQuery = it },
             onSelect = {
-                screen = Screen.Chat(it.id, it.title)
-                scope.launch { drawerState.close() }
+                if (batchMode) {
+                    selectedIds = if (it.id in selectedIds) selectedIds - it.id else selectedIds + it.id
+                } else {
+                    screen = Screen.Chat(it.id, it.title)
+                    scope.launch { drawerState.close() }
+                }
             },
-            onSessionLongPress = { rowMenu = sessions.firstOrNull { s -> s.id == it.id } },
+            onSessionLongPress = { if (!batchMode) rowMenu = sessions.firstOrNull { s -> s.id == it.id } },
             onNewChat = { createSession() },
             onSettings = {
                 screen = Screen.Settings
                 scope.launch { drawerState.close() }
+            },
+            batchMode = batchMode,
+            selectedIds = selectedIds,
+            onToggleBatch = {
+                batchMode = !batchMode
+                selectedIds = emptySet()
+            },
+            onToggleSelected = { id ->
+                selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+            },
+            onSelectAll = { selectedIds = sessions.map { it.id }.toSet() },
+            onBatchArchive = {
+                val ids = selectedIds
+                scope.launch {
+                    val activeId = (screen as? Screen.Chat)?.id
+                    ids.forEach { bridge.send(Command.SessionArchive(it, true)) }
+                    batchMode = false; selectedIds = emptySet(); drawerState.close()
+                    if (activeId != null && activeId in ids) openDraft() else refreshSessions()
+                    val r = snackbar.showSnackbar(
+                        message = "已归档 ${ids.size} 个会话", actionLabel = "撤销",
+                        duration = androidx.compose.material3.SnackbarDuration.Short,
+                    )
+                    if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                        ids.forEach { bridge.send(Command.SessionArchive(it, false)) }
+                        refreshSessions()
+                    }
+                }
+            },
+            onBatchDelete = {
+                val ids = selectedIds
+                scope.launch {
+                    val activeId = (screen as? Screen.Chat)?.id
+                    ids.forEach { bridge.send(Command.SessionDelete(it)) }
+                    batchMode = false; selectedIds = emptySet(); drawerState.close()
+                    if (activeId != null && activeId in ids) openDraft() else refreshSessions()
+                    val r = snackbar.showSnackbar(
+                        message = "已删除 ${ids.size} 个会话", actionLabel = "撤销",
+                        duration = androidx.compose.material3.SnackbarDuration.Short,
+                    )
+                    if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                        ids.forEach { bridge.send(Command.SessionRestore(it)) }
+                        refreshSessions()
+                    }
+                }
             },
         )
     }
@@ -264,23 +314,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         val main: @Composable () -> Unit = {
             Box(Modifier.fillMaxSize()) {
                 when (val s = screen) {
-                    null -> Scaffold(
-                        topBar = {
-                            MycoTopBar(
-                                title = "myco",
-                                onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
-                            )
-                        },
-                    ) { padding ->
-                        Box(Modifier.fillMaxSize().padding(padding)) {
-                            EmptyState(
-                                title = "开始聊天",
-                                message = "这是你的本地对话基座。历史都在左侧抽屉里。",
-                                actionLabel = "开始新对话",
-                                onAction = { createSession() },
-                            )
-                        }
-                    }
+                    null -> Box(Modifier.fillMaxSize()) // 启动瞬间不再闪"开始聊天"页；由 ensureDraft 接管
                     is Screen.Chat -> ChatScreen(
                         bridge = bridge,
                         sessionId = s.id,
@@ -448,6 +482,7 @@ private fun ChatScreen(
     val scope = rememberCoroutineScope()
     var content by remember { mutableStateOf(dev.myco.android.ui.ChatContentState()) }
     var streaming by remember { mutableStateOf<String?>(null) }
+    var streamingReasoning by remember { mutableStateOf<String?>(null) }
     var optimisticUser by remember { mutableStateOf<String?>(null) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -577,17 +612,20 @@ private fun ChatScreen(
         reload()
         bridge.events.collect { e ->
             when (e) {
-                is BridgeEvent.ReasoningDelta -> Unit
+                is BridgeEvent.ReasoningDelta -> if (e.sessionId == sessionId) {
+                    streamingReasoning = (streamingReasoning ?: "") + e.text
+                }
                 is BridgeEvent.AssistantDelta -> if (e.sessionId == sessionId) {
                     streaming = (streaming ?: "") + e.text
                 }
                 is BridgeEvent.AssistantDone -> if (e.sessionId == sessionId) {
                     streaming = null
+                    streamingReasoning = null
                     optimisticUser = null
                     reload()
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
-                    error = "${e.code}: ${e.message}"; streaming = null
+                    error = "${e.code}: ${e.message}"; streaming = null; streamingReasoning = null
                 }
                 is BridgeEvent.SessionUpdated -> Unit
                 is BridgeEvent.ToolStarted -> Unit
@@ -1720,6 +1758,9 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
 
 
 

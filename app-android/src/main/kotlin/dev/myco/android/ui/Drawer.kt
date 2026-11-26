@@ -44,14 +44,28 @@ fun MycoDrawerContent(
     onSessionLongPress: (SessionItemUi) -> Unit,
     onNewChat: () -> Unit,
     onSettings: () -> Unit,
+    batchMode: Boolean = false,
+    selectedIds: Set<String> = emptySet(),
+    onToggleBatch: () -> Unit = {},
+    onToggleSelected: (String) -> Unit = {},
+    onSelectAll: () -> Unit = {},
+    onBatchArchive: () -> Unit = {},
+    onBatchDelete: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxWidth().fillMaxHeight()) {
         Row(
             Modifier.fillMaxWidth().padding(start = MycoSpacing.l, end = MycoSpacing.m, top = MycoSpacing.l),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("myco", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            TextButton(onClick = onNewChat) { Text("＋ 新对话") }
+            if (batchMode) {
+                Text("已选 ${selectedIds.size}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = onSelectAll) { Text("全选") }
+                TextButton(onClick = onToggleBatch) { Text("完成") }
+            } else {
+                Text("myco", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                if (sessions.isNotEmpty()) TextButton(onClick = onToggleBatch) { Text("选择") }
+                TextButton(onClick = onNewChat) { Text("＋ 新对话") }
+            }
         }
         SearchField(value = query, onValueChange = onQueryChange)
         if (sessions.isEmpty()) {
@@ -73,21 +87,38 @@ fun MycoDrawerContent(
                         DrawerSessionRow(
                             item = item,
                             selected = item.id == selectedId,
-                            onClick = { onSelect(item) },
-                            onLongClick = { onSessionLongPress(item) },
+                            batchMode = batchMode,
+                            checked = item.id in selectedIds,
+                            onClick = { if (batchMode) onToggleSelected(item.id) else onSelect(item) },
+                            onLongClick = { if (!batchMode) onSessionLongPress(item) },
                         )
                     }
                 }
             }
         }
         Spacer(Modifier.height(MycoSpacing.s))
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.s),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onSettings) { Text("设置") }
-            Spacer(Modifier.weight(1f))
-            Text("本地优先 · 离线可用", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (batchMode) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.s),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
+            ) {
+                TextButton(onClick = onBatchArchive, enabled = selectedIds.isNotEmpty()) { Text("归档") }
+                TextButton(onClick = onBatchDelete, enabled = selectedIds.isNotEmpty()) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onToggleBatch) { Text("取消") }
+            }
+        } else {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.s),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onSettings) { Text("设置") }
+                Spacer(Modifier.weight(1f))
+                Text("本地优先 · 离线可用", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
@@ -107,6 +138,8 @@ private fun GroupHeader(label: String) {
 private fun DrawerSessionRow(
     item: SessionItemUi,
     selected: Boolean,
+    batchMode: Boolean = false,
+    checked: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -122,6 +155,9 @@ private fun DrawerSessionRow(
             .padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (batchMode) {
+            androidx.compose.material3.Checkbox(checked = checked, onCheckedChange = { onClick() })
+        }
         Column(Modifier.weight(1f)) {
             Text(
                 item.title,
@@ -141,8 +177,10 @@ private fun DrawerSessionRow(
             }
         }
         Text(item.timeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton(onClick = onLongClick, contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)) {
-            Text("⋯", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (!batchMode) {
+            TextButton(onClick = onLongClick, contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)) {
+                Text("⋯", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

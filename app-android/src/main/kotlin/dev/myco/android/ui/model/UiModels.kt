@@ -34,8 +34,9 @@ data class ChatMessageUi(
     val parentId: String? = null,
 )
 
-data class ToolStepUi(val name: String, val ok: Boolean?, val text: String)
+data class ToolStepUi(val name: String, val ok: Boolean?, val text: String, val args: String = "")
 
 data class ChatProcessUi(val steps: List<ToolStepUi>)
 
 data class TurnMetaUi(val status: String, val steps: Int, val durationMs: Long?, val costUsd: Double?)
+

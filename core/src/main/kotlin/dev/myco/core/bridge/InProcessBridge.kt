@@ -1057,13 +1057,14 @@ class InProcessBridge(
 }
 
 /** 一轮里最多允许多少次"模型→工具→模型"往返；超了明确失败，不无限烧钱。 */
-const val MAX_TOOL_STEPS = 4
+const val MAX_TOOL_STEPS = 64 // 基座不设低上限；只防失控循环（真正约束靠 token/预算）
 
 /** 所有工具 schema 进每请求的固定前缀预算（字符）。 */
 const val TOOL_BUDGET_CHARS = 24_000
 
 /** 每会话保留的运行期事件条数（断线重放大致窗口）。 */
 const val EVENT_BUFFER = 500
+
 
 
 
