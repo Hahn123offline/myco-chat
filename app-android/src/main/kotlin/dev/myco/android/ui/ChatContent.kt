@@ -3,6 +3,8 @@ package dev.myco.android.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -83,7 +86,7 @@ fun parseSources(raw: String): List<SourceRef> = runCatching {
             url = url,
             site = o["site"]?.jsonPrimitive?.content,
             snippet = o["snippet"]?.jsonPrimitive?.content ?: o["summary"]?.jsonPrimitive?.content,
-            date = o["date"]?.jsonPrimitive?.content?.takeIf { it != "null" },
+            date = o["date"]?.jsonPrimitive?.content?.takeIf { it != "null" }?.take(10)?.replace("-", "/"),
         )
     }
 }.getOrDefault(emptyList())
@@ -519,7 +522,7 @@ fun ChatMessages(
                     if (entries.isNotEmpty()) {
                         TimelineFold(
                             entries = entries,
-                            expanded = expandedProcess[turn] ?: true,
+                            expanded = expandedProcess[turn] ?: false,
                             onToggle = { if (turn != null) expandedProcess[turn] = expandedProcess[turn] != true },
                         )
                     }
@@ -562,39 +565,71 @@ fun ChatMessages(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun SourcesSection(sources: List<SourceRef>) {
     val uriHandler = LocalUriHandler.current
-    Column(Modifier.fillMaxWidth().padding(top = MycoSpacing.s), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("来源 · ${sources.size} 个网页", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        sources.forEachIndexed { i, s ->
+    var showSheet by remember { mutableStateOf(false) }
+    Row(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { showSheet = true }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text("来源", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        sources.take(6).forEach { s -> SiteIcon(site = s.site, url = s.url, size = 18.dp) }
+        if (sources.size > 6) {
+            Text("+${sources.size - 6}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.weight(1f))
+        Text("${sources.size} 个网页 ›", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+    }
+    if (showSheet) {
+        val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = sheetState,
+        ) {
             Column(
-                Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
-                    .clickable { runCatching { uriHandler.openUri(s.url) } }
-                    .padding(horizontal = MycoSpacing.s, vertical = 6.dp),
+                Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.l, vertical = MycoSpacing.s)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("${i + 1}. ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                    Text(
-                        listOfNotNull(s.site, s.date).joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                Text("来源 · ${sources.size} 个网页", style = MaterialTheme.typography.titleMedium)
+                sources.forEachIndexed { i, s ->
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                            .clickable { runCatching { uriHandler.openUri(s.url) } }
+                            .padding(horizontal = MycoSpacing.s, vertical = 8.dp),
+                    ) {
+                        SiteIcon(site = s.site, url = s.url, size = 22.dp)
+                        Column(Modifier.weight(1f).padding(start = 8.dp)) {
+                            Text(
+                                "${i + 1}. " + (s.site ?: SiteIcons.hostOf(s.url) ?: ""),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(s.title, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            if (!s.snippet.isNullOrBlank()) {
+                                Text(
+                                    s.snippet,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            if (!s.date.isNullOrBlank()) {
+                                Text(s.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
                 }
-                Text(s.title, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (!s.snippet.isNullOrBlank()) {
-                    Text(
-                        s.snippet,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Spacer(Modifier.size(24.dp))
             }
         }
     }
@@ -835,6 +870,10 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
 
 
 
