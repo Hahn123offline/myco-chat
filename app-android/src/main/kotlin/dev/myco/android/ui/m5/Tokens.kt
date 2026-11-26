@@ -68,8 +68,8 @@ val M5LightPalette = M5Palette(
     // 阴影从底色派生，不用中性灰（灰会显脏）
     shadowDark = Color(0xFFB7C1A3),
     shadowLight = Color(0xFFFFFFFF),
-    glassTint = Color(0xB4FFFFFF),
-    glassTintBottom = Color(0x8CFFFFFF),
+    glassTint = Color(0x96FFFFFF),
+    glassTintBottom = Color(0x6EFFFFFF),
     glassRim = Color(0xFFFFFFFF),
     glassSpecular = Color(0xFFFFFFFF),
 )
