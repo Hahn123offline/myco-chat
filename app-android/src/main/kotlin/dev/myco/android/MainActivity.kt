@@ -201,6 +201,19 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     val drawerNav = rememberPredictiveNavState()
     val settingsNav = rememberPredictiveNavState()
     val binNav = rememberPredictiveNavState()
+
+    // 设置/回收站都是"从右侧滑入"（退出时向右滑出），与预测式返回共用同一个 progress
+    fun openSettings() {
+        settingsNav.prepareEnter()
+        screen = Screen.Settings
+        scope.launch { settingsNav.animateEnter() }
+    }
+
+    fun openBin(kind: BinKind) {
+        binNav.prepareEnter()
+        screen = Screen.SessionBin(kind)
+        scope.launch { binNav.animateEnter() }
+    }
     LaunchedEffect(screen) {
         (screen as? Screen.Chat)?.let { lastChatScreen = it }
     }
@@ -274,8 +287,10 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
             onSessionLongPress = { if (!batchMode) rowMenu = sessions.firstOrNull { s -> s.id == it.id } },
             onNewChat = { createSession() },
             onSettings = {
-                screen = Screen.Settings
-                scope.launch { drawerState.close() }
+                scope.launch {
+                    drawerState.close()
+                    openSettings()
+                }
             },
             batchMode = batchMode,
             selectedIds = selectedIds,
@@ -372,7 +387,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                             bridge = bridge,
                             themeMode = themeMode,
                             onThemeChange = onThemeChange,
-                            onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
+                            onOpenBin = { kind -> openBin(kind) },
                             onBack = { scope.launch { settingsNav.exit { leaveSettings() } } },
                         )
                     }
@@ -401,6 +416,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     PredictiveBackHandler(enabled = drawerState.isOpen) { progress ->
                         var first = true
                         var jumped = false
+                        drawerNav.beginSystemGesture()
                         try {
                             progress.collect { event ->
                                 // 按键/无中间进度直接到 1：当作"常规退出"，从 0 播同一套退出动画
@@ -413,6 +429,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                         } catch (cancelled: kotlinx.coroutines.CancellationException) {
                             throw cancelled
                         } finally {
+                            drawerNav.endSystemGesture()
                             drawerNav.reset()
                         }
                     }
@@ -421,6 +438,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                 PredictiveBackHandler(enabled = drawerState.isClosed && screen is Screen.Settings) { progress ->
                     var first = true
                     var jumped = false
+                    settingsNav.beginSystemGesture()
                     try {
                         progress.collect { event ->
                             if (first && event.progress >= 0.95f) jumped = true
@@ -432,6 +450,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     } catch (cancelled: kotlinx.coroutines.CancellationException) {
                         throw cancelled
                     } finally {
+                        settingsNav.endSystemGesture()
                         settingsNav.reset()
                     }
                 }
@@ -439,6 +458,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                 PredictiveBackHandler(enabled = drawerState.isClosed && screen is Screen.SessionBin) { progress ->
                     var first = true
                     var jumped = false
+                    binNav.beginSystemGesture()
                     try {
                         progress.collect { event ->
                             if (first && event.progress >= 0.95f) jumped = true
@@ -450,6 +470,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     } catch (cancelled: kotlinx.coroutines.CancellationException) {
                         throw cancelled
                     } finally {
+                        binNav.endSystemGesture()
                         binNav.reset()
                     }
                 }
@@ -1243,6 +1264,8 @@ private fun SessionBinScreen(
 ) {
     val scope = rememberCoroutineScope()
     var rows by remember { mutableStateOf<List<SessionRow>>(emptyList()) }
+    // 首次加载完成前不显示"没有归档/没有删除"空态：滑入动画期间只留白，避免闪一下空文案
+    var loading by remember(kind) { mutableStateOf(true) }
     var permanentTarget by remember { mutableStateOf<SessionRow?>(null) }
     val archivedMode = kind == BinKind.ARCHIVED
 
@@ -1252,6 +1275,7 @@ private fun SessionBinScreen(
         )
         val all = if (res is QueryResult.Ok) parseSessions(res.data as? JsonArray) else emptyList()
         rows = all.filter { if (archivedMode) it.archived else it.deleted }
+        loading = false
     }
     LaunchedEffect(kind) { load() }
 
@@ -1261,7 +1285,9 @@ private fun SessionBinScreen(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (rows.isEmpty()) {
+            if (loading) {
+                Box(Modifier.fillMaxSize())
+            } else if (rows.isEmpty()) {
                 EmptyState(
                     title = if (archivedMode) "没有归档会话" else "回收站是空的",
                     message = if (archivedMode) "长按会话菜单里可以归档。" else "删除的会话会先进入这里。",

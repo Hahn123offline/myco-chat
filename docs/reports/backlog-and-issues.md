@@ -64,7 +64,10 @@
   - 设置页右滑不再被抽屉手势抢走（`gesturesEnabled` 仅聊天页）；
   - 聊天窗口作为常驻基座，设置/回收站覆盖其上（露出真实内容，流式不中断）。
 - 报告：`docs/reports/m3-gesture-report.md`、`docs/reports/back-semantics-report.md`、`docs/reports/predictive-nav-report.md`。
-- 仍欠：设置/回收站"进入"没有推入动画（M5）；宽屏抽屉无手势（返回仍可用）；抽屉预览用位移近似 offset。
+- 2026-11-26 追加：设置/回收站改为"左滑进入"（prepareEnter+animateEnter），
+  修复打开瞬间闪"没有归档/没有删除"（loading 状态），修复拖拽停一半"抽搐"
+  （左缘交系统手势、systemDriven 让位、动画期间忽略拖拽、0.15% 死区）。
+- 仍欠：宽屏抽屉无手势（返回仍可用）；抽屉预测预览用位移近似 offset。
 
 
 

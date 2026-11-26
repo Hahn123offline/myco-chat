@@ -36,8 +36,13 @@ class PredictiveNavState {
     var progress by mutableFloatStateOf(0f)
         private set
 
+    /** 退出/滑回动画进行中：此时忽略拖拽写入，避免动画与拖拽互相拉扯。 */
+    var animating by androidx.compose.runtime.mutableStateOf(false)
+        private set
+
     /** 手势进度（0..1），由 PredictiveBackHandler 或拖拽调用。 */
     fun onGestureProgress(value: Float) {
+        if (animating) return
         progress = value.coerceIn(0f, 1f)
     }
 
@@ -45,8 +50,39 @@ class PredictiveNavState {
         progress = 0f
     }
 
+    /** 系统返回手势是否正在驱动本状态（用于避免页面拖拽和系统手势同时写入导致抖动）。 */
+    var systemDriven by androidx.compose.runtime.mutableStateOf(false)
+        private set
+
+    fun beginSystemGesture() {
+        systemDriven = true
+    }
+
+    fun endSystemGesture() {
+        systemDriven = false
+    }
+
+    /** 入场：先把进度放到 1（页面停在屏幕右侧），随后 [animateEnter] 滑入。 */
+    fun prepareEnter() {
+        progress = 1f
+    }
+
+    suspend fun animateEnter(durationMs: Int = 220) {
+        animating = true
+        try {
+            if (progress > 0f) {
+                val anim = Animatable(progress)
+                anim.animateTo(0f, tween(durationMs, easing = FastOutSlowInEasing)) { progress = value }
+            }
+        } finally {
+            reset()
+            animating = false
+        }
+    }
+
     /** 常规退出（点返回键/按钮）：先补齐到 1，再执行页面切换。 */
     suspend fun exit(durationMs: Int = 180, onCommit: suspend () -> Unit) {
+        animating = true
         try {
             if (progress < 1f) {
                 val anim = Animatable(progress)
@@ -55,11 +91,13 @@ class PredictiveNavState {
             onCommit()
         } finally {
             reset()
+            animating = false
         }
     }
 
     /** 拖拽未过阈值：滑回原位。 */
     suspend fun cancel(durationMs: Int = 160) {
+        animating = true
         try {
             if (progress > 0f) {
                 val anim = Animatable(progress)
@@ -67,6 +105,7 @@ class PredictiveNavState {
             }
         } finally {
             reset()
+            animating = false
         }
     }
 }
@@ -92,6 +131,9 @@ fun Modifier.swipeRightToExit(
     this.pointerInput(state) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
+            // 左缘交给系统返回手势：页面拖拽不接管，避免两套进度互相打架（抖动）
+            if (down.position.x <= touchSlop) return@awaitEachGesture
+            if (state.systemDriven) return@awaitEachGesture
             val startX = down.position.x
             val startY = down.position.y
             val startTime = down.uptimeMillis
@@ -107,15 +149,22 @@ fun Modifier.swipeRightToExit(
                     horizontal = true
                 }
                 if (horizontal) {
+                    // 系统返回手势接管、或退出/滑回动画进行中：本手势停止写入，避免两套进度互相拉扯
+                    if (state.systemDriven || state.animating) {
+                        horizontal = false
+                        break
+                    }
                     lastX = change.position.x
                     lastTime = change.uptimeMillis
-                    state.onGestureProgress(dx / size.width.toFloat())
+                    val next = dx / size.width.toFloat()
+                    // 死区：手指轻微抖动不推页面，避免反复微调造成“抽搐”
+                    if (abs(next - state.progress) > 0.0015f) state.onGestureProgress(next)
                     if (change.pressed) change.consume()
                 }
                 // 抬手事件也要先取到最终位移（快速甩动可能只有 down + up 两个事件）
                 if (!change.pressed) break
             }
-            if (horizontal) {
+            if (horizontal && !state.systemDriven && !state.animating) {
                 val seconds = ((lastTime - startTime) / 1000f).coerceAtLeast(0.001f)
                 val velocity = (lastX - startX) / seconds
                 if (state.progress > 0.22f || velocity > 600f) {
