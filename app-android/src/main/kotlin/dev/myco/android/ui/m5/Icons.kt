@@ -59,7 +59,7 @@ object M5Icons {
     }
 
     val back = M5IconSpec("返回") { c ->
-        path(c) { moveTo(14.5f, 5.5f); lineTo(8f, 12f); lineTo(14.5f, 18.5f) }
+        path(c) { moveTo(15.2f, 5.5f); lineTo(8.7f, 12f); lineTo(15.2f, 18.5f) }
     }
 
     val close = M5IconSpec("关闭") { c ->
@@ -68,9 +68,9 @@ object M5Icons {
     }
 
     val more = M5IconSpec("更多") { c ->
-        drawCircle(c, 1.6f, Offset(5.5f, 12f))
-        drawCircle(c, 1.6f, Offset(12f, 12f))
-        drawCircle(c, 1.6f, Offset(18.5f, 12f))
+        drawCircle(c, 1.9f, Offset(5.5f, 12f))
+        drawCircle(c, 1.9f, Offset(12f, 12f))
+        drawCircle(c, 1.9f, Offset(18.5f, 12f))
     }
 
     val search = M5IconSpec("搜索") { c ->
@@ -92,7 +92,7 @@ object M5Icons {
 
     val stop = M5IconSpec("停止") { c ->
         drawRoundRect(
-            c, Offset(9f, 9f), Size(6f, 6f),
+            c, Offset(8.5f, 8.5f), Size(7f, 7f),
             cornerRadius = CornerRadius(1.4f), style = Stroke(1.6f),
         )
     }
@@ -115,11 +115,11 @@ object M5Icons {
     }
 
     val chevronDown = M5IconSpec("展开") { c ->
-        path(c) { moveTo(6f, 9.5f); lineTo(12f, 15.5f); lineTo(18f, 9.5f) }
+        path(c) { moveTo(6f, 9f); lineTo(12f, 15f); lineTo(18f, 9f) }
     }
 
     val chevronRight = M5IconSpec("进入") { c ->
-        path(c) { moveTo(9.5f, 6f); lineTo(15.5f, 12f); lineTo(9.5f, 18f) }
+        path(c) { moveTo(9f, 6f); lineTo(15f, 12f); lineTo(9f, 18f) }
     }
 
     val clock = M5IconSpec("思考") { c ->
@@ -139,8 +139,11 @@ object M5Icons {
 
     val spark = M5IconSpec("记忆") { c ->
         path(c) {
-            moveTo(12f, 3.2f); lineTo(13.5f, 10.5f); lineTo(20.8f, 12f); lineTo(13.5f, 13.5f)
-            lineTo(12f, 20.8f); lineTo(10.5f, 13.5f); lineTo(3.2f, 12f); lineTo(10.5f, 10.5f)
+            moveTo(12f, 4.5f)
+            cubicTo(12.6f, 8.8f, 15.2f, 11.4f, 19.5f, 12f)
+            cubicTo(15.2f, 12.6f, 12.6f, 15.2f, 12f, 19.5f)
+            cubicTo(11.4f, 15.2f, 8.8f, 12.6f, 4.5f, 12f)
+            cubicTo(8.8f, 11.4f, 11.4f, 8.8f, 12f, 4.5f)
             close()
         }
     }
@@ -155,26 +158,26 @@ object M5Icons {
     }
 
     val trash = M5IconSpec("删除") { c ->
-        line(c, 5f, 7f, 19f, 7f)
+        line(c, 5f, 6.5f, 19f, 6.5f)
         path(c) {
-            moveTo(9.5f, 7f); lineTo(9.5f, 5f); lineTo(14.5f, 5f); lineTo(14.5f, 7f)
+            moveTo(9.5f, 6.5f); lineTo(9.5f, 4.5f); lineTo(14.5f, 4.5f); lineTo(14.5f, 6.5f)
         }
         path(c) {
-            moveTo(7f, 7f); lineTo(8f, 20f); lineTo(16f, 20f); lineTo(17f, 7f)
+            moveTo(7f, 6.5f); lineTo(8f, 19.5f); lineTo(16f, 19.5f); lineTo(17f, 6.5f)
         }
-        line(c, 10.5f, 11f, 10.5f, 16f)
-        line(c, 13.5f, 11f, 13.5f, 16f)
+        line(c, 10.5f, 10.5f, 10.5f, 15.5f)
+        line(c, 13.5f, 10.5f, 13.5f, 15.5f)
     }
 
     val archive = M5IconSpec("归档") { c ->
         drawRoundRect(
-            c, Offset(4f, 6.5f), Size(16f, 4f),
+            c, Offset(4.5f, 5.2f), Size(15f, 3.6f),
             cornerRadius = CornerRadius(1.4f), style = Stroke(1.6f),
         )
         path(c) {
-            moveTo(6f, 10.5f); lineTo(6f, 20f); lineTo(18f, 20f); lineTo(18f, 10.5f)
+            moveTo(6.5f, 8.8f); lineTo(6.5f, 19.2f); lineTo(17.5f, 19.2f); lineTo(17.5f, 8.8f)
         }
-        line(c, 10f, 14.5f, 14f, 14.5f)
+        line(c, 10.2f, 14f, 13.8f, 14f)
     }
 
     val copy = M5IconSpec("复制") { c ->

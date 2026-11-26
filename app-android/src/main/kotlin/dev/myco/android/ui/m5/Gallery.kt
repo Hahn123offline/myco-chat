@@ -97,7 +97,8 @@ private fun GalleryHeader(dark: Boolean, onToggleDark: () -> Unit, onClose: () -
         verticalAlignment = Alignment.CenterVertically,
     ) {
         NeoSurface(
-            modifier = Modifier.size(40.dp).clip(SuperellipseShape(20.dp)).clickable { onClose() },
+            modifier = Modifier.size(40.dp),
+            onClick = onClose,
             radius = 20.dp,
             contentPadding = PaddingValues(0.dp),
         ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.back, Modifier.size(19.dp), p.text) } }
@@ -107,7 +108,7 @@ private fun GalleryHeader(dark: Boolean, onToggleDark: () -> Unit, onClose: () -
             Text("0.1 · 技术验证", style = M5Type.caption, color = p.textTertiary)
         }
         NeoSurface(
-            modifier = Modifier.clickable { onToggleDark() },
+            onClick = onToggleDark,
             radius = 18.dp,
             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
         ) { Text(if (dark) "深色" else "浅色", style = M5Type.label, color = p.text) }
@@ -187,10 +188,10 @@ private fun ShapeSection() {
 @Composable
 private fun MaterialSection() {
     val p = LocalM5.current.palette
-    Section("材质 · 新拟物", "Raised 外凸 / Inset 凹陷 / Float 悬浮；暗色换色而不反相，阴影从底色派生") {
+    Section("材质 · 新拟物", "投影取面板自身颜色（粉=粉影、绿=橄榄影）；按钮优先凸起；按一下看「凸起按凹 + 超椭圆波纹」") {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             NeoSurface(
-                modifier = Modifier.clickable {},
+                onClick = {},
                 radius = 22.dp,
                 fill = p.moss,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
@@ -227,12 +228,17 @@ private fun MaterialSection() {
                     NeoSurface(
                         modifier = Modifier.weight(1f),
                         radius = 14.dp,
-                        material = if (selected) NeoMaterial.Raised else NeoMaterial.Inset,
-                        fill = if (selected) p.mossTint else p.sunken,
+                        material = NeoMaterial.Raised,
+                        fill = if (selected) p.moss else p.surface,
                         contentPadding = PaddingValues(vertical = 8.dp),
+                        onClick = {},
                     ) {
                         Box(Modifier.fillMaxWidth(), Alignment.Center) {
-                            Text(label, style = M5Type.label, color = p.text)
+                            Text(
+                                label,
+                                style = M5Type.label,
+                                color = if (selected) Color(0xFF1B1B16) else p.text,
+                            )
                         }
                     }
                 }
@@ -338,7 +344,7 @@ private fun GlassSection() {
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
             ) { Text("玻璃按钮", style = M5Type.label, color = p.text) }
             NeoSurface(
-                modifier = Modifier.clickable {},
+                onClick = {},
                 radius = 18.dp,
                 fill = p.moss,
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 9.dp),
@@ -414,7 +420,7 @@ private fun IconSection() {
                         NeoSurface(
                             modifier = Modifier.size(52.dp),
                             radius = 16.dp,
-                            material = NeoMaterial.Inset,
+                            material = NeoMaterial.Raised,
                         ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(vector, Modifier.size(22.dp), p.text) } }
                         Spacer(Modifier.height(4.dp))
                         Caption(label)
@@ -506,11 +512,11 @@ private fun ComposerSection() {
                     NeoSurface(
                         modifier = Modifier.size(36.dp),
                         radius = 18.dp,
-                        material = NeoMaterial.Inset,
+                        material = NeoMaterial.Raised,
                     ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.plus, Modifier.size(18.dp), p.textSecondary) } }
                     NeoSurface(
                         radius = 15.dp,
-                        material = NeoMaterial.Inset,
+                        material = NeoMaterial.Raised,
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -521,7 +527,7 @@ private fun ComposerSection() {
                     }
                     NeoSurface(
                         radius = 15.dp,
-                        material = NeoMaterial.Inset,
+                        material = NeoMaterial.Raised,
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -532,7 +538,8 @@ private fun ComposerSection() {
                     }
                     Spacer(Modifier.weight(1f))
                     NeoSurface(
-                        modifier = Modifier.size(40.dp).clickable {},
+                        modifier = Modifier.size(40.dp),
+                        onClick = {},
                         radius = 20.dp,
                         fill = p.moss,
                     ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.send, Modifier.size(18.dp), Color(0xFF1B1B16)) } }
