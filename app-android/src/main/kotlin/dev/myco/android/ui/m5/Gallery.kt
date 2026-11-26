@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -497,69 +498,75 @@ private fun ComposerSection() {
         GlassSurface(
             modifier = Modifier.fillMaxWidth(),
             radius = 26.dp,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                BasicTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    textStyle = M5Type.body.copy(color = p.text),
-                    cursorBrush = SolidColor(p.moss),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                    decorationBox = { inner ->
-                        Box {
-                            if (text.isEmpty()) {
-                                Text("说点什么…", style = M5Type.body, color = p.textTertiary)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // 输入区是主角：文本区至少 44dp 高，工具行压到 32dp
+                Box(
+                    Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    BasicTextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        textStyle = M5Type.body.copy(color = p.text),
+                        cursorBrush = SolidColor(p.moss),
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { inner ->
+                            Box {
+                                if (text.isEmpty()) {
+                                    Text("说点什么…", style = M5Type.body, color = p.textTertiary)
+                                }
+                                inner()
                             }
-                            inner()
-                        }
-                    },
-                )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        },
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     NeoSurface(
-                        modifier = Modifier.size(40.dp),
-                        radius = 20.dp,
+                        modifier = Modifier.size(32.dp),
+                        radius = 16.dp,
                         material = NeoMaterial.Raised,
                         onClick = {},
-                    ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.plus, Modifier.size(18.dp), p.textSecondary) } }
+                    ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.plus, Modifier.size(16.dp), p.textSecondary) } }
                     NeoSurface(
-                        modifier = Modifier.height(40.dp),
-                        radius = 20.dp,
+                        modifier = Modifier.height(32.dp),
+                        radius = 16.dp,
                         material = NeoMaterial.Raised,
-                        contentPadding = PaddingValues(horizontal = 13.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp),
                         contentAlignment = Alignment.Center,
                         onClick = {},
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            M5Icon(M5Icons.spark, Modifier.size(14.dp), p.textSecondary)
-                            Spacer(Modifier.width(5.dp))
+                            M5Icon(M5Icons.spark, Modifier.size(13.dp), p.textSecondary)
+                            Spacer(Modifier.width(4.dp))
                             Text("DeepSeek", style = M5Type.caption, color = p.textSecondary)
                         }
                     }
                     NeoSurface(
-                        modifier = Modifier.height(40.dp),
-                        radius = 20.dp,
+                        modifier = Modifier.height(32.dp),
+                        radius = 16.dp,
                         material = NeoMaterial.Raised,
-                        contentPadding = PaddingValues(horizontal = 13.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp),
                         contentAlignment = Alignment.Center,
                         onClick = {},
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            M5Icon(M5Icons.clock, Modifier.size(14.dp), p.moss)
-                            Spacer(Modifier.width(5.dp))
+                            M5Icon(M5Icons.clock, Modifier.size(13.dp), p.moss)
+                            Spacer(Modifier.width(4.dp))
                             Text("深度思考", style = M5Type.caption, color = p.textSecondary)
                         }
                     }
                     Spacer(Modifier.weight(1f))
                     NeoSurface(
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(32.dp),
                         onClick = {},
-                        radius = 20.dp,
+                        radius = 16.dp,
                         fill = p.moss,
-                    ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.send, Modifier.size(18.dp), Color(0xFF1B1B16)) } }
+                    ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.send, Modifier.size(16.dp), Color(0xFF1B1B16)) } }
                 }
             }
         }
-        Caption("输入框无边框；工具行在文本下方；发送键主态用 accent.moss 填充")
+        Caption("文本区 ≥44dp，工具行按钮统一 32dp；发送键主态用 accent.moss 填充")
     }
 }
