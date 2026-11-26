@@ -29,7 +29,27 @@
 - 单测：会话级选择驱动 provider/model/reasoning；`off` 关闭思考；不支持等级报错。
 - 测试：core **83** + bridge **7** = **90 绿**。
 
-## 2. 未完成（M1 继续）
+## 2. 本轮完成（第二批）
+
+### Provider 模型目录编辑（DSH 方向）
+- Provider 编辑弹窗从"单模型"改为**多模型目录**：
+  - 每个模型可配：模型 ID、显示名、上下文窗口、最大输出、输入类型（文本/图片）、
+    **是否支持思考强度**、默认档位（off/low/medium/high）、三档 API 参数值（自定义映射）。
+  - 支持添加/删除模型；`roles.chat/fast` 取第一个模型。
+- Provider 字段补充显示名称；API Key 仍是只写字段，保存后写 credentials，ref 自动生成。
+- 推理映射的"关闭思考"用空字符串表示（`efforts["off"]=""`），避免 JSON 显式 null 被省略后丢档位；
+  Bridge 把空值当关闭思考。
+
+### 内置第三方 Provider 模板
+- 新增「更多模板」入口，内置：DeepSeek、OpenAI、Anthropic、Kimi（Moonshot）、OpenRouter、Gemini（OpenAI 兼容）。
+- 模板只带地址/协议/模型目录，key 由用户填写；可再编辑模型目录/参数。
+- DeepSeek 模板默认两个模型：deepseek-chat（无思考）、deepseek-reasoner（off/low/medium/high 自定义映射，默认 medium）。
+
+### 说明
+- 手机 ADB 断开，本轮无真机验证；模型目录 UI 已编译通过。
+- 尚未做「发现模型」写回目录（只保留测试连通性/发现 id 提示）。
+
+## 3. 未完成（M1 继续）
 
 1. Provider 编辑器仍是"单模型"表单；需要 DSH 式模型目录（多模型、上下文/最大输出/输入类型/推理档位/发现模型/恢复默认）。
 2. 内置第三方 provider 目录（OpenAI/Anthropic/Kimi/DeepSeek/OpenRouter…）与自定义 provider 的两页式 UI。

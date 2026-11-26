@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -96,6 +97,7 @@ import dev.myco.core.spec.AuthProfile
 import dev.myco.core.spec.ModelProfile
 import dev.myco.core.spec.MycoJson
 import dev.myco.core.spec.ProviderProfile
+import dev.myco.core.spec.ReasoningProfile
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.launch
@@ -975,6 +977,7 @@ private fun SettingsScreen(
     var deleteTarget by remember { mutableStateOf<ProviderUi?>(null) }
     var keyTarget by remember { mutableStateOf<ProviderUi?>(null) }
     var running by remember { mutableStateOf(false) }
+    var showTemplates by remember { mutableStateOf(false) }
     var settingsQuery by remember { mutableStateOf("") }
     val q = settingsQuery.trim()
     fun match(vararg keys: String) = q.isBlank() || keys.any { it.contains(q, ignoreCase = true) || q.contains(it, ignoreCase = true) }
@@ -1116,6 +1119,7 @@ private fun SettingsScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { discoverStatus = null; editor = ProviderEditor.localTemplate() }) { Text("加本地模板") }
                     OutlinedButton(onClick = { discoverStatus = null; editor = ProviderEditor.deepseekTemplate() }) { Text("加 DeepSeek") }
+                    OutlinedButton(onClick = { showTemplates = true }) { Text("更多模板") }
                 }
             }
             item {
@@ -1164,6 +1168,34 @@ private fun SettingsScreen(
             }
             }
         }
+    }
+
+    if (showTemplates) {
+        AlertDialog(
+            onDismissRequest = { showTemplates = false },
+            title = { Text("第三方模型提供商") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 420.dp)) {
+                    providerTemplates().forEach { t ->
+                        TextButton(onClick = {
+                            discoverStatus = null
+                            editor = t.toEditor()
+                            showTemplates = false
+                        }) {
+                            Column {
+                                Text(t.displayName, style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    "${t.id} · ${t.kind} · ${t.models.size} 个模型",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showTemplates = false }) { Text("取消") } },
+        )
     }
 
     editor?.let { ed ->
@@ -1259,10 +1291,8 @@ private fun ProviderEditDialog(
             ) {
                 Text("kind: ${form.kind}", style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(form.id, { form = form.copy(id = it) }, label = { Text("Provider ID") }, singleLine = true)
+                OutlinedTextField(form.displayName, { form = form.copy(displayName = it) }, label = { Text("显示名称") }, singleLine = true)
                 OutlinedTextField(form.baseUrl, { form = form.copy(baseUrl = it) }, label = { Text("Base URL") }, singleLine = true)
-                OutlinedTextField(form.modelId, { form = form.copy(modelId = it) }, label = { Text("模型 id") }, singleLine = true)
-                OutlinedTextField(form.contextWindow, { form = form.copy(contextWindow = it) }, label = { Text("上下文窗口") }, singleLine = true)
-                OutlinedTextField(form.maxTokens, { form = form.copy(maxTokens = it) }, label = { Text("最大输出") }, singleLine = true)
                 OutlinedTextField(
                     form.apiKey,
                     { form = form.copy(apiKey = it) },
@@ -1270,6 +1300,84 @@ private fun ProviderEditDialog(
                     singleLine = true,
                 )
                 Text("凭据引用：${form.effectiveRef()}（自动生成，不进日志）", style = MaterialTheme.typography.bodySmall)
+                Text("模型目录", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = MycoSpacing.s))
+                form.models.forEachIndexed { index, model ->
+                    Column(Modifier.fillMaxWidth().padding(vertical = MycoSpacing.xs)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("模型 ${index + 1}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            if (form.models.size > 1) {
+                                TextButton(onClick = {
+                                    form = form.copy(models = form.models.filterIndexed { i, _ -> i != index })
+                                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+                            }
+                        }
+                        OutlinedTextField(
+                            model.id,
+                            { v -> form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(id = v) }) },
+                            label = { Text("模型 ID") }, singleLine = true,
+                        )
+                        OutlinedTextField(
+                            model.name,
+                            { v -> form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(name = v) }) },
+                            label = { Text("显示名称（可选）") }, singleLine = true,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedTextField(
+                                model.contextWindow,
+                                { v -> form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(contextWindow = v) }) },
+                                label = { Text("上下文窗口") }, singleLine = true, modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                model.maxTokens,
+                                { v -> form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(maxTokens = v) }) },
+                                label = { Text("最大输出") }, singleLine = true, modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = model.inputText, onCheckedChange = { v ->
+                                form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(inputText = v) })
+                            })
+                            Text("文本")
+                            Checkbox(checked = model.inputImage, onCheckedChange = { v ->
+                                form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(inputImage = v) })
+                            })
+                            Text("图片")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = model.reasoningEnabled, onCheckedChange = { v ->
+                                form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(reasoningEnabled = v) })
+                            })
+                            Text("支持思考强度")
+                        }
+                        if (model.reasoningEnabled) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                listOf("off", "low", "medium", "high").forEach { level ->
+                                    FilterChip(
+                                        selected = model.defaultLevel == level,
+                                        onClick = {
+                                            form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(defaultLevel = level) })
+                                        },
+                                        label = { Text("默认 $level") },
+                                    )
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                OutlinedTextField(model.effortLow, { v ->
+                                    form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(effortLow = v) })
+                                }, label = { Text("low 参数") }, singleLine = true, modifier = Modifier.weight(1f))
+                                OutlinedTextField(model.effortMedium, { v ->
+                                    form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(effortMedium = v) })
+                                }, label = { Text("medium") }, singleLine = true, modifier = Modifier.weight(1f))
+                                OutlinedTextField(model.effortHigh, { v ->
+                                    form = form.copy(models = form.models.toMutableList().also { it[index] = model.copy(effortHigh = v) })
+                                }, label = { Text("high") }, singleLine = true, modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+                TextButton(onClick = {
+                    form = form.copy(models = form.models + ModelEditor.blank(form.models.size))
+                }) { Text("＋ 添加模型") }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = { onDiscover(form) }) { Text("测试连通性") }
                     if (discoverStatus != null) {
@@ -1313,6 +1421,59 @@ private data class ModelUi(
     val reasoningDefault: String? = null,
 )
 
+private data class ModelEditor(
+    val id: String,
+    val name: String = "",
+    val contextWindow: String,
+    val maxTokens: String,
+    val inputText: Boolean = true,
+    val inputImage: Boolean = false,
+    val reasoningEnabled: Boolean = false,
+    val effortLow: String = "low",
+    val effortMedium: String = "medium",
+    val effortHigh: String = "high",
+    val defaultLevel: String = "low",
+) {
+    fun toProfile(): ModelProfile = ModelProfile(
+        id = id.trim(),
+        name = name.trim().ifBlank { null },
+        contextWindow = contextWindow.toLongOrNull() ?: 32768L,
+        maxTokens = maxTokens.toLongOrNull() ?: 4096L,
+        input = buildList {
+            if (inputText) add("text")
+            if (inputImage) add("image")
+        },
+        reasoning = if (reasoningEnabled) ReasoningProfile(
+            efforts = linkedMapOf(
+                "off" to "",
+                "low" to effortLow.ifBlank { "low" },
+                "medium" to effortMedium.ifBlank { "medium" },
+                "high" to effortHigh.ifBlank { "high" },
+            ),
+            default = defaultLevel,
+        ) else null,
+    )
+
+    companion object {
+        fun blank(index: Int) = ModelEditor(
+            id = if (index == 0) "model" else "model-$index",
+            contextWindow = "128000", maxTokens = "8192",
+        )
+
+        fun from(m: ModelUi) = ModelEditor(
+            id = m.id,
+            name = m.name ?: "",
+            contextWindow = m.contextWindow.toString(),
+            maxTokens = m.maxTokens.toString(),
+            reasoningEnabled = m.reasoningEfforts.isNotEmpty(),
+            effortLow = m.reasoningEfforts["low"] ?: "low",
+            effortMedium = m.reasoningEfforts["medium"] ?: "medium",
+            effortHigh = m.reasoningEfforts["high"] ?: "high",
+            defaultLevel = m.reasoningDefault ?: "low",
+        )
+    }
+}
+
 private data class ProviderUi(
     val id: String,
     val kind: String,
@@ -1329,9 +1490,7 @@ private data class ProviderUi(
         kind = kind,
         displayName = displayName,
         baseUrl = baseUrl,
-        modelId = models.firstOrNull()?.id ?: "",
-        contextWindow = (models.firstOrNull()?.contextWindow ?: 32768).toString(),
-        maxTokens = (models.firstOrNull()?.maxTokens ?: 4096).toString(),
+        models = models.map { ModelEditor.from(it) },
         ref = authRef ?: "",
     )
 }
@@ -1342,9 +1501,7 @@ private data class ProviderEditor(
     val kind: String,
     val displayName: String,
     val baseUrl: String,
-    val modelId: String,
-    val contextWindow: String,
-    val maxTokens: String,
+    val models: List<ModelEditor>,
     val ref: String,
     /** 只写不读：非空时在保存 provider 成功后写入 credentials；不进入任何序列化。 */
     val apiKey: String = "",
@@ -1358,38 +1515,76 @@ private data class ProviderEditor(
         return (base.ifBlank { "MYCO" } + "_API_KEY")
     }
 
-    fun toProfile(): ProviderProfile = ProviderProfile(
-        id = id.trim(),
-        kind = kind,
-        displayName = displayName.ifBlank { null },
-        baseUrl = baseUrl.trim().ifBlank { null },
-        auth = if (effectiveRef().isBlank() && apiKey.isBlank()) AuthProfile.None
-        else AuthProfile.ApiKey(effectiveRef()),
-        models = listOf(
-            ModelProfile(
-                id = modelId.trim(),
-                contextWindow = contextWindow.toLongOrNull() ?: 32768L,
-                maxTokens = maxTokens.toLongOrNull() ?: 4096L,
-            )
-        ),
-        roles = mapOf("chat" to modelId.trim(), "fast" to modelId.trim()),
-    )
+    fun toProfile(): ProviderProfile {
+        val profiles = models.mapNotNull { model -> model.id.trim().ifBlank { null }?.let { model.toProfile() } }
+        val first = profiles.firstOrNull()?.id ?: ""
+        return ProviderProfile(
+            id = id.trim(),
+            kind = kind,
+            displayName = displayName.ifBlank { null },
+            baseUrl = baseUrl.trim().ifBlank { null },
+            auth = if (effectiveRef().isBlank() && apiKey.isBlank()) AuthProfile.None
+            else AuthProfile.ApiKey(effectiveRef()),
+            models = profiles,
+            roles = mapOf("chat" to first, "fast" to first),
+        )
+    }
 
     companion object {
         fun localTemplate() = ProviderEditor(
             originalId = null, id = "local", kind = "openai-completions",
             displayName = "本地 OpenAI 兼容", baseUrl = "http://127.0.0.1:8787/v1",
-            modelId = "fake-chat", contextWindow = "32768", maxTokens = "4096", ref = "",
+            models = listOf(ModelEditor("fake-chat", "fake-chat", "32768", "4096")), ref = "",
         )
 
         fun deepseekTemplate() = ProviderEditor(
             originalId = null, id = "deepseek", kind = "deepseek-messages",
             displayName = "DeepSeek 官方", baseUrl = "https://api.deepseek.com/anthropic",
-            modelId = "deepseek-flash", contextWindow = "1000000", maxTokens = "384000",
+            models = listOf(
+                ModelEditor("deepseek-chat", "DeepSeek Chat", "128000", "8192"),
+                ModelEditor(
+                    "deepseek-reasoner", "DeepSeek Reasoner", "128000", "65536",
+                    reasoningEnabled = true, effortLow = "low", effortMedium = "medium", effortHigh = "high",
+                    defaultLevel = "medium",
+                ),
+            ),
             ref = "",
         )
     }
 }
+
+/** 内置第三方 provider 模板（只做地址/协议/默认模型，key 由用户填）。 */
+private data class ProviderTemplate(
+    val id: String,
+    val kind: String,
+    val displayName: String,
+    val baseUrl: String,
+    val models: List<ModelEditor>,
+) {
+    fun toEditor() = ProviderEditor(
+        originalId = null, id = id, kind = kind, displayName = displayName,
+        baseUrl = baseUrl, models = models, ref = "",
+    )
+}
+
+private fun providerTemplates(): List<ProviderTemplate> = listOf(
+    ProviderTemplate("deepseek", "deepseek-messages", "DeepSeek 官方", "https://api.deepseek.com/anthropic",
+        ProviderEditor.deepseekTemplate().models),
+    ProviderTemplate("openai", "openai-completions", "OpenAI", "https://api.openai.com/v1",
+        listOf(
+            ModelEditor("gpt-4.1", "GPT-4.1", "1047576", "32768"),
+            ModelEditor("gpt-4.1-mini", "GPT-4.1 mini", "1047576", "32768"),
+            ModelEditor("o4-mini", "o4-mini", "200000", "100000", reasoningEnabled = true, defaultLevel = "medium"),
+        )),
+    ProviderTemplate("anthropic", "deepseek-messages", "Anthropic", "https://api.anthropic.com",
+        listOf(ModelEditor("claude-sonnet-4-5", "Claude Sonnet 4.5", "200000", "64000", reasoningEnabled = true, defaultLevel = "medium"))),
+    ProviderTemplate("kimi", "openai-completions", "Kimi (Moonshot)", "https://api.moonshot.cn/v1",
+        listOf(ModelEditor("kimi-k2-0905-preview", "Kimi K2", "262144", "16384"))),
+    ProviderTemplate("openrouter", "openai-completions", "OpenRouter", "https://openrouter.ai/api/v1",
+        listOf(ModelEditor("openai/gpt-4.1", "GPT-4.1 (OpenRouter)", "1047576", "32768"))),
+    ProviderTemplate("gemini", "openai-completions", "Google Gemini (OpenAI 兼容)", "https://generativelanguage.googleapis.com/v1beta/openai/",
+        listOf(ModelEditor("gemini-2.5-pro", "Gemini 2.5 Pro", "1048576", "65536", inputImage = true, reasoningEnabled = true, defaultLevel = "medium"))),
+)
 
 private fun parseDiscoveredIds(data: kotlinx.serialization.json.JsonElement?): String {
     val arr = (data as? JsonObject)?.get("models") as? JsonArray ?: return "（空）"
@@ -1488,6 +1683,9 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
 
 
 

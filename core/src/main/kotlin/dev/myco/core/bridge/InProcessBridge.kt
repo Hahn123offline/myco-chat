@@ -377,10 +377,10 @@ class InProcessBridge(
         }
         val thinking = when {
             level == null -> cmd.thinking
-            apiValue == null -> false
+            apiValue.isNullOrBlank() -> false
             else -> true
         }
-        val reasoningEffort = apiValue
+        val reasoningEffort = apiValue?.takeIf { it.isNotBlank() }
 
         // 工具 schema 进每轮请求前缀：超预算直接拒绝，不偷偷裁剪（模型看到的必须可复现）
         val allToolSpecs = tools.list().map { ToolSpec(it.name, it.description, it.parameters) }
