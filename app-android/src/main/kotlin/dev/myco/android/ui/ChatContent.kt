@@ -673,6 +673,7 @@ private fun TimelineBody(
             state = listState,
             userScrollEnabled = false,
             modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             entries.forEachIndexed { entryIndex, entry ->
                 val key = "$keyPrefix-$entryIndex"
@@ -804,31 +805,70 @@ private fun TimelineEntryContent(entry: TimelineEntry) {
             }
         }
         "tool" -> {
-            Column(Modifier.fillMaxWidth().padding(start = MycoSpacing.m)) {
+            val uriHandler = LocalUriHandler.current
+            Column(Modifier.fillMaxWidth().padding(start = MycoSpacing.m, top = 2.dp, bottom = 4.dp)) {
                 if (entry.args.isNotBlank() && entry.args != "{}") {
                     Text(
-                        "参数：${entry.args.take(300)}",
+                        "参数：${entry.args.take(400)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
+                        maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (entry.sources.isEmpty() && entry.text.isNotBlank()) {
-                    Text(
-                        entry.text.take(1200),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 8,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (entry.sources.isNotEmpty()) {
-                    Text(
-                        "已阅读 ${entry.sources.size} 个网页（来源见回答下方）",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                when (entry.name) {
+                    "web_search" -> {
+                        if (entry.sources.isNotEmpty()) {
+                            Text(
+                                "已阅读 ${entry.sources.size} 个网页",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            entry.sources.take(3).forEach { s ->
+                                Row(
+                                    Modifier.fillMaxWidth().clickable { runCatching { uriHandler.openUri(s.url) } }
+                                        .padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    SiteIcon(site = s.site, url = s.url, size = 16.dp)
+                                    Text(
+                                        "  " + s.title,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            if (entry.sources.size > 3) {
+                                Text(
+                                    "其余 ${entry.sources.size - 3} 个来源见回答下方",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        } else if (entry.text.isNotBlank()) {
+                            Text(entry.text.take(1200), style = MaterialTheme.typography.bodySmall, maxLines = 8, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                    "time_now" -> {
+                        val display = runCatching {
+                            val o = kotlinx.serialization.json.Json.parseToJsonElement(entry.text).jsonObject
+                            o["local"]?.jsonPrimitive?.content ?: entry.text
+                        }.getOrDefault(entry.text)
+                        Text("当前时间：${display.take(200)}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    else -> {
+                        if (entry.text.isNotBlank()) {
+                            Text(
+                                entry.text.take(1200),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 10,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1282,6 +1322,8 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
 
 
 
