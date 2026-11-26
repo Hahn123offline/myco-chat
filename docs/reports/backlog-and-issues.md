@@ -71,9 +71,11 @@
 
 
 
-### P3 M5 设计系统
-- token/间距/字阶/动效曲线/图标光学对齐/卡片层级/空态/错误态统一；
-- 现有多处样式仍是“能用”而非“干净利落”。
+### P3 M5 设计系统（进行中：M5.0 技术验证已完成 2026-11-26）
+- 方案与拍板见 [90-m5-visual-system.md](../design/90-m5-visual-system.md)；M5.0 结论见 [m5-0-gallery-report.md](m5-0-gallery-report.md)。
+- 已完成：超椭圆 Shape、新拟物 Raised/Inset/Float、玻璃 L0（菲涅尔+高光+透射）、统一 LightRig、19 个自绘图标、settle/glide/snap 物理、真机画廊（浅/深）。
+- 待做：阴影尺寸缓存（当前 90th 18ms）；L1 真背景模糊是否引 Haze 待评估；M5.1 tokens/primitives 全量替换旧 Theme；M5.2 面板壳（层叠 + 返回栈）；M5.3 聊天/抽屉/设置重做。
+- 已知待调：暗色结构面浮雕对比偏弱、浅色粉气泡饱和度、玻璃深色透射偏清、超椭圆 n 值（默认 4.0）。
 
 ## 1.5 M5 前结构性细节（2026-11-26 已完成，见 chat-shell-polish-report.md）
 

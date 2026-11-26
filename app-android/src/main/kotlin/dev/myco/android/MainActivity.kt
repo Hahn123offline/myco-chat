@@ -130,14 +130,28 @@ class MainActivity : ComponentActivity() {
         val initial = ThemePrefs.load(this)
         setContent {
             var mode by remember { mutableStateOf(initial) }
+            val galleryMode = remember { intent?.getBooleanExtra("m5_gallery", false) == true }
             MycoTheme(mode) {
-                MycoApp(
-                    mode,
-                    onThemeChange = {
-                        mode = it
-                        ThemePrefs.save(applicationContext, it)
-                    },
-                )
+                if (galleryMode) {
+                    val dark = when (mode) {
+                        ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+                        ThemeMode.LIGHT -> false
+                        ThemeMode.DARK -> true
+                    }
+                    dev.myco.android.ui.m5.M5Gallery(
+                        dark = dark,
+                        onToggleDark = { mode = if (dark) ThemeMode.LIGHT else ThemeMode.DARK },
+                        onClose = { finish() },
+                    )
+                } else {
+                    MycoApp(
+                        mode,
+                        onThemeChange = {
+                            mode = it
+                            ThemePrefs.save(applicationContext, it)
+                        },
+                    )
+                }
             }
         }
     }
