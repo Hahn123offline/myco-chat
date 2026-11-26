@@ -848,20 +848,35 @@ private fun TimelineBody(
                         Box(Modifier.padding(bottom = 2.dp)) { TimelineEntryContent(entry) }
                     }
                 } else {
-                    stickyHeader(key = "rh-$key") {
-                        Box(Modifier.padding(bottom = 2.dp)) {
-                            TimelineEntryHeader(
-                                entry = entry,
-                                expanded = expandedTools[key] == true,
-                                onToggle = { expandedTools[key] = expandedTools[key] != true },
-                            )
+                    val expanded = expandedTools[key] == true
+                    if (expanded) {
+                        // 只有展开的行才吸顶；收起行是普通 item，
+                        // 否则滚动时会黏住后面不属于它的 act 文本（用户反馈的"思考头吞掉 act"）
+                        stickyHeader(key = "rh-$key") {
+                            Box(Modifier.padding(bottom = 2.dp)) {
+                                TimelineEntryHeader(
+                                    entry = entry,
+                                    expanded = true,
+                                    onToggle = { expandedTools[key] = false },
+                                )
+                            }
+                        }
+                    } else {
+                        item(key = "rh-$key") {
+                            Box(Modifier.padding(bottom = 2.dp)) {
+                                TimelineEntryHeader(
+                                    entry = entry,
+                                    expanded = false,
+                                    onToggle = { expandedTools[key] = true },
+                                )
+                            }
                         }
                     }
                     // 详情固定占一个 item，用 AnimatedVisibility 做高度 + 淡入淡出：内层展开/收起也有动画，
                     // 收起后高度为 0（不占位、不影响窗口坐标）
                     item(key = "rc-$key") {
                         androidx.compose.animation.AnimatedVisibility(
-                            visible = expandedTools[key] == true,
+                            visible = expanded,
                             enter = androidx.compose.animation.expandVertically(
                                 animationSpec = androidx.compose.animation.core.tween(180),
                             ) + androidx.compose.animation.fadeIn(
@@ -874,6 +889,12 @@ private fun TimelineBody(
                             ),
                         ) {
                             Box(Modifier.padding(bottom = 2.dp)) { TimelineEntryContent(entry) }
+                        }
+                    }
+                    if (expanded) {
+                        // 吸顶范围止于本行内容：1dp 占位 sticky 头，滚过本行内容后立刻把上面的头推走
+                        stickyHeader(key = "rl-$key") {
+                            Box(Modifier.fillMaxWidth().height(1.dp))
                         }
                     }
                 }

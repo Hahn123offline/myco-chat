@@ -35,7 +35,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -106,6 +105,7 @@ import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.spec.ReasoningProfile
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.jsonObject
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -115,6 +115,12 @@ import kotlinx.serialization.json.longOrNull
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+/** 会话窗口的滚动状态：放在设置/回收站覆盖层之外，页面重建时也能保住阅读位置。 */
+private class ChatScrollState {
+    val list = androidx.compose.foundation.lazy.LazyListState()
+    var initialBottomDone by mutableStateOf(false)
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -195,8 +201,14 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     var renameTarget by remember { mutableStateOf<SessionRow?>(null) }
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<SessionRow?>(null) }
-    // 当前活跃的会话窗口：设置页返回时回到它（"聊天窗口→多会话→设置→聊天窗口"的环）
+    // 当前活跃的会话窗口：聊天页常驻基座用它作为唯一真源（打开会话时同步更新，避免异步 effect 造成重建）
     var lastChatScreen by remember { mutableStateOf<Screen.Chat?>(null) }
+    fun showChat(chat: Screen.Chat) {
+        lastChatScreen = chat
+        screen = chat
+    }
+    // 每个会话一份滚动状态，挂在页面生命周期之外：进出设置/回收站时阅读位置不丢
+    val chatScroll = remember(lastChatScreen?.id) { ChatScrollState() }
     // 可复用的预测式退出进度：抽屉收起 / 设置页 / 回收站各一份（M5 在这里叠加更多动效）
     val drawerNav = rememberPredictiveNavState()
     val settingsNav = rememberPredictiveNavState()
@@ -213,9 +225,6 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         binNav.prepareEnter()
         screen = Screen.SessionBin(kind)
         scope.launch { binNav.animateEnter() }
-    }
-    LaunchedEffect(screen) {
-        (screen as? Screen.Chat)?.let { lastChatScreen = it }
     }
     val snackbar = remember { SnackbarHostState() }
 
@@ -241,7 +250,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         val id = (r.data as? JsonObject)?.get("sessionId")?.jsonPrimitive?.content ?: return null
         if (open) {
             searchQuery = ""
-            screen = Screen.Chat(id, "新会话")
+            showChat(Screen.Chat(id, "新会话"))
         }
         refreshSessions()
         return id
@@ -267,6 +276,24 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     LaunchedEffect(drawerState.currentValue) {
         if (drawerState.currentValue == DrawerValue.Open) refreshSessions()
     }
+    // 标题生成/重命名后立刻同步到聊天顶栏（不用等打开抽屉刷新）
+    LaunchedEffect(Unit) {
+        bridge.events.collect { e ->
+            if (e is BridgeEvent.SessionUpdated) {
+                val cur = screen as? Screen.Chat
+                if (cur != null && cur.id == e.sessionId) {
+                    val res = bridge.query(Query.SessionList(app = null))
+                    if (res is QueryResult.Ok) {
+                        val row = parseSessions(res.data as? JsonArray).firstOrNull { it.id == cur.id }
+                        if (row != null && row.title.isNotBlank() && row.title != cur.title) {
+                            showChat(Screen.Chat(cur.id, row.title))
+                        }
+                    }
+                }
+                if (drawerState.isOpen) refreshSessions()
+            }
+        }
+    }
 
     val drawerBody: @Composable () -> Unit = {
         MycoDrawerContent(
@@ -280,7 +307,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                 if (batchMode) {
                     selectedIds = if (it.id in selectedIds) selectedIds - it.id else selectedIds + it.id
                 } else {
-                    screen = Screen.Chat(it.id, it.title)
+                    showChat(Screen.Chat(it.id, it.title))
                     scope.launch { drawerState.close() }
                 }
             },
@@ -346,15 +373,16 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         fun leaveSettings() {
             val base = lastChatScreen
             if (base != null && sessions.any { it.id == base.id }) {
-                screen = base
+                showChat(base)
             } else {
                 scope.launch { openDraft() }
             }
         }
         val main: @Composable () -> Unit = {
             Box(Modifier.fillMaxSize()) {
-                // 聊天窗口常驻基座：设置/回收站覆盖其上，退出动画露出的是真实会话内容
-                val chat = (screen as? Screen.Chat) ?: lastChatScreen
+                // 聊天窗口常驻基座：设置/回收站覆盖其上，退出动画露出的是真实会话内容。
+                // 用 lastChatScreen 而不是 screen 分支推导，保证进入/离开设置时这个调用点稳定、状态不重建
+                val chat = lastChatScreen
                 if (chat != null) {
                     androidx.compose.runtime.key(chat.id) {
                         ChatScreen(
@@ -364,6 +392,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                             onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
                             onSwipeOpenDrawer = if (wide || screen !is Screen.Chat) null
                                 else ({ scope.launch { drawerState.open() } }),
+                            scroll = chatScroll,
                         )
                     }
                 }
@@ -631,6 +660,7 @@ private fun ChatScreen(
     title: String,
     onMenu: (() -> Unit)?,
     onSwipeOpenDrawer: (() -> Unit)? = null,
+    scroll: ChatScrollState,
 ) {
     val scope = rememberCoroutineScope()
     var content by remember { mutableStateOf(dev.myco.android.ui.ChatContentState()) }
@@ -641,6 +671,14 @@ private fun ChatScreen(
     var streamingTurn by remember { mutableStateOf<Long?>(null) }
     var loadingFork by remember { mutableStateOf(false) }
     var followBottom by remember { mutableStateOf(true) }
+    // 流式结束后再多跟几帧，用于内容落盘/底部 footer 出现时收尾；之后不再自动滚动
+    var settleFrames by remember { mutableStateOf(0) }
+    val listState = scroll.list
+
+    suspend fun scrollToLatest() {
+        val total = listState.layoutInfo.totalItemsCount
+        if (total > 0) listState.scrollToItem(total - 1, 100000)
+    }
     val streamTextBuffer = remember { StringBuilder() }
     val streamReasoningBuffer = remember { StringBuilder() }
 
@@ -828,6 +866,7 @@ private fun ChatScreen(
                     // 先 reload 出落盘内容、再在同一个延续里清 live 缓冲：
                     // 中间帧里正文不会凭空消失，窗口也就不会先跳一下再跳回来
                     streamingTurn = e.turnId
+                    settleFrames = 12
                     reload(clearLive = true)
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
@@ -876,6 +915,7 @@ private fun ChatScreen(
         input = ""; pending = emptyList(); error = null
         optimisticUser = text.ifBlank { outgoing.joinToString(" ") { it.name } }
         followBottom = true
+        settleFrames = 12
         liveEntries = emptyList()
         streaming = null
         streamTextBuffer.setLength(0)
@@ -916,6 +956,7 @@ private fun ChatScreen(
         // 重生成立刻把视图切到分叉点（父节点），不把旧分支内容留在新回答下面
         loadingFork = true
         followBottom = true
+        settleFrames = 12
         activeLeaf = message.parentId
         liveEntries = emptyList()
         streaming = null
@@ -932,6 +973,7 @@ private fun ChatScreen(
         val id = message.messageId ?: return
         error = null
         optimisticUser = newText
+        settleFrames = 12
         activeLeaf = message.parentId
         liveEntries = emptyList()
         streaming = null
@@ -967,13 +1009,6 @@ private fun ChatScreen(
                     )
                 }
             }
-            val listState = rememberLazyListState()
-            suspend fun scrollToLatest() {
-                val total = listState.layoutInfo.totalItemsCount
-                if (total > 0) {
-                    listState.scrollToItem(total - 1, 100000)
-                }
-            }
             val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
             val context = LocalContext.current
             val atBottom by remember {
@@ -1004,9 +1039,21 @@ private fun ChatScreen(
                 }
             }
             LaunchedEffect(sessionId) {
+                // 进入会话时直接定位到最底部（不做"从顶部滚到底部"的动画）。
+                // 每个会话只做一次；进出设置/回收站（页面重建）时保持原阅读位置。
+                if (scroll.initialBottomDone) return@LaunchedEffect
+                androidx.compose.runtime.snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
+                listState.scrollToItem(listState.layoutInfo.totalItemsCount - 1, 100000)
+                scroll.initialBottomDone = true
+            }
+            LaunchedEffect(sessionId) {
                 while (true) {
                     androidx.compose.runtime.withFrameNanos { }
                     if (!followBottom || userScrolling) continue
+                    // 只有"内容正在生长"（流式输出/live 过程）或刚落盘收尾的几帧才自动跟底；
+                    // 从设置/回收站返回、单纯重组时不再主动把窗口拉到底部
+                    if (streaming == null && liveEntries.isEmpty() && settleFrames <= 0) continue
+                    if (settleFrames > 0) settleFrames--
                     val info = listState.layoutInfo
                     val total = info.totalItemsCount
                     if (total == 0) continue

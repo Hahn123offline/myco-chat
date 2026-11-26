@@ -3,6 +3,8 @@ package dev.myco.android.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -144,6 +146,8 @@ private fun DrawerSessionRow(
     onLongClick: () -> Unit,
 ) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    // 标题不硬切：单行、可横向拖动查看完整标题（DSH 的做法）
+    val titleScroll = rememberScrollState()
     Row(
         Modifier
             .fillMaxWidth()
@@ -162,9 +166,9 @@ private fun DrawerSessionRow(
             Text(
                 item.title,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleSmall,
                 color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.horizontalScroll(titleScroll),
             )
             if (!item.snippet.isNullOrBlank()) {
                 Text(

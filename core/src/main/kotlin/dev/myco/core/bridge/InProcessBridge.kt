@@ -103,15 +103,16 @@ class InProcessBridge(
                         messages = listOf(
                             ChatMessage(
                                 "user",
-                                "根据用户的第一句话，生成一个不超过 12 个字的会话标题。" +
-                                    "只输出标题，不要引号、句号或解释。\n用户：${firstUser.take(400)}",
+                                "根据用户的第一句话，生成一个简洁的会话标题，不超过 16 个字符（中文字按 1 个算）。" +
+                                    "只输出标题，不要引号、句号、换行或解释。\n用户：${firstUser.take(400)}",
                             )
                         ),
                         maxTokens = 64,
                         thinking = false,
                     )
                 ).collect { chunk -> if (chunk is ChatChunk.Delta) sb.append(chunk.text) }
-                sb.toString().trim().replace('\n', ' ').trim('"', '“', '”', '。', '.', ' ').take(24)
+                // 提示词已限制 ≤16 字符；这里只做单行/去引号清理 + 80 字符安全上限（防模型发疯），正常不会被触发
+                sb.toString().trim().replace('\n', ' ').trim('"', '“', '”', '。', '.', ' ').take(80)
             }.getOrNull()
             if (title.isNullOrBlank()) return@run CommandResult.Err("TITLE_EMPTY", "模型没有生成标题")
             sessions.rename(cmd.sessionId, title)
