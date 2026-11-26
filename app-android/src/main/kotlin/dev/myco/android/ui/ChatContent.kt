@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
@@ -526,7 +528,7 @@ fun ChatMessages(
             val turn = msg.turn
             val entries = turn?.let { state.timelines[it] }.orEmpty()
             if (entries.isNotEmpty() && turn != null) {
-                stickyHeader(key = "ph-$turn") {
+                item(key = "ph-$turn") {
                     TimelineHeaderRow(
                         entries = entries,
                         expanded = expandedProcess[turn] ?: false,
@@ -585,7 +587,7 @@ fun ChatMessages(
         }
         if (liveEntries.isNotEmpty() || streamingText != null) {
             if (liveEntries.isNotEmpty()) {
-                stickyHeader(key = "live-ph") { TimelineHeaderRow(entries = liveEntries, expanded = true, onToggle = {}, live = true) }
+                item(key = "live-ph") { TimelineHeaderRow(entries = liveEntries, expanded = true, onToggle = {}, live = true) }
                 item(key = "live-pb") {
                     TimelineBody(
                         entries = liveEntries,
@@ -605,7 +607,7 @@ fun ChatMessages(
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TimelineBody(
     entries: List<TimelineEntry>,
@@ -614,20 +616,141 @@ private fun TimelineBody(
     maxHeight: androidx.compose.ui.unit.Dp,
     autoScroll: Boolean,
 ) {
-    val scroll = rememberScrollState()
+    val listState = rememberLazyListState()
     androidx.compose.runtime.LaunchedEffect(entries.size) {
-        if (autoScroll) scroll.animateScrollTo(scroll.maxValue)
+        if (autoScroll && entries.isNotEmpty()) {
+            listState.animateScrollToItem(entries.size - 1)
+        }
     }
-    Column(
-        Modifier.fillMaxWidth().heightIn(max = maxHeight).verticalScroll(scroll),
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxWidth()
+            .heightIn(max = maxHeight)
+            .nestedScroll(GroupBodyScrollIsolation),
     ) {
         entries.forEachIndexed { entryIndex, entry ->
             val key = "$keyPrefix-$entryIndex"
-            TimelineEntryRow(
-                entry = entry,
-                expanded = expandedTools[key] == true,
-                onToggle = { expandedTools[key] = expandedTools[key] != true },
-            )
+            if (entry.kind == "text") {
+                item(key = "rh-$key") { TimelineEntryContent(entry) }
+            } else {
+                stickyHeader(key = "rh-$key") {
+                    TimelineEntryHeader(
+                        entry = entry,
+                        expanded = expandedTools[key] == true,
+                        onToggle = { expandedTools[key] = expandedTools[key] != true },
+                    )
+                }
+                if (expandedTools[key] == true) {
+                    item(key = "rc-$key") { TimelineEntryContent(entry) }
+                }
+            }
+        }
+    }
+}
+
+private val GroupBodyScrollIsolation = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+    // 组体内滚动到边界时，允许手指继续拖外层；但惯性/甩动不传递给外层
+    override suspend fun onPostFling(
+        consumed: androidx.compose.ui.unit.Velocity,
+        available: androidx.compose.ui.unit.Velocity,
+    ): androidx.compose.ui.unit.Velocity = available
+}
+
+@Composable
+private fun TimelineEntryHeader(entry: TimelineEntry, expanded: Boolean, onToggle: () -> Unit) {
+    when (entry.kind) {
+        "reasoning" -> {
+            val preview = entry.text.lineSequence().firstOrNull { it.isNotBlank() }?.take(80) ?: ""
+            Row(
+                Modifier.fillMaxWidth().clickable(onClick = onToggle)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f))
+                    .padding(horizontal = MycoSpacing.s, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    (if (expanded) "▾ " else "▸ ") + "思考" + if (preview.isNotBlank()) " · $preview" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        "tool" -> {
+            Row(
+                Modifier.fillMaxWidth().clickable(onClick = onToggle)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f))
+                    .padding(horizontal = MycoSpacing.s, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    (if (expanded) "▾ " else "▸ ") + entry.name + " · " + when {
+                        entry.running -> "进行中…"
+                        entry.ok == false -> "失败"
+                        else -> "完成"
+                    } + if (entry.sources.isNotEmpty()) " · 已阅读 ${entry.sources.size} 个网页" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (entry.ok == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        else -> TimelineEntryContent(entry)
+    }
+}
+
+@Composable
+private fun TimelineEntryContent(entry: TimelineEntry) {
+    when (entry.kind) {
+        "reasoning" -> {
+            if (entry.text.isNotBlank()) {
+                Text(
+                    entry.text.take(6000),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(start = MycoSpacing.m, bottom = 4.dp),
+                )
+            }
+        }
+        "tool" -> {
+            Column(Modifier.fillMaxWidth().padding(start = MycoSpacing.m)) {
+                if (entry.args.isNotBlank() && entry.args != "{}") {
+                    Text(
+                        "参数：${entry.args.take(300)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (entry.sources.isEmpty() && entry.text.isNotBlank()) {
+                    Text(
+                        entry.text.take(1200),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 8,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (entry.sources.isNotEmpty()) {
+                    Text(
+                        "已阅读 ${entry.sources.size} 个网页（来源见回答下方）",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        "text" -> {
+            if (entry.text.isNotBlank()) {
+                Text(
+                    entry.text.take(1200),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth().padding(start = MycoSpacing.s, top = 2.dp, bottom = 2.dp),
+                )
+            }
         }
     }
 }
@@ -1051,6 +1174,10 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
 
 
 
