@@ -322,9 +322,13 @@ fun ChatMessages(
     onCopy: (String) -> Unit,
     onRegenerate: (ChatMessageUi) -> Unit,
     onUserLongPress: (ChatMessageUi) -> Unit = {},
+    initialVersions: Map<String, Int> = emptyMap(),
+    onVersionSelected: (nodeId: String, version: Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
-    val activeVersions = remember { androidx.compose.runtime.mutableStateMapOf<String, Int>() }
+    val activeVersions = remember {
+        androidx.compose.runtime.mutableStateMapOf<String, Int>().apply { putAll(initialVersions) }
+    }
     val expandedProcess = remember { androidx.compose.runtime.mutableStateMapOf<Long, Boolean>() }
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
         .groupBy { it.nodeId!! }
@@ -378,7 +382,12 @@ fun ChatMessages(
                         activeVersion = active,
                         onCopy = { onCopy(shown.text) },
                         onRegenerate = { onRegenerate(shown) },
-                        onSwitch = { v -> if (msg.nodeId != null) activeVersions[msg.nodeId!!] = v },
+                        onSwitch = { v ->
+                            if (msg.nodeId != null) {
+                                activeVersions[msg.nodeId!!] = v
+                                onVersionSelected(msg.nodeId!!, v)
+                            }
+                        },
                     )
                     val meta = turn?.let { state.metas[it] }
                     if (meta != null) Footer(meta)

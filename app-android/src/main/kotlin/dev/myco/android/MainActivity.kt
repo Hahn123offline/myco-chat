@@ -430,6 +430,11 @@ private fun ChatScreen(
     val chatPrefs = remember { context.getSharedPreferences("myco.chat", android.content.Context.MODE_PRIVATE) }
     var thinking by remember { mutableStateOf(chatPrefs.getBoolean("thinking", false)) }
     var webSearch by remember { mutableStateOf(chatPrefs.getBoolean("webSearch", true)) }
+    val initialVersions = remember {
+        chatPrefs.all.mapNotNull { (k, v) ->
+            if (k.startsWith("v_") && v is Int) k.removePrefix("v_") to v else null
+        }.toMap()
+    }
     var userMenuTarget by remember { mutableStateOf<dev.myco.android.ui.model.ChatMessageUi?>(null) }
     var editTarget by remember { mutableStateOf<dev.myco.android.ui.model.ChatMessageUi?>(null) }
     var editText by remember { mutableStateOf("") }
@@ -608,6 +613,10 @@ private fun ChatScreen(
                 },
                 onRegenerate = { regenerate(it) },
                 onUserLongPress = { userMenuTarget = it },
+                initialVersions = initialVersions,
+                onVersionSelected = { nodeId, version ->
+                    chatPrefs.edit().putInt("v_$nodeId", version).apply()
+                },
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
             if (error != null) {
@@ -838,6 +847,14 @@ private fun SettingsScreen(
     var deleteTarget by remember { mutableStateOf<ProviderUi?>(null) }
     var keyTarget by remember { mutableStateOf<ProviderUi?>(null) }
     var running by remember { mutableStateOf(false) }
+    var settingsQuery by remember { mutableStateOf("") }
+    val q = settingsQuery.trim()
+    fun match(vararg keys: String) = q.isBlank() || keys.any { it.contains(q, ignoreCase = true) || q.contains(it, ignoreCase = true) }
+    val showAppearance = match("外观", "主题", "浅色", "深色", "appearance", "theme", "light", "dark")
+    val showSession = match("会话", "归档", "回收站", "删除", "session", "archive", "trash", "delete")
+    val showProvider = match("模型", "provider", "密钥", "导入", "导出", "model", "key", "import", "export")
+    val showFgs = match("常驻", "前台", "通知", "后台", "foreground", "notification", "background")
+    val showDoctor = match("自检", "诊断", "doctor", "diagnostic", "status", "状态")
 
     suspend fun reload() {
         val doctorRes = bridge.query(Query.DoctorRun)
@@ -899,6 +916,8 @@ private fun SettingsScreen(
             Modifier.fillMaxSize().padding(padding).padding(horizontal = MycoSpacing.l),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
+            item { SearchField(value = settingsQuery, onValueChange = { settingsQuery = it }, placeholder = "搜索设置") }
+            if (showAppearance) {
             item { SectionHeader("外观") }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s)) {
@@ -920,7 +939,8 @@ private fun SettingsScreen(
                 }
             }
             item { Divider() }
-            item { Divider() }
+            }
+            if (showSession) {
             item { SectionHeader("会话") }
             item {
                 SettingsRow("归档会话", "已从抽屉隐藏，可取消归档", onClick = { onOpenBin(BinKind.ARCHIVED) })
@@ -929,6 +949,8 @@ private fun SettingsScreen(
                 SettingsRow("回收站", "软删的会话，可恢复或永久删除", onClick = { onOpenBin(BinKind.DELETED) })
             }
             item { Divider() }
+            }
+            if (showProvider) {
             item { SectionHeader("模型提供方") }
             item { Text("revision=$revision · 保存冲突会提示重试", style = MaterialTheme.typography.bodySmall) }
             if (message != null) item {
@@ -976,6 +998,8 @@ private fun SettingsScreen(
                 }
             }
             item { HorizontalDivider() }
+            }
+            if (showFgs) {
             item { Text("常驻（A7：不承诺 24/7，尽力而为）", style = MaterialTheme.typography.titleMedium) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -993,10 +1017,13 @@ private fun SettingsScreen(
                 Text(if (running) "已请求启动（通知栏应出现常驻通知）" else "未启动", style = MaterialTheme.typography.bodySmall)
             }
             item { HorizontalDivider() }
+            }
+            if (showDoctor) {
             item { Text("自检", style = MaterialTheme.typography.titleMedium) }
             if (checks.isEmpty()) item { CircularProgressIndicator(Modifier.height(24.dp)) }
             else items(checks) { pair ->
                 Row { Text(pair.first, Modifier.width(96.dp)); Text(pair.second, style = MaterialTheme.typography.bodySmall) }
+            }
             }
         }
     }
