@@ -1176,11 +1176,18 @@ private fun ChatScreen(
                 }
             }
             if (!followBottom && (display.messages.isNotEmpty() || streaming != null)) {
-                Box(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m)) {
-                    TextButton(onClick = {
+                if (m5Ui) {
+                    dev.myco.android.ui.m5.M5BackToLatest {
                         followBottom = true
                         scope.launch { scrollToLatest() }
-                    }) { Text("↓ 回到最新") }
+                    }
+                } else {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m)) {
+                        TextButton(onClick = {
+                            followBottom = true
+                            scope.launch { scrollToLatest() }
+                        }) { Text("↓ 回到最新") }
+                    }
                 }
             }
             if (pending.isNotEmpty()) {
@@ -1210,12 +1217,16 @@ private fun ChatScreen(
                     onSend = { send() },
                     streaming = streaming != null,
                     onStop = { scope.launch { bridge.send(Command.ChatStop(sessionId)) } },
-                    modelLabel = modelLabel,
                     thinking = thinking,
+                    webSearch = webSearch,
                     onAttach = { showAttachSheet = true },
                     onToggleThinking = {
                         thinking = !thinking
                         chatPrefs.edit().putBoolean("thinking", thinking).apply()
+                    },
+                    onToggleWebSearch = {
+                        webSearch = !webSearch
+                        chatPrefs.edit().putBoolean("webSearch", webSearch).apply()
                     },
                 )
             } else {

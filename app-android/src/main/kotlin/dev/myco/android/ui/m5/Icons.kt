@@ -188,6 +188,12 @@ object M5Icons {
         line(c, 10.2f, 14f, 13.8f, 14f)
     }
 
+    val refresh = M5IconSpec("重新生成") { c ->
+        drawArc(c, startAngle = 40f, sweepAngle = 280f, useCenter = false,
+            topLeft = Offset(4.6f, 4.6f), size = Size(14.8f, 14.8f), style = Stroke(1.6f))
+        path(c) { moveTo(15.4f, 3.0f); lineTo(19.0f, 6.6f); lineTo(15.4f, 10.2f) }
+    }
+
     val copy = M5IconSpec("复制") { c ->
         drawRoundRect(
             c, Offset(9f, 9f), Size(9.5f, 9.5f),

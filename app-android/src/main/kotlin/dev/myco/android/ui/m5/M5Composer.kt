@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
 /**
@@ -36,10 +37,43 @@ fun M5Composer(
     value: String,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
-    modelLabel: String = "DeepSeek",
     thinking: Boolean = true,
+    webSearch: Boolean = false,
     onAttach: (() -> Unit)? = null,
     onToggleThinking: (() -> Unit)? = null,
+    onToggleWebSearch: (() -> Unit)? = null,
+    streaming: Boolean = false,
+    onStop: (() -> Unit)? = null,
+) {
+    val dark = androidx.compose.material3.MaterialTheme.colorScheme.background.luminance() < 0.5f
+    M5Theme(dark) {
+        M5ComposerInner(
+            modifier = modifier,
+            value = value,
+            onValueChange = onValueChange,
+            onSend = onSend,
+            thinking = thinking,
+            webSearch = webSearch,
+            onAttach = onAttach,
+            onToggleThinking = onToggleThinking,
+            onToggleWebSearch = onToggleWebSearch,
+            streaming = streaming,
+            onStop = onStop,
+        )
+    }
+}
+
+@Composable
+private fun M5ComposerInner(
+    modifier: Modifier = Modifier,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+    thinking: Boolean = true,
+    webSearch: Boolean = false,
+    onAttach: (() -> Unit)? = null,
+    onToggleThinking: (() -> Unit)? = null,
+    onToggleWebSearch: (() -> Unit)? = null,
     streaming: Boolean = false,
     onStop: (() -> Unit)? = null,
 ) {
@@ -84,19 +118,6 @@ fun M5Composer(
                     modifier = Modifier.height(32.dp),
                     radius = 16.dp,
                     material = NeoMaterial.Raised,
-                    contentPadding = PaddingValues(horizontal = 10.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        M5Icon(M5Icons.spark, Modifier.size(13.dp), p.textSecondary)
-                        Spacer(Modifier.width(4.dp))
-                        Text(modelLabel, style = M5Type.caption, color = p.textSecondary)
-                    }
-                }
-                NeoSurface(
-                    modifier = Modifier.height(32.dp),
-                    radius = 16.dp,
-                    material = NeoMaterial.Raised,
                     fill = if (thinking) p.mossTint else p.surface,
                     contentPadding = PaddingValues(horizontal = 10.dp),
                     contentAlignment = Alignment.Center,
@@ -106,6 +127,21 @@ fun M5Composer(
                         M5Icon(M5Icons.clock, Modifier.size(13.dp), if (thinking) p.moss else p.textSecondary)
                         Spacer(Modifier.width(4.dp))
                         Text("深度思考", style = M5Type.caption, color = if (thinking) p.text else p.textSecondary)
+                    }
+                }
+                NeoSurface(
+                    modifier = Modifier.height(32.dp),
+                    radius = 16.dp,
+                    material = NeoMaterial.Raised,
+                    fill = if (webSearch) p.mossTint else p.surface,
+                    contentPadding = PaddingValues(horizontal = 10.dp),
+                    contentAlignment = Alignment.Center,
+                    onClick = onToggleWebSearch ?: {},
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        M5Icon(M5Icons.globe, Modifier.size(13.dp), if (webSearch) p.moss else p.textSecondary)
+                        Spacer(Modifier.width(4.dp))
+                        Text("智能搜索", style = M5Type.caption, color = if (webSearch) p.text else p.textSecondary)
                     }
                 }
                 Spacer(Modifier.weight(1f))

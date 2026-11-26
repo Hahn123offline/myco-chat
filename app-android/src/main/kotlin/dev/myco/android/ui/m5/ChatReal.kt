@@ -167,10 +167,14 @@ fun ChatMessagesM5(
                             onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
                         )
                     }
-                    if (expandedProcess[turn] == true) {
-                        item(key = "tb-$index-$turn") {
+                    item(key = "tb-$index-$turn") {
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = expandedProcess[turn] == true,
+                            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+                        ) {
                             Column(
-                                Modifier.fillMaxWidth().padding(start = 20.dp),
+                                Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
                                 verticalArrangement = Arrangement.spacedBy(7.dp),
                             ) {
                                 entries.forEach { e -> ThinkingLineM5(e) }
@@ -183,28 +187,16 @@ fun ChatMessagesM5(
                         MarkdownText(msg.text)
                         val meta = turn?.let { state.metas[it] }
                         if (meta != null) MetaLineM5(meta)
+                        AssistantActionsM5(
+                            onCopy = { onCopy(msg.text) },
+                            onRegenerate = { onRegenerate(msg) },
+                        )
                     }
                 }
             }
-            if (streamingText != null) {
-                item(key = "stream") { StreamingTextM5(streamingText) }
-            }
-            if (liveEntries.isNotEmpty()) {
-                item(key = "live") {
-                    Column(Modifier.fillMaxWidth()) {
-                        Text(
-                            "正在思考…",
-                            style = M5Type.caption,
-                            color = p.textSecondary,
-                            modifier = Modifier.padding(vertical = 4.dp),
-                        )
-                        Column(
-                            Modifier.fillMaxWidth().padding(start = 20.dp),
-                            verticalArrangement = Arrangement.spacedBy(7.dp),
-                        ) {
-                            liveEntries.forEach { e -> ThinkingLineM5(e) }
-                        }
-                    }
+            if (streamingText != null || liveEntries.isNotEmpty()) {
+                item(key = "stream") {
+                    StreamingTurnM5(liveEntries = liveEntries, text = streamingText)
                 }
             }
             item(key = "tail") { Spacer(Modifier.size(2.dp)) }
@@ -348,6 +340,68 @@ private fun MetaLineM5(meta: TurnMetaUi) {
         style = M5Type.caption,
         color = p.textTertiary,
     )
+}
+
+@Composable
+private fun StreamingTurnM5(liveEntries: List<TimelineEntry>, text: String?) {
+    val p = LocalM5.current.palette
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (liveEntries.isNotEmpty()) {
+            Text(
+                "正在思考…",
+                style = M5Type.caption,
+                color = p.textSecondary,
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
+            Column(
+                Modifier.fillMaxWidth().padding(start = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                liveEntries.forEach { e -> ThinkingLineM5(e) }
+            }
+        }
+        if (text != null) {
+            MarkdownText(text)
+            Box(
+                Modifier.padding(top = 4.dp).size(width = 3.dp, height = 18.dp)
+                    .clip(SuperellipseShape(1.5.dp)).background(p.moss),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AssistantActionsM5(onCopy: () -> Unit, onRegenerate: () -> Unit) {
+    val p = LocalM5.current.palette
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        M5Icon(M5Icons.copy, Modifier.size(15.dp).clickable { onCopy() }, p.textTertiary)
+        M5Icon(M5Icons.refresh, Modifier.size(15.dp).clickable { onRegenerate() }, p.textTertiary)
+    }
+}
+
+@Composable
+fun M5BackToLatest(onClick: () -> Unit) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    M5Theme(dark) {
+        val p = LocalM5.current.palette
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            NeoSurface(
+                radius = 16.dp,
+                material = NeoMaterial.Raised,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                onClick = onClick,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    M5Icon(M5Icons.chevronDown, Modifier.size(13.dp), p.textSecondary)
+                    Spacer(Modifier.width(6.dp))
+                    Text("回到最新", style = M5Type.caption, color = p.textSecondary)
+                }
+            }
+        }
+    }
 }
 
 @Composable
