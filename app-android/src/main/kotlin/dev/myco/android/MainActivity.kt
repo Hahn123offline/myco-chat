@@ -14,6 +14,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -43,6 +45,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -215,85 +218,104 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     LaunchedEffect(Unit) { refreshSessions() }
     LaunchedEffect(searchQuery) { refreshSessions() }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = false, // MVP 只做汉堡入口；边缘滑交给系统返回，避免冲突
-        drawerContent = {
-            ModalDrawerSheet {
-                MycoDrawerContent(
-                    sessions = sessions.map { it.toUi() },
-                    selectedId = (screen as? Screen.Chat)?.id,
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    onSelect = {
-                        screen = Screen.Chat(it.id, it.title)
-                        scope.launch { drawerState.close() }
-                    },
-                    onSessionLongPress = { rowMenu = sessions.firstOrNull { s -> s.id == it.id } },
-                    onNewChat = { createSession() },
-                    onSettings = {
-                        screen = Screen.Settings
-                        scope.launch { drawerState.close() }
-                    },
+    val drawerBody: @Composable () -> Unit = {
+        MycoDrawerContent(
+            sessions = sessions.map { it.toUi() },
+            selectedId = (screen as? Screen.Chat)?.id,
+            query = searchQuery,
+            onQueryChange = { searchQuery = it },
+            onSelect = {
+                screen = Screen.Chat(it.id, it.title)
+                scope.launch { drawerState.close() }
+            },
+            onSessionLongPress = { rowMenu = sessions.firstOrNull { s -> s.id == it.id } },
+            onNewChat = { createSession() },
+            onSettings = {
+                screen = Screen.Settings
+                scope.launch { drawerState.close() }
+            },
+        )
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide = maxWidth >= 600.dp
+        val main: @Composable () -> Unit = {
+            Box(Modifier.fillMaxSize()) {
+                when (val s = screen) {
+                    null -> Scaffold(
+                        topBar = {
+                            MycoTopBar(
+                                title = "myco",
+                                onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
+                            )
+                        },
+                    ) { padding ->
+                        Box(Modifier.fillMaxSize().padding(padding)) {
+                            EmptyState(
+                                title = "开始聊天",
+                                message = "这是你的本地对话基座。历史都在左侧抽屉里。",
+                                actionLabel = "开始新对话",
+                                onAction = { createSession() },
+                            )
+                        }
+                    }
+                    is Screen.Chat -> ChatScreen(
+                        bridge = bridge,
+                        sessionId = s.id,
+                        title = s.title,
+                        onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
+                    )
+                    Screen.Settings -> SettingsScreen(
+                        bridge = bridge,
+                        themeMode = themeMode,
+                        onThemeChange = onThemeChange,
+                        onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
+                        onBack = {
+                            screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
+                        },
+                    )
+                    is Screen.SessionBin -> SessionBinScreen(
+                        bridge = bridge,
+                        kind = s.kind,
+                        onBack = { screen = Screen.Settings },
+                    )
+                }
+                SnackbarHost(
+                    hostState = snackbar,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
                 )
-            }
-        },
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            when (val s = screen) {
-                null -> Scaffold(
-                    topBar = { MycoTopBar(title = "myco", onMenu = { scope.launch { drawerState.open() } }) },
-                ) { padding ->
-                    Box(Modifier.fillMaxSize().padding(padding)) {
-                        EmptyState(
-                            title = "开始聊天",
-                            message = "这是你的本地对话基座。历史都在左侧抽屉里。",
-                            actionLabel = "开始新对话",
-                            onAction = { createSession() },
-                        )
+                if (!wide) {
+                    // 手机：抽屉打开时返回只关抽屉；聊天/空态根页返回打开抽屉（不是退出 App）
+                    BackHandler(enabled = drawerState.isOpen) {
+                        scope.launch { drawerState.close() }
+                    }
+                    BackHandler(enabled = drawerState.isClosed && screen is Screen.Chat) {
+                        scope.launch { drawerState.open() }
+                    }
+                    BackHandler(enabled = drawerState.isClosed && screen == null) {
+                        scope.launch { drawerState.open() }
                     }
                 }
-                is Screen.Chat -> ChatScreen(
-                    bridge = bridge,
-                    sessionId = s.id,
-                    title = s.title,
-                    onMenu = { scope.launch { drawerState.open() } },
-                )
-                Screen.Settings -> SettingsScreen(
-                    bridge = bridge,
-                    themeMode = themeMode,
-                    onThemeChange = onThemeChange,
-                    onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
-                    onBack = {
-                        screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
-                    },
-                )
-                is Screen.SessionBin -> SessionBinScreen(
-                    bridge = bridge,
-                    kind = s.kind,
-                    onBack = { screen = Screen.Settings },
-                )
+                BackHandler(enabled = screen is Screen.Settings) {
+                    screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
+                }
+                BackHandler(enabled = screen is Screen.SessionBin) {
+                    screen = Screen.Settings
+                }
             }
-            SnackbarHost(
-                hostState = snackbar,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
-            )
-            // 抽屉打开时返回只关抽屉；聊天/空态根页返回打开抽屉（不是退出 App）；设置页返回上一个会话
-            BackHandler(enabled = drawerState.isOpen) {
-                scope.launch { drawerState.close() }
+        }
+        if (wide) {
+            // 平板/横屏：同一抽屉组件转为常驻侧栏（不是"没有抽屉"）
+            Row(Modifier.fillMaxSize()) {
+                PermanentDrawerSheet(Modifier.width(320.dp)) { drawerBody() }
+                Box(Modifier.weight(1f)) { main() }
             }
-            BackHandler(enabled = drawerState.isClosed && screen is Screen.Chat) {
-                scope.launch { drawerState.open() }
-            }
-            BackHandler(enabled = drawerState.isClosed && screen == null) {
-                scope.launch { drawerState.open() }
-            }
-            BackHandler(enabled = drawerState.isClosed && screen is Screen.Settings) {
-                screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
-            }
-            BackHandler(enabled = drawerState.isClosed && screen is Screen.SessionBin) {
-                screen = Screen.Settings
-            }
+        } else {
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                gesturesEnabled = false, // MVP 只做汉堡入口；边缘滑交给系统返回，避免冲突
+                drawerContent = { ModalDrawerSheet { drawerBody() } },
+            ) { main() }
         }
     }
 
@@ -395,7 +417,7 @@ private fun ChatScreen(
     bridge: InProcessBridge,
     sessionId: String,
     title: String,
-    onMenu: () -> Unit,
+    onMenu: (() -> Unit)?,
 ) {
     val scope = rememberCoroutineScope()
     var content by remember { mutableStateOf(dev.myco.android.ui.ChatContentState()) }
@@ -1263,6 +1285,8 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
 
 
 

@@ -50,6 +50,7 @@ data class ChatContentState(
     val messages: List<ChatMessageUi> = emptyList(),
     val processes: Map<Long, ChatProcessUi> = emptyMap(),
     val metas: Map<Long, TurnMetaUi> = emptyMap(),
+    val reasoning: Map<Long, String> = emptyMap(),
 )
 
 private fun JsonObject.str(key: String): String? = this[key]?.jsonPrimitive?.content
@@ -59,7 +60,7 @@ private fun JsonObject.long(key: String): Long? = this[key]?.jsonPrimitive?.cont
 fun parseChatContent(arr: JsonArray?): ChatContentState {
     val messages = mutableListOf<ChatMessageUi>()
     val process = linkedMapOf<Long, MutableList<ToolStepUi>>()
-    val reasoning = linkedMapOf<Long, StringBuilder>()
+    val reasoning = linkedMapOf<Long, String>()
     val metas = linkedMapOf<Long, TurnMetaUi>()
     arr.orEmpty().forEach { el ->
         val o = el as? JsonObject ?: return@forEach
@@ -79,6 +80,12 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
                 )
             }
             "assistant/message" -> {
+                val reasoningText = data?.str("reasoning")
+                if (!reasoningText.isNullOrBlank()) {
+                    data?.long("turn")?.let { turn ->
+                        reasoning[turn] = (reasoning[turn]?.plus("\n") ?: "") + reasoningText
+                    }
+                }
                 messages += ChatMessageUi(
                     role = "assistant",
                     text = data?.str("text").orEmpty(),
@@ -133,6 +140,7 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
         messages = withMarked,
         processes = process.mapValues { (_, steps) -> ChatProcessUi(steps) },
         metas = metas,
+        reasoning = reasoning,
     )
 }
 
@@ -197,6 +205,9 @@ fun MarkdownText(text: String, modifier: Modifier = Modifier) {
                         Text("$num.  ", style = MaterialTheme.typography.bodyLarge)
                         InlineMarkdown(line.dropWhile { it.isDigit() }.drop(1).trimStart())
                     }
+                }
+                line.contains('|') && line.replace(Regex("[|\\-: ]"), "").isEmpty() -> {
+                    // Markdown 表格分隔行（|---|:---:|）不渲染
                 }
                 line.contains('|') -> {
                     flushParagraph()
@@ -351,6 +362,7 @@ fun ChatMessages(
                         ProcessFold(
                             turn = turn,
                             process = process,
+                            reasoning = state.reasoning[turn],
                             expanded = expandedProcess[turn] == true,
                             onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
                         )
@@ -387,6 +399,7 @@ fun ChatMessages(
 private fun ProcessFold(
     turn: Long,
     process: ChatProcessUi,
+    reasoning: String?,
     expanded: Boolean,
     onToggle: () -> Unit,
 ) {
@@ -409,6 +422,14 @@ private fun ProcessFold(
             Text("turn $turn", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (expanded) {
+            if (!reasoning.isNullOrBlank()) {
+                Text(
+                    "思考：${reasoning.take(500)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = MycoSpacing.xs),
+                )
+            }
             process.steps.forEach { step ->
                 Text(
                     "· ${step.name} ${if (step.ok == false) "失败" else ""}",
@@ -468,4 +489,5 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
 
