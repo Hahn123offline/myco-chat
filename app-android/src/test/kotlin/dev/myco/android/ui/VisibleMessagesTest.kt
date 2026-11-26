@@ -97,4 +97,38 @@ class VisibleMessagesTest {
         val visible = resolveVisibleMessages(all, activeLeaf = "a3")
         assertEquals(listOf("u1", "a1", "a3"), visible.messages.map { it.messageId })
     }
+
+    @Test
+    fun `edited user messages under same parent become branch versions`() {
+        // 用户编辑重发：U2' 的 parent 仍是 U2 的 parent（A1），两者互为版本
+        val all = listOf(
+            user("u1"),
+            assistant("a1", parent = "u1", node = "n1"),
+            user("u2", parent = "a1", turn = 2),
+            assistant("a2", parent = "u2", node = "n2", turn = 2),
+            user("u2b", parent = "a1", turn = 3),
+            assistant("a2b", parent = "u2b", node = "n3", turn = 3),
+            user("u2c", parent = "a1", turn = 4),
+            assistant("a2c", parent = "u2c", node = "n4", turn = 4),
+        )
+        val groups = userVersionGroups(all)
+        assertEquals(listOf("u2", "u2b", "u2c"), groups["u2b"]?.map { it.messageId })
+        assertEquals(listOf("u1"), groups["u1"]?.map { it.messageId })
+        // 每个版本指向同一条分支：切到旧版本后能回溯出旧的助手回答
+        assertEquals(listOf("u1", "a1", "u2", "a2"), resolveVisibleMessages(all, "a2").messages.map { it.messageId })
+    }
+
+    @Test
+    fun `user messages on different assistant branches are not merged`() {
+        val all = listOf(
+            user("u1"),
+            assistant("a1", parent = "u1", node = "n1", version = 1),
+            assistant("a1b", parent = "u1", node = "n1", version = 2, turn = 2),
+            user("u2", parent = "a1", turn = 1),
+            user("u2b", parent = "a1b", turn = 2),
+        )
+        val groups = userVersionGroups(all)
+        assertEquals(listOf("u2"), groups["u2"]?.map { it.messageId })
+        assertEquals(listOf("u2b"), groups["u2b"]?.map { it.messageId })
+    }
 }

@@ -894,6 +894,7 @@ private fun ChatScreen(
                 },
                 initialActiveLeaf = activeLeaf,
                 onActiveLeafChanged = { leaf ->
+                    activeLeaf = leaf
                     scope.launch { bridge.send(Command.SessionSetActiveLeaf(sessionId, leaf)) }
                 },
                 autoExpandTurn = streamingTurn,

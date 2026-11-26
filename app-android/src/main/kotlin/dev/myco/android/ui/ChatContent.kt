@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -501,6 +502,15 @@ private fun derivedLeaf(all: Collection<ChatMessageUi>): String? {
         ?: all.lastOrNull { it.messageId != null }?.messageId
 }
 
+/**
+ * 用户消息版本分组：编辑重发产生的平行节点共用同一个 parentId，互为版本。
+ * 返回 messageId → 同组全部版本（按事件顺序）；没有 messageId 的不参与。
+ */
+internal fun userVersionGroups(messages: List<ChatMessageUi>): Map<String, List<ChatMessageUi>> {
+    val groups = messages.filter { it.role == "user" }.groupBy { it.parentId ?: "\u0000root" }
+    return buildMap { groups.values.forEach { vs -> vs.forEach { m -> m.messageId?.let { put(it, vs) } } } }
+}
+
 /** 聊天内容渲染：助手全宽无气泡、Markdown、版本切换、过程折叠、footer、操作条。 */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -558,6 +568,10 @@ fun ChatMessages(
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
         .groupBy { it.nodeId!! }
         .mapValues { (_, list) -> list.sortedBy { it.version } }
+    // 用户消息的分支：编辑重发产生的平行节点共用 parentId，互为版本（messageId → 同组全部版本）
+    val userVersions: Map<String, List<ChatMessageUi>> = remember(state.messages) {
+        userVersionGroups(state.messages)
+    }
 
     LazyColumn(
         state = listState,
@@ -570,8 +584,24 @@ fun ChatMessages(
         val renderedProcessTurns = mutableSetOf<Long>()
         visible.forEachIndexed { index, msg ->
             if (msg.role == "user") {
+                val siblings = msg.messageId?.let { userVersions[it] }.orEmpty()
                 item(key = "u-$index-${msg.messageId ?: ""}") {
-                    ChatBubble(BubbleRole.USER, msg.text, onLongPress = { onUserLongPress(msg) })
+                    Column(Modifier.fillMaxWidth()) {
+                        ChatBubble(BubbleRole.USER, msg.text, onLongPress = { onUserLongPress(msg) })
+                        if (siblings.size > 1) {
+                            UserBranchBar(
+                                versions = siblings,
+                                active = msg,
+                                onSwitch = { target ->
+                                    val leaf = target.messageId?.let { deepestLeaf(it) }
+                                    if (leaf != null) {
+                                        activeLeaf = leaf
+                                        onActiveLeafChanged(leaf)
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
                 return@forEachIndexed
             }
@@ -1376,6 +1406,40 @@ private fun ProcessFold(
                 }
             }
         }
+    }
+}
+
+/** 用户消息的分支切换器（编辑重发产生平行节点后显示 ‹ 1/3 ›）。 */
+@Composable
+private fun UserBranchBar(
+    versions: List<ChatMessageUi>,
+    active: ChatMessageUi,
+    onSwitch: (ChatMessageUi) -> Unit,
+) {
+    val idx = versions.indexOfFirst { it.messageId == active.messageId }.coerceAtLeast(0)
+    Row(
+        Modifier.fillMaxWidth().padding(end = MycoSpacing.xs, top = 1.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(
+            enabled = idx > 0,
+            onClick = { onSwitch(versions[idx - 1]) },
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+            modifier = Modifier.height(26.dp),
+        ) { Text("‹", style = MaterialTheme.typography.bodySmall) }
+        Text(
+            "${idx + 1}/${versions.size}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 2.dp),
+        )
+        TextButton(
+            enabled = idx < versions.size - 1,
+            onClick = { onSwitch(versions[idx + 1]) },
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+            modifier = Modifier.height(26.dp),
+        ) { Text("›", style = MaterialTheme.typography.bodySmall) }
     }
 }
 

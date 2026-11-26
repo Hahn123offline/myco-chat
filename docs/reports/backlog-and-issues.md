@@ -34,15 +34,12 @@
 - 报告：`docs/reports/p1-autoscroll-report.md`（含真机录屏抽帧验证）。
 - 遗留：发送后软键盘不自动收起；思考行仍是单行预览（是否流式自动展开待定）。
 
-### P1 会话树补全（用户消息分支，新认知）
+### P1 会话树补全（用户消息分支，已实现，2026-11-26）
 - DSH 观察（用户确认）：不止重生成有树；用户**修改消息后重发**也产生分支；第二次重发会创建与第一次发送**平行**的节点；每个分支下面再 regenerate 继续分支。
-- 当前：`editResend` 已生成新 user（parent=原 user 的 parent，revises=旧 user），activeLeaf 指向新分支；但 UI 没有 user 节点版本/分支切换，也没有“平行重发”的显式入口。
-- 要做：
-  - user 消息也纳入版本/分支切换（‹ 1/N › 或分支指示器）；
-  - 分支树持久化与 activePath 语义全覆盖（assistant 版本 + user 编辑分支）；
-  - 旧分支完整可切回；
-  - work 的 branch 是**独立会话文件**，不是同一棵树节点（两者 UI 语义区分）。
-- 验收：编辑重发两次形成两个平行 user 节点；分别 regenerate 各自成枝；切换分支后模型上下文与 UI 一致。
+- 已实现：`userVersionGroups`（同 `parentId` 的 user 互为版本）+ 气泡下 `‹ N/M ›` 切换器；切换 = `deepestLeaf(版本)` 写 activeLeaf 并持久化；上下文按 activeLeaf 走（真机验证追问 parentId 正确）。
+- 报告：`docs/reports/user-branch-report.md`；单测 2 条（共 7 条）。
+- 仍欠：切分支**锚点修正**（DSH demo 有，我们没做，列表会轻微位移）；work 分支独立会话文件（设计如此）。
+
 
 ### P2 展开动画覆盖内层
 - 现象：外层过程组体有展开动画，但小思考/工具行的展开/收起仍是瞬间出现（AnimatedVisibility 只包了外层）。
