@@ -273,9 +273,11 @@ fun ChatBubble(
     val ext = LocalMycoColors.current
     val scheme = MaterialTheme.colorScheme
     val system = role == BubbleRole.SYSTEM
+    // 基座形态：助手消息全宽、无气泡；气泡只给用户（chat 变体未来可加回）。
+    val bubble = role != BubbleRole.ASSISTANT && !system
     val fill = when (role) {
         BubbleRole.USER -> ext.bubbleUser
-        BubbleRole.ASSISTANT -> ext.bubbleAssistant
+        BubbleRole.ASSISTANT -> Color.Transparent
         BubbleRole.ERROR -> ext.bubbleError
         BubbleRole.SYSTEM -> Color.Transparent
     }
@@ -286,8 +288,8 @@ fun ChatBubble(
         BubbleRole.SYSTEM -> scheme.onSurfaceVariant
     }
     val shape = when (role) {
-        BubbleRole.USER -> RoundedCornerShape(MycoRadius.card, MycoRadius.card, 4.dp, MycoRadius.card)
-        BubbleRole.ASSISTANT -> RoundedCornerShape(MycoRadius.card, MycoRadius.card, MycoRadius.card, 4.dp)
+        BubbleRole.USER -> RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp)
+        BubbleRole.ASSISTANT -> RoundedCornerShape(0.dp)
         else -> RoundedCornerShape(MycoRadius.card)
     }
     Row(
@@ -296,10 +298,10 @@ fun ChatBubble(
     ) {
         Column(
             Modifier
-                .fillMaxWidth(if (system) 0.9f else 0.86f)
+                .fillMaxWidth(if (system) 0.9f else if (role == BubbleRole.USER) 0.86f else 1f)
                 .clip(shape)
                 .then(
-                    if (!system) Modifier.shadow(
+                    if (bubble) Modifier.shadow(
                         elevation = 1.dp,
                         shape = shape,
                         clip = false,
@@ -312,7 +314,13 @@ fun ChatBubble(
                     if (onLongPress != null) Modifier.combinedClickable(onClick = {}, onLongClick = onLongPress)
                     else Modifier
                 )
-                .then(if (system) Modifier.padding(vertical = MycoSpacing.xs) else Modifier.padding(horizontal = 14.dp, vertical = 12.dp))
+                .then(
+                    when {
+                        system -> Modifier.padding(vertical = MycoSpacing.xs)
+                        bubble -> Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                        else -> Modifier.padding(vertical = 4.dp)
+                    }
+                )
                 .animateContentSize(),
         ) {
             Text(

@@ -30,7 +30,29 @@ private fun json(ex: HttpExchange, body: String) {
 private fun stream(ex: HttpExchange) {
     val request = ex.requestBody.readBytes().toString(StandardCharsets.UTF_8)
     val userText = Regex("\"content\"\\s*:\\s*\"([^\"]*)\"").findAll(request).lastOrNull()?.groupValues?.get(1) ?: ""
-    val reply = "我在。你说的是：「$userText」。这是 fake-sse 的流式回复，用来验证 S0 的 SSE 解析与 UI 增量。"
+    val reply = if (userText.contains("markdown", ignoreCase = true)) {
+        """
+        ## Markdown 渲染测试
+
+        这是 **粗体**、*斜体* 和 `行内代码`，还有 [链接](https://example.com)。
+
+        - 列表项一
+        - 列表项二
+
+        > 引用一段话，看看左边线。
+
+        ```kotlin
+        fun main() = println("hello myco")
+        ```
+
+        | 名称 | 数值 |
+        | --- | --- |
+        | 上下文 | 1M |
+        | 输出 | 384K |
+        """.trimIndent()
+    } else {
+        "我在。你说的是：「$userText」。这是 fake-sse 的流式回复，用来验证 S0 的 SSE 解析与 UI 增量。"
+    }
     ex.responseHeaders.add("Content-Type", "text/event-stream; charset=utf-8")
     ex.responseHeaders.add("Cache-Control", "no-cache")
     ex.sendResponseHeaders(200, 0)

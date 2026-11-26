@@ -398,14 +398,20 @@ private fun ChatScreen(
     onMenu: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    var lines by remember { mutableStateOf<List<ChatLine>>(emptyList()) }
+    var content by remember { mutableStateOf(dev.myco.android.ui.ChatContentState()) }
     var streaming by remember { mutableStateOf<String?>(null) }
+    var optimisticUser by remember { mutableStateOf<String?>(null) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var pending by remember { mutableStateOf<List<dev.myco.core.spec.AttachmentRef>>(emptyList()) }
     var showAttachSheet by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
     val context = LocalContext.current
+
+    suspend fun reload() {
+        val res = bridge.query(Query.SessionEvents(sessionId, 0))
+        content = if (res is QueryResult.Ok) dev.myco.android.ui.parseChatContent(res.data as? JsonArray) else dev.myco.android.ui.ChatContentState()
+    }
 
     fun attachUri(uri: android.net.Uri) {
         scope.launch {
@@ -458,8 +464,7 @@ private fun ChatScreen(
     }
 
     LaunchedEffect(sessionId) {
-        val res = bridge.query(Query.SessionEvents(sessionId, 0))
-        lines = if (res is QueryResult.Ok) parseLines(res.data as? JsonArray) else emptyList()
+        reload()
         bridge.events.collect { e ->
             when (e) {
                 is BridgeEvent.ReasoningDelta -> Unit
@@ -467,19 +472,16 @@ private fun ChatScreen(
                     streaming = (streaming ?: "") + e.text
                 }
                 is BridgeEvent.AssistantDone -> if (e.sessionId == sessionId) {
-                    if (e.text.isNotEmpty()) lines = lines + ChatLine("assistant", e.text)
                     streaming = null
+                    optimisticUser = null
+                    reload()
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
                     error = "${e.code}: ${e.message}"; streaming = null
                 }
                 is BridgeEvent.SessionUpdated -> Unit
-                is BridgeEvent.ToolStarted -> if (e.sessionId == sessionId) {
-                    lines = lines + ChatLine("system", "正在使用工具：${e.name}")
-                }
-                is BridgeEvent.ToolFinished -> if (e.sessionId == sessionId) {
-                    lines = lines + ChatLine("system", "工具 ${e.name} ${if (e.ok) "完成" else "失败"}")
-                }
+                is BridgeEvent.ToolStarted -> Unit
+                is BridgeEvent.ToolFinished -> Unit
             }
         }
     }
@@ -489,10 +491,24 @@ private fun ChatScreen(
         if ((text.isEmpty() && pending.isEmpty()) || streaming != null) return
         val outgoing = pending
         input = ""; pending = emptyList(); error = null
-        lines = lines + ChatLine("user", text + if (outgoing.isEmpty()) "" else "\n" + outgoing.joinToString("\n") { "[附件] ${it.name}" })
+        optimisticUser = text.ifBlank { outgoing.joinToString(" ") { it.name } }
         scope.launch {
             val r = bridge.send(Command.ChatSend(sessionId, text, outgoing))
+            if (r is CommandResult.Err) {
+                error = "${r.code}: ${r.message}"
+                optimisticUser = null
+            }
+            reload()
+        }
+    }
+
+    fun regenerate(message: dev.myco.android.ui.model.ChatMessageUi) {
+        val id = message.messageId ?: return
+        error = null
+        scope.launch {
+            val r = bridge.send(Command.ChatRegenerate(sessionId, id))
             if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
+            reload()
         }
     }
 
@@ -510,39 +526,30 @@ private fun ChatScreen(
                     last == null || last.index >= info.totalItemsCount - 2
                 }
             }
-            LaunchedEffect(lines.size, streaming?.length) {
+            val display = if (optimisticUser == null) content else content.copy(
+                messages = content.messages + dev.myco.android.ui.model.ChatMessageUi("user", optimisticUser!!)
+            )
+            LaunchedEffect(display.messages.size, streaming?.length) {
                 val target = listState.layoutInfo.totalItemsCount - 1
                 if (target >= 0 && atBottom) listState.scrollToItem(target)
             }
-            LazyColumn(
-                state = listState,
+            dev.myco.android.ui.ChatMessages(
+                state = display,
+                listState = listState,
+                streamingText = streaming,
+                onCopy = { text ->
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(text))
+                    android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
+                },
+                onRegenerate = { regenerate(it) },
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = MycoSpacing.l, vertical = MycoSpacing.m),
-                verticalArrangement = Arrangement.spacedBy(MycoSpacing.s),
-            ) {
-                items(lines) { line ->
-                    ChatBubble(
-                        role = when (line.role) {
-                            "user" -> BubbleRole.USER
-                            "assistant" -> BubbleRole.ASSISTANT
-                            "error" -> BubbleRole.ERROR
-                            else -> BubbleRole.SYSTEM
-                        },
-                        text = line.text,
-                        onLongPress = {
-                            clipboard.setText(androidx.compose.ui.text.AnnotatedString(line.text))
-                            android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                }
-                if (streaming != null) item {
-                    ChatBubble(BubbleRole.ASSISTANT, streaming!!, streaming = true)
-                }
-                if (error != null) item {
+            )
+            if (error != null) {
+                Box(Modifier.padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.xs)) {
                     InlineError(error!!)
                 }
             }
-            if (!atBottom && lines.isNotEmpty()) {
+            if (!atBottom && (display.messages.isNotEmpty() || streaming != null)) {
                 Box(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m)) {
                     TextButton(onClick = {
                         scope.launch {
