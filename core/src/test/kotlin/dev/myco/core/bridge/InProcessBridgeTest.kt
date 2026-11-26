@@ -354,6 +354,41 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `edit resend supersedes old user message in context`() = runBlocking {
+        var lastRequest: dev.myco.core.llm.ChatRequest? = null
+        var calls = 0
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    calls++
+                    lastRequest = request
+                    val answer = "回答$calls"
+                    emit(dev.myco.core.llm.ChatChunk.Delta(answer))
+                    emit(dev.myco.core.llm.ChatChunk.Done(answer, finishReason = "stop"))
+                }
+        }
+        val f = Fixture(client = client)
+        val meta = f.sessions.create("chat", "chat-default")
+        f.bridge.send(Command.ChatSend(meta.id, "原始问题"))
+        val oldUser = f.sessions.read(meta.id).filterIsInstance<SessionEvent.UserMessage>().single()
+        val edit = f.bridge.send(Command.ChatEditResend(meta.id, oldUser.data.messageId!!, "修改后的问题"))
+        assertTrue(edit is CommandResult.Ok)
+
+        val users = f.sessions.read(meta.id).filterIsInstance<SessionEvent.UserMessage>()
+        assertEquals(2, users.size)
+        assertEquals(oldUser.data.messageId, users[1].data.revises)
+        // 编辑后的上下文只包含新问题，不含旧问题
+        val contextUsers = lastRequest!!.messages.filter { it.role == "user" }
+        assertEquals(1, contextUsers.size)
+        assertEquals("修改后的问题", contextUsers[0].content)
+
+        // 下一轮上下文：旧问题被排除，新问题+新回答保留
+        f.bridge.send(Command.ChatSend(meta.id, "继续"))
+        val nextUsers = lastRequest!!.messages.filter { it.role == "user" }.map { it.content }
+        assertEquals(listOf("修改后的问题", "继续"), nextUsers)
+    }
+
+    @Test
     fun `regenerate creates a new version on the same node`() = runBlocking {
         var calls = 0
         val client = object : ChatClient {

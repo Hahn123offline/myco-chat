@@ -64,6 +64,14 @@ sealed class Command {
         val requestId: String? = null,
     ) : Command()
 
+    /** 编辑用户消息并重跑：旧 user 消息保留在日志但不再进上下文，新消息记录 revises。 */
+    data class ChatEditResend(
+        val sessionId: String,
+        val messageId: String,
+        val text: String,
+        val requestId: String? = null,
+    ) : Command()
+
     /** 导入：整份替换 provider 列表（GUI 侧文件选择后调用）；expectedRevision 冲突则拒绝。 */
     data class ProviderReplace(val profiles: List<ProviderProfile>, val expectedRevision: Long) : Command()
 

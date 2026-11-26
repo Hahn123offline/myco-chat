@@ -30,6 +30,7 @@ data class ChatMessageUi(
     val finishReason: String? = null,
     val reasoning: String? = null,
     val streaming: Boolean = false,
+    val revised: Boolean = false,
 )
 
 data class ToolStepUi(val name: String, val ok: Boolean?, val text: String)

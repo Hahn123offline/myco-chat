@@ -146,6 +146,12 @@ class HttpBridgeServer(
                 messageId = payload["messageId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing messageId")),
                 requestId = payload["requestId"]?.jsonPrimitive?.content,
             )
+            "chat.editResend" -> Command.ChatEditResend(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                messageId = payload["messageId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing messageId")),
+                text = payload["text"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing text")),
+                requestId = payload["requestId"]?.jsonPrimitive?.content,
+            )
             "session.rename" -> Command.SessionRename(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
                 title = payload["title"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing title")),

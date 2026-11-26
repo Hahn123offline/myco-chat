@@ -404,11 +404,15 @@ private fun ChatScreen(
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var pending by remember { mutableStateOf<List<dev.myco.core.spec.AttachmentRef>>(emptyList()) }
-    var thinking by remember { mutableStateOf(false) }
-    var webSearch by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val chatPrefs = remember { context.getSharedPreferences("myco.chat", android.content.Context.MODE_PRIVATE) }
+    var thinking by remember { mutableStateOf(chatPrefs.getBoolean("thinking", false)) }
+    var webSearch by remember { mutableStateOf(chatPrefs.getBoolean("webSearch", true)) }
+    var userMenuTarget by remember { mutableStateOf<dev.myco.android.ui.model.ChatMessageUi?>(null) }
+    var editTarget by remember { mutableStateOf<dev.myco.android.ui.model.ChatMessageUi?>(null) }
+    var editText by remember { mutableStateOf("") }
     var showAttachSheet by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
-    val context = LocalContext.current
 
     suspend fun reload() {
         val res = bridge.query(Query.SessionEvents(sessionId, 0))
@@ -537,6 +541,20 @@ private fun ChatScreen(
         }
     }
 
+    fun editResend(message: dev.myco.android.ui.model.ChatMessageUi, newText: String) {
+        val id = message.messageId ?: return
+        error = null
+        optimisticUser = newText
+        scope.launch {
+            val r = bridge.send(Command.ChatEditResend(sessionId, id, newText))
+            if (r is CommandResult.Err) {
+                error = "${r.code}: ${r.message}"
+                optimisticUser = null
+            }
+            reload()
+        }
+    }
+
     Scaffold(
         topBar = { MycoTopBar(title = title, onMenu = onMenu) },
     ) { padding ->
@@ -567,6 +585,7 @@ private fun ChatScreen(
                     android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
                 },
                 onRegenerate = { regenerate(it) },
+                onUserLongPress = { userMenuTarget = it },
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
             if (error != null) {
@@ -614,16 +633,21 @@ private fun ChatScreen(
                     onAttach = { showAttachSheet = true },
                     onVoice = { pickAudio.launch(arrayOf("audio/*")) },
                     thinking = thinking,
-                    onToggleThinking = { thinking = !thinking },
+                    onToggleThinking = {
+                        thinking = !thinking
+                        chatPrefs.edit().putBoolean("thinking", thinking).apply()
+                    },
                     webSearch = webSearch,
-                    onToggleWebSearch = { webSearch = !webSearch },
+                    onToggleWebSearch = {
+                        webSearch = !webSearch
+                        chatPrefs.edit().putBoolean("webSearch", webSearch).apply()
+                    },
                 )
             }
         }
     }
 
-    if (showAttachSheet) {
-        val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
+    if (showAttachSheet) {        val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
         androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = { showAttachSheet = false },
             sheetState = sheetState,
@@ -647,6 +671,50 @@ private fun ChatScreen(
                 }) { Text("文件") }
             }
         }
+    }
+
+    userMenuTarget?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { userMenuTarget = null },
+            title = { Text("用户消息") },
+            text = {
+                Column {
+                    TextButton(onClick = {
+                        android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
+                        userMenuTarget = null
+                    }) { Text("复制") }
+                    TextButton(onClick = {
+                        editTarget = msg
+                        editText = msg.text
+                        userMenuTarget = null
+                    }) { Text("编辑并重发") }
+                }
+            },
+            confirmButton = { TextButton(onClick = { userMenuTarget = null }) { Text("关闭") } },
+        )
+    }
+    editTarget?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { editTarget = null },
+            title = { Text("编辑消息") },
+            text = {
+                OutlinedTextField(
+                    value = editText,
+                    onValueChange = { editText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 6,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val target = msg
+                    val text = editText.trim()
+                    editTarget = null
+                    if (text.isNotBlank()) editResend(target, text)
+                }) { Text("发送") }
+            },
+            dismissButton = { TextButton(onClick = { editTarget = null }) { Text("取消") } },
+        )
     }
 }
 

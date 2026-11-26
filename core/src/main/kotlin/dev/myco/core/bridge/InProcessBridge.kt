@@ -114,6 +114,16 @@ class InProcessBridge(
             }
             result
         }
+        is Command.ChatEditResend -> {
+            val key = cmd.requestId?.let { "${cmd.sessionId}:edit:$it" }
+            if (key != null) completedRequests[key]?.let { return it }
+            val result = editResend(cmd)
+            if (key != null) {
+                if (completedRequests.size > 200) completedRequests.clear()
+                completedRequests[key] = result
+            }
+            result
+        }
         is Command.ChatStop -> chatStop(cmd)
         is Command.SessionRename -> runCatching { sessions.rename(cmd.sessionId, cmd.title) }
             .fold(
@@ -264,6 +274,7 @@ class InProcessBridge(
     }
 
     private data class RegenCtx(val nodeId: String, val version: Int, val cutSeq: Long)
+    private data class EditCtx(val revisesMessageId: String, val cutSeq: Long)
     private data class ActiveTurn(val job: kotlinx.coroutines.Job, val turnId: Long)
     private val sessionLocks = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.sync.Mutex>()
 
@@ -303,7 +314,26 @@ class InProcessBridge(
         )
     }
 
-    private suspend fun runChatInternal(cmd: Command.ChatSend, regen: RegenCtx?): CommandResult {
+    private suspend fun editResend(cmd: Command.ChatEditResend): CommandResult = withSessionLock(cmd.sessionId) {
+        val history = runCatching { sessions.read(cmd.sessionId) }
+            .getOrElse { return@withSessionLock CommandResult.Err("SESSION_NOT_FOUND", "会话不存在：${cmd.sessionId}") }
+        val target = history.filterIsInstance<SessionEvent.UserMessage>()
+            .firstOrNull { it.data.messageId == cmd.messageId }
+            ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_FOUND", "找不到要编辑的消息：${cmd.messageId}")
+        if (cmd.text.isBlank()) return@withSessionLock CommandResult.Err("EMPTY_TEXT", "消息不能为空")
+        runChatInternal(
+            Command.ChatSend(
+                sessionId = cmd.sessionId,
+                text = cmd.text,
+                attachments = target.data.attachments,
+                requestId = cmd.requestId?.let { "edit:$it" },
+            ),
+            regen = null,
+            edit = EditCtx(revisesMessageId = cmd.messageId, cutSeq = target.seq),
+        )
+    }
+
+    private suspend fun runChatInternal(cmd: Command.ChatSend, regen: RegenCtx?, edit: EditCtx? = null): CommandResult {
         val provider = providers.firstEnabled()
             ?: return CommandResult.Err("PROVIDER_MISSING", "还没有配置 provider，请先在设置里添加")
         val model = provider.model("chat")
@@ -321,7 +351,11 @@ class InProcessBridge(
 
         val history = runCatching { sessions.read(cmd.sessionId) }
             .getOrElse { return CommandResult.Err("SESSION_NOT_FOUND", "会话不存在：${cmd.sessionId}") }
-        val contextHistory = if (regen != null) history.filter { it.seq < regen.cutSeq } else history
+        val contextHistory = when {
+            regen != null -> history.filter { it.seq < regen.cutSeq }
+            edit != null -> history.filter { it.seq < edit.cutSeq }
+            else -> history
+        }
 
         // 附件在本轮开始前一次性读入（失败则整轮拒绝，不写半截 turn）
         val prepared = runCatching {
@@ -358,6 +392,7 @@ class InProcessBridge(
                     data = SessionEvent.UserMessage.Data(
                         cmd.text, source = "human", attachments = cmd.attachments,
                         messageId = userMessageId, turn = turn,
+                        revises = edit?.revisesMessageId,
                     )
                 )
             )
@@ -587,15 +622,20 @@ class InProcessBridge(
         })
     }
 
-    /** 历史 → 模型上下文：同名 nodeId 只保留最新 version，避免重生成后旧回答重复进上下文。 */
+    /** 历史 → 模型上下文：同名 nodeId 只保留最新 version；被编辑替代的旧 user 消息不进上下文。 */
     private fun buildMessages(history: List<SessionEvent>): List<ChatMessage> {
         val latestVersion = history.filterIsInstance<SessionEvent.AssistantMessage>()
             .mapNotNull { e -> e.data.nodeId?.let { it to e.data.version } }
             .groupBy({ it.first }, { it.second })
             .mapValues { (_, versions) -> versions.max() }
+        val revisedUserIds = history.filterIsInstance<SessionEvent.UserMessage>()
+            .mapNotNull { it.data.revises }.toSet()
         return history.mapNotNull { e ->
             when (e) {
-                is SessionEvent.UserMessage -> ChatMessage("user", e.data.text)
+                is SessionEvent.UserMessage -> {
+                    val id = e.data.messageId
+                    if (id != null && id in revisedUserIds) null else ChatMessage("user", e.data.text)
+                }
                 is SessionEvent.AssistantMessage -> {
                     val node = e.data.nodeId
                     if (node != null && e.data.version < (latestVersion[node] ?: 0)) null

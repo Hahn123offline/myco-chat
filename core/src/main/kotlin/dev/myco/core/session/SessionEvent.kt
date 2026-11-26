@@ -60,6 +60,8 @@ sealed class SessionEvent {
             /** 版本链节点 id（同一问题的多次生成共享 nodeId，不同 version）。 */
             val nodeId: String? = null,
             val turn: Long? = null,
+            /** 编辑重发：本条替代哪条旧 user 消息（旧消息仍留在 append-only 日志里，但不再进模型上下文）。 */
+            val revises: String? = null,
         )
 
         override fun withSeq(seq: Long) = copy(seq = seq)

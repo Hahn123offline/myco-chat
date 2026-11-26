@@ -117,8 +117,20 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
             "assistant.done" -> Unit
         }
     }
+    val superseded = mutableSetOf<String>()
+    arr.orEmpty().forEach { el ->
+        val o = el as? JsonObject ?: return@forEach
+        if (o.str("type") == "user/message") {
+            (o["data"] as? JsonObject)?.str("revises")?.let { superseded += it }
+        }
+    }
+    val withMarked = messages.map { m ->
+        if (m.role == "user" && m.messageId != null && m.messageId in superseded) {
+            m.copy(text = m.text + "\n（已被后续编辑消息替代）", revised = true)
+        } else m
+    }
     return ChatContentState(
-        messages = messages,
+        messages = withMarked,
         processes = process.mapValues { (_, steps) -> ChatProcessUi(steps) },
         metas = metas,
     )
@@ -298,6 +310,7 @@ fun ChatMessages(
     streamingText: String?,
     onCopy: (String) -> Unit,
     onRegenerate: (ChatMessageUi) -> Unit,
+    onUserLongPress: (ChatMessageUi) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val activeVersions = remember { androidx.compose.runtime.mutableStateMapOf<String, Int>() }
@@ -318,7 +331,7 @@ fun ChatMessages(
         state.messages.forEachIndexed { index, msg ->
             if (msg.role == "user") {
                 item(key = "u-$index-${msg.messageId ?: ""}") {
-                    ChatBubble(BubbleRole.USER, msg.text, onLongPress = { onCopy(msg.text) })
+                    ChatBubble(BubbleRole.USER, msg.text, onLongPress = { onUserLongPress(msg) })
                 }
                 return@forEachIndexed
             }
