@@ -194,8 +194,14 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     var renameTarget by remember { mutableStateOf<SessionRow?>(null) }
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<SessionRow?>(null) }
-    // 预测式返回：手势进行中的进度（0..1），只用于内容预览位移，跟随后续打开抽屉
+    // 当前活跃的会话窗口：设置页返回时回到它（"聊天窗口→多会话→设置→聊天窗口"的环）
+    var lastChatScreen by remember { mutableStateOf<Screen.Chat?>(null) }
+    // 预测式返回预览进度：backPreview = 抽屉收起；settingsBackPreview = 设置向右滑出
     var backPreview by remember { mutableFloatStateOf(0f) }
+    var settingsBackPreview by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(screen) {
+        (screen as? Screen.Chat)?.let { lastChatScreen = it }
+    }
     val snackbar = remember { SnackbarHostState() }
 
     suspend fun refreshSessions() {
@@ -318,8 +324,32 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 600.dp
+        val screenWidthPx = with(androidx.compose.ui.platform.LocalDensity.current) { maxWidth.toPx() }
+        // 设置页的返回目标：进入设置前那个活跃会话窗口（这就是"聊天窗口→多会话→设置→聊天窗口"的环）
+        fun leaveSettings() {
+            val base = lastChatScreen
+            if (base != null && sessions.any { it.id == base.id }) {
+                screen = base
+            } else {
+                scope.launch { openDraft() }
+            }
+        }
         val main: @Composable () -> Unit = {
             Box(Modifier.fillMaxSize()) {
+                // 设置/回收站等页面覆盖在会话窗口之上：预测式返回时上层向右滑出，下面的会话先露出来
+                val baseChat = lastChatScreen
+                if (baseChat != null && screen !is Screen.Chat) {
+                    androidx.compose.runtime.key(baseChat.id) {
+                        ChatScreen(
+                            bridge = bridge,
+                            sessionId = baseChat.id,
+                            title = baseChat.title,
+                            // 底下这层只是给"设置向右退出"的预测式预览露出用，保持和正常聊天页同样的顶栏布局
+                            onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
+                            onSwipeOpenDrawer = null,
+                        )
+                    }
+                }
                 when (val s = screen) {
                     null -> Box(Modifier.fillMaxSize()) // 启动瞬间不再闪"开始聊天"页；由 ensureDraft 接管
                     is Screen.Chat -> androidx.compose.runtime.key(s.id) {
@@ -331,15 +361,21 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                             onSwipeOpenDrawer = if (wide) null else ({ scope.launch { drawerState.open() } }),
                         )
                     }
-                    Screen.Settings -> SettingsScreen(
-                        bridge = bridge,
-                        themeMode = themeMode,
-                        onThemeChange = onThemeChange,
-                        onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
-                        onBack = {
-                            screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
-                        },
-                    )
+                    Screen.Settings -> {
+                        Box(
+                            Modifier.fillMaxSize().graphicsLayer {
+                                translationX = settingsBackPreview * screenWidthPx
+                            },
+                        ) {
+                            SettingsScreen(
+                                bridge = bridge,
+                                themeMode = themeMode,
+                                onThemeChange = onThemeChange,
+                                onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
+                                onBack = { leaveSettings() },
+                            )
+                        }
+                    }
                     is Screen.SessionBin -> SessionBinScreen(
                         bridge = bridge,
                         kind = s.kind,
@@ -351,32 +387,37 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
                 )
                 if (!wide) {
-                    // 手机：抽屉打开时返回只关抽屉
-                    BackHandler(enabled = drawerState.isOpen) {
-                        scope.launch { drawerState.close() }
-                    }
-                    // 聊天根页：系统返回手势 = 打开抽屉（预测式预览：手势进度驱动内容位移，完成才真正打开）
-                    PredictiveBackHandler(enabled = drawerState.isClosed && screen is Screen.Chat) { progress ->
+                    // 会话管理（抽屉）打开时返回 = 预测式关闭抽屉，回到聊天窗口
+                    PredictiveBackHandler(enabled = drawerState.isOpen) { progress ->
                         try {
                             progress.collect { event -> backPreview = event.progress }
                             backPreview = 1f
-                            drawerState.open()
-                            backPreview = 0f
+                            drawerState.snapTo(DrawerValue.Closed)
                         } catch (cancelled: kotlinx.coroutines.CancellationException) {
                             backPreview = 0f
                             throw cancelled
+                        } finally {
+                            backPreview = 0f
                         }
                     }
-                    BackHandler(enabled = drawerState.isClosed && screen == null) {
-                        scope.launch { drawerState.open() }
-                    }
                 }
-                BackHandler(enabled = screen is Screen.Settings) {
-                    screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
+                // 设置返回 = 直接回当前活跃会话窗口（预测式：设置页向右滑出）
+                PredictiveBackHandler(enabled = drawerState.isClosed && screen is Screen.Settings) { progress ->
+                    try {
+                        progress.collect { event -> settingsBackPreview = event.progress }
+                        settingsBackPreview = 1f
+                        leaveSettings()
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        settingsBackPreview = 0f
+                        throw cancelled
+                    } finally {
+                        settingsBackPreview = 0f
+                    }
                 }
                 BackHandler(enabled = screen is Screen.SessionBin) {
                     screen = Screen.Settings
                 }
+                // 聊天窗口是根：不拦截系统返回 → 直接退出到桌面（系统自带预测式退场动画）
             }
         }
         if (wide) {
@@ -388,20 +429,19 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         } else {
             // 抽屉约占 5/6，右侧留出一点上下文（比全屏更好按"关闭/返回"）
             val drawerWidth = maxWidth * 0.84f
+            val drawerWidthPx = with(androidx.compose.ui.platform.LocalDensity.current) { drawerWidth.toPx() }
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 gesturesEnabled = true, // 支持左右滑动开关抽屉；系统返回手势由 PredictiveBackHandler 接管
-                drawerContent = { ModalDrawerSheet(Modifier.width(drawerWidth)) { drawerBody() } },
-            ) {
-                // 预测式返回预览：手势进度让内容轻微右移/缩小，提交后才打开抽屉
-                Box(
-                    Modifier.fillMaxSize().graphicsLayer {
-                        translationX = backPreview * 56.dp.toPx()
-                        scaleX = 1f - backPreview * 0.02f
-                        scaleY = 1f - backPreview * 0.02f
-                    },
-                ) { main() }
-            }
+                drawerContent = {
+                    // 预测式关闭预览：手势进度让抽屉整体向左滑出，露出下面的聊天窗口
+                    ModalDrawerSheet(
+                        Modifier.width(drawerWidth).graphicsLayer {
+                            translationX = -backPreview * drawerWidthPx
+                        },
+                    ) { drawerBody() }
+                },
+            ) { main() }
         }
     }
 
