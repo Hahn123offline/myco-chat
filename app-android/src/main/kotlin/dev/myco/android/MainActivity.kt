@@ -370,26 +370,30 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                 // 设置层：自己是当前页时跟随 settingsNav 右滑；作为回收站下面的露出层时保持静止
                 if (screen is Screen.Settings || screen is Screen.SessionBin) {
                     val settingsCurrent = screen is Screen.Settings
+                    // 手势接在"未平移"的外层：平移只能加在内层，否则图形层变换会改变指针局部坐标，
+                    // 让 dx 和 translation 互相喂出振荡（按住不放时页面抽搐的根因）
                     Box(
-                        Modifier.fillMaxSize()
-                            .graphicsLayer {
-                                translationX = if (settingsCurrent) settingsNav.progress * screenWidthPx else 0f
-                            }
-                            .then(
-                                if (settingsCurrent) {
-                                    Modifier.swipeRightToExit(settingsNav, enabled = true) { leaveSettings() }
-                                } else {
-                                    Modifier
-                                },
-                            ),
+                        Modifier.fillMaxSize().then(
+                            if (settingsCurrent) {
+                                Modifier.swipeRightToExit(settingsNav, enabled = true) { leaveSettings() }
+                            } else {
+                                Modifier
+                            },
+                        ),
                     ) {
-                        SettingsScreen(
-                            bridge = bridge,
-                            themeMode = themeMode,
-                            onThemeChange = onThemeChange,
-                            onOpenBin = { kind -> openBin(kind) },
-                            onBack = { scope.launch { settingsNav.exit { leaveSettings() } } },
-                        )
+                        Box(
+                            Modifier.fillMaxSize().graphicsLayer {
+                                translationX = if (settingsCurrent) settingsNav.progress * screenWidthPx else 0f
+                            },
+                        ) {
+                            SettingsScreen(
+                                bridge = bridge,
+                                themeMode = themeMode,
+                                onThemeChange = onThemeChange,
+                                onOpenBin = { kind -> openBin(kind) },
+                                onBack = { scope.launch { settingsNav.exit { leaveSettings() } } },
+                            )
+                        }
                     }
                 }
                 // 回收站/归档：叠在设置层上，右滑退出回设置
@@ -397,14 +401,19 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                 if (bin != null) {
                     Box(
                         Modifier.fillMaxSize()
-                            .graphicsLayer { translationX = binNav.progress * screenWidthPx }
                             .swipeRightToExit(binNav, enabled = true) { screen = Screen.Settings },
                     ) {
-                        SessionBinScreen(
-                            bridge = bridge,
-                            kind = bin.kind,
-                            onBack = { scope.launch { binNav.exit { screen = Screen.Settings } } },
-                        )
+                        Box(
+                            Modifier.fillMaxSize().graphicsLayer {
+                                translationX = binNav.progress * screenWidthPx
+                            },
+                        ) {
+                            SessionBinScreen(
+                                bridge = bridge,
+                                kind = bin.kind,
+                                onBack = { scope.launch { binNav.exit { screen = Screen.Settings } } },
+                            )
+                        }
                     }
                 }
                 SnackbarHost(
