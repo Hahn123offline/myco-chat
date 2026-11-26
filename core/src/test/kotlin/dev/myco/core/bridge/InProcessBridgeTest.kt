@@ -424,6 +424,36 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `pin archive and permanent delete via bridge`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default", "归档测试")
+        assertTrue(f.bridge.send(Command.SessionPin(meta.id, true)) is CommandResult.Ok)
+        var list = f.bridge.query(Query.SessionList()) as QueryResult.Ok
+        assertEquals("true", (list.data as JsonArray)[0].jsonObject["pinned"]!!.jsonPrimitive.content)
+
+        assertTrue(f.bridge.send(Command.SessionArchive(meta.id, true)) is CommandResult.Ok)
+        list = f.bridge.query(Query.SessionList()) as QueryResult.Ok
+        assertEquals(0, (list.data as JsonArray).size)
+        val archived = f.bridge.query(Query.SessionList(includeArchived = true)) as QueryResult.Ok
+        assertEquals(1, (archived.data as JsonArray).size)
+
+        assertTrue(f.bridge.send(Command.SessionDeletePermanent(meta.id)) is CommandResult.Ok)
+        val all = f.bridge.query(Query.SessionList(includeArchived = true, includeDeleted = true)) as QueryResult.Ok
+        assertEquals(0, (all.data as JsonArray).size)
+    }
+
+    @Test
+    fun `session search returns seq for jump-to-message`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default", "搜索")
+        f.sessions.append(meta.id, SessionEvent.UserMessage(data = SessionEvent.UserMessage.Data("找这个词")))
+        val hit = (f.bridge.query(Query.SessionSearch("这个词")) as QueryResult.Ok).data as JsonArray
+        assertEquals(1, hit.size)
+        assertTrue(hit[0].jsonObject["seq"]!!.jsonPrimitive.content.toLong() >= 0)
+        assertEquals("user", hit[0].jsonObject["role"]!!.jsonPrimitive.content)
+    }
+
+    @Test
     fun `session list query respects app filter`() = runBlocking {
         val f = Fixture()
         f.sessions.create("chat", "chat-default")

@@ -56,6 +56,53 @@ class SessionStoreTest {
     }
 
     @Test
+    fun `summaries expose last message, pin and archive`() {
+        val h = home()
+        val store = SessionStore(h)
+        val a = store.create("chat", "chat-default", "A")
+        store.append(a.id, SessionEvent.UserMessage(data = SessionEvent.UserMessage.Data("最后一条预览")))
+        store.setPinned(a.id, true)
+        val b = store.create("chat", "chat-default", "B")
+        store.archive(b.id, true)
+
+        val list = store.summaries()
+        assertEquals(1, list.size) // 归档默认隐藏
+        val sa = list.single()
+        assertEquals("A", sa.title)
+        assertTrue(sa.pinned)
+        assertTrue(sa.preview!!.contains("最后一条预览"))
+        assertTrue(sa.messageCount >= 1)
+        assertTrue(sa.lastMessageAt >= a.createdAt)
+
+        assertTrue(store.summaries(includeArchived = true).any { it.id == b.id })
+        store.archive(b.id, false)
+        assertEquals(2, store.summaries().size)
+    }
+
+    @Test
+    fun `permanent delete removes session dir`() {
+        val h = home()
+        val store = SessionStore(h)
+        val a = store.create("chat", "chat-default")
+        store.deletePermanently(a.id)
+        assertTrue(!Files.exists(h.sessions.resolve(a.id)))
+        assertTrue(store.summaries(includeDeleted = true).isEmpty())
+    }
+
+    @Test
+    fun `search returns hit seq and role`() {
+        val h = home()
+        val store = SessionStore(h)
+        val a = store.create("chat", "chat-default", "搜索")
+        store.append(a.id, SessionEvent.UserMessage(data = SessionEvent.UserMessage.Data("无关")))
+        store.append(a.id, SessionEvent.AssistantMessage(data = SessionEvent.AssistantMessage.Data("这里提到关键词")))
+        val hit = store.search("关键词").single()
+        assertEquals("assistant", hit.role)
+        assertTrue((hit.seq ?: -1) >= 0)
+        assertTrue(hit.snippet.contains("关键词"))
+    }
+
+    @Test
     fun `create and append assigns monotonic seq`() {
         val h = home()
         val store = SessionStore(h)

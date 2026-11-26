@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -44,7 +45,7 @@ fun MycoDrawerContent(
     onNewChat: () -> Unit,
     onSettings: () -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth()) {
+    Column(Modifier.fillMaxWidth().fillMaxHeight()) {
         Row(
             Modifier.fillMaxWidth().padding(start = MycoSpacing.l, end = MycoSpacing.m, top = MycoSpacing.l),
             verticalAlignment = Alignment.CenterVertically,
@@ -61,7 +62,7 @@ fun MycoDrawerContent(
                 modifier = Modifier.padding(horizontal = MycoSpacing.l, vertical = MycoSpacing.m),
             )
         } else {
-            LazyColumn(Modifier.weight(1f, fill = false)) {
+            LazyColumn(Modifier.weight(1f)) {
                 var lastGroup: SessionGroup? = null
                 sessions.forEach { item ->
                     if (item.group != lastGroup) {
@@ -140,7 +141,9 @@ private fun DrawerSessionRow(
             }
         }
         Text(item.timeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(" ⋯", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        TextButton(onClick = onLongClick, contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)) {
+            Text("⋯", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

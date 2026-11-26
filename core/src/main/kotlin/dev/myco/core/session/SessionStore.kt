@@ -19,9 +19,31 @@ data class SessionSidecar(
     val title: String? = null,
     val deletedAt: Long? = null,
     val pinned: Boolean = false,
+    val archivedAt: Long? = null,
 )
 
-data class SessionSearchHit(val session: SessionMeta, val snippet: String)
+/** 列表/搜索用的会话摘要：把 sidecar 与最近消息信息合成，组件不碰文件系统。 */
+data class SessionSummary(
+    val id: String,
+    val title: String,
+    val createdAt: Long,
+    val app: String,
+    val preset: String,
+    val formatVersion: Int,
+    val lastMessageAt: Long,
+    val preview: String?,
+    val messageCount: Int,
+    val pinned: Boolean,
+    val archivedAt: Long?,
+    val deletedAt: Long?,
+)
+
+data class SessionSearchHit(
+    val session: SessionMeta,
+    val snippet: String,
+    val seq: Long? = null,
+    val role: String? = null,
+)
 
 class UnknownSessionFormatException(message: String) : RuntimeException(message)
 class CorruptSessionException(message: String) : RuntimeException(message)
@@ -124,6 +146,84 @@ class SessionStore(private val home: MycoHome) {
         }.sortedByDescending { it.createdAt }
     }
 
+    /**
+     * 抽屉/列表用摘要：最近活动时间、预览、消息数、置顶/归档/删除状态。
+     * 默认排除归档与回收站；includeArchived/includeDeleted 用于归档页/回收站。
+     */
+    fun summaries(
+        includeArchived: Boolean = false,
+        includeDeleted: Boolean = false,
+        app: String? = null,
+    ): List<SessionSummary> {
+        if (!Files.exists(home.sessions)) return emptyList()
+        val dirs = Files.list(home.sessions).use { stream ->
+            stream.filter { Files.isDirectory(it) && Files.exists(it.resolve(FILE_NAME)) }.toList()
+        }
+        return dirs.mapNotNull { dir ->
+            val sidecar = readSidecar(dir)
+            if (!includeDeleted && sidecar?.deletedAt != null) return@mapNotNull null
+            if (!includeArchived && sidecar?.archivedAt != null) return@mapNotNull null
+            val lines = Files.readAllLines(dir.resolve(FILE_NAME), java.nio.charset.StandardCharsets.UTF_8)
+            val first = lines.firstOrNull() ?: throw CorruptSessionException("empty log: $dir")
+            val event = MycoJson.decodeFromString(SessionEvent.serializer(), first)
+            val meta = (event as? SessionEvent.SessionStart)?.data
+                ?: throw CorruptSessionException("no session/start: $dir")
+            if (app != null && meta.app != app) return@mapNotNull null
+            val decoded = lines.mapNotNull { line ->
+                if (line.isBlank()) null else runCatching { MycoJson.decodeFromString(SessionEvent.serializer(), line) }.getOrNull()
+            }
+            val lastAt = decoded.maxOfOrNull { it.at } ?: meta.createdAt
+            val lastText = decoded.asReversed().firstNotNullOfOrNull { e ->
+                when (e) {
+                    is SessionEvent.UserMessage -> e.data.text
+                    is SessionEvent.AssistantMessage -> e.data.text
+                    else -> null
+                }?.takeIf { it.isNotBlank() }
+            }
+            val msgCount = decoded.count { it is SessionEvent.UserMessage || it is SessionEvent.AssistantMessage }
+            SessionSummary(
+                id = meta.id,
+                title = sidecar?.title ?: meta.title,
+                createdAt = meta.createdAt,
+                app = meta.app,
+                preset = meta.preset,
+                formatVersion = meta.formatVersion,
+                lastMessageAt = lastAt,
+                preview = lastText?.replace('\n', ' ')?.take(80),
+                messageCount = msgCount,
+                pinned = sidecar?.pinned ?: false,
+                archivedAt = sidecar?.archivedAt,
+                deletedAt = sidecar?.deletedAt,
+            )
+        }.sortedWith(compareByDescending<SessionSummary> { it.pinned }.thenByDescending { it.lastMessageAt })
+    }
+
+    fun setPinned(sessionId: String, pinned: Boolean) {
+        val dir = requireSessionDir(sessionId)
+        val current = readSidecar(dir) ?: SessionSidecar()
+        writeSidecar(dir, current.copy(pinned = pinned))
+    }
+
+    fun archive(sessionId: String, archived: Boolean) {
+        val dir = requireSessionDir(sessionId)
+        val current = readSidecar(dir) ?: SessionSidecar()
+        writeSidecar(dir, current.copy(archivedAt = if (archived) System.currentTimeMillis() else null))
+    }
+
+    /** 永久删除：删会话日志、sidecar 与该会话附件目录；不可恢复。 */
+    fun deletePermanently(sessionId: String) {
+        val dir = requireSessionDir(sessionId)
+        dir.toFile().deleteRecursively()
+        runCatching { home.attachments.resolve(sessionId).toFile().deleteRecursively() }
+        seqCache.remove(sessionId)
+    }
+
+    private fun requireSessionDir(sessionId: String): Path {
+        val dir = sessionDir(sessionId)
+        if (!Files.exists(dir.resolve(FILE_NAME))) throw IllegalArgumentException("session not found: $sessionId")
+        return dir
+    }
+
     /** 标题可变（只改展示，不改历史事件）。空标题拒绝。 */
     fun rename(sessionId: String, title: String): SessionMeta {
         val clean = title.trim()
@@ -152,35 +252,43 @@ class SessionStore(private val home: MycoHome) {
         writeSidecar(dir, current.copy(deletedAt = null))
     }
 
-    /** 搜索：标题与会话内 user/assistant 文本；大小写不敏感。 */
-    fun search(query: String, limit: Int = 50): List<SessionSearchHit> {
+    /** 搜索：标题与会话内 user/assistant 文本；返回命中消息 seq/role 便于"跳到那条"。 */
+    fun search(query: String, limit: Int = 50, includeArchived: Boolean = false): List<SessionSearchHit> {
         val q = query.trim()
         if (q.isEmpty()) return emptyList()
         val hits = ArrayList<SessionSearchHit>()
-        for (meta in list()) {
+        for (summary in summaries(includeArchived = includeArchived)) {
             if (hits.size >= limit) break
-            val titleHit = meta.title.contains(q, ignoreCase = true)
+            val meta = SessionMeta(
+                id = summary.id, title = summary.title, createdAt = summary.createdAt,
+                app = summary.app, preset = summary.preset, formatVersion = summary.formatVersion,
+            )
+            val titleHit = summary.title.contains(q, ignoreCase = true)
             val events = try {
-                read(meta.id)
+                read(summary.id)
             } catch (e: Exception) {
                 continue
             }
             var snippet: String? = null
+            var hitSeq: Long? = null
+            var hitRole: String? = null
             for (e in events) {
-                val text = when (e) {
-                    is SessionEvent.UserMessage -> e.data.text
-                    is SessionEvent.AssistantMessage -> e.data.text
-                    else -> null
-                } ?: continue
+                val (text, role) = when (e) {
+                    is SessionEvent.UserMessage -> e.data.text to "user"
+                    is SessionEvent.AssistantMessage -> e.data.text to "assistant"
+                    else -> continue
+                }
                 if (text.contains(q, ignoreCase = true)) {
                     val idx = text.indexOf(q, ignoreCase = true).coerceAtLeast(0)
                     val start = (idx - 30).coerceAtLeast(0)
                     snippet = text.substring(start, (idx + q.length + 60).coerceAtMost(text.length))
+                    hitSeq = e.seq
+                    hitRole = role
                     break
                 }
             }
             if (titleHit || snippet != null) {
-                hits += SessionSearchHit(meta, snippet ?: meta.title)
+                hits += SessionSearchHit(meta, snippet ?: meta.title, hitSeq, hitRole ?: if (titleHit) "title" else null)
             }
         }
         return hits

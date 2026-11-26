@@ -110,6 +110,30 @@ class InProcessBridge(
                 },
                 onFailure = { CommandResult.Err("SESSION_RESTORE", it.message ?: "恢复失败") },
             )
+        is Command.SessionPin -> runCatching { sessions.setPinned(cmd.sessionId, cmd.pinned) }
+            .fold(
+                onSuccess = {
+                    emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
+                    CommandResult.Ok(buildJsonObject { put("pinned", cmd.pinned) })
+                },
+                onFailure = { CommandResult.Err("SESSION_PIN", it.message ?: "置顶失败") },
+            )
+        is Command.SessionArchive -> runCatching { sessions.archive(cmd.sessionId, cmd.archived) }
+            .fold(
+                onSuccess = {
+                    emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
+                    CommandResult.Ok(buildJsonObject { put("archived", cmd.archived) })
+                },
+                onFailure = { CommandResult.Err("SESSION_ARCHIVE", it.message ?: "归档失败") },
+            )
+        is Command.SessionDeletePermanent -> runCatching { sessions.deletePermanently(cmd.sessionId) }
+            .fold(
+                onSuccess = {
+                    emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
+                    CommandResult.Ok(buildJsonObject { put("deleted", true); put("permanent", true) })
+                },
+                onFailure = { CommandResult.Err("SESSION_DELETE", it.message ?: "永久删除失败") },
+            )
         is Command.ProviderSave -> providerSave(cmd)
         is Command.ProviderDelete -> providerDelete(cmd)
         is Command.CredentialSet -> {
@@ -491,8 +515,10 @@ class InProcessBridge(
 
     override suspend fun query(q: Query): QueryResult = when (q) {
         is Query.SessionList -> {
-            val list = sessions.list().filter { q.app == null || it.app == q.app }
-            QueryResult.Ok(buildJsonArray { list.forEach { add(sessionJson(it)) } })
+            val list = runCatching {
+                sessions.summaries(includeArchived = q.includeArchived, includeDeleted = q.includeDeleted, app = q.app)
+            }.getOrElse { return QueryResult.Err("SESSION_LIST", it.message ?: "读取失败") }
+            QueryResult.Ok(buildJsonArray { list.forEach { add(summaryJson(it)) } })
         }
         is Query.SessionEvents -> {
             val events = runCatching { sessions.readFrom(q.sessionId, q.fromSeq) }
@@ -511,7 +537,7 @@ class InProcessBridge(
             }
         }
         is Query.SessionSearch -> {
-            val hits = runCatching { sessions.search(q.query, q.limit) }
+            val hits = runCatching { sessions.search(q.query, q.limit, includeArchived = q.includeArchived) }
                 .getOrElse { return QueryResult.Err("SEARCH_FAILED", it.message ?: "搜索失败") }
             QueryResult.Ok(buildJsonArray {
                 hits.forEach { h ->
@@ -523,6 +549,8 @@ class InProcessBridge(
                         put("preset", h.session.preset)
                         put("formatVersion", h.session.formatVersion)
                         put("snippet", h.snippet)
+                        h.seq?.let { put("seq", it) }
+                        h.role?.let { put("role", it) }
                     })
                 }
             })
@@ -587,6 +615,19 @@ class InProcessBridge(
             }
             dev.myco.core.spec.AuthProfile.None -> buildJsonObject { put("configured", true); put("source", "none") }
         })
+    }
+
+    private fun summaryJson(m: dev.myco.core.session.SessionSummary): JsonElement = buildJsonObject {
+        put("id", m.id); put("title", m.title); put("createdAt", m.createdAt)
+        put("app", m.app); put("preset", m.preset); put("formatVersion", m.formatVersion)
+        put("lastMessageAt", m.lastMessageAt)
+        m.preview?.let { put("preview", it) }
+        put("messageCount", m.messageCount)
+        put("pinned", m.pinned)
+        m.archivedAt?.let { put("archivedAt", it) }
+        m.deletedAt?.let { put("deletedAt", it) }
+        put("archived", m.archivedAt != null)
+        put("deleted", m.deletedAt != null)
     }
 
     private fun sessionJson(m: SessionMeta): JsonElement = buildJsonObject {

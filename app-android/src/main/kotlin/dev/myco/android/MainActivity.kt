@@ -74,6 +74,7 @@ import dev.myco.android.ui.MycoRadius
 import dev.myco.android.ui.MycoSpacing
 import dev.myco.android.ui.SearchField
 import dev.myco.android.ui.SessionListItem
+import dev.myco.android.ui.SettingsRow
 import dev.myco.android.ui.MycoTheme
 import dev.myco.android.ui.MycoTopBar
 import dev.myco.android.ui.SectionHeader
@@ -124,15 +125,29 @@ class MainActivity : ComponentActivity() {
 private sealed interface Screen {
     data class Chat(val id: String, val title: String) : Screen
     data object Settings : Screen
+    data class SessionBin(val kind: BinKind) : Screen
 }
 
-private data class SessionRow(val id: String, val title: String, val createdAt: Long, val snippet: String? = null)
+private enum class BinKind { ARCHIVED, DELETED }
+
+private data class SessionRow(
+    val id: String,
+    val title: String,
+    val createdAt: Long,
+    val snippet: String? = null,
+    val lastMessageAt: Long = createdAt,
+    val pinned: Boolean = false,
+    val archived: Boolean = false,
+    val deleted: Boolean = false,
+    val messageCount: Int = 0,
+)
 private data class ChatLine(val role: String, val text: String)
 
 private fun SessionRow.toUi(): dev.myco.android.ui.model.SessionItemUi {
     val now = java.time.LocalDate.now()
-    val date = java.time.Instant.ofEpochMilli(createdAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+    val date = java.time.Instant.ofEpochMilli(lastMessageAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
     val group = when {
+        pinned -> dev.myco.android.ui.model.SessionGroup.PINNED
         date == now -> dev.myco.android.ui.model.SessionGroup.TODAY
         date == now.minusDays(1) -> dev.myco.android.ui.model.SessionGroup.YESTERDAY
         date.isAfter(now.minusDays(7)) -> dev.myco.android.ui.model.SessionGroup.WEEK
@@ -141,9 +156,11 @@ private fun SessionRow.toUi(): dev.myco.android.ui.model.SessionItemUi {
     return dev.myco.android.ui.model.SessionItemUi(
         id = id,
         title = title,
-        timeLabel = formatTime(createdAt),
+        timeLabel = formatTime(lastMessageAt),
         snippet = snippet,
         group = group,
+        pinned = pinned,
+        unread = false,
     )
 }
 
@@ -246,9 +263,15 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     bridge = bridge,
                     themeMode = themeMode,
                     onThemeChange = onThemeChange,
+                    onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
                     onBack = {
                         screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
                     },
+                )
+                is Screen.SessionBin -> SessionBinScreen(
+                    bridge = bridge,
+                    kind = s.kind,
+                    onBack = { screen = Screen.Settings },
                 )
             }
             SnackbarHost(
@@ -268,6 +291,9 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
             BackHandler(enabled = drawerState.isClosed && screen is Screen.Settings) {
                 screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
             }
+            BackHandler(enabled = drawerState.isClosed && screen is Screen.SessionBin) {
+                screen = Screen.Settings
+            }
         }
     }
 
@@ -275,13 +301,37 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         AlertDialog(
             onDismissRequest = { rowMenu = null },
             title = { Text(row.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            text = { Text("对会话做什么？") },
-            confirmButton = {
-                TextButton(onClick = { rowMenu = null; renameTarget = row; renameText = row.title }) { Text("改名") }
+            text = {
+                Column {
+                    TextButton(onClick = {
+                        rowMenu = null
+                        scope.launch {
+                            bridge.send(Command.SessionPin(row.id, !row.pinned))
+                            refreshSessions()
+                        }                    }) { Text(if (row.pinned) "取消置顶" else "置顶") }
+                    TextButton(onClick = {
+                        rowMenu = null
+                        scope.launch {
+                            drawerState.close()
+                            bridge.send(Command.SessionArchive(row.id, true))
+                            refreshSessions()
+                            val r = snackbar.showSnackbar(
+                                message = "已归档「${row.title}」",
+                                actionLabel = "撤销",
+                                duration = androidx.compose.material3.SnackbarDuration.Short,
+                            )
+                            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                                bridge.send(Command.SessionArchive(row.id, false)); refreshSessions()
+                            }
+                        }
+                    }) { Text("归档") }
+                    TextButton(onClick = { rowMenu = null; renameTarget = row; renameText = row.title }) { Text("重命名") }
+                    TextButton(onClick = { rowMenu = null; deleteTarget = row }) {
+                        Text("删除", color = MaterialTheme.colorScheme.error)
+                    }
+                }
             },
-            dismissButton = {
-                TextButton(onClick = { rowMenu = null; deleteTarget = row }) { Text("删除") }
-            },
+            confirmButton = { TextButton(onClick = { rowMenu = null }) { Text("关闭") } },
         )
     }
     renameTarget?.let { row ->
@@ -319,6 +369,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     val target = row
                     deleteTarget = null
                     scope.launch {
+                        drawerState.close()
                         bridge.send(Command.SessionDelete(target.id))
                         refreshSessions()
                         val result = snackbar.showSnackbar(
@@ -564,10 +615,89 @@ private fun ChatScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun SessionBinScreen(
+    bridge: InProcessBridge,
+    kind: BinKind,
+    onBack: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var rows by remember { mutableStateOf<List<SessionRow>>(emptyList()) }
+    var permanentTarget by remember { mutableStateOf<SessionRow?>(null) }
+    val archivedMode = kind == BinKind.ARCHIVED
+
+    suspend fun load() {
+        val res = bridge.query(
+            Query.SessionList(includeArchived = archivedMode, includeDeleted = !archivedMode)
+        )
+        val all = if (res is QueryResult.Ok) parseSessions(res.data as? JsonArray) else emptyList()
+        rows = all.filter { if (archivedMode) it.archived else it.deleted }
+    }
+    LaunchedEffect(kind) { load() }
+
+    Scaffold(
+        topBar = {
+            MycoTopBar(title = if (archivedMode) "归档会话" else "回收站", onBack = onBack)
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            if (rows.isEmpty()) {
+                EmptyState(
+                    title = if (archivedMode) "没有归档会话" else "回收站是空的",
+                    message = if (archivedMode) "长按会话菜单里可以归档。" else "删除的会话会先进入这里。",
+                )
+            } else {
+                LazyColumn(contentPadding = PaddingValues(horizontal = MycoSpacing.l)) {
+                    items(rows, key = { it.id }) { row ->
+                        Column(Modifier.fillMaxWidth().padding(vertical = MycoSpacing.m)) {
+                            Text(row.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
+                            Text(formatTime(row.lastMessageAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s)) {
+                                TextButton(onClick = {
+                                    scope.launch {
+                                        if (archivedMode) bridge.send(Command.SessionArchive(row.id, false))
+                                        else bridge.send(Command.SessionRestore(row.id))
+                                        load()
+                                    }
+                                }) { Text(if (archivedMode) "取消归档" else "恢复") }
+                                TextButton(onClick = { permanentTarget = row }) {
+                                    Text("永久删除", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                        Divider()
+                    }
+                }
+            }
+        }
+    }
+
+    permanentTarget?.let { row ->
+        AlertDialog(
+            onDismissRequest = { permanentTarget = null },
+            title = { Text("永久删除？") },
+            text = { Text("「${row.title}」的日志与附件会被删除，不可恢复。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val target = row
+                    permanentTarget = null
+                    scope.launch {
+                        bridge.send(Command.SessionDeletePermanent(target.id))
+                        load()
+                    }
+                }) { Text("永久删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { permanentTarget = null }) { Text("取消") } },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun SettingsScreen(
     bridge: InProcessBridge,
     themeMode: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
+    onOpenBin: (BinKind) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -663,6 +793,14 @@ private fun SettingsScreen(
                 }
             }
             item { Divider() }
+            item { Divider() }
+            item { SectionHeader("会话") }
+            item {
+                SettingsRow("归档会话", "已从抽屉隐藏，可取消归档", onClick = { onOpenBin(BinKind.ARCHIVED) })
+            }
+            item {
+                SettingsRow("回收站", "软删的会话，可恢复或永久删除", onClick = { onOpenBin(BinKind.DELETED) })
+            }
             item { Divider() }
             item { SectionHeader("模型提供方") }
             item { Text("revision=$revision · 保存冲突会提示重试", style = MaterialTheme.typography.bodySmall) }
@@ -981,9 +1119,15 @@ private fun parseSessions(arr: JsonArray?): List<SessionRow> = arr.orEmpty().map
         id = o["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
         title = o["title"]?.jsonPrimitive?.content ?: "",
         createdAt = o["createdAt"]?.jsonPrimitive?.longOrNull ?: 0L,
-        snippet = o["snippet"]?.jsonPrimitive?.content,
+        snippet = o["snippet"]?.jsonPrimitive?.content ?: o["preview"]?.jsonPrimitive?.content,
+        lastMessageAt = o["lastMessageAt"]?.jsonPrimitive?.longOrNull
+            ?: o["createdAt"]?.jsonPrimitive?.longOrNull ?: 0L,
+        pinned = o["pinned"]?.jsonPrimitive?.content == "true",
+        archived = o["archived"]?.jsonPrimitive?.content == "true",
+        deleted = o["deleted"]?.jsonPrimitive?.content == "true",
+        messageCount = o["messageCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
     )
-}.sortedByDescending { it.createdAt }
+}.sortedWith(compareByDescending<SessionRow> { it.pinned }.thenByDescending { it.lastMessageAt })
 
 private fun parseLines(arr: JsonArray?): List<ChatLine> = arr.orEmpty().mapNotNull { el ->
     val o = el as? JsonObject ?: return@mapNotNull null

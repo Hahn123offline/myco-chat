@@ -56,14 +56,29 @@ sealed class Command {
     data class SessionDelete(val sessionId: String) : Command()
 
     data class SessionRestore(val sessionId: String) : Command()
+
+    data class SessionPin(val sessionId: String, val pinned: Boolean) : Command()
+
+    data class SessionArchive(val sessionId: String, val archived: Boolean) : Command()
+
+    /** 永久删除（含附件），不可恢复；UI 必须二次确认。 */
+    data class SessionDeletePermanent(val sessionId: String) : Command()
 }
 
 sealed class Query {
-    data class SessionList(val app: String? = null) : Query()
+    data class SessionList(
+        val app: String? = null,
+        val includeArchived: Boolean = false,
+        val includeDeleted: Boolean = false,
+    ) : Query()
     data class SessionEvents(val sessionId: String, val fromSeq: Long = 0) : Query()
 
     /** 搜索标题与会话内文本（大小写不敏感）。 */
-    data class SessionSearch(val query: String, val limit: Int = 50) : Query()
+    data class SessionSearch(
+        val query: String,
+        val limit: Int = 50,
+        val includeArchived: Boolean = false,
+    ) : Query()
 
     /** 运行期事件重放：从内存环形缓冲取 seq > fromSeq 的事件（断线/切会话恢复用）。 */
     data class EventReplay(val sessionId: String, val fromSeq: Long = 0, val limit: Int = 500) : Query()

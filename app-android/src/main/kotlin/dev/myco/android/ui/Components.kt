@@ -76,8 +76,8 @@ fun MycoTopBar(
     )
 }
 
-/** 基础毛玻璃：半透明表面 + 细边框；深色模式下用发光色做边缘（不喧宾夺主）。
- *  [highlight] = 焦点态（如输入中），深色下边框更亮，浅色下阴影更明显。 */
+/** 卡片表面：默认**完全不透明**的扁平表面 + 柔和渐变阴影（新拟物方向）；真正的毛玻璃作为显式选项留到后续。
+ *  [highlight] = 焦点态（如输入中）。 */
 @Composable
 fun GlassSurface(
     modifier: Modifier = Modifier,
@@ -86,29 +86,28 @@ fun GlassSurface(
     content: @Composable () -> Unit,
 ) {
     val ext = LocalMycoColors.current
+    val scheme = MaterialTheme.colorScheme
     val dark = ext.glow.alpha > 0f
-    val fill = if (dark) {
-        Brush.linearGradient(listOf(ext.glassTint, ext.glassTint.copy(alpha = 0.55f)))
+    // 不透明渐变：顶部 surface，底部混入同色系容器（仍 100% 不透明）
+    val bottomTint = if (dark) {
+        androidx.compose.ui.graphics.lerp(scheme.surface, scheme.primaryContainer, 0.35f)
     } else {
-        SolidColor(ext.glassTint)
+        androidx.compose.ui.graphics.lerp(scheme.surface, scheme.primaryContainer, 0.28f)
     }
+    val fill = Brush.verticalGradient(listOf(scheme.surface, bottomTint))
     val edge = if (dark) {
-        val glowAlpha = if (highlight) 0.85f else 0.45f
-        Brush.linearGradient(
-            listOf(ext.glassBorder, ext.glow.copy(alpha = glowAlpha), ext.glassBorder)
-        )
+        val glowAlpha = if (highlight) 0.8f else 0.35f
+        Brush.linearGradient(listOf(ext.glassBorder, ext.glow.copy(alpha = glowAlpha), ext.glassBorder))
     } else {
-        SolidColor(if (highlight) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else ext.glassBorder)
+        SolidColor(if (highlight) scheme.primary.copy(alpha = 0.5f) else scheme.outlineVariant)
     }
-    val shadowMod = if (!dark) {
-        Modifier.shadow(
-            elevation = if (highlight) 6.dp else 3.dp,
-            shape = shape,
-            clip = false,
-            ambientColor = Color(0x1A5F7040),
-            spotColor = Color(0x225F7040),
-        )
-    } else Modifier
+    val shadowMod = Modifier.shadow(
+        elevation = if (highlight) 6.dp else 3.dp,
+        shape = shape,
+        clip = false,
+        ambientColor = if (dark) ext.glow.copy(alpha = 0.18f) else Color(0x1A5F7040),
+        spotColor = if (dark) ext.glow.copy(alpha = 0.22f) else Color(0x225F7040),
+    )
     Box(
         modifier
             .then(shadowMod)

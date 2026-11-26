@@ -142,6 +142,17 @@ class HttpBridgeServer(
             "session.restore" -> Command.SessionRestore(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
             )
+            "session.pin" -> Command.SessionPin(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                pinned = payload["pinned"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: true,
+            )
+            "session.archive" -> Command.SessionArchive(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                archived = payload["archived"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: true,
+            )
+            "session.deletePermanent" -> Command.SessionDeletePermanent(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+            )
             "provider.replace" -> {
                 val arr = payload["providers"] as? kotlinx.serialization.json.JsonArray
                     ?: return json(ex, 400, err("PAYLOAD", "missing providers array"))
@@ -166,7 +177,11 @@ class HttpBridgeServer(
         val name = ex.requestURI.path.removePrefix("/query")
         val payload = readJson(ex) as? JsonObject ?: JsonObject(emptyMap())
         val q: Query = when (name) {
-            "/session.list" -> Query.SessionList(app = payload["app"]?.jsonPrimitive?.content)
+            "/session.list" -> Query.SessionList(
+                app = payload["app"]?.jsonPrimitive?.content,
+                includeArchived = payload["includeArchived"]?.jsonPrimitive?.content == "true",
+                includeDeleted = payload["includeDeleted"]?.jsonPrimitive?.content == "true",
+            )
             "/session.events" -> Query.SessionEvents(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
                 fromSeq = payload["fromSeq"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
@@ -175,6 +190,7 @@ class HttpBridgeServer(
             "/session.search" -> Query.SessionSearch(
                 query = payload["query"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing query")),
                 limit = payload["limit"]?.jsonPrimitive?.content?.toIntOrNull() ?: 50,
+                includeArchived = payload["includeArchived"]?.jsonPrimitive?.content == "true",
             )
             "/event.replay" -> Query.EventReplay(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),

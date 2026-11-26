@@ -41,6 +41,13 @@ class HttpBridgeClient(
             }
             is Command.SessionDelete -> "session.delete" to buildJsonObject { put("sessionId", cmd.sessionId) }
             is Command.SessionRestore -> "session.restore" to buildJsonObject { put("sessionId", cmd.sessionId) }
+            is Command.SessionPin -> "session.pin" to buildJsonObject {
+                put("sessionId", cmd.sessionId); put("pinned", cmd.pinned)
+            }
+            is Command.SessionArchive -> "session.archive" to buildJsonObject {
+                put("sessionId", cmd.sessionId); put("archived", cmd.archived)
+            }
+            is Command.SessionDeletePermanent -> "session.deletePermanent" to buildJsonObject { put("sessionId", cmd.sessionId) }
             is Command.ChatSend -> "chat.send" to buildJsonObject {
                 put("sessionId", cmd.sessionId); put("text", cmd.text)
                 if (cmd.attachments.isNotEmpty()) {
@@ -95,9 +102,13 @@ class HttpBridgeClient(
 
     override suspend fun query(q: Query): QueryResult {
         val (name, payload) = when (q) {
-            is Query.SessionList -> "/session.list" to buildJsonObject { q.app?.let { put("app", it) } }
+            is Query.SessionList -> "/session.list" to buildJsonObject {
+                q.app?.let { put("app", it) }
+                put("includeArchived", q.includeArchived)
+                put("includeDeleted", q.includeDeleted)
+            }
             is Query.SessionSearch -> "/session.search" to buildJsonObject {
-                put("query", q.query); put("limit", q.limit)
+                put("query", q.query); put("limit", q.limit); put("includeArchived", q.includeArchived)
             }
             is Query.EventReplay -> "/event.replay" to buildJsonObject {
                 put("sessionId", q.sessionId); put("fromSeq", q.fromSeq); put("limit", q.limit)
