@@ -819,11 +819,16 @@ private fun ChatScreen(
             )
             // 跟随底部：用户在底部时才跟随流式；用户往上拖就停止跟随，不被抢窗口
             LaunchedEffect(listState) {
-                androidx.compose.runtime.snapshotFlow { listState.isScrollInProgress to atBottom }
-                    .collect { (scrolling, bottom) ->
-                        if (!scrolling && bottom) followBottom = true
-                        else if (scrolling && !bottom) followBottom = false
-                    }
+                androidx.compose.runtime.snapshotFlow {
+                    val info = listState.layoutInfo
+                    val last = info.visibleItemsInfo.lastOrNull()
+                    val bottom = last == null || (last.index >= info.totalItemsCount - 1 &&
+                        last.offset + last.size <= info.viewportEndOffset + 4)
+                    listState.isScrollInProgress to bottom
+                }.collect { (scrolling, bottom) ->
+                    if (!scrolling && bottom) followBottom = true
+                    else if (scrolling && !bottom) followBottom = false
+                }
             }
             LaunchedEffect(sessionId) {
                 while (true) {
@@ -1876,6 +1881,7 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
 
 
 

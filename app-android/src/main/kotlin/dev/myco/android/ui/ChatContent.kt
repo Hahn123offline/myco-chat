@@ -557,7 +557,6 @@ fun ChatMessages(
                             expandedTools = expandedTools,
                             maxHeight = maxGroupHeight,
                             autoScroll = false,
-                            outerState = listState,
                         )
                     }
                 }
@@ -600,7 +599,6 @@ fun ChatMessages(
                         expandedTools = expandedTools,
                         maxHeight = maxGroupHeight,
                         autoScroll = true,
-                        outerState = listState,
                     )
                 }
             }
@@ -621,7 +619,6 @@ private fun TimelineBody(
     expandedTools: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Boolean>,
     maxHeight: androidx.compose.ui.unit.Dp,
     autoScroll: Boolean,
-    outerState: LazyListState,
 ) {
     val listState = rememberLazyListState()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -638,7 +635,7 @@ private fun TimelineBody(
                     val samples = mutableListOf<Pair<Long, Float>>()
                     samples += down.uptimeMillis to lastY
                     while (true) {
-                        val event = awaitPointerEvent()
+                        val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
                         if (!change.pressed) break
                         val dy = change.position.y - lastY
@@ -648,13 +645,14 @@ private fun TimelineBody(
                                 // 手指上滑=内容向下滚(forward)；下滑=backward
                                 handling = if (dy < 0f) listState.canScrollForward else listState.canScrollBackward
                             }
-                            // 全部由我们自己分发：组体内 -> 组体；手势起点已在边界 -> 外层。
-                            // 不再交给 Compose 的自动 nested scroll/fling，避免惯性外溢。
-                            if (handling == true) listState.dispatchRawDelta(-dy)
-                            else outerState.dispatchRawDelta(-dy)
-                            change.consume()
-                            samples += change.uptimeMillis to lastY
-                            if (samples.size > 8) samples.removeAt(0)
+                            if (handling == true) {
+                                // 组体内部：自己分发，自己 fling，不交给外层
+                                listState.dispatchRawDelta(-dy)
+                                change.consume()
+                                samples += change.uptimeMillis to lastY
+                                if (samples.size > 8) samples.removeAt(0)
+                            }
+                            // handling == false：手势起点已在边界，不消费，完全交给外层原生滚动（流畅）
                         }
                     }
                     if (handling == true && samples.size >= 2) {
@@ -664,13 +662,14 @@ private fun TimelineBody(
                         val velocityPxPerSec = (last.second - first.second) / (dtMs / 1000f)
                         scope.launch {
                             var speed = -velocityPxPerSec
+                            var lastFrame = androidx.compose.runtime.withFrameNanos { it }
                             while (kotlin.math.abs(speed) > 80f) {
-                                val step = speed * 0.016f
-                                val target = if (handling == true) listState else outerState
-                                val moved = target.dispatchRawDelta(step)
+                                val frame = androidx.compose.runtime.withFrameNanos { it }
+                                val dt = ((frame - lastFrame) / 1_000_000_000.0).coerceIn(0.008, 0.05)
+                                lastFrame = frame
+                                val moved = listState.dispatchRawDelta((speed * dt).toFloat())
                                 if (kotlin.math.abs(moved) < 0.5f) break
-                                speed *= 0.94f
-                                kotlinx.coroutines.delay(16)
+                                speed = (speed * kotlin.math.exp(-4.5 * dt)).toFloat()
                             }
                         }
                     }
@@ -1272,6 +1271,14 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
+
+
+
+
 
 
 
