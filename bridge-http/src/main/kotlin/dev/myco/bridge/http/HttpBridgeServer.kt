@@ -75,6 +75,10 @@ class HttpBridgeServer(
         val name = ex.requestURI.path.removePrefix("/command/")
         val payload = readJson(ex) as? JsonObject ?: JsonObject(emptyMap())
         val cmd: Command = when (name) {
+            "session.setActiveLeaf" -> Command.SessionSetActiveLeaf(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                leafId = payload["leafId"]?.jsonPrimitive?.content,
+            )
             "session.generateTitle" -> Command.SessionGenerateTitle(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
             )
@@ -360,6 +364,7 @@ class HttpBridgeServer(
     private fun err(code: String, msg: String) =
         """{"ok":false,"error":{"code":"$code","message":"$msg","retriable":false}}"""
 }
+
 
 
 

@@ -118,6 +118,15 @@ class InProcessBridge(
             emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
             CommandResult.Ok(buildJsonObject { put("title", title) })
         }
+        is Command.SessionSetActiveLeaf -> runCatching {
+            sessions.setActiveLeaf(cmd.sessionId, cmd.leafId)
+        }.fold(
+            onSuccess = {
+                emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
+                CommandResult.Ok(buildJsonObject { put("activeLeaf", cmd.leafId) })
+            },
+            onFailure = { CommandResult.Err("SESSION_LEAF", it.message ?: "切换分支失败") },
+        )
         is Command.SessionCreate -> {
             val meta = sessions.create(cmd.app, cmd.preset, cmd.title)
             emit(meta.id) { seq -> BridgeEvent.SessionUpdated(meta.id, seq) }
@@ -336,8 +345,47 @@ class InProcessBridge(
         return CommandResult.Ok(buildJsonObject { put("stopped", true); put("turnId", active.turnId) })
     }
 
-    private data class RegenCtx(val nodeId: String, val version: Int, val cutSeq: Long)
-    private data class EditCtx(val revisesMessageId: String, val cutSeq: Long)
+    private data class RegenCtx(
+        val nodeId: String,
+        val version: Int,
+        val parentId: String, // 被重生成 assistant 的父 user 消息 id
+        val context: List<SessionEvent>, // 截到该 user 之前
+    )
+    private data class EditCtx(
+        val revisesMessageId: String,
+        val parentId: String?, // 被编辑 user 的父消息 id
+        val context: List<SessionEvent>,
+    )
+
+    private fun eventMessageId(e: SessionEvent): String? = when (e) {
+        is SessionEvent.UserMessage -> e.data.messageId
+        is SessionEvent.AssistantMessage -> e.data.messageId
+        else -> null
+    }
+
+    private fun eventParentId(e: SessionEvent): String? = when (e) {
+        is SessionEvent.UserMessage -> e.data.parentId
+        is SessionEvent.AssistantMessage -> e.data.parentId
+        else -> null
+    }
+
+    /** 从 activeLeaf 沿 parentId 回溯出当前分支（根→叶）。 */
+    private fun pathTo(history: List<SessionEvent>, leafId: String?): List<SessionEvent> {
+        if (leafId == null) return history
+        val byId = history.mapNotNull { e -> eventMessageId(e)?.let { it to e } }.toMap()
+        val chain = ArrayDeque<SessionEvent>()
+        var cursor: String? = leafId
+        val seen = mutableSetOf<String>()
+        while (cursor != null && seen.add(cursor)) {
+            val e = byId[cursor] ?: break
+            chain.addFirst(e)
+            cursor = eventParentId(e)
+        }
+        return chain.toList()
+    }
+
+    private fun lastMessageId(history: List<SessionEvent>): String? =
+        history.asReversed().firstNotNullOfOrNull { eventMessageId(it) }
     private data class ActiveTurn(val job: kotlinx.coroutines.Job, val turnId: Long)
     private val sessionLocks = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.sync.Mutex>()
 
@@ -361,7 +409,9 @@ class InProcessBridge(
         val turn = target.data.turn
             ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_VERSIONED", "该消息缺少 turn 信息")
         val user = history.filterIsInstance<SessionEvent.UserMessage>()
-            .lastOrNull { it.data.turn == turn && it.seq < target.seq }
+            .firstOrNull { it.data.messageId == target.data.parentId }
+            ?: history.filterIsInstance<SessionEvent.UserMessage>()
+                .lastOrNull { it.data.turn == turn && it.seq < target.seq }
             ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_FOUND", "找不到对应的用户消息")
         val version = (history.filterIsInstance<SessionEvent.AssistantMessage>()
             .filter { it.data.nodeId == nodeId }.maxOfOrNull { it.data.version } ?: target.data.version) + 1
@@ -373,7 +423,12 @@ class InProcessBridge(
                 attachments = user.data.attachments,
                 requestId = requestId,
             ),
-            RegenCtx(nodeId, version, user.seq),
+            RegenCtx(
+                nodeId = nodeId,
+                version = version,
+                parentId = user.data.messageId ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_VERSIONED", "用户消息缺少 id"),
+                context = user.data.parentId?.let { pathTo(history, it) } ?: emptyList(),
+            ),
         )
     }
 
@@ -392,7 +447,11 @@ class InProcessBridge(
                 requestId = cmd.requestId?.let { "edit:$it" },
             ),
             regen = null,
-            edit = EditCtx(revisesMessageId = cmd.messageId, cutSeq = target.seq),
+            edit = EditCtx(
+                revisesMessageId = cmd.messageId,
+                parentId = target.data.parentId,
+                context = target.data.parentId?.let { pathTo(history, it) } ?: emptyList(),
+            ),
         )
     }
 
@@ -446,11 +505,15 @@ class InProcessBridge(
 
         val history = runCatching { sessions.read(cmd.sessionId) }
             .getOrElse { return CommandResult.Err("SESSION_NOT_FOUND", "会话不存在：${cmd.sessionId}") }
+        val leaf = runCatching { sessions.activeLeaf(cmd.sessionId) }.getOrNull()
         val contextHistory = when {
-            regen != null -> history.filter { it.seq < regen.cutSeq }
-            edit != null -> history.filter { it.seq < edit.cutSeq }
+            regen != null -> regen.context
+            edit != null -> edit.context
+            leaf != null -> pathTo(history, leaf)
             else -> history
         }
+        // 新消息挂到当前分支叶子上（旧会话没有树信息时退化为线性末尾）
+        val userParentId = regen?.parentId ?: edit?.parentId ?: leaf ?: lastMessageId(history)
 
         // 附件在本轮开始前一次性读入（失败则整轮拒绝，不写半截 turn）
         val prepared = runCatching {
@@ -488,11 +551,13 @@ class InProcessBridge(
                         cmd.text, source = "human", attachments = cmd.attachments,
                         messageId = userMessageId, turn = turn,
                         revises = edit?.revisesMessageId,
+                        parentId = userParentId,
                     )
                 )
             )
-            // 空白新会话说了一句话 → 转正
+            // 空白新会话说了一句话 → 转正；分支叶子先指向这条 user 消息
             runCatching { sessions.setDraft(cmd.sessionId, false) }
+            runCatching { sessions.setActiveLeaf(cmd.sessionId, userMessageId) }
         }
 
         val client = clientFactory(provider)
@@ -568,10 +633,12 @@ class InProcessBridge(
                                     version = turnVersion,
                                     finishReason = lastFinishReason ?: "stop",
                                     reasoning = lastReasoning?.takeIf { it.isNotBlank() },
+                                    parentId = regen?.parentId ?: userMessageId,
                                 )
                             )
                         )
                     }
+                    runCatching { sessions.setActiveLeaf(cmd.sessionId, finalMessageId) }
                     val status = when (lastFinishReason) {
                         "length" -> "truncated"
                         "content_filter" -> "error"
@@ -662,6 +729,7 @@ class InProcessBridge(
                             version = 1,
                             finishReason = "stopped",
                             reasoning = currentReasoning.toString().takeIf { it.isNotBlank() },
+                            parentId = regen?.parentId ?: userMessageId,
                         )
                     )
                 )
@@ -675,6 +743,7 @@ class InProcessBridge(
                     )
                 )
             )
+            runCatching { sessions.setActiveLeaf(cmd.sessionId, finalMessageId) }
             emit(cmd.sessionId) { seq ->
                 BridgeEvent.AssistantDone(
                     cmd.sessionId, turn, full.toString(), stopped = true,
@@ -761,6 +830,7 @@ class InProcessBridge(
             QueryResult.Ok(buildJsonObject {
                 put("providerId", sel?.providerId); put("modelId", sel?.modelId)
                 put("reasoningLevel", sel?.reasoningLevel)
+                put("activeLeaf", runCatching { sessions.activeLeaf(q.sessionId) }.getOrNull())
                 val p = sel?.providerId?.let { id -> providers.load().providers.firstOrNull { it.id == id } }
                 if (p != null) {
                     put("providerName", p.displayName ?: p.id)
@@ -896,6 +966,8 @@ class InProcessBridge(
                 put("text", e.data.text)
                 e.data.messageId?.let { put("messageId", it) }
                 e.data.turn?.let { put("turn", it) }
+                e.data.parentId?.let { put("parentId", it) }
+                e.data.revises?.let { put("revises", it) }
                 if (e.data.attachments.isNotEmpty()) {
                     put("attachments", dev.myco.core.spec.MycoJson.encodeToJsonElement(
                         kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.AttachmentRef.serializer()),
@@ -912,6 +984,7 @@ class InProcessBridge(
                 put("version", e.data.version)
                 e.data.finishReason?.let { put("finishReason", it) }
                 e.data.reasoning?.let { put("reasoning", it) }
+                e.data.parentId?.let { put("parentId", it) }
                 e.data.usage?.let { u ->
                     put("usage", dev.myco.core.spec.MycoJson.encodeToJsonElement(dev.myco.core.spec.Usage.serializer(), u))
                 }
@@ -991,6 +1064,9 @@ const val TOOL_BUDGET_CHARS = 24_000
 
 /** 每会话保留的运行期事件条数（断线重放大致窗口）。 */
 const val EVENT_BUFFER = 500
+
+
+
 
 
 

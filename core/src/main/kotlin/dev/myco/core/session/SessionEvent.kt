@@ -62,6 +62,8 @@ sealed class SessionEvent {
             val turn: Long? = null,
             /** 编辑重发：本条替代哪条旧 user 消息（旧消息仍留在 append-only 日志里，但不再进模型上下文）。 */
             val revises: String? = null,
+            /** 树结构：父消息 id（根用户消息为 null）。 */
+            val parentId: String? = null,
         )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
@@ -90,6 +92,8 @@ sealed class SessionEvent {
             val finishReason: String? = null,
             /** 思考内容（DeepSeek reasoning_content / Anthropic thinking）；带 tools 时需原样回传 */
             val reasoning: String? = null,
+            /** 树结构：父消息 id（通常是 user 消息）。 */
+            val parentId: String? = null,
         )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
@@ -171,3 +175,5 @@ sealed class SessionEvent {
         override fun withAt(at: Long) = copy(at = at)
     }
 }
+
+

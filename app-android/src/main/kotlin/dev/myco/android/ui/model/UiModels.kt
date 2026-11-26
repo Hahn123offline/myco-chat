@@ -31,6 +31,7 @@ data class ChatMessageUi(
     val reasoning: String? = null,
     val streaming: Boolean = false,
     val revised: Boolean = false,
+    val parentId: String? = null,
 )
 
 data class ToolStepUi(val name: String, val ok: Boolean?, val text: String)

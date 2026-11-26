@@ -494,6 +494,49 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `regenerate creates a branch and later messages follow it`() = runBlocking {
+        var lastRequest: dev.myco.core.llm.ChatRequest? = null
+        var calls = 0
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    calls++
+                    lastRequest = request
+                    emit(dev.myco.core.llm.ChatChunk.Delta("回答$calls"))
+                    emit(dev.myco.core.llm.ChatChunk.Done("回答$calls", finishReason = "stop"))
+                }
+        }
+        val f = Fixture(client = client)
+        val meta = f.sessions.create("chat", "chat-default")
+        f.bridge.send(Command.ChatSend(meta.id, "问题1"))
+        f.bridge.send(Command.ChatSend(meta.id, "问题2"))
+        val history0 = f.sessions.read(meta.id)
+        val firstAnswer = history0.filterIsInstance<SessionEvent.AssistantMessage>().first()
+        val secondAnswer = history0.filterIsInstance<SessionEvent.AssistantMessage>().last()
+
+        val regen = f.bridge.send(Command.ChatRegenerate(meta.id, firstAnswer.data.messageId!!))
+        assertTrue(regen is CommandResult.Ok)
+        val newAnswerId = ((regen as CommandResult.Ok).data as JsonObject)["messageId"]!!.jsonPrimitive.content
+        val leaf = f.sessions.activeLeaf(meta.id)
+        assertEquals(newAnswerId, leaf)
+
+        // 新分支上的后续消息：上下文应只有 问题1 + 新回答1，不含旧分支的问题2/回答2
+        f.bridge.send(Command.ChatSend(meta.id, "问题3"))
+        val userTexts = lastRequest!!.messages.filter { it.role == "user" }.map { it.content }
+        assertEquals(listOf("问题1", "问题3"), userTexts)
+        val assistantTexts = lastRequest!!.messages.filter { it.role == "assistant" }.map { it.content }
+        assertEquals(1, assistantTexts.size)
+
+        val newUser3 = f.sessions.read(meta.id).filterIsInstance<SessionEvent.UserMessage>().last()
+        assertEquals(newAnswerId, newUser3.data.parentId)
+
+        // 旧分支完整保留在日志里
+        val history = f.sessions.read(meta.id)
+        assertEquals(1, history.filterIsInstance<SessionEvent.UserMessage>().count { it.data.text == "问题2" })
+        assertTrue(history.any { it is SessionEvent.AssistantMessage && it.data.messageId == secondAnswer.data.messageId })
+    }
+
+    @Test
     fun `draft session is unique until first message`() = runBlocking {
         val f = Fixture()
         val r1 = f.bridge.send(Command.SessionEnsureDraft())
@@ -686,6 +729,8 @@ class InProcessBridgeTest {
         assertTrue(chatOnly is QueryResult.Ok)
     }
 }
+
+
 
 
 

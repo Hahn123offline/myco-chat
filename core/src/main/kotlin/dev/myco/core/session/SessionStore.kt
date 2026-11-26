@@ -26,6 +26,8 @@ data class SessionSidecar(
     val reasoningLevel: String? = null,
     /** 空白"新会话"草稿：不在列表常显，发第一条消息后转正。 */
     val draft: Boolean = false,
+    /** 会话树：当前分支的叶子消息 id。 */
+    val activeLeaf: String? = null,
 )
 
 data class SessionModelSelection(
@@ -49,6 +51,8 @@ data class SessionSummary(
     val archivedAt: Long?,
     val deletedAt: Long?,
     val draft: Boolean = false,
+    /** 会话树：当前分支的叶子消息 id。 */
+    val activeLeaf: String? = null,
 )
 
 data class SessionSearchHit(
@@ -225,6 +229,17 @@ class SessionStore(private val home: MycoHome) {
         writeSidecar(dir, current.copy(archivedAt = if (archived) System.currentTimeMillis() else null))
     }
 
+    fun activeLeaf(sessionId: String): String? {
+        val dir = requireSessionDir(sessionId)
+        return readSidecar(dir)?.activeLeaf
+    }
+
+    fun setActiveLeaf(sessionId: String, leafId: String?) {
+        val dir = requireSessionDir(sessionId)
+        val current = readSidecar(dir) ?: SessionSidecar()
+        writeSidecar(dir, current.copy(activeLeaf = leafId))
+    }
+
     fun setDraft(sessionId: String, draft: Boolean) {
         val dir = requireSessionDir(sessionId)
         val current = readSidecar(dir) ?: SessionSidecar()
@@ -357,5 +372,6 @@ class SessionStore(private val home: MycoHome) {
         const val SIDECAR_NAME = "meta.v1.json"
     }
 }
+
 
 

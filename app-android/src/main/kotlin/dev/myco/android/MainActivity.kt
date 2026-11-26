@@ -456,6 +456,7 @@ private fun ChatScreen(
     var selProviderId by remember { mutableStateOf<String?>(null) }
     var selModelId by remember { mutableStateOf<String?>(null) }
     var selReasoningLevel by remember { mutableStateOf<String?>(null) }
+    var activeLeaf by remember { mutableStateOf<String?>(null) }
     var showModelPicker by remember { mutableStateOf(false) }
     var modelPickerError by remember { mutableStateOf<String?>(null) }
     val initialVersions = remember {
@@ -472,6 +473,8 @@ private fun ChatScreen(
     suspend fun reload() {
         val res = bridge.query(Query.SessionEvents(sessionId, 0))
         content = if (res is QueryResult.Ok) dev.myco.android.ui.parseChatContent(res.data as? JsonArray) else dev.myco.android.ui.ChatContentState()
+        val sel = bridge.query(Query.SessionModel(sessionId))
+        if (sel is QueryResult.Ok) activeLeaf = (sel.data as? JsonObject)?.get("activeLeaf")?.jsonPrimitive?.content
     }
 
     fun attachUri(uri: android.net.Uri) {
@@ -556,6 +559,7 @@ private fun ChatScreen(
             selProviderId = o?.get("providerId")?.jsonPrimitive?.content
             selModelId = o?.get("modelId")?.jsonPrimitive?.content
             selReasoningLevel = o?.get("reasoningLevel")?.jsonPrimitive?.content
+            activeLeaf = o?.get("activeLeaf")?.jsonPrimitive?.content
         }
     }
 
@@ -683,6 +687,10 @@ private fun ChatScreen(
                 initialVersions = initialVersions,
                 onVersionSelected = { nodeId, version ->
                     chatPrefs.edit().putInt("v_$nodeId", version).apply()
+                },
+                initialActiveLeaf = activeLeaf,
+                onActiveLeafChanged = { leaf ->
+                    scope.launch { bridge.send(Command.SessionSetActiveLeaf(sessionId, leaf)) }
                 },
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
@@ -1702,6 +1710,7 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
 
 
 

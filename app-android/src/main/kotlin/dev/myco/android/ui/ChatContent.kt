@@ -77,6 +77,7 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
                     text = text + if (names.isEmpty()) "" else "\n" + names.joinToString("\n") { "[附件] $it" },
                     messageId = data?.str("messageId"),
                     turn = data?.long("turn"),
+                    parentId = data?.str("parentId"),
                 )
             }
             "assistant/message" -> {
@@ -95,6 +96,7 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
                     turn = data?.long("turn"),
                     finishReason = data?.str("finishReason"),
                     reasoning = data?.str("reasoning"),
+                    parentId = data?.str("parentId"),
                 )
             }
             "tool/call" -> {
@@ -363,10 +365,44 @@ fun ChatMessages(
     onUserLongPress: (ChatMessageUi) -> Unit = {},
     initialVersions: Map<String, Int> = emptyMap(),
     onVersionSelected: (nodeId: String, version: Int) -> Unit = { _, _ -> },
+    initialActiveLeaf: String? = null,
+    onActiveLeafChanged: (leafId: String?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var activeLeaf by remember { mutableStateOf(initialActiveLeaf) }
+    val allMessages = state.messages
+    fun pathOf(leaf: String?): List<ChatMessageUi> {
+        if (leaf == null) return emptyList()
+        val byId = allMessages.mapNotNull { m -> m.messageId?.let { it to m } }.toMap()
+        val chain = ArrayDeque<ChatMessageUi>()
+        var cursor: String? = leaf
+        val seen = mutableSetOf<String>()
+        while (cursor != null && seen.add(cursor)) {
+            val m = byId[cursor] ?: break
+            chain.addFirst(m)
+            cursor = m.parentId
+        }
+        return chain.toList()
+    }
+    fun deepestLeaf(startId: String): String {
+        var cursor = startId
+        val seen = mutableSetOf<String>()
+        while (seen.add(cursor)) {
+            val child = allMessages.lastOrNull { it.parentId == cursor && it.messageId != null } ?: return cursor
+            cursor = child.messageId ?: return cursor
+        }
+        return cursor
+    }
+    val visible = remember(state.messages, activeLeaf) {
+        if (activeLeaf == null) state.messages else pathOf(activeLeaf).ifEmpty { state.messages }
+    }
     val activeVersions = remember {
         androidx.compose.runtime.mutableStateMapOf<String, Int>().apply { putAll(initialVersions) }
+    }
+    androidx.compose.runtime.LaunchedEffect(activeLeaf) {
+        pathOf(activeLeaf).forEach { m ->
+            if (m.role == "assistant" && m.nodeId != null) activeVersions[m.nodeId] = m.version
+        }
     }
     val expandedProcess = remember { androidx.compose.runtime.mutableStateMapOf<Long, Boolean>() }
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
@@ -382,7 +418,7 @@ fun ChatMessages(
         ),
         verticalArrangement = Arrangement.spacedBy(MycoSpacing.s),
     ) {
-        state.messages.forEachIndexed { index, msg ->
+        visible.forEachIndexed { index, msg ->
             if (msg.role == "user") {
                 item(key = "u-$index-${msg.messageId ?: ""}") {
                     ChatBubble(BubbleRole.USER, msg.text, onLongPress = { onUserLongPress(msg) })
@@ -422,9 +458,14 @@ fun ChatMessages(
                         onCopy = { onCopy(shown.text) },
                         onRegenerate = { onRegenerate(shown) },
                         onSwitch = { v ->
-                            if (msg.nodeId != null) {
-                                activeVersions[msg.nodeId!!] = v
-                                onVersionSelected(msg.nodeId!!, v)
+                            val nodeId = msg.nodeId
+                            if (nodeId != null) {
+                                activeVersions[nodeId] = v
+                                onVersionSelected(nodeId, v)
+                                val target = nodes[nodeId]?.firstOrNull { it.version == v }
+                                val leaf = target?.messageId?.let { deepestLeaf(it) }
+                                activeLeaf = leaf
+                                onActiveLeafChanged(leaf)
                             }
                         },
                     )
@@ -537,5 +578,7 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
 
 

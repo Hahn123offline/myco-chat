@@ -87,6 +87,7 @@
             "nodeId": { "type": "string" },
             "turn": { "type": "integer", "minimum": 0 },
             "revises": { "type": "string" },
+            "parentId": { "type": "string" },
             "attachments": {
               "type": "array",
               "items": {
@@ -215,3 +216,4 @@
     }
   ]
 }
+

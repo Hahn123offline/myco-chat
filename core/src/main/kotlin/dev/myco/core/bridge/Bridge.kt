@@ -65,6 +65,9 @@ sealed class Command {
     /** 首条消息后用模型生成短标题（额外一次小请求；已经命名则跳过）。 */
     data class SessionGenerateTitle(val sessionId: String) : Command()
 
+    /** 切换会话树当前分支（activeLeaf）。 */
+    data class SessionSetActiveLeaf(val sessionId: String, val leafId: String?) : Command()
+
     /** 新增/更新 provider；expectedRevision 不匹配返回 SETTINGS_CONFLICT。 */
     data class ProviderSave(val profile: ProviderProfile, val expectedRevision: Long) : Command()
 
