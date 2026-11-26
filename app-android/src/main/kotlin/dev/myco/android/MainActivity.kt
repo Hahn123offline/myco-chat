@@ -486,6 +486,31 @@ private fun ChatScreen(
     var streamingReasoning by remember { mutableStateOf<String?>(null) }
     var liveEntries by remember { mutableStateOf<List<dev.myco.android.ui.TimelineEntry>>(emptyList()) }
     var loadingFork by remember { mutableStateOf(false) }
+    var followBottom by remember { mutableStateOf(true) }
+    val streamTextBuffer = remember { StringBuilder() }
+    val streamReasoningBuffer = remember { StringBuilder() }
+
+    fun flushReasoningBuffer() {
+        if (streamReasoningBuffer.isEmpty()) return
+        val add = streamReasoningBuffer.toString()
+        streamReasoningBuffer.setLength(0)
+        val cur = liveEntries.toMutableList()
+        val idx = cur.indexOfLast { it.kind == "reasoning" && it.running }
+        if (idx >= 0) cur[idx] = cur[idx].copy(text = cur[idx].text + add)
+        else cur += dev.myco.android.ui.TimelineEntry(kind = "reasoning", text = add, running = true)
+        liveEntries = cur
+    }
+
+    fun flushTextBuffer() {
+        if (streamTextBuffer.isEmpty()) return
+        streaming = (streaming ?: "") + streamTextBuffer.toString()
+        streamTextBuffer.setLength(0)
+    }
+
+    fun flushStreamBuffers() {
+        flushReasoningBuffer()
+        flushTextBuffer()
+    }
     var optimisticUser by remember { mutableStateOf<String?>(null) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -616,30 +641,33 @@ private fun ChatScreen(
         bridge.events.collect { e ->
             when (e) {
                 is BridgeEvent.ReasoningDelta -> if (e.sessionId == sessionId) {
-                    val cur = liveEntries.toMutableList()
-                    val idx = cur.indexOfLast { it.kind == "reasoning" && it.running }
-                    if (idx >= 0) cur[idx] = cur[idx].copy(text = cur[idx].text + e.text)
-                    else cur += dev.myco.android.ui.TimelineEntry(kind = "reasoning", text = e.text, running = true)
-                    liveEntries = cur
+                    streamReasoningBuffer.append(e.text)
                 }
                 is BridgeEvent.AssistantDelta -> if (e.sessionId == sessionId) {
-                    if (streaming == null) {
+                    if (streaming == null && streamTextBuffer.isEmpty()) {
+                        flushReasoningBuffer()
                         liveEntries = liveEntries.map { if (it.kind == "reasoning") it.copy(running = false) else it }
                     }
-                    streaming = (streaming ?: "") + e.text
+                    streamTextBuffer.append(e.text)
                 }
                 is BridgeEvent.AssistantDone -> if (e.sessionId == sessionId) {
+                    flushStreamBuffers()
                     streaming = null
                     streamingReasoning = null
                     liveEntries = emptyList()
+                    streamTextBuffer.setLength(0)
+                    streamReasoningBuffer.setLength(0)
                     optimisticUser = null
                     reload()
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
+                    streamTextBuffer.setLength(0)
+                    streamReasoningBuffer.setLength(0)
                     error = "${e.code}: ${e.message}"; streaming = null; streamingReasoning = null; liveEntries = emptyList()
                 }
                 is BridgeEvent.SessionUpdated -> Unit
                 is BridgeEvent.ToolStarted -> if (e.sessionId == sessionId) {
+                    flushStreamBuffers()
                     liveEntries = liveEntries.map { if (it.kind == "reasoning") it.copy(running = false) else it }
                     val cur = liveEntries.toMutableList()
                     val pending = streaming
@@ -662,14 +690,25 @@ private fun ChatScreen(
         }
     }
 
+    LaunchedEffect(sessionId) {
+        while (true) {
+            kotlinx.coroutines.delay(50)
+            flushReasoningBuffer()
+            flushTextBuffer()
+        }
+    }
+
     fun send() {
         val text = input.trim()
         if ((text.isEmpty() && pending.isEmpty()) || streaming != null) return
         val outgoing = pending
         input = ""; pending = emptyList(); error = null
         optimisticUser = text.ifBlank { outgoing.joinToString(" ") { it.name } }
+        followBottom = true
         liveEntries = emptyList()
         streaming = null
+        streamTextBuffer.setLength(0)
+        streamReasoningBuffer.setLength(0)
         scope.launch {
             val r = bridge.send(
                 Command.ChatSend(
@@ -695,9 +734,12 @@ private fun ChatScreen(
         error = null
         // 重生成立刻把视图切到分叉点（父节点），不把旧分支内容留在新回答下面
         loadingFork = true
+        followBottom = true
         activeLeaf = message.parentId
         liveEntries = emptyList()
         streaming = null
+        streamTextBuffer.setLength(0)
+        streamReasoningBuffer.setLength(0)
         scope.launch {
             val r = bridge.send(Command.ChatRegenerate(sessionId, id))
             if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
@@ -712,6 +754,8 @@ private fun ChatScreen(
         activeLeaf = message.parentId
         liveEntries = emptyList()
         streaming = null
+        streamTextBuffer.setLength(0)
+        streamReasoningBuffer.setLength(0)
         scope.launch {
             val r = bridge.send(Command.ChatEditResend(sessionId, id, newText))
             if (r is CommandResult.Err) {
@@ -754,16 +798,27 @@ private fun ChatScreen(
             val atBottom by remember {
                 androidx.compose.runtime.derivedStateOf {
                     val info = listState.layoutInfo
-                    val last = info.visibleItemsInfo.lastOrNull()
-                    last == null || last.index >= info.totalItemsCount - 2
+                    val last = info.visibleItemsInfo.lastOrNull() ?: return@derivedStateOf true
+                    last.index >= info.totalItemsCount - 1 &&
+                        last.offset + last.size <= info.viewportEndOffset + 4
                 }
             }
             val display = if (optimisticUser == null) content else content.copy(
                 messages = content.messages + dev.myco.android.ui.model.ChatMessageUi("user", optimisticUser!!)
             )
-            // 只在"新消息/新回合开始"时自动滚动；流式增量不强制滚动，避免抢用户手势
-            LaunchedEffect(display.messages.size, streaming != null) {
-                if (atBottom && !listState.isScrollInProgress) scrollToLatest()
+            // 跟随底部：用户在底部时才跟随流式；用户往上拖就停止跟随，不被抢窗口
+            LaunchedEffect(listState) {
+                androidx.compose.runtime.snapshotFlow { listState.isScrollInProgress to atBottom }
+                    .collect { (scrolling, bottom) ->
+                        if (!scrolling && bottom) followBottom = true
+                        else if (scrolling && !bottom) followBottom = false
+                    }
+            }
+            LaunchedEffect(sessionId) {
+                while (true) {
+                    kotlinx.coroutines.delay(60)
+                    if (followBottom && !listState.isScrollInProgress) scrollToLatest()
+                }
             }
             dev.myco.android.ui.ChatMessages(
                 state = display,
@@ -791,9 +846,10 @@ private fun ChatScreen(
                     InlineError(error!!)
                 }
             }
-            if (!atBottom && (display.messages.isNotEmpty() || streaming != null)) {
+            if (!followBottom && (display.messages.isNotEmpty() || streaming != null)) {
                 Box(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m)) {
                     TextButton(onClick = {
+                        followBottom = true
                         scope.launch { scrollToLatest() }
                     }) { Text("↓ 回到最新") }
                 }
@@ -1809,6 +1865,10 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
+
 
 
 

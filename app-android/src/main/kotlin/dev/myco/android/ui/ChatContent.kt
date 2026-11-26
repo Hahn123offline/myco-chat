@@ -52,7 +52,13 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /** 解析后的聊天内容。 */
-data class SourceRef(val title: String, val url: String, val site: String? = null)
+data class SourceRef(
+    val title: String,
+    val url: String,
+    val site: String? = null,
+    val snippet: String? = null,
+    val date: String? = null,
+)
 
 data class TimelineEntry(
     val kind: String, // reasoning | tool | text
@@ -72,13 +78,20 @@ fun parseSources(raw: String): List<SourceRef> = runCatching {
         val o = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
         val url = o["url"]?.jsonPrimitive?.content ?: return@mapNotNull null
         val title = o["title"]?.jsonPrimitive?.content ?: url
-        SourceRef(title, url, o["site"]?.jsonPrimitive?.content)
+        SourceRef(
+            title = title,
+            url = url,
+            site = o["site"]?.jsonPrimitive?.content,
+            snippet = o["snippet"]?.jsonPrimitive?.content ?: o["summary"]?.jsonPrimitive?.content,
+            date = o["date"]?.jsonPrimitive?.content?.takeIf { it != "null" },
+        )
     }
 }.getOrDefault(emptyList())
 
 data class ChatContentState(
     val messages: List<ChatMessageUi> = emptyList(),
     val timelines: Map<Long, List<TimelineEntry>> = emptyMap(),
+    val turnSources: Map<Long, List<SourceRef>> = emptyMap(),
     val processes: Map<Long, ChatProcessUi> = emptyMap(),
     val metas: Map<Long, TurnMetaUi> = emptyMap(),
     val reasoning: Map<Long, String> = emptyMap(),
@@ -92,6 +105,7 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
     val messages = mutableListOf<ChatMessageUi>()
     val process = linkedMapOf<Long, MutableList<ToolStepUi>>()
     val timelines = linkedMapOf<Long, MutableList<TimelineEntry>>()
+    val turnSources = linkedMapOf<Long, MutableList<SourceRef>>()
     fun timeline(turn: Long) = timelines.getOrPut(turn) { mutableListOf() }
     val reasoning = linkedMapOf<Long, String>()
     val metas = linkedMapOf<Long, TurnMetaUi>()
@@ -154,6 +168,10 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
                 val ok = okRaw.equals("true", ignoreCase = true)
                 val text = data.str("text") ?: ""
                 val sources = if (name == "web_search") parseSources(text) else emptyList()
+                if (sources.isNotEmpty()) {
+                    val agg = turnSources.getOrPut(turn) { mutableListOf() }
+                    sources.forEach { s -> if (agg.none { it.url == s.url }) agg += s }
+                }
                 val idx = list.indexOfLast { it.name == name && it.ok == null }
                 if (idx >= 0) list[idx] = list[idx].copy(ok = ok, text = text)
                 else list += ToolStepUi(name, ok, text)
@@ -188,6 +206,7 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
     return ChatContentState(
         messages = withMarked,
         timelines = timelines.mapValues { (_, v) -> v.toList() },
+        turnSources = turnSources.mapValues { (_, v) -> v.toList() },
         processes = process.mapValues { (_, steps) -> ChatProcessUi(steps) },
         metas = metas,
         reasoning = reasoning,
@@ -525,6 +544,8 @@ fun ChatMessages(
                     )
                     val meta = turn?.let { state.metas[it] }
                     if (meta != null) Footer(meta)
+                    val sources = turn?.let { state.turnSources[it] }.orEmpty()
+                    if (sources.isNotEmpty()) SourcesSection(sources)
                 }
             }
         }
@@ -532,9 +553,47 @@ fun ChatMessages(
             item(key = "streaming") {
                 Column(Modifier.fillMaxWidth()) {
                     if (liveEntries.isNotEmpty()) {
-                        TimelineFold(entries = liveEntries, expanded = true, onToggle = {})
+                        TimelineFold(entries = liveEntries, expanded = true, onToggle = {}, live = true)
                     }
                     if (streamingText != null) MarkdownText(streamingText + " ▍")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SourcesSection(sources: List<SourceRef>) {
+    val uriHandler = LocalUriHandler.current
+    Column(Modifier.fillMaxWidth().padding(top = MycoSpacing.s), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("来源 · ${sources.size} 个网页", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        sources.forEachIndexed { i, s ->
+            Column(
+                Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                    .clickable { runCatching { uriHandler.openUri(s.url) } }
+                    .padding(horizontal = MycoSpacing.s, vertical = 6.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("${i + 1}. ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        listOfNotNull(s.site, s.date).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Text(s.title, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (!s.snippet.isNullOrBlank()) {
+                    Text(
+                        s.snippet,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -546,8 +605,19 @@ private fun TimelineFold(
     entries: List<TimelineEntry>,
     expanded: Boolean,
     onToggle: () -> Unit,
+    live: Boolean = false,
 ) {
     val toolCount = entries.count { it.kind == "tool" }
+    val expandedTools = remember { androidx.compose.runtime.mutableStateMapOf<Int, Boolean>() }
+    val runningTool = entries.any { it.kind == "tool" && it.running }
+    val runningReasoning = entries.any { it.kind == "reasoning" && it.running }
+    val header = when {
+        live && runningTool -> "正在使用工具…"
+        live && runningReasoning -> "正在思考…"
+        live -> "正在处理…"
+        toolCount > 0 -> "过程 · $toolCount 个工具"
+        else -> "思考过程"
+    }
     Column(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(MycoRadius.control))
@@ -559,13 +629,13 @@ private fun TimelineFold(
                 Text(if (expanded) "▾" else "▸", style = MaterialTheme.typography.bodyMedium)
             }
             Text(
-                if (toolCount > 0) "工具与思考 · $toolCount 个工具" else "思考过程",
+                header,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (expanded) {
-            entries.forEach { entry ->
+            entries.forEachIndexed { entryIndex, entry ->
                 when (entry.kind) {
                     "reasoning" -> {
                         if (entry.text.isNotBlank()) {
@@ -578,16 +648,26 @@ private fun TimelineFold(
                         }
                     }
                     "tool" -> {
-                        Text(
-                            "▸ ${entry.name} · " + when {
-                                entry.running -> "进行中…"
-                                entry.ok == false -> "失败"
-                                else -> "完成"
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (entry.ok == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
+                        val open = expandedTools[entryIndex] == true
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .clickable { expandedTools[entryIndex] = !open }
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                (if (open) "▾ " else "▸ ") + entry.name + " · " + when {
+                                    entry.running -> "进行中…"
+                                    entry.ok == false -> "失败"
+                                    else -> "完成"
+                                } + if (entry.sources.isNotEmpty()) " · 已阅读 ${entry.sources.size} 个网页" else "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (entry.ok == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        if (!open) {
+                            // 收起态只显示一行摘要，详情点击展开
+                        } else {
                         if (entry.args.isNotBlank() && entry.args != "{}") {
                             Text(
                                 "参数：${entry.args.take(300)}",
@@ -630,6 +710,7 @@ private fun TimelineFold(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(start = MycoSpacing.m),
                             )
+                        }
                         }
                     }
                     "text" -> {
@@ -754,6 +835,14 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
+
+
+
+
 
 
 
