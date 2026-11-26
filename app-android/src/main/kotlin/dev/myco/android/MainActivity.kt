@@ -411,6 +411,7 @@ private fun ChatScreen(
         lines = if (res is QueryResult.Ok) parseLines(res.data as? JsonArray) else emptyList()
         bridge.events.collect { e ->
             when (e) {
+                is BridgeEvent.ReasoningDelta -> Unit
                 is BridgeEvent.AssistantDelta -> if (e.sessionId == sessionId) {
                     streaming = (streaming ?: "") + e.text
                 }
@@ -1013,6 +1014,8 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
 
 
 

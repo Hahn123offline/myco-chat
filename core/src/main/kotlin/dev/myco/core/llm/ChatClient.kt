@@ -48,11 +48,20 @@ sealed class ChatChunk {
     /** 流式增量文本。 */
     data class Delta(val text: String) : ChatChunk()
 
+    /** 思考增量（reasoning_content / thinking_delta）；不进正文，但要落盘并可回传。 */
+    data class ReasoningDelta(val text: String) : ChatChunk()
+
     /** 模型要求调用工具（可能一轮里有多个）。 */
     data class ToolRequest(val id: String, val name: String, val arguments: JsonObject) : ChatChunk()
 
     /** 一轮结束；text 是完整文本（由客户端累积）。 */
-    data class Done(val text: String, val usage: Usage? = null, val model: String? = null) : ChatChunk()
+    data class Done(
+        val text: String,
+        val usage: Usage? = null,
+        val model: String? = null,
+        /** stop / length / tool_calls / content_filter / error … */
+        val finishReason: String? = null,
+    ) : ChatChunk()
 
     /** 可重试=true 表示网络/限流类，UI 可给"重试"。 */
     data class Failed(val message: String, val retriable: Boolean) : ChatChunk()

@@ -244,11 +244,18 @@ class InProcessBridge(
         }.getOrElse { return CommandResult.Err("ATTACHMENT_NOT_FOUND", it.message ?: "附件不可读") }
 
         val turn = history.count { it is SessionEvent.TurnStart }.toLong() + 1
+        val turnStartedAt = System.currentTimeMillis()
+        val turnNodeId = dev.myco.core.session.Ulid.newId()
+        val finalMessageId = dev.myco.core.session.Ulid.newId()
+        val userMessageId = dev.myco.core.session.Ulid.newId()
         sessions.append(cmd.sessionId, SessionEvent.TurnStart(data = SessionEvent.TurnStart.Data(turn)))
         sessions.append(
             cmd.sessionId,
             SessionEvent.UserMessage(
-                data = SessionEvent.UserMessage.Data(cmd.text, source = "human", attachments = cmd.attachments)
+                data = SessionEvent.UserMessage.Data(
+                    cmd.text, source = "human", attachments = cmd.attachments,
+                    messageId = userMessageId, turn = turn,
+                )
             )
         )
 
@@ -258,8 +265,12 @@ class InProcessBridge(
         var steps = 0
         var totalCost = 0.0
         var finished = false
-        // 当前这一步的文本（取消时只落这一段，避免和已落盘的中途消息重复）
+        var lastUsage: dev.myco.core.spec.Usage? = null
+        var lastFinishReason: String? = null
+        var lastReasoning: String? = null
+        // 当前这一步的文本/思考（取消时只落这一段，避免和已落盘的中途消息重复）
         val currentStep = StringBuilder()
+        val currentReasoning = StringBuilder()
         var messages = buildMessages(history) + ChatMessage("user", prepared.first, images = prepared.second)
 
         // 把"流式 + 工具循环"单独放一个 job：停止 = 取消它；runChat 自己不被取消，能正常收尾
@@ -267,6 +278,7 @@ class InProcessBridge(
             while (steps < MAX_TOOL_STEPS) {
                 steps++
                 currentStep.clear()
+                currentReasoning.clear()
                 val toolRequests = mutableListOf<ChatChunk.ToolRequest>()
                 client.stream(
                     ChatRequest(
@@ -280,40 +292,87 @@ class InProcessBridge(
                         is ChatChunk.Delta -> {
                             currentStep.append(chunk.text)
                             full.append(chunk.text)
-                            emit(cmd.sessionId) { seq -> BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text, seq) }
+                            emit(cmd.sessionId) { seq ->
+                                BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text, finalMessageId, seq)
+                            }
+                        }
+                        is ChatChunk.ReasoningDelta -> {
+                            currentReasoning.append(chunk.text)
+                            emit(cmd.sessionId) { seq ->
+                                BridgeEvent.ReasoningDelta(cmd.sessionId, turn, chunk.text, seq)
+                            }
                         }
                         is ChatChunk.ToolRequest -> toolRequests += chunk
-                        is ChatChunk.Done -> chunk.usage?.costUsd?.let { totalCost += it }
+                        is ChatChunk.Done -> {
+                            chunk.usage?.costUsd?.let { totalCost += it }
+                            lastUsage = chunk.usage
+                            lastFinishReason = chunk.finishReason
+                        }
                         is ChatChunk.Failed -> failed = chunk
                     }
                 }
                 if (failed != null) return@async
+                lastReasoning = currentReasoning.toString().ifEmpty { lastReasoning }
 
                 val stepText = currentStep.toString()
                 if (toolRequests.isEmpty()) {
-                    if (stepText.isNotEmpty()) {
+                    if (stepText.isNotEmpty() || !lastReasoning.isNullOrEmpty()) {
                         sessions.append(
                             cmd.sessionId,
                             SessionEvent.AssistantMessage(
-                                data = SessionEvent.AssistantMessage.Data(stepText, model.id, null)
+                                data = SessionEvent.AssistantMessage.Data(
+                                    text = stepText,
+                                    model = model.id,
+                                    usage = lastUsage,
+                                    turn = turn,
+                                    messageId = finalMessageId,
+                                    nodeId = turnNodeId,
+                                    version = 1,
+                                    finishReason = lastFinishReason ?: "stop",
+                                    reasoning = lastReasoning?.takeIf { it.isNotBlank() },
+                                )
                             )
                         )
                     }
+                    val status = when (lastFinishReason) {
+                        "length" -> "truncated"
+                        "content_filter" -> "error"
+                        else -> "ok"
+                    }
                     sessions.append(
                         cmd.sessionId,
-                        SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = steps, costUsd = totalCost))
+                        SessionEvent.TurnEnd(
+                            data = SessionEvent.TurnEnd.Data(
+                                turn = turn, steps = steps, costUsd = totalCost, status = status,
+                                durationMs = System.currentTimeMillis() - turnStartedAt, messageId = finalMessageId,
+                            )
+                        )
                     )
-                    emit(cmd.sessionId) { seq -> BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString(), seq = seq) }
+                    emit(cmd.sessionId) { seq ->
+                        BridgeEvent.AssistantDone(
+                            cmd.sessionId, turn, full.toString(), stopped = false,
+                            messageId = finalMessageId, finishReason = lastFinishReason, usage = lastUsage, seq = seq,
+                        )
+                    }
                     finished = true
                     return@async
                 }
 
                 // 这一轮是工具调用：先落 assistant 文本（若有），再逐个执行
-                if (stepText.isNotEmpty()) {
+                if (stepText.isNotEmpty() || !currentReasoning.isEmpty()) {
                     sessions.append(
                         cmd.sessionId,
                         SessionEvent.AssistantMessage(
-                            data = SessionEvent.AssistantMessage.Data(stepText, model.id, null)
+                            data = SessionEvent.AssistantMessage.Data(
+                                text = stepText,
+                                model = model.id,
+                                usage = lastUsage,
+                                turn = turn,
+                                messageId = dev.myco.core.session.Ulid.newId(),
+                                version = 1,
+                                finishReason = lastFinishReason ?: "tool_calls",
+                                reasoning = currentReasoning.toString().takeIf { it.isNotBlank() },
+                            )
                         )
                     )
                 }
@@ -322,7 +381,9 @@ class InProcessBridge(
                 for (tr in toolRequests) {
                     sessions.append(
                         cmd.sessionId,
-                        SessionEvent.ToolCall(data = SessionEvent.ToolCall.Data(tr.name, tr.arguments))
+                        SessionEvent.ToolCall(
+                            data = SessionEvent.ToolCall.Data(tr.name, tr.arguments, turn = turn)
+                        )
                     )
                     emit(cmd.sessionId) { seq -> BridgeEvent.ToolStarted(cmd.sessionId, turn, tr.name, seq) }
                     val result = tools.execute(tr.name, tr.arguments)
@@ -331,7 +392,9 @@ class InProcessBridge(
                     sessions.append(
                         cmd.sessionId,
                         SessionEvent.ToolResult(
-                            data = SessionEvent.ToolResult.Data(tr.name, ok, out, reason = if (ok) null else out)
+                            data = SessionEvent.ToolResult.Data(
+                                tr.name, ok, out, reason = if (ok) null else out, turn = turn,
+                            )
                         )
                     )
                     emit(cmd.sessionId) { seq -> BridgeEvent.ToolFinished(cmd.sessionId, turn, tr.name, ok, out, seq) }
@@ -348,38 +411,74 @@ class InProcessBridge(
             if (!collector.isCancelled) throw e
             // 用户点"停止"：把当前步已收到的部分文本按"已停止"落盘，turn 正常收尾
             val partial = currentStep.toString()
-            if (partial.isNotEmpty()) {
+            if (partial.isNotEmpty() || !currentReasoning.isEmpty()) {
                 sessions.append(
                     cmd.sessionId,
                     SessionEvent.AssistantMessage(
-                        data = SessionEvent.AssistantMessage.Data(partial, model.id, null)
+                        data = SessionEvent.AssistantMessage.Data(
+                            text = partial,
+                            model = model.id,
+                            turn = turn,
+                            messageId = finalMessageId,
+                            nodeId = turnNodeId,
+                            version = 1,
+                            finishReason = "stopped",
+                            reasoning = currentReasoning.toString().takeIf { it.isNotBlank() },
+                        )
                     )
                 )
             }
             sessions.append(
                 cmd.sessionId,
-                SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = 0, null))
+                SessionEvent.TurnEnd(
+                    data = SessionEvent.TurnEnd.Data(
+                        turn = turn, steps = 0, costUsd = totalCost, status = "stopped",
+                        durationMs = System.currentTimeMillis() - turnStartedAt, messageId = finalMessageId,
+                    )
+                )
             )
-            emit(cmd.sessionId) { seq -> BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString(), stopped = true, seq = seq) }
+            emit(cmd.sessionId) { seq ->
+                BridgeEvent.AssistantDone(
+                    cmd.sessionId, turn, full.toString(), stopped = true,
+                    messageId = finalMessageId, finishReason = "stopped", usage = lastUsage, seq = seq,
+                )
+            }
             return CommandResult.Ok(buildJsonObject {
                 put("turnId", turn); put("text", full.toString()); put("stopped", true)
+                put("messageId", finalMessageId)
             })
         } finally {
             activeTurns.remove(cmd.sessionId)
         }
 
         failed?.let {
+            sessions.append(
+                cmd.sessionId,
+                SessionEvent.TurnEnd(
+                    data = SessionEvent.TurnEnd.Data(
+                        turn = turn, steps = steps, costUsd = totalCost, status = "error",
+                        durationMs = System.currentTimeMillis() - turnStartedAt, messageId = finalMessageId,
+                    )
+                )
+            )
             emit(cmd.sessionId) { seq -> BridgeEvent.Failed("LLM_FAILED", it.message, it.retriable, cmd.sessionId, seq) }
             return CommandResult.Err("LLM_FAILED", it.message, it.retriable)
         }
         if (!finished) {
             sessions.append(
                 cmd.sessionId,
-                SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = steps, costUsd = totalCost))
+                SessionEvent.TurnEnd(
+                    data = SessionEvent.TurnEnd.Data(
+                        turn = turn, steps = steps, costUsd = totalCost, status = "error",
+                        durationMs = System.currentTimeMillis() - turnStartedAt, messageId = finalMessageId,
+                    )
+                )
             )
             return CommandResult.Err("MAX_STEPS", "工具调用超过 $MAX_TOOL_STEPS 步，已停止")
         }
-        return CommandResult.Ok(buildJsonObject { put("turnId", turn); put("text", full.toString()) })
+        return CommandResult.Ok(buildJsonObject {
+            put("turnId", turn); put("text", full.toString()); put("messageId", finalMessageId)
+        })
     }
 
     private fun buildMessages(history: List<SessionEvent>): List<ChatMessage> = history.mapNotNull { e ->
@@ -507,6 +606,8 @@ class InProcessBridge(
             is SessionEvent.TurnStart -> put("data", buildJsonObject { put("turn", e.data.turn) })
             is SessionEvent.UserMessage -> put("data", buildJsonObject {
                 put("text", e.data.text)
+                e.data.messageId?.let { put("messageId", it) }
+                e.data.turn?.let { put("turn", it) }
                 if (e.data.attachments.isNotEmpty()) {
                     put("attachments", dev.myco.core.spec.MycoJson.encodeToJsonElement(
                         kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.AttachmentRef.serializer()),
@@ -514,13 +615,34 @@ class InProcessBridge(
                     ))
                 }
             })
-            is SessionEvent.AssistantMessage -> put("data", buildJsonObject { put("text", e.data.text) })
-            is SessionEvent.ToolCall -> put("data", buildJsonObject { put("name", e.data.name); put("args", e.data.args) })
+            is SessionEvent.AssistantMessage -> put("data", buildJsonObject {
+                put("text", e.data.text)
+                e.data.model?.let { put("model", it) }
+                e.data.turn?.let { put("turn", it) }
+                e.data.messageId?.let { put("messageId", it) }
+                e.data.nodeId?.let { put("nodeId", it) }
+                put("version", e.data.version)
+                e.data.finishReason?.let { put("finishReason", it) }
+                e.data.reasoning?.let { put("reasoning", it) }
+                e.data.usage?.let { u ->
+                    put("usage", dev.myco.core.spec.MycoJson.encodeToJsonElement(dev.myco.core.spec.Usage.serializer(), u))
+                }
+            })
+            is SessionEvent.ToolCall -> put("data", buildJsonObject {
+                put("name", e.data.name); put("args", e.data.args)
+                e.data.turn?.let { put("turn", it) }
+            })
             is SessionEvent.ToolResult -> put("data", buildJsonObject {
                 put("name", e.data.name); put("ok", e.data.ok); put("text", e.data.text); put("reason", e.data.reason ?: "")
+                e.data.turn?.let { put("turn", it) }
             })
             is SessionEvent.SystemInject -> put("data", buildJsonObject { put("text", e.data.text) })
-            is SessionEvent.TurnEnd -> put("data", buildJsonObject { put("turn", e.data.turn); put("steps", e.data.steps) })
+            is SessionEvent.TurnEnd -> put("data", buildJsonObject {
+                put("turn", e.data.turn); put("steps", e.data.steps); put("status", e.data.status)
+                e.data.costUsd?.let { put("costUsd", it) }
+                e.data.durationMs?.let { put("durationMs", it) }
+                e.data.messageId?.let { put("messageId", it) }
+            })
         }
     }
 
@@ -531,10 +653,20 @@ class InProcessBridge(
             is BridgeEvent.AssistantDelta -> {
                 put("type", "assistant.delta")
                 put("turnId", e.turnId); put("text", e.text)
+                e.messageId?.let { put("messageId", it) }
+            }
+            is BridgeEvent.ReasoningDelta -> {
+                put("type", "reasoning.delta")
+                put("turnId", e.turnId); put("text", e.text)
             }
             is BridgeEvent.AssistantDone -> {
                 put("type", "assistant.done")
                 put("turnId", e.turnId); put("text", e.text); put("stopped", e.stopped)
+                e.messageId?.let { put("messageId", it) }
+                e.finishReason?.let { put("finishReason", it) }
+                e.usage?.let { u ->
+                    put("usage", dev.myco.core.spec.MycoJson.encodeToJsonElement(dev.myco.core.spec.Usage.serializer(), u))
+                }
             }
             is BridgeEvent.Failed -> {
                 put("type", "failed")

@@ -58,7 +58,7 @@ E:\11-15\tools\gradle-8.9\bin\gradle.bat -p . :app-android:assembleDebug
 
 CLI 命令：`doctor` / `sessions` / `new [title]` / `providers` / `discover <providerId>` / `chat <id> <text...>` /
 `demo [text...]` / `serve [port]`（http-sse Bridge）/ `provider-export <path>` / `provider-import <path>` / `init-local [baseUrl]`。
-测试：`:core:test` 67 条 + `:bridge-http:test` 7 条（共 74）。
+测试：`:core:test` 69 条 + `:bridge-http:test` 7 条（共 76）。
 
 ## 已验证（S0-a）
 
@@ -73,3 +73,4 @@ CLI 命令：`doctor` / `sessions` / `new [title]` / `providers` / `discover <pr
 - 无 GUI、无 Android、无 http-sse Bridge、无 memory、无主动性。
 - provider 写入无 revision 乐观锁；会话无 rename/delete。
 - GUI 契约已定（`specs/bridge.contract.md`），实现待 T5。
+

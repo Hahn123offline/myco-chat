@@ -83,6 +83,9 @@
           "properties": {
             "text": { "type": "string" },
             "source": { "type": "string", "enum": ["human", "agent", "memory", "tool", "env"] },
+            "messageId": { "type": "string" },
+            "nodeId": { "type": "string" },
+            "turn": { "type": "integer", "minimum": 0 },
             "attachments": {
               "type": "array",
               "items": {
@@ -117,7 +120,13 @@
           "properties": {
             "text": { "type": "string" },
             "model": { "type": "string" },
-            "usage": { "$ref": "#/$defs/usage" }
+            "usage": { "$ref": "#/$defs/usage" },
+            "turn": { "type": "integer", "minimum": 0 },
+            "messageId": { "type": "string" },
+            "nodeId": { "type": "string" },
+            "version": { "type": "integer", "minimum": 1 },
+            "finishReason": { "type": "string" },
+            "reasoning": { "type": "string" }
           }
         }
       }
@@ -136,7 +145,8 @@
           "required": ["name", "args"],
           "properties": {
             "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-            "args": { "type": "object" }
+            "args": { "type": "object" },
+            "turn": { "type": "integer", "minimum": 0 }
           }
         }
       }
@@ -157,7 +167,8 @@
             "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
             "ok": { "type": "boolean" },
             "text": { "type": "string" },
-            "reason": { "type": "string" }
+            "reason": { "type": "string" },
+            "turn": { "type": "integer", "minimum": 0 }
           }
         }
       }
@@ -193,8 +204,10 @@
           "properties": {
             "turn": { "type": "integer", "minimum": 0 },
             "steps": { "type": "integer", "minimum": 0 },
-            "costUsd": { "type": "number", "minimum": 0
-            }
+            "costUsd": { "type": "number", "minimum": 0 },
+            "status": { "type": "string", "enum": ["ok", "stopped", "error", "truncated"] },
+            "durationMs": { "type": "integer", "minimum": 0 },
+            "messageId": { "type": "string" }
           }
         }
       }

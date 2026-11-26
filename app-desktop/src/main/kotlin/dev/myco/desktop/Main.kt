@@ -309,6 +309,7 @@ private suspend fun chat(
         bridge.events.collect { e ->
             when (e) {
                 is BridgeEvent.AssistantDelta -> { print(e.text); System.out.flush() }
+                is BridgeEvent.ReasoningDelta -> Unit
                 is BridgeEvent.AssistantDone -> println("\n--- done (turn ${e.turnId}) ---")
                 is BridgeEvent.Failed -> println("\n[error] ${e.code}: ${e.message} (retriable=${e.retriable})")
                 is BridgeEvent.SessionUpdated -> Unit
@@ -373,4 +374,6 @@ private fun printHelp() {
 private fun usage(msg: String) {
     println("usage: $msg")
 }
+
+
 

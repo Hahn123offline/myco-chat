@@ -102,8 +102,10 @@ class AnthropicCompatibleClient(
     private suspend fun kotlinx.coroutines.channels.ProducerScope<ChatChunk>.parseStream(conn: HttpURLConnection) {
         val parser = SseParser()
         val full = StringBuilder()
+        val reasoning = StringBuilder()
         var usage: Usage? = null
         var model: String? = provider.model()?.id
+        var finishReason: String? = null
         var stopped = false
         val toolIds = LinkedHashMap<Int, String>()
         val toolNames = LinkedHashMap<Int, String>()
@@ -150,6 +152,12 @@ class AnthropicCompatibleClient(
                                     toolArgs.getOrPut(index) { StringBuilder() }.append(it)
                                 }
                             }
+                            "thinking_delta" -> {
+                                delta["thinking"]?.jsonPrimitive?.content?.let {
+                                    reasoning.append(it)
+                                    send(ChatChunk.ReasoningDelta(it))
+                                }
+                            }
                         }
                     }
                     "content_block_stop" -> {
@@ -164,6 +172,7 @@ class AnthropicCompatibleClient(
                         }
                     }
                     "message_delta" -> {
+                        obj["delta"]?.jsonObject?.get("stop_reason")?.jsonPrimitive?.content?.let { finishReason = it }
                         obj["usage"]?.jsonObject?.let { u ->
                             usage = (usage ?: Usage()).copy(
                                 outputTokens = u["output_tokens"]?.jsonPrimitive?.longOrNull ?: usage?.outputTokens ?: 0
@@ -179,7 +188,7 @@ class AnthropicCompatibleClient(
                 }
             }
         }
-        send(ChatChunk.Done(full.toString(), usage?.let { UsageCost.apply(it, provider.pricing) }, model))
+        send(ChatChunk.Done(full.toString(), usage?.let { UsageCost.apply(it, provider.pricing) }, model, finishReason))
     }
 
     private fun buildRequestBody(request: ChatRequest): String {

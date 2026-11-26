@@ -85,6 +85,15 @@ sealed class BridgeEvent {
         override val sessionId: String,
         val turnId: Long,
         val text: String,
+        val messageId: String? = null,
+        override val seq: Long = 0,
+    ) : BridgeEvent()
+
+    /** 思考增量（GUI 可折叠展示；不进正文）。 */
+    data class ReasoningDelta(
+        override val sessionId: String,
+        val turnId: Long,
+        val text: String,
         override val seq: Long = 0,
     ) : BridgeEvent()
 
@@ -93,6 +102,9 @@ sealed class BridgeEvent {
         val turnId: Long,
         val text: String,
         val stopped: Boolean = false,
+        val messageId: String? = null,
+        val finishReason: String? = null,
+        val usage: dev.myco.core.spec.Usage? = null,
         override val seq: Long = 0,
     ) : BridgeEvent()
 

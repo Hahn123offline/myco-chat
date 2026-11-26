@@ -149,6 +149,46 @@ class ToolCallParsingTest {
     )
 
     @Test
+    fun `openai parses reasoning_content and finish_reason`() = runBlocking {
+        val sse = buildString {
+            append("data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"先想\"}}]}\n\n")
+            append("data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"一下\"}}]}\n\n")
+            append("data: {\"choices\":[{\"delta\":{\"content\":\"答案\"},\"finish_reason\":\"stop\"}]}\n\n")
+            append("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n")
+            append("data: [DONE]\n\n")
+        }
+        CountingHttpServer { Pair(200, sse) }.use { srv ->
+            val chunks = OpenAiCompatibleClient(provider(srv.port, "openai-completions"), CredentialResolver(home(), emptyMap()))
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "hi")))).toList()
+            val reasoning = chunks.filterIsInstance<ChatChunk.ReasoningDelta>().joinToString("") { it.text }
+            assertEquals("先想一下", reasoning)
+            val done = chunks.filterIsInstance<ChatChunk.Done>().single()
+            assertEquals("答案", done.text)
+            assertEquals("stop", done.finishReason)
+        }
+    }
+
+    @Test
+    fun `anthropic parses thinking_delta and stop_reason`() = runBlocking {
+        val sse = buildString {
+            append("event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\"}}\n\n")
+            append("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"思考\"}}\n\n")
+            append("event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n")
+            append("event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":2}}\n\n")
+            append("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
+        }
+        CountingHttpServer { Pair(200, sse) }.use { srv ->
+            val h = home()
+            val cred = CredentialResolver(h, emptyMap())
+            cred.set("TEST_KEY", "sk-test")
+            val chunks = AnthropicCompatibleClient(anthropicProvider(srv.port), cred)
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "hi")))).toList()
+            assertEquals("思考", chunks.filterIsInstance<ChatChunk.ReasoningDelta>().single().text)
+            assertEquals("end_turn", chunks.filterIsInstance<ChatChunk.Done>().single().finishReason)
+        }
+    }
+
+    @Test
     fun `openai accumulates tool_call arguments across deltas`() = runBlocking {
         val sse = buildString {
             append("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"function\":{\"name\":\"time_now\",\"arguments\":\"{\\\"a\\\"\"}}]}}]}\n\n")

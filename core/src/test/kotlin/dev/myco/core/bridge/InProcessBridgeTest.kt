@@ -78,6 +78,21 @@ class InProcessBridgeTest {
         )
         val assistant = events.filterIsInstance<SessionEvent.AssistantMessage>().single()
         assertTrue(assistant.data.text.contains("在吗"))
+        assertTrue(assistant.data.messageId != null)
+        assertTrue(assistant.data.nodeId != null)
+        assertEquals(1, assistant.data.version)
+        assertEquals("stop", assistant.data.finishReason)
+        assertTrue(assistant.data.usage != null)
+        val end = events.filterIsInstance<SessionEvent.TurnEnd>().single()
+        assertEquals("ok", end.data.status)
+        assertEquals(assistant.data.messageId, end.data.messageId)
+        assertTrue((end.data.durationMs ?: -1) >= 0)
+        assertTrue((end.data.costUsd ?: 0.0) >= 0.0)
+        // 回放 JSON 不丢 costUsd/messageId（B1 要求）
+        val replay = f.bridge.query(Query.SessionEvents(meta.id, 0)) as QueryResult.Ok
+        val replayText = replay.data.toString()
+        assertTrue(replayText.contains("\"status\":\"ok\""))
+        assertTrue(replayText.contains("\"messageId\":"))
     }
 
     @Test
@@ -163,6 +178,9 @@ class InProcessBridgeTest {
         assertTrue(assistant.data.text.isNotEmpty())
         val end = events.filterIsInstance<SessionEvent.TurnEnd>().single()
         assertEquals(0, end.data.steps)
+        assertEquals("stopped", end.data.status)
+        assertEquals("stopped", assistant.data.finishReason)
+        assertEquals(assistant.data.messageId, end.data.messageId)
         // 再发一轮应能正常走（没有卡死的 job）
         val again = f.bridge.send(Command.ChatSend(meta.id, "还在吗"))
         assertTrue(again is CommandResult.Ok)

@@ -233,6 +233,13 @@ class HttpBridgeClient(
                 sid,
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["text"]?.jsonPrimitive?.content ?: "",
+                messageId = o["messageId"]?.jsonPrimitive?.content,
+                seq = seq,
+            )
+            "reasoning.delta" -> BridgeEvent.ReasoningDelta(
+                sid,
+                o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
+                o["text"]?.jsonPrimitive?.content ?: "",
                 seq,
             )
             "assistant.done" -> BridgeEvent.AssistantDone(
@@ -240,6 +247,8 @@ class HttpBridgeClient(
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["text"]?.jsonPrimitive?.content ?: "",
                 stopped = o["stopped"]?.jsonPrimitive?.content == "true",
+                messageId = o["messageId"]?.jsonPrimitive?.content,
+                finishReason = o["finishReason"]?.jsonPrimitive?.content,
                 seq = seq,
             )
             "failed" -> BridgeEvent.Failed(

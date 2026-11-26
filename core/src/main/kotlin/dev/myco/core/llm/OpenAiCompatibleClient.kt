@@ -104,8 +104,10 @@ class OpenAiCompatibleClient(
     private suspend fun kotlinx.coroutines.channels.ProducerScope<ChatChunk>.parseStream(conn: HttpURLConnection) {
         val parser = SseParser()
         val full = StringBuilder()
+        val reasoning = StringBuilder()
         var usage: Usage? = null
         var model: String? = provider.model()?.id
+        var finishReason: String? = null
         val toolIds = LinkedHashMap<Int, String>()
         val toolNames = LinkedHashMap<Int, String>()
         val toolArgs = LinkedHashMap<Int, StringBuilder>()
@@ -125,6 +127,13 @@ class OpenAiCompatibleClient(
                     )
                 }
                 val delta = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject?.get("delta")?.jsonObject
+                obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject?.get("finish_reason")
+                    ?.jsonPrimitive?.contentOrNull?.let { finishReason = it }
+                val reasoningPart = delta?.get("reasoning_content")?.jsonPrimitive?.contentOrNull
+                if (!reasoningPart.isNullOrEmpty()) {
+                    reasoning.append(reasoningPart)
+                    send(ChatChunk.ReasoningDelta(reasoningPart))
+                }
                 val content = delta?.get("content")?.jsonPrimitive?.contentOrNull
                 if (!content.isNullOrEmpty()) {
                     full.append(content)
@@ -163,7 +172,7 @@ class OpenAiCompatibleClient(
                 if (!content.isNullOrEmpty()) { full.append(content); send(ChatChunk.Delta(content)) }
             }
         }
-        send(ChatChunk.Done(full.toString(), usage?.let { UsageCost.apply(it, provider.pricing) }, model))
+        send(ChatChunk.Done(full.toString(), usage?.let { UsageCost.apply(it, provider.pricing) }, model, finishReason))
     }
 
     private fun buildRequestBody(request: ChatRequest): String = buildJsonObject {

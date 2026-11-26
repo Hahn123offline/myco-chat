@@ -235,11 +235,12 @@ class HttpBridgeServer(
 
     private fun eventSessionId(e: BridgeEvent): String? = when (e) {
         is BridgeEvent.AssistantDelta -> e.sessionId
+        is BridgeEvent.ReasoningDelta -> e.sessionId
         is BridgeEvent.AssistantDone -> e.sessionId
         is BridgeEvent.SessionUpdated -> e.sessionId
         is BridgeEvent.ToolStarted -> e.sessionId
         is BridgeEvent.ToolFinished -> e.sessionId
-        is BridgeEvent.Failed -> null
+        is BridgeEvent.Failed -> e.sessionId
     }
 
     private fun eventJson(e: BridgeEvent): String = buildJsonObject {
@@ -248,10 +249,19 @@ class HttpBridgeServer(
         when (e) {
             is BridgeEvent.AssistantDelta -> {
                 put("type", "assistant.delta"); put("turnId", e.turnId); put("text", e.text)
+                e.messageId?.let { put("messageId", it) }
+            }
+            is BridgeEvent.ReasoningDelta -> {
+                put("type", "reasoning.delta"); put("turnId", e.turnId); put("text", e.text)
             }
             is BridgeEvent.AssistantDone -> {
                 put("type", "assistant.done"); put("turnId", e.turnId)
                 put("text", e.text); put("stopped", e.stopped)
+                e.messageId?.let { put("messageId", it) }
+                e.finishReason?.let { put("finishReason", it) }
+                e.usage?.let { u ->
+                    put("usage", dev.myco.core.spec.MycoJson.encodeToJsonElement(dev.myco.core.spec.Usage.serializer(), u))
+                }
             }
             is BridgeEvent.Failed -> {
                 put("type", "failed"); put("code", e.code); put("message", e.message); put("retriable", e.retriable)

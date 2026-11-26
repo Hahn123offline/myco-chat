@@ -55,6 +55,11 @@ sealed class SessionEvent {
             val text: String,
             val source: String? = null,
             val attachments: List<dev.myco.core.spec.AttachmentRef> = emptyList(),
+            /** 消息 id（同节点下的用户消息；编辑重发时需要锚点）。 */
+            val messageId: String? = null,
+            /** 版本链节点 id（同一问题的多次生成共享 nodeId，不同 version）。 */
+            val nodeId: String? = null,
+            val turn: Long? = null,
         )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
@@ -69,7 +74,21 @@ sealed class SessionEvent {
         val data: Data,
     ) : SessionEvent() {
         @Serializable
-        data class Data(val text: String, val model: String? = null, val usage: Usage? = null)
+        data class Data(
+            val text: String,
+            val model: String? = null,
+            val usage: Usage? = null,
+            val turn: Long? = null,
+            /** 这一版消息的唯一 id（重新生成会新增 messageId/version）。 */
+            val messageId: String? = null,
+            /** 版本链节点；同一 nodeId 下多个 version 互为重生成版本。 */
+            val nodeId: String? = null,
+            val version: Int = 1,
+            /** stop / length / tool_calls / content_filter / error …（provider 原始或归一化） */
+            val finishReason: String? = null,
+            /** 思考内容（DeepSeek reasoning_content / Anthropic thinking）；带 tools 时需原样回传 */
+            val reasoning: String? = null,
+        )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
         override fun withAt(at: Long) = copy(at = at)
@@ -83,7 +102,11 @@ sealed class SessionEvent {
         val data: Data,
     ) : SessionEvent() {
         @Serializable
-        data class Data(val name: String, val args: JsonObject = JsonObject(emptyMap()))
+        data class Data(
+            val name: String,
+            val args: JsonObject = JsonObject(emptyMap()),
+            val turn: Long? = null,
+        )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
         override fun withAt(at: Long) = copy(at = at)
@@ -97,7 +120,13 @@ sealed class SessionEvent {
         val data: Data,
     ) : SessionEvent() {
         @Serializable
-        data class Data(val name: String, val ok: Boolean, val text: String, val reason: String? = null)
+        data class Data(
+            val name: String,
+            val ok: Boolean,
+            val text: String,
+            val reason: String? = null,
+            val turn: Long? = null,
+        )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
         override fun withAt(at: Long) = copy(at = at)
@@ -125,7 +154,16 @@ sealed class SessionEvent {
         val data: Data,
     ) : SessionEvent() {
         @Serializable
-        data class Data(val turn: Long, val steps: Int, val costUsd: Double? = null)
+        data class Data(
+            val turn: Long,
+            val steps: Int,
+            val costUsd: Double? = null,
+            /** ok | stopped | error | truncated */
+            val status: String = "ok",
+            val durationMs: Long? = null,
+            /** 最终 assistant 消息 id（本轮的主回复；工具步骤消息另有 id）。 */
+            val messageId: String? = null,
+        )
 
         override fun withSeq(seq: Long) = copy(seq = seq)
         override fun withAt(at: Long) = copy(at = at)
