@@ -162,6 +162,7 @@ class MainActivity : ComponentActivity() {
                             mode = it
                             ThemePrefs.save(applicationContext, it)
                         },
+                        m5Ui = remember { intent?.getBooleanExtra("m5_chat_ui", false) == true },
                     )
                 }
             }
@@ -214,7 +215,7 @@ private fun SessionRow.toUi(): dev.myco.android.ui.model.SessionItemUi {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
+private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit, m5Ui: Boolean = false) {
     val bridge = BridgeHolder.bridge
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -419,6 +420,7 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                             onSwipeOpenDrawer = if (wide || screen !is Screen.Chat) null
                                 else ({ scope.launch { drawerState.open() } }),
                             scroll = chatScroll,
+                            m5Ui = m5Ui,
                         )
                     }
                 }
@@ -687,6 +689,7 @@ private fun ChatScreen(
     onMenu: (() -> Unit)?,
     onSwipeOpenDrawer: (() -> Unit)? = null,
     scroll: ChatScrollState,
+    m5Ui: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
     var content by remember { mutableStateOf(dev.myco.android.ui.ChatContentState()) }
@@ -1016,23 +1019,35 @@ private fun ChatScreen(
     }
 
     Scaffold(
-        topBar = { MycoTopBar(title = title, onMenu = onMenu) },
+        topBar = {
+            if (m5Ui) {
+                dev.myco.android.ui.m5.M5ChatTopBarReal(
+                    title = title,
+                    subtitle = providersUi.firstOrNull { it.id == selProviderId }?.displayName ?: "DeepSeek",
+                    onMenu = onMenu,
+                )
+            } else {
+                MycoTopBar(title = title, onMenu = onMenu)
+            }
+        },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
             val currentProvider = providersUi.firstOrNull { it.id == selProviderId }
             val currentModel = currentProvider?.models?.firstOrNull { it.id == selModelId }
             val modelLabel = currentModel?.name?.takeIf { it.isNotBlank() } ?: currentModel?.id ?: "默认"
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.l, vertical = MycoSpacing.xs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = { showModelPicker = true }) { Text("模型 · $modelLabel") }
-                if (selReasoningLevel != null) {
-                    Text(
-                        "思考 · $selReasoningLevel",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            if (!m5Ui) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.l, vertical = MycoSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = { showModelPicker = true }) { Text("模型 · $modelLabel") }
+                    if (selReasoningLevel != null) {
+                        Text(
+                            "思考 · $selReasoningLevel",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
             val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -1100,33 +1115,61 @@ private fun ChatScreen(
                     }
                 }
             }
-            dev.myco.android.ui.ChatMessages(
-                state = display,
-                listState = listState,
-                streamingText = streaming,
-                liveEntries = liveEntries,
-                onCopy = { text ->
-                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(text))
-                    android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
-                },
-                onRegenerate = { regenerate(it) },
-                onUserLongPress = { userMenuTarget = it },
-                initialVersions = initialVersions,
-                onVersionSelected = { nodeId, version ->
-                    chatPrefs.edit().putInt("v_$nodeId", version).apply()
-                },
-                initialActiveLeaf = activeLeaf,
-                onActiveLeafChanged = { leaf ->
-                    activeLeaf = leaf
-                    scope.launch { bridge.send(Command.SessionSetActiveLeaf(sessionId, leaf)) }
-                },
-                autoExpandTurn = streamingTurn,
-                modifier = Modifier.weight(1f).fillMaxWidth()
-                    .swipeRightToOpenDrawer(
-                        enabled = onSwipeOpenDrawer != null,
-                        onOpen = { onSwipeOpenDrawer?.invoke() },
-                    ),
-            )
+            val listModifier = Modifier.weight(1f).fillMaxWidth()
+                .swipeRightToOpenDrawer(
+                    enabled = onSwipeOpenDrawer != null,
+                    onOpen = { onSwipeOpenDrawer?.invoke() },
+                )
+            if (m5Ui) {
+                dev.myco.android.ui.m5.ChatMessagesM5(
+                    state = display,
+                    listState = listState,
+                    streamingText = streaming,
+                    streamingReasoning = streamingReasoning,
+                    onCopy = { text ->
+                        clipboard.setText(androidx.compose.ui.text.AnnotatedString(text))
+                        android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onRegenerate = { regenerate(it) },
+                    onUserLongPress = { userMenuTarget = it },
+                    initialVersions = initialVersions,
+                    onVersionSelected = { nodeId, version ->
+                        chatPrefs.edit().putInt("v_$nodeId", version).apply()
+                    },
+                    initialActiveLeaf = activeLeaf,
+                    onActiveLeafChanged = { leaf ->
+                        activeLeaf = leaf
+                        scope.launch { bridge.send(Command.SessionSetActiveLeaf(sessionId, leaf)) }
+                    },
+                    liveEntries = liveEntries,
+                    autoExpandTurn = streamingTurn,
+                    modifier = listModifier,
+                )
+            } else {
+                dev.myco.android.ui.ChatMessages(
+                    state = display,
+                    listState = listState,
+                    streamingText = streaming,
+                    liveEntries = liveEntries,
+                    onCopy = { text ->
+                        clipboard.setText(androidx.compose.ui.text.AnnotatedString(text))
+                        android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onRegenerate = { regenerate(it) },
+                    onUserLongPress = { userMenuTarget = it },
+                    initialVersions = initialVersions,
+                    onVersionSelected = { nodeId, version ->
+                        chatPrefs.edit().putInt("v_$nodeId", version).apply()
+                    },
+                    initialActiveLeaf = activeLeaf,
+                    onActiveLeafChanged = { leaf ->
+                        activeLeaf = leaf
+                        scope.launch { bridge.send(Command.SessionSetActiveLeaf(sessionId, leaf)) }
+                    },
+                    autoExpandTurn = streamingTurn,
+                    modifier = listModifier,
+                )
+            }
             if (error != null) {
                 Box(Modifier.padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.xs)) {
                     InlineError(error!!)
@@ -1159,27 +1202,45 @@ private fun ChatScreen(
                     TextButton(onClick = { pending = emptyList() }) { Text("清空") }
                 }
             }
-            Box(Modifier.padding(MycoSpacing.m)) {
-                ChatComposer(
+            if (m5Ui) {
+                dev.myco.android.ui.m5.M5Composer(
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
                     value = input,
                     onValueChange = { input = it },
                     onSend = { send() },
-                    onStop = { scope.launch { bridge.send(Command.ChatStop(sessionId)) } },
                     streaming = streaming != null,
-                    enabled = input.isNotBlank() || pending.isNotEmpty(),
-                    onAttach = { showAttachSheet = true },
-                    onVoice = { pickAudio.launch(arrayOf("audio/*")) },
+                    onStop = { scope.launch { bridge.send(Command.ChatStop(sessionId)) } },
+                    modelLabel = modelLabel,
                     thinking = thinking,
+                    onAttach = { showAttachSheet = true },
                     onToggleThinking = {
                         thinking = !thinking
                         chatPrefs.edit().putBoolean("thinking", thinking).apply()
                     },
-                    webSearch = webSearch,
-                    onToggleWebSearch = {
-                        webSearch = !webSearch
-                        chatPrefs.edit().putBoolean("webSearch", webSearch).apply()
-                    },
                 )
+            } else {
+                Box(Modifier.padding(MycoSpacing.m)) {
+                    ChatComposer(
+                        value = input,
+                        onValueChange = { input = it },
+                        onSend = { send() },
+                        onStop = { scope.launch { bridge.send(Command.ChatStop(sessionId)) } },
+                        streaming = streaming != null,
+                        enabled = input.isNotBlank() || pending.isNotEmpty(),
+                        onAttach = { showAttachSheet = true },
+                        onVoice = { pickAudio.launch(arrayOf("audio/*")) },
+                        thinking = thinking,
+                        onToggleThinking = {
+                            thinking = !thinking
+                            chatPrefs.edit().putBoolean("thinking", thinking).apply()
+                        },
+                        webSearch = webSearch,
+                        onToggleWebSearch = {
+                            webSearch = !webSearch
+                            chatPrefs.edit().putBoolean("webSearch", webSearch).apply()
+                        },
+                    )
+                }
             }
         }
     }

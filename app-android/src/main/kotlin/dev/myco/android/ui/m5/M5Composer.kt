@@ -40,6 +40,8 @@ fun M5Composer(
     thinking: Boolean = true,
     onAttach: (() -> Unit)? = null,
     onToggleThinking: (() -> Unit)? = null,
+    streaming: Boolean = false,
+    onStop: (() -> Unit)? = null,
 ) {
     val p = LocalM5.current.palette
     GlassSurface(
@@ -109,10 +111,18 @@ fun M5Composer(
                 Spacer(Modifier.weight(1f))
                 NeoSurface(
                     modifier = Modifier.size(32.dp),
-                    onClick = onSend,
+                    onClick = if (streaming) (onStop ?: onSend) else onSend,
                     radius = 16.dp,
                     fill = p.moss,
-                ) { Box(Modifier.fillMaxSize(), Alignment.Center) { M5Icon(M5Icons.send, Modifier.size(16.dp), Color(0xFF1B1B16)) } }
+                ) {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        M5Icon(
+                            if (streaming) M5Icons.stop else M5Icons.send,
+                            Modifier.size(16.dp),
+                            Color(0xFF1B1B16),
+                        )
+                    }
+                }
             }
         }
     }

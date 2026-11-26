@@ -1,0 +1,366 @@
+package dev.myco.android.ui.m5
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import dev.myco.android.ui.ChatContentState
+import dev.myco.android.ui.MarkdownText
+import dev.myco.android.ui.TimelineEntry
+import dev.myco.android.ui.model.ChatMessageUi
+import dev.myco.android.ui.model.TurnMetaUi
+import dev.myco.android.ui.resolveVisibleMessages
+import dev.myco.android.ui.userVersionGroups
+
+/** 真实聊天页的 M5 顶栏：玻璃浮条（菜单 + 标题/状态）。 */
+@Composable
+fun M5ChatTopBarReal(title: String, subtitle: String, onMenu: (() -> Unit)?) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    M5Theme(dark) {
+        val p = LocalM5.current.palette
+        Row(
+            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            NeoSurface(
+                modifier = Modifier.size(36.dp),
+                radius = 18.dp,
+                material = NeoMaterial.Raised,
+                onClick = onMenu ?: {},
+            ) {
+                Box(Modifier.fillMaxSize(), Alignment.Center) {
+                    M5Icon(M5Icons.menu, Modifier.size(17.dp), p.text)
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = M5Type.title, color = p.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, style = M5Type.caption, color = p.textTertiary)
+            }
+        }
+    }
+}
+
+/**
+ * 真实数据的 M5 聊天列表（与 ChatMessages 同签名，可整块切换）。
+ *
+ * 已接：会话树可见路径、用户分支切换、思考过程组（文字点击）、Markdown 正文、meta、流式。
+ * **暂未接（设计缺口，不静默）**：
+ * 1. 单条消息操作（复制/重新生成）与用户长按菜单的 M5 视觉还没做；
+ * 2. 过程组没有内层滚动隔离/分组折叠，长 reasoning 会整段展开；
+ * 3. Markdown 代码块/表格仍走 M1 颜色；
+ * 4. 分支切换没有锚点修正（沿用旧实现）。
+ */
+@Composable
+fun ChatMessagesM5(
+    state: ChatContentState,
+    listState: LazyListState,
+    streamingText: String?,
+    streamingReasoning: String? = null,
+    onCopy: (String) -> Unit,
+    onRegenerate: (ChatMessageUi) -> Unit,
+    onUserLongPress: (ChatMessageUi) -> Unit = {},
+    initialVersions: Map<String, Int> = emptyMap(),
+    onVersionSelected: (nodeId: String, version: Int) -> Unit = { _, _ -> },
+    initialActiveLeaf: String? = null,
+    onActiveLeafChanged: (leafId: String?) -> Unit = {},
+    liveEntries: List<TimelineEntry> = emptyList(),
+    autoExpandTurn: Long? = null,
+    modifier: Modifier = Modifier,
+) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    M5Theme(dark) {
+        val p = LocalM5.current.palette
+        var activeLeaf by remember { mutableStateOf(initialActiveLeaf) }
+        LaunchedEffect(initialActiveLeaf) {
+            if (initialActiveLeaf != null && initialActiveLeaf != activeLeaf) activeLeaf = initialActiveLeaf
+        }
+        val allMessages = state.messages
+        val resolved = remember(state.messages, activeLeaf) {
+            resolveVisibleMessages(state.messages, activeLeaf)
+        }
+        val userVersions = remember(state.messages) { userVersionGroups(state.messages) }
+        val expandedProcess = remember { mutableStateMapOf<Long, Boolean>() }
+        LaunchedEffect(autoExpandTurn) {
+            if (autoExpandTurn != null) expandedProcess[autoExpandTurn] = true
+        }
+
+        fun deepestLeaf(startId: String): String {
+            var cursor = startId
+            val seen = mutableSetOf<String>()
+            while (seen.add(cursor)) {
+                val child = allMessages.lastOrNull { it.parentId == cursor && it.messageId != null } ?: return cursor
+                cursor = child.messageId ?: return cursor
+            }
+            return cursor
+        }
+
+        LazyColumn(
+            state = listState,
+            modifier = modifier,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            val renderedTurns = mutableSetOf<Long>()
+            resolved.messages.forEachIndexed { index, msg ->
+                if (msg.role == "user") {
+                    val siblings = msg.messageId?.let { userVersions[it] }.orEmpty()
+                    item(key = "u-$index-${msg.messageId ?: ""}") {
+                        Column(Modifier.fillMaxWidth()) {
+                            UserBubbleM5(msg.text) { onUserLongPress(msg) }
+                            if (siblings.size > 1) {
+                                UserBranchBarM5(
+                                    versions = siblings,
+                                    active = msg,
+                                    onSwitch = { target ->
+                                        val leaf = target.messageId?.let { deepestLeaf(it) }
+                                        if (leaf != null) {
+                                            activeLeaf = leaf
+                                            onActiveLeafChanged(leaf)
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    return@forEachIndexed
+                }
+                val turn = msg.turn
+                val entries = turn?.let { state.timelines[it] }.orEmpty()
+                if (entries.isNotEmpty() && turn != null && renderedTurns.add(turn)) {
+                    item(key = "th-$index-$turn") {
+                        ThinkingHeaderM5(
+                            entries = entries,
+                            expanded = expandedProcess[turn] ?: false,
+                            onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
+                        )
+                    }
+                    if (expandedProcess[turn] == true) {
+                        item(key = "tb-$index-$turn") {
+                            Column(
+                                Modifier.fillMaxWidth().padding(start = 20.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp),
+                            ) {
+                                entries.forEach { e -> ThinkingLineM5(e) }
+                            }
+                        }
+                    }
+                }
+                item(key = "a-$index-${msg.messageId ?: ""}") {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        MarkdownText(msg.text)
+                        val meta = turn?.let { state.metas[it] }
+                        if (meta != null) MetaLineM5(meta)
+                    }
+                }
+            }
+            if (streamingText != null) {
+                item(key = "stream") { StreamingTextM5(streamingText) }
+            }
+            if (liveEntries.isNotEmpty()) {
+                item(key = "live") {
+                    Column(Modifier.fillMaxWidth()) {
+                        Text(
+                            "正在思考…",
+                            style = M5Type.caption,
+                            color = p.textSecondary,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                        Column(
+                            Modifier.fillMaxWidth().padding(start = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                        ) {
+                            liveEntries.forEach { e -> ThinkingLineM5(e) }
+                        }
+                    }
+                }
+            }
+            item(key = "tail") { Spacer(Modifier.size(2.dp)) }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun UserBubbleM5(text: String, onLongPress: () -> Unit) {
+    val p = LocalM5.current.palette
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        NeoSurface(
+            modifier = Modifier
+                .widthIn(max = 300.dp)
+                .combinedClickable(onClick = {}, onLongClick = onLongPress),
+            radius = 26.dp,
+            material = NeoMaterial.Float,
+            fill = p.blush,
+            contentPadding = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
+        ) {
+            Text(text, style = M5Type.body, color = Color(0xFF2E1A17))
+        }
+    }
+}
+
+@Composable
+private fun UserBranchBarM5(
+    versions: List<ChatMessageUi>,
+    active: ChatMessageUi,
+    onSwitch: (ChatMessageUi) -> Unit,
+) {
+    val p = LocalM5.current.palette
+    val idx = versions.indexOfFirst { it.messageId == active.messageId }.coerceAtLeast(0)
+    Row(
+        Modifier.fillMaxWidth().padding(end = 2.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        M5Icon(
+            M5Icons.branchLeft,
+            Modifier.size(16.dp).clickable { if (idx > 0) onSwitch(versions[idx - 1]) },
+            if (idx > 0) p.textSecondary else p.textTertiary,
+        )
+        Spacer(Modifier.width(6.dp))
+        Text("${idx + 1} / ${versions.size}", style = M5Type.caption, color = p.textTertiary)
+        Spacer(Modifier.width(6.dp))
+        M5Icon(
+            M5Icons.branchRight,
+            Modifier.size(16.dp).clickable { if (idx < versions.size - 1) onSwitch(versions[idx + 1]) },
+            if (idx < versions.size - 1) p.textSecondary else p.textTertiary,
+        )
+    }
+}
+
+@Composable
+private fun ThinkingHeaderM5(entries: List<TimelineEntry>, expanded: Boolean, onToggle: () -> Unit) {
+    val p = LocalM5.current.palette
+    val toolCount = entries.count { it.kind == "tool" }
+    val hasReasoning = entries.any { it.kind == "reasoning" }
+    val summary = buildString {
+        if (hasReasoning) append("思考")
+        if (toolCount > 0) {
+            if (isNotEmpty()) append(" · ")
+            append("执行了 $toolCount 个命令")
+        }
+        if (isEmpty()) append("过程")
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onToggle,
+            )
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        M5Icon(if (expanded) M5Icons.chevronDown else M5Icons.chevronRight, Modifier.size(13.dp), p.textTertiary)
+        Spacer(Modifier.width(7.dp))
+        Text(summary, style = M5Type.caption, color = p.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun ThinkingLineM5(entry: TimelineEntry) {
+    val p = LocalM5.current.palette
+    val icon: M5IconSpec
+    val title: String
+    val detail: String
+    when (entry.kind) {
+        "reasoning" -> {
+            icon = M5Icons.spark
+            title = "思考"
+            detail = entry.text.lineSequence().firstOrNull().orEmpty()
+        }
+        "tool" -> {
+            icon = M5Icons.chevronRight
+            title = when {
+                entry.running -> "运行中"
+                entry.ok == false -> "失败"
+                else -> "运行命令"
+            }
+            detail = entry.name + if (entry.args.isNotBlank() && entry.args != "{}") " · ${entry.args.take(80)}" else ""
+        }
+        else -> {
+            icon = M5Icons.copy
+            title = "写入"
+            detail = entry.text.lineSequence().firstOrNull().orEmpty()
+        }
+    }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        M5Icon(icon, Modifier.size(13.dp), p.textTertiary)
+        Spacer(Modifier.width(7.dp))
+        Text(title, style = M5Type.caption, color = p.textSecondary)
+        Spacer(Modifier.width(6.dp))
+        Text(
+            detail,
+            style = M5Type.caption,
+            color = p.textTertiary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun MetaLineM5(meta: TurnMetaUi) {
+    val p = LocalM5.current.palette
+    val secs = meta.durationMs?.let { "%.1fs".format(it / 1000.0) }
+    val status = when (meta.status) {
+        "stopped" -> "已停止"
+        "error" -> "出错"
+        "truncated" -> "被截断"
+        else -> null
+    }
+    Text(
+        listOfNotNull(secs, "${meta.steps} 步", status).joinToString(" · "),
+        style = M5Type.caption,
+        color = p.textTertiary,
+    )
+}
+
+@Composable
+private fun StreamingTextM5(text: String) {
+    val p = LocalM5.current.palette
+    Column(Modifier.fillMaxWidth()) {
+        MarkdownText(text)
+        Box(
+            Modifier
+                .padding(top = 4.dp)
+                .size(width = 3.dp, height = 18.dp)
+                .clip(SuperellipseShape(1.5.dp))
+                .background(p.moss),
+        )
+    }
+}
