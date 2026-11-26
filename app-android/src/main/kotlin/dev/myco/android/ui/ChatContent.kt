@@ -621,42 +621,78 @@ private fun TimelineBody(
     autoScroll: Boolean,
 ) {
     val listState = rememberLazyListState()
-    val isolation = remember(listState) { GroupBodyScrollIsolation(listState) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     androidx.compose.runtime.LaunchedEffect(entries.size) {
-        if (autoScroll && entries.isNotEmpty()) {
-            listState.animateScrollToItem(entries.size - 1)
-        }
+        if (autoScroll && entries.isNotEmpty()) listState.animateScrollToItem(entries.size - 1)
     }
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxWidth()
-            .heightIn(max = maxHeight)
-            .nestedScroll(isolation)
-            .pointerInput(Unit) {
+    Box(
+        Modifier.fillMaxWidth().heightIn(max = maxHeight)
+            .pointerInput(entries.size, maxHeight) {
                 awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
-                    try {
-                        waitForUpOrCancellation()
-                    } finally {
-                        isolation.endGesture()
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var handling: Boolean? = null
+                    var lastY = down.position.y
+                    val samples = mutableListOf<Pair<Long, Float>>()
+                    samples += down.uptimeMillis to lastY
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        val dy = change.position.y - lastY
+                        lastY = change.position.y
+                        if (dy != 0f) {
+                            if (handling == null) {
+                                // 手指上滑=内容向下滚(forward)；下滑=backward
+                                handling = if (dy < 0f) listState.canScrollForward else listState.canScrollBackward
+                            }
+                            if (handling == true) {
+                                listState.dispatchRawDelta(-dy)
+                                change.consume()
+                                samples += change.uptimeMillis to lastY
+                                if (samples.size > 8) samples.removeAt(0)
+                            }
+                            // handling == false：手势开始就已在边界，不消费，让外层接管
+                        }
+                    }
+                    if (handling == true && samples.size >= 2) {
+                        val first = samples.first()
+                        val last = samples.last()
+                        val dtMs = (last.first - first.first).coerceAtLeast(1L)
+                        val velocityPxPerSec = (last.second - first.second) / (dtMs / 1000f)
+                        scope.launch {
+                            var speed = -velocityPxPerSec
+                            while (kotlin.math.abs(speed) > 80f) {
+                                val step = speed * 0.016f
+                                val moved = listState.dispatchRawDelta(step)
+                                if (kotlin.math.abs(moved) < 0.5f) break
+                                speed *= 0.94f
+                                kotlinx.coroutines.delay(16)
+                            }
+                        }
                     }
                 }
             },
     ) {
-        entries.forEachIndexed { entryIndex, entry ->
-            val key = "$keyPrefix-$entryIndex"
-            if (entry.kind == "text") {
-                item(key = "rh-$key") { TimelineEntryContent(entry) }
-            } else {
-                stickyHeader(key = "rh-$key") {
-                    TimelineEntryHeader(
-                        entry = entry,
-                        expanded = expandedTools[key] == true,
-                        onToggle = { expandedTools[key] = expandedTools[key] != true },
-                    )
-                }
-                if (expandedTools[key] == true) {
-                    item(key = "rc-$key") { TimelineEntryContent(entry) }
+        LazyColumn(
+            state = listState,
+            userScrollEnabled = false,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            entries.forEachIndexed { entryIndex, entry ->
+                val key = "$keyPrefix-$entryIndex"
+                if (entry.kind == "text") {
+                    item(key = "rh-$key") { TimelineEntryContent(entry) }
+                } else {
+                    stickyHeader(key = "rh-$key") {
+                        TimelineEntryHeader(
+                            entry = entry,
+                            expanded = expandedTools[key] == true,
+                            onToggle = { expandedTools[key] = expandedTools[key] != true },
+                        )
+                    }
+                    if (expandedTools[key] == true) {
+                        item(key = "rc-$key") { TimelineEntryContent(entry) }
+                    }
                 }
             }
         }
@@ -1232,6 +1268,7 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
 
 
 
