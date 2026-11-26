@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -109,6 +110,7 @@ import java.time.format.DateTimeFormatter
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         BridgeHolder.init(applicationContext)
         val initial = ThemePrefs.load(this)
         setContent {
@@ -312,10 +314,12 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                 Box(Modifier.weight(1f)) { main() }
             }
         } else {
+            // 抽屉约占 5/6，右侧留出一点上下文（比全屏更好按"关闭/返回"）
+            val drawerWidth = maxWidth * 0.84f
             ModalNavigationDrawer(
                 drawerState = drawerState,
-                gesturesEnabled = false, // MVP 只做汉堡入口；边缘滑交给系统返回，避免冲突
-                drawerContent = { ModalDrawerSheet { drawerBody() } },
+                gesturesEnabled = true, // 支持左右滑动开关抽屉；系统返回键仍由 BackHandler 处理
+                drawerContent = { ModalDrawerSheet(Modifier.width(drawerWidth)) { drawerBody() } },
             ) { main() }
         }
     }
@@ -1056,9 +1060,15 @@ private fun SettingsScreen(
             onDismiss = { editor = null; discoverStatus = null },
             onSave = { updated ->
                 scope.launch {
+                    val ref = updated.effectiveRef()
                     val res = bridge.send(Command.ProviderSave(updated.toProfile(), revision))
-                    message = if (res is CommandResult.Err) "${res.code}: ${res.message}" else null
-                    if (res is CommandResult.Ok) {
+                    var err = (res as? CommandResult.Err)?.let { "${it.code}: ${it.message}" }
+                    if (err == null && updated.apiKey.isNotBlank()) {
+                        val cred = bridge.send(Command.CredentialSet(ref, updated.apiKey.trim()))
+                        if (cred is CommandResult.Err) err = "密钥保存失败：${cred.code}: ${cred.message}"
+                    }
+                    message = err
+                    if (err == null) {
                         editor = null
                         BridgeHolder.rebuild(context)
                     }
@@ -1130,7 +1140,13 @@ private fun ProviderEditDialog(
                 OutlinedTextField(form.modelId, { form = form.copy(modelId = it) }, label = { Text("模型 id") }, singleLine = true)
                 OutlinedTextField(form.contextWindow, { form = form.copy(contextWindow = it) }, label = { Text("上下文窗口") }, singleLine = true)
                 OutlinedTextField(form.maxTokens, { form = form.copy(maxTokens = it) }, label = { Text("最大输出") }, singleLine = true)
-                OutlinedTextField(form.ref, { form = form.copy(ref = it) }, label = { Text("密钥引用（留空=无鉴权）") }, singleLine = true)
+                OutlinedTextField(
+                    form.apiKey,
+                    { form = form.copy(apiKey = it) },
+                    label = { Text(if (form.originalId == null) "API Key（只写）" else "API Key（留空=保持不变）") },
+                    singleLine = true,
+                )
+                Text("凭据引用：${form.effectiveRef()}（自动生成，不进日志）", style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = { onDiscover(form) }) { Text("测试连通性") }
                     if (discoverStatus != null) {
@@ -1199,13 +1215,25 @@ private data class ProviderEditor(
     val contextWindow: String,
     val maxTokens: String,
     val ref: String,
+    /** 只写不读：非空时在保存 provider 成功后写入 credentials；不进入任何序列化。 */
+    val apiKey: String = "",
 ) {
+    fun effectiveRef(): String {
+        val current = ref.trim()
+        if (current.isNotBlank() && current.first().isUpperCase() &&
+            current.all { it == '_' || it.isDigit() || it in 'A'..'Z' }
+        ) return current
+        val base = id.trim().uppercase().replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+        return (base.ifBlank { "MYCO" } + "_API_KEY")
+    }
+
     fun toProfile(): ProviderProfile = ProviderProfile(
         id = id.trim(),
         kind = kind,
         displayName = displayName.ifBlank { null },
         baseUrl = baseUrl.trim().ifBlank { null },
-        auth = if (ref.isBlank()) AuthProfile.None else AuthProfile.ApiKey(ref.trim()),
+        auth = if (effectiveRef().isBlank() && apiKey.isBlank()) AuthProfile.None
+        else AuthProfile.ApiKey(effectiveRef()),
         models = listOf(
             ModelProfile(
                 id = modelId.trim(),
@@ -1227,7 +1255,7 @@ private data class ProviderEditor(
             originalId = null, id = "deepseek", kind = "deepseek-messages",
             displayName = "DeepSeek 官方", baseUrl = "https://api.deepseek.com/anthropic",
             modelId = "deepseek-flash", contextWindow = "1000000", maxTokens = "384000",
-            ref = "DEEPSEEK_API_KEY",
+            ref = "",
         )
     }
 }
@@ -1323,6 +1351,7 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
 
 
 

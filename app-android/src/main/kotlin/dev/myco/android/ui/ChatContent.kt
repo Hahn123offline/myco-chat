@@ -206,16 +206,20 @@ fun MarkdownText(text: String, modifier: Modifier = Modifier) {
                         InlineMarkdown(line.dropWhile { it.isDigit() }.drop(1).trimStart())
                     }
                 }
-                line.contains('|') && line.replace(Regex("[|\\-: ]"), "").isEmpty() -> {
-                    // Markdown 表格分隔行（|---|:---:|）不渲染
-                }
                 line.contains('|') -> {
                     flushParagraph()
-                    Text(
-                        inlineAnnotated(line.trim('|').split('|').joinToString("  │  ") { it.trim() }),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                    )
+                    val tableRows = mutableListOf<List<String>>()
+                    var j = i
+                    while (j < lines.size && lines[j].contains('|')) {
+                        val l = lines[j].trim()
+                        val isSeparator = l.replace(Regex("[|\\-: ]"), "").isEmpty()
+                        if (!isSeparator && l.isNotBlank()) {
+                            tableRows += l.trim('|').split('|').map { it.trim() }
+                        }
+                        j++
+                    }
+                    if (tableRows.isNotEmpty()) TableBlock(tableRows)
+                    i = j - 1
                 }
                 else -> {
                     if (paragraph.isNotEmpty()) paragraph.append('\n')
@@ -225,6 +229,41 @@ fun MarkdownText(text: String, modifier: Modifier = Modifier) {
             i++
         }
         flushParagraph()
+    }
+}
+
+@Composable
+private fun TableBlock(rows: List<List<String>>) {
+    val header = rows.first()
+    val body = rows.drop(1)
+    androidx.compose.foundation.layout.Column(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(MycoRadius.control))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        Row(Modifier.fillMaxWidth()) {
+            header.forEach { cell ->
+                Text(
+                    inlineAnnotated(cell),
+                    modifier = Modifier.width(120.dp).padding(horizontal = 10.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+        androidx.compose.material3.HorizontalDivider()
+        body.forEach { row ->
+            Row(Modifier.fillMaxWidth()) {
+                row.forEach { cell ->
+                    Text(
+                        inlineAnnotated(cell),
+                        modifier = Modifier.width(120.dp).padding(horizontal = 10.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
     }
 }
 
