@@ -18,6 +18,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -62,7 +63,7 @@ class InProcessBridge(
     private val scope = kotlinx.coroutines.CoroutineScope(
         kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default
     )
-    private val activeTurns = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Job>()
+    private val activeTurns = java.util.concurrent.ConcurrentHashMap<String, ActiveTurn>()
 
     override suspend fun send(cmd: Command): CommandResult = when (cmd) {
         is Command.SessionCreate -> {
@@ -85,6 +86,16 @@ class InProcessBridge(
             )
         }
         is Command.ChatSend -> chatSend(cmd)
+        is Command.ChatRegenerate -> {
+            val key = cmd.requestId?.let { "${cmd.sessionId}:regen:$it" }
+            if (key != null) completedRequests[key]?.let { return it }
+            val result = regenerate(cmd)
+            if (key != null) {
+                if (completedRequests.size > 200) completedRequests.clear()
+                completedRequests[key] = result
+            }
+            result
+        }
         is Command.ChatStop -> chatStop(cmd)
         is Command.SessionRename -> runCatching { sessions.rename(cmd.sessionId, cmd.title) }
             .fold(
@@ -224,13 +235,57 @@ class InProcessBridge(
     }
 
     private suspend fun chatStop(cmd: Command.ChatStop): CommandResult {
-        val collector = activeTurns.remove(cmd.sessionId)
+        val active = activeTurns.remove(cmd.sessionId)
             ?: return CommandResult.Err("NOT_RUNNING", "该会话没有进行中的回合")
-        collector.cancel()
-        return CommandResult.Ok(buildJsonObject { put("stopped", true) })
+        if (cmd.turnId != null && cmd.turnId != active.turnId) {
+            activeTurns[cmd.sessionId] = active // 不误停别的轮次
+            return CommandResult.Err("TURN_MISMATCH", "当前进行中的是 turn ${active.turnId}，不是 ${cmd.turnId}")
+        }
+        active.job.cancel()
+        return CommandResult.Ok(buildJsonObject { put("stopped", true); put("turnId", active.turnId) })
     }
 
-    private suspend fun runChat(cmd: Command.ChatSend): CommandResult {
+    private data class RegenCtx(val nodeId: String, val version: Int, val cutSeq: Long)
+    private data class ActiveTurn(val job: kotlinx.coroutines.Job, val turnId: Long)
+    private val sessionLocks = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.sync.Mutex>()
+
+    private suspend fun <T> withSessionLock(sessionId: String, block: suspend () -> T): T {
+        val mutex = sessionLocks.computeIfAbsent(sessionId) { kotlinx.coroutines.sync.Mutex() }
+        return mutex.withLock { block() }
+    }
+
+    private suspend fun runChat(cmd: Command.ChatSend): CommandResult =
+        withSessionLock(cmd.sessionId) { runChatInternal(cmd, regen = null) }
+
+    /** 同节点重新生成：上下文截到原 user 消息之前，新 assistant 消息 version+1，不重复写 user 消息。 */
+    private suspend fun regenerate(cmd: Command.ChatRegenerate): CommandResult = withSessionLock(cmd.sessionId) {
+        val history = runCatching { sessions.read(cmd.sessionId) }
+            .getOrElse { return@withSessionLock CommandResult.Err("SESSION_NOT_FOUND", "会话不存在：${cmd.sessionId}") }
+        val target = history.filterIsInstance<SessionEvent.AssistantMessage>()
+            .firstOrNull { it.data.messageId == cmd.messageId }
+            ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_FOUND", "找不到要重新生成的消息：${cmd.messageId}")
+        val nodeId = target.data.nodeId
+            ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_VERSIONED", "该消息没有版本链节点，无法同节点重生成")
+        val turn = target.data.turn
+            ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_VERSIONED", "该消息缺少 turn 信息")
+        val user = history.filterIsInstance<SessionEvent.UserMessage>()
+            .lastOrNull { it.data.turn == turn && it.seq < target.seq }
+            ?: return@withSessionLock CommandResult.Err("MESSAGE_NOT_FOUND", "找不到对应的用户消息")
+        val version = (history.filterIsInstance<SessionEvent.AssistantMessage>()
+            .filter { it.data.nodeId == nodeId }.maxOfOrNull { it.data.version } ?: target.data.version) + 1
+        val requestId = cmd.requestId?.let { "regen:$it" }
+        runChatInternal(
+            Command.ChatSend(
+                sessionId = cmd.sessionId,
+                text = user.data.text,
+                attachments = user.data.attachments,
+                requestId = requestId,
+            ),
+            RegenCtx(nodeId, version, user.seq),
+        )
+    }
+
+    private suspend fun runChatInternal(cmd: Command.ChatSend, regen: RegenCtx?): CommandResult {
         val provider = providers.firstEnabled()
             ?: return CommandResult.Err("PROVIDER_MISSING", "还没有配置 provider，请先在设置里添加")
         val model = provider.model("chat")
@@ -245,6 +300,7 @@ class InProcessBridge(
 
         val history = runCatching { sessions.read(cmd.sessionId) }
             .getOrElse { return CommandResult.Err("SESSION_NOT_FOUND", "会话不存在：${cmd.sessionId}") }
+        val contextHistory = if (regen != null) history.filter { it.seq < regen.cutSeq } else history
 
         // 附件在本轮开始前一次性读入（失败则整轮拒绝，不写半截 turn）
         val prepared = runCatching {
@@ -269,19 +325,22 @@ class InProcessBridge(
 
         val turn = history.count { it is SessionEvent.TurnStart }.toLong() + 1
         val turnStartedAt = System.currentTimeMillis()
-        val turnNodeId = dev.myco.core.session.Ulid.newId()
+        val turnNodeId = regen?.nodeId ?: dev.myco.core.session.Ulid.newId()
+        val turnVersion = regen?.version ?: 1
         val finalMessageId = dev.myco.core.session.Ulid.newId()
         val userMessageId = dev.myco.core.session.Ulid.newId()
         sessions.append(cmd.sessionId, SessionEvent.TurnStart(data = SessionEvent.TurnStart.Data(turn)))
-        sessions.append(
-            cmd.sessionId,
-            SessionEvent.UserMessage(
-                data = SessionEvent.UserMessage.Data(
-                    cmd.text, source = "human", attachments = cmd.attachments,
-                    messageId = userMessageId, turn = turn,
+        if (regen == null) {
+            sessions.append(
+                cmd.sessionId,
+                SessionEvent.UserMessage(
+                    data = SessionEvent.UserMessage.Data(
+                        cmd.text, source = "human", attachments = cmd.attachments,
+                        messageId = userMessageId, turn = turn,
+                    )
                 )
             )
-        )
+        }
 
         val client = clientFactory(provider)
         val full = StringBuilder()
@@ -295,7 +354,7 @@ class InProcessBridge(
         // 当前这一步的文本/思考（取消时只落这一段，避免和已落盘的中途消息重复）
         val currentStep = StringBuilder()
         val currentReasoning = StringBuilder()
-        var messages = buildMessages(history) + ChatMessage("user", prepared.first, images = prepared.second)
+        var messages = buildMessages(contextHistory) + ChatMessage("user", prepared.first, images = prepared.second)
 
         // 把"流式 + 工具循环"单独放一个 job：停止 = 取消它；runChat 自己不被取消，能正常收尾
         val collector = scope.async {
@@ -351,7 +410,7 @@ class InProcessBridge(
                                     turn = turn,
                                     messageId = finalMessageId,
                                     nodeId = turnNodeId,
-                                    version = 1,
+                                    version = turnVersion,
                                     finishReason = lastFinishReason ?: "stop",
                                     reasoning = lastReasoning?.takeIf { it.isNotBlank() },
                                 )
@@ -428,7 +487,7 @@ class InProcessBridge(
                 messages = messages + ChatMessage("assistant", stepText, toolCalls = calls) + resultMessages
             }
         }
-        activeTurns[cmd.sessionId] = collector
+        activeTurns[cmd.sessionId] = ActiveTurn(collector, turn)
         try {
             collector.await()
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -502,14 +561,26 @@ class InProcessBridge(
         }
         return CommandResult.Ok(buildJsonObject {
             put("turnId", turn); put("text", full.toString()); put("messageId", finalMessageId)
+            put("version", turnVersion); put("nodeId", turnNodeId)
         })
     }
 
-    private fun buildMessages(history: List<SessionEvent>): List<ChatMessage> = history.mapNotNull { e ->
-        when (e) {
-            is SessionEvent.UserMessage -> ChatMessage("user", e.data.text)
-            is SessionEvent.AssistantMessage -> ChatMessage("assistant", e.data.text)
-            else -> null
+    /** 历史 → 模型上下文：同名 nodeId 只保留最新 version，避免重生成后旧回答重复进上下文。 */
+    private fun buildMessages(history: List<SessionEvent>): List<ChatMessage> {
+        val latestVersion = history.filterIsInstance<SessionEvent.AssistantMessage>()
+            .mapNotNull { e -> e.data.nodeId?.let { it to e.data.version } }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, versions) -> versions.max() }
+        return history.mapNotNull { e ->
+            when (e) {
+                is SessionEvent.UserMessage -> ChatMessage("user", e.data.text)
+                is SessionEvent.AssistantMessage -> {
+                    val node = e.data.nodeId
+                    if (node != null && e.data.version < (latestVersion[node] ?: 0)) null
+                    else ChatMessage("assistant", e.data.text)
+                }
+                else -> null
+            }
         }
     }
 

@@ -78,7 +78,13 @@ class HttpBridgeClient(
                     dev.myco.core.spec.ProviderProfile.serializer(), cmd.profile
                 ))
             }
-            is Command.ChatStop -> "chat.stop" to buildJsonObject { put("sessionId", cmd.sessionId) }
+            is Command.ChatStop -> "chat.stop" to buildJsonObject {
+                put("sessionId", cmd.sessionId); cmd.turnId?.let { put("turnId", it) }
+            }
+            is Command.ChatRegenerate -> "chat.regenerate" to buildJsonObject {
+                put("sessionId", cmd.sessionId); put("messageId", cmd.messageId)
+                cmd.requestId?.let { put("requestId", it) }
+            }
             is Command.ProviderReplace -> "provider.replace" to buildJsonObject {
                 put("providers", dev.myco.core.spec.MycoJson.encodeToJsonElement(
                     kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.ProviderProfile.serializer()),

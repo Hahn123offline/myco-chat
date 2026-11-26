@@ -354,6 +354,66 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `regenerate creates a new version on the same node`() = runBlocking {
+        var calls = 0
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    calls++
+                    val answer = "回答$calls"
+                    emit(dev.myco.core.llm.ChatChunk.Delta(answer))
+                    emit(dev.myco.core.llm.ChatChunk.Done(answer, finishReason = "stop"))
+                }
+        }
+        val f = Fixture(client = client)
+        val meta = f.sessions.create("chat", "chat-default")
+        f.bridge.send(Command.ChatSend(meta.id, "问题一"))
+        val first = f.sessions.read(meta.id).filterIsInstance<SessionEvent.AssistantMessage>().single()
+        val firstNode = first.data.nodeId!!
+        val result = f.bridge.send(Command.ChatRegenerate(meta.id, first.data.messageId!!))
+        assertTrue(result is CommandResult.Ok)
+        val data = (result as CommandResult.Ok).data.jsonObject
+        assertEquals(2, data["version"]!!.jsonPrimitive.content.toInt())
+        assertEquals(firstNode, data["nodeId"]!!.jsonPrimitive.content)
+
+        val assistants = f.sessions.read(meta.id).filterIsInstance<SessionEvent.AssistantMessage>()
+        val versions = assistants.filter { it.data.nodeId == firstNode }.map { it.data.version }.sorted()
+        assertEquals(listOf(1, 2), versions)
+        assertEquals(2, calls)
+        // 旧版本仍保留，不删除
+        assertEquals("回答1", assistants.first { it.data.version == 1 }.data.text)
+    }
+
+    @Test
+    fun `concurrent sends are serialized with distinct turn numbers`() = runBlocking {
+        val slow = FakeChatClient(reply = { "慢回答" }, tickMs = 40)
+        val f = Fixture(client = slow)
+        val meta = f.sessions.create("chat", "chat-default")
+        val a = async { f.bridge.send(Command.ChatSend(meta.id, "A")) }
+        val b = async { f.bridge.send(Command.ChatSend(meta.id, "B")) }
+        assertTrue(a.await() is CommandResult.Ok)
+        assertTrue(b.await() is CommandResult.Ok)
+        val turns = f.sessions.read(meta.id).filterIsInstance<SessionEvent.TurnStart>().map { it.data.turn }
+        assertEquals(listOf(1L, 2L), turns)
+    }
+
+    @Test
+    fun `stop with wrong turnId does not cancel`() = runBlocking {
+        val slow = FakeChatClient(reply = { "很长的回答".repeat(50) }, tickMs = 30)
+        val f = Fixture(client = slow)
+        val meta = f.sessions.create("chat", "chat-default")
+        val job = async { f.bridge.send(Command.ChatSend(meta.id, "长")) }
+        kotlinx.coroutines.delay(150)
+        val wrong = f.bridge.send(Command.ChatStop(meta.id, turnId = 99))
+        assertTrue(wrong is CommandResult.Err)
+        assertEquals("TURN_MISMATCH", (wrong as CommandResult.Err).code)
+        val right = f.bridge.send(Command.ChatStop(meta.id, turnId = 1))
+        assertTrue(right is CommandResult.Ok)
+        job.await()
+        Unit
+    }
+
+    @Test
     fun `tool loop executes registry and feeds result back`() = runBlocking {
         val client = object : ChatClient {
             var calls = 0

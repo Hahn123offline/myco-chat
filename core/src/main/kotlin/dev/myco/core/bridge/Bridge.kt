@@ -44,7 +44,14 @@ sealed class Command {
     data class ProviderDiscover(val profile: ProviderProfile) : Command()
 
     /** 取消该会话正在跑的一轮；部分文本会按"已停止"落盘，不假装完成。 */
-    data class ChatStop(val sessionId: String) : Command()
+    data class ChatStop(val sessionId: String, val turnId: Long? = null) : Command()
+
+    /** 同节点重新生成：messageId 指向被重新生成的 assistant 消息；新版本 version+1，旧版本保留。 */
+    data class ChatRegenerate(
+        val sessionId: String,
+        val messageId: String,
+        val requestId: String? = null,
+    ) : Command()
 
     /** 导入：整份替换 provider 列表（GUI 侧文件选择后调用）；expectedRevision 冲突则拒绝。 */
     data class ProviderReplace(val profiles: List<ProviderProfile>, val expectedRevision: Long) : Command()
