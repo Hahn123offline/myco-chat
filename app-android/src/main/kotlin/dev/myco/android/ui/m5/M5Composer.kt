@@ -44,7 +44,7 @@ fun M5Composer(
     val p = LocalM5.current.palette
     GlassSurface(
         modifier = modifier.fillMaxWidth(),
-        radius = 26.dp,
+        radius = 34.dp,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -272,7 +272,7 @@ private fun MaterialSection() {
         ) {
             NeoSurface(
                 modifier = Modifier.fillMaxWidth(),
-                radius = 20.dp,
+                radius = M5Radius.card,
                 material = NeoMaterial.Raised,
                 fill = p.surfaceHigh,
                 contentPadding = PaddingValues(10.dp),
@@ -497,7 +497,7 @@ private fun ComposerSection() {
     Section("输入区 · 初版样板", "Glass 大圆角浮岛：文本区 + 工具行 + 上下文胶囊，全部无描边") {
         GlassSurface(
             modifier = Modifier.fillMaxWidth(),
-            radius = 26.dp,
+            radius = 34.dp,
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

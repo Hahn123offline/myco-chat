@@ -1,6 +1,9 @@
 package dev.myco.android.ui.m5
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,16 +15,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,15 +30,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 /**
  * M5.3 聊天页样板：玻璃顶栏 + 消息节奏 + 新版输入区。
- * 数据为静态样张，用于确认视觉与间距；真实数据在 M5.3 接入。
+ * 数据为静态样张；思考过程用「可直接点击的文字」呈现（不包色块/按钮），
+ * 且位置在最终回答之前。
  */
 @Composable
 fun M5ChatSample(dark: Boolean, onToggleDark: () -> Unit, onClose: () -> Unit) {
@@ -54,11 +60,17 @@ fun M5ChatSample(dark: Boolean, onToggleDark: () -> Unit, onClose: () -> Unit) {
                 SampleTopBar(dark = dark, onToggleDark = onToggleDark, onClose = onClose)
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     item {
                         UserBubble("今天有点累，但还想把 M5 推起来。")
+                    }
+                    item {
+                        ThinkingSection(
+                            expandedInitial = true,
+                            summary = "执行了命令，已读取图片，已写入文件等",
+                        )
                     }
                     item {
                         AssistantBlock(
@@ -69,13 +81,16 @@ fun M5ChatSample(dark: Boolean, onToggleDark: () -> Unit, onClose: () -> Unit) {
                         )
                     }
                     item {
-                        ProcessPill()
-                    }
-                    item {
                         BranchBar()
                     }
                     item {
                         UserBubble("那先把聊天页做出来看看。")
+                    }
+                    item {
+                        ThinkingSection(
+                            expandedInitial = false,
+                            summary = "思考 · 已读取 2 个网页",
+                        )
                     }
                     item {
                         StreamingBlock()
@@ -144,10 +159,10 @@ private fun UserBubble(text: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         NeoSurface(
             modifier = Modifier.widthIn(max = 300.dp),
-            radius = 22.dp,
+            radius = 26.dp,
             material = NeoMaterial.Float,
             fill = p.blush,
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+            contentPadding = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
         ) {
             Text(text, style = M5Type.body, color = Color(0xFF2E1A17))
         }
@@ -163,26 +178,75 @@ private fun AssistantBlock(text: String, meta: String) {
     }
 }
 
+/**
+ * 思考过程：可直接点击文字（无底色/无按钮）。展开后在下方列出过程行，
+ * 位置在最终回答之前——思考不属于回答的附属按钮。
+ */
 @Composable
-private fun ProcessPill() {
+private fun ThinkingSection(expandedInitial: Boolean, summary: String) {
+    val p = LocalM5.current.palette
+    var expanded by remember { mutableStateOf(expandedInitial) }
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(SuperellipseShape(M5Radius.control))
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    onClick = { expanded = !expanded },
+                )
+                .padding(vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            M5Icon(
+                if (expanded) M5Icons.chevronDown else M5Icons.chevronRight,
+                Modifier.size(13.dp),
+                p.textTertiary,
+            )
+            Spacer(Modifier.width(7.dp))
+            Text(
+                summary,
+                style = M5Type.caption,
+                color = p.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.alpha(if (pressed) 0.55f else 1f),
+            )
+        }
+        if (expanded) {
+            Column(
+                Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                ThinkingLine(M5Icons.globe, "上下文注入", "time-context")
+                ThinkingLine(M5Icons.spark, "思考", "User approved → proceed to chat page sample.")
+                ThinkingLine(M5Icons.copy, "写入", "app-android/src/main/kotlin/.../ChatSample.kt")
+                ThinkingLine(M5Icons.chevronRight, "运行命令", "Add branch icons and wire chat sample entry")
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+
+@Composable
+private fun ThinkingLine(icon: M5IconSpec, title: String, detail: String) {
     val p = LocalM5.current.palette
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        NeoSurface(
-            radius = 16.dp,
-            material = NeoMaterial.Raised,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            onClick = {},
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                M5Icon(M5Icons.clock, Modifier.size(15.dp), p.textSecondary)
-                Spacer(Modifier.width(7.dp))
-                Text("思考过程 · 5 步", style = M5Type.label, color = p.textSecondary)
-                Spacer(Modifier.width(10.dp))
-                Text("已阅读 3 个网页", style = M5Type.caption, color = p.textTertiary)
-                Spacer(Modifier.width(6.dp))
-                M5Icon(M5Icons.chevronDown, Modifier.size(14.dp), p.textTertiary)
-            }
-        }
+        M5Icon(icon, Modifier.size(13.dp), p.textTertiary)
+        Spacer(Modifier.width(7.dp))
+        Text(title, style = M5Type.caption, color = p.textSecondary)
+        Spacer(Modifier.width(6.dp))
+        Text(
+            detail,
+            style = M5Type.caption,
+            color = p.textTertiary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -206,7 +270,7 @@ private fun BranchBar() {
 private fun StreamingBlock() {
     val p = LocalM5.current.palette
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    val gapPx = with(androidx.compose.ui.platform.LocalDensity.current) { 3.dp.toPx() }
+    val gapPx = with(LocalDensity.current) { 3.dp.toPx() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Text(

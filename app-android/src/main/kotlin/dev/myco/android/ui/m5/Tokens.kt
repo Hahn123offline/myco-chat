@@ -134,11 +134,11 @@ object M5Space {
 
 /** 同心圆角：子半径 = 父半径 − 间距（下限 4dp）。 */
 object M5Radius {
-    val panel = 32.dp
-    val card = 20.dp
-    val control = 12.dp
-    val inset = 8.dp
-    val chip = 6.dp
+    val panel = 36.dp
+    val card = 26.dp
+    val control = 18.dp
+    val inset = 12.dp
+    val chip = 10.dp
 
     fun child(parent: Dp, gap: Dp): Dp = (parent - gap).coerceAtLeast(4.dp)
 }
