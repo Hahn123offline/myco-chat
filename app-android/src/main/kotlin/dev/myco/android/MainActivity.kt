@@ -709,23 +709,28 @@ private fun ChatScreen(
         streaming = null
         streamTextBuffer.setLength(0)
         streamReasoningBuffer.setLength(0)
+        MycoForegroundService.begin(context)
         scope.launch {
-            val r = bridge.send(
-                Command.ChatSend(
-                    sessionId, text, outgoing,
-                    thinking = thinking, webSearch = webSearch,
-                    providerId = selProviderId, modelId = selModelId, reasoningLevel = selReasoningLevel,
+            try {
+                val r = bridge.send(
+                    Command.ChatSend(
+                        sessionId, text, outgoing,
+                        thinking = thinking, webSearch = webSearch,
+                        providerId = selProviderId, modelId = selModelId, reasoningLevel = selReasoningLevel,
+                    )
                 )
-            )
-            if (r is CommandResult.Ok) {
-                // 首轮结束后用模型生成短标题（额外小请求；失败不影响回答）
-                bridge.send(Command.SessionGenerateTitle(sessionId))
+                if (r is CommandResult.Ok) {
+                    // 首轮结束后用模型生成短标题（额外小请求；失败不影响回答）
+                    bridge.send(Command.SessionGenerateTitle(sessionId))
+                }
+                if (r is CommandResult.Err) {
+                    error = "${r.code}: ${r.message}"
+                    optimisticUser = null
+                }
+                reload()
+            } finally {
+                MycoForegroundService.end(context)
             }
-            if (r is CommandResult.Err) {
-                error = "${r.code}: ${r.message}"
-                optimisticUser = null
-            }
-            reload()
         }
     }
 
@@ -1865,6 +1870,7 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
 
 
 

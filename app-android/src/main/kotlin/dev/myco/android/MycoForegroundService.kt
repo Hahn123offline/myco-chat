@@ -38,5 +38,22 @@ class MycoForegroundService : Service() {
     companion object {
         const val CHANNEL_ID = "myco.presence"
         const val NOTIFICATION_ID = 1001
+        private val active = java.util.concurrent.atomic.AtomicInteger(0)
+
+        /** 生成期间临时持有前台服务，防止切后台被系统冻结/杀进程。 */
+        fun begin(context: android.content.Context) {
+            if (active.incrementAndGet() != 1) return
+            runCatching {
+                val intent = Intent(context, MycoForegroundService::class.java)
+                androidx.core.content.ContextCompat.startForegroundService(context, intent)
+            }.onFailure { active.decrementAndGet() }
+        }
+
+        fun end(context: android.content.Context) {
+            if (active.decrementAndGet() > 0) return
+            active.set(0)
+            runCatching { context.stopService(Intent(context, MycoForegroundService::class.java)) }
+        }
     }
 }
+

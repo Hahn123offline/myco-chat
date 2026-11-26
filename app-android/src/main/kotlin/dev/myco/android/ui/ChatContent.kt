@@ -627,12 +627,29 @@ private fun TimelineEntryRow(entry: TimelineEntry, expanded: Boolean, onToggle: 
     when (entry.kind) {
         "reasoning" -> {
             if (entry.text.isNotBlank()) {
-                Text(
-                    "✳ 思考 · ${entry.text.take(2000)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = MycoSpacing.s, top = 2.dp, bottom = 2.dp),
-                )
+                val preview = entry.text.lineSequence().firstOrNull { it.isNotBlank() }?.take(80) ?: ""
+                Column(Modifier.fillMaxWidth().padding(start = MycoSpacing.s)) {
+                    Row(
+                        Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            (if (expanded) "▾ " else "▸ ") + "思考" + if (preview.isNotBlank()) " · $preview" else "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (expanded) {
+                        Text(
+                            entry.text.take(6000),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = MycoSpacing.m, bottom = 4.dp),
+                        )
+                    }
+                }
             }
         }
         "tool" -> {
@@ -993,6 +1010,7 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
 
 
 
