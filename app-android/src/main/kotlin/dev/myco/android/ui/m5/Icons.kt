@@ -114,6 +114,14 @@ object M5Icons {
         path(c) { moveTo(5f, 12.5f); lineTo(10f, 17.5f); lineTo(19f, 7f) }
     }
 
+    val branchLeft = M5IconSpec("上一分支") { c ->
+        path(c) { moveTo(14.8f, 5.8f); lineTo(8.4f, 12f); lineTo(14.8f, 18.2f) }
+    }
+
+    val branchRight = M5IconSpec("下一分支") { c ->
+        path(c) { moveTo(9.2f, 5.8f); lineTo(15.6f, 12f); lineTo(9.2f, 18.2f) }
+    }
+
     val chevronDown = M5IconSpec("展开") { c ->
         path(c) { moveTo(6f, 9f); lineTo(12f, 15f); lineTo(18f, 9f) }
     }
