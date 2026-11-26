@@ -233,6 +233,10 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         openDraft()
     }
     LaunchedEffect(searchQuery) { refreshSessions() }
+    // 打开抽屉时刷新标题/预览（标题是首轮后异步生成的）
+    LaunchedEffect(drawerState.currentValue) {
+        if (drawerState.currentValue == DrawerValue.Open) refreshSessions()
+    }
 
     val drawerBody: @Composable () -> Unit = {
         MycoDrawerContent(
@@ -474,7 +478,10 @@ private fun ChatScreen(
         val res = bridge.query(Query.SessionEvents(sessionId, 0))
         content = if (res is QueryResult.Ok) dev.myco.android.ui.parseChatContent(res.data as? JsonArray) else dev.myco.android.ui.ChatContentState()
         val sel = bridge.query(Query.SessionModel(sessionId))
-        if (sel is QueryResult.Ok) activeLeaf = (sel.data as? JsonObject)?.get("activeLeaf")?.jsonPrimitive?.content
+        if (sel is QueryResult.Ok) {
+            activeLeaf = (sel.data as? JsonObject)?.get("activeLeaf")
+                ?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+        }
     }
 
     fun attachUri(uri: android.net.Uri) {
@@ -556,10 +563,12 @@ private fun ChatScreen(
         val selRes = bridge.query(Query.SessionModel(sessionId))
         if (selRes is QueryResult.Ok) {
             val o = selRes.data as? JsonObject
-            selProviderId = o?.get("providerId")?.jsonPrimitive?.content
-            selModelId = o?.get("modelId")?.jsonPrimitive?.content
-            selReasoningLevel = o?.get("reasoningLevel")?.jsonPrimitive?.content
-            activeLeaf = o?.get("activeLeaf")?.jsonPrimitive?.content
+            fun JsonObject?.strOrNull(key: String): String? =
+                this?.get(key)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+            selProviderId = o.strOrNull("providerId")
+            selModelId = o.strOrNull("modelId")
+            selReasoningLevel = o.strOrNull("reasoningLevel")
+            activeLeaf = o.strOrNull("activeLeaf")
         }
     }
 
@@ -638,25 +647,25 @@ private fun ChatScreen(
     }
 
     Scaffold(
-        topBar = {
-            val currentProvider = providersUi.firstOrNull { it.id == selProviderId }
-            val currentModel = currentProvider?.models?.firstOrNull { it.id == selModelId }
-            val label = when {
-                currentModel != null -> currentModel.name ?: currentModel.id
-                else -> "默认模型"
-            }
-            MycoTopBar(
-                title = title,
-                onMenu = onMenu,
-                actions = {
-                    TextButton(onClick = { showModelPicker = true }) {
-                        Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                },
-            )
-        },
+        topBar = { MycoTopBar(title = title, onMenu = onMenu) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
+            val currentProvider = providersUi.firstOrNull { it.id == selProviderId }
+            val currentModel = currentProvider?.models?.firstOrNull { it.id == selModelId }
+            val modelLabel = currentModel?.name?.takeIf { it.isNotBlank() } ?: currentModel?.id ?: "默认"
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.l, vertical = MycoSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = { showModelPicker = true }) { Text("模型 · $modelLabel") }
+                if (selReasoningLevel != null) {
+                    Text(
+                        "思考 · $selReasoningLevel",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             val listState = rememberLazyListState()
             val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
             val context = LocalContext.current
@@ -844,21 +853,22 @@ private fun ChatScreen(
                         }
                         p.models.forEach { m ->
                             val checked = p.id == selProviderId && m.id == selModelId
+                            val chooseModel: () -> Unit = {
+                                scope.launch {
+                                    val level = m.reasoningDefault
+                                    val r = bridge.send(Command.SessionSetModel(sessionId, p.id, m.id, level))
+                                    if (r is CommandResult.Err) {
+                                        modelPickerError = "${r.code}: ${r.message}"
+                                    } else {
+                                        selProviderId = p.id; selModelId = m.id; selReasoningLevel = level
+                                    }
+                                }
+                            }
                             Row(
-                                Modifier.fillMaxWidth(),
+                                Modifier.fillMaxWidth().clickable { chooseModel() },
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                RadioButton(selected = checked, onClick = {
-                                    scope.launch {
-                                        val level = m.reasoningDefault
-                                        val r = bridge.send(Command.SessionSetModel(sessionId, p.id, m.id, level))
-                                        if (r is CommandResult.Err) {
-                                            modelPickerError = "${r.code}: ${r.message}"
-                                        } else {
-                                            selProviderId = p.id; selModelId = m.id; selReasoningLevel = level
-                                        }
-                                    }
-                                })
+                                RadioButton(selected = checked, onClick = chooseModel)
                                 Column(Modifier.weight(1f)) {
                                     Text(m.name ?: m.id, style = MaterialTheme.typography.bodyLarge)
                                     Text(
@@ -1710,6 +1720,11 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
+
+
 
 
 

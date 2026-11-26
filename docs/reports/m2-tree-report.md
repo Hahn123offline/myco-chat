@@ -36,15 +36,30 @@
 - editResend 上下文截断、revises/parent 关系正确。
 - 草稿唯一/标题生成仍绿。
 
-## 3. 与 work 的区别（已记录）
+## 3. 真机验证（Android 15，真 DeepSeek provider）
+
+- 启动进入唯一"新会话"草稿；发第一条消息后转正；标题自动生成成功（会话 sidecar title = `Hello Tree`），打开抽屉刷新后可见。
+- 模型栏显示当前 `deepseek-flash`；模型选择弹窗可按 provider 列出模型，点行可切换（修复了只能点 RadioButton 的问题）。
+- 版本切换：对第二条回答重新生成后出现 `2/2`；点 ‹ 切到 `1/2`，sidecar `activeLeaf` 变为旧回答。
+- 树语义真机验证（读 events.v1.jsonl）：
+  - 第二条 user 挂在旧回答 v1 下，第三条 user 的 `parentId` = 旧回答 v1（不是 v2），说明"切回旧分支后继续"成立；
+  - 新回答 v2 与旧回答 v1 同 nodeId/不同 version，旧分支事件完整保留；
+  - activeLeaf 指向第三条回答。
+- IME：点输入框后键盘紧贴输入区，无第二块键盘空间（截图 u6-ime-fixed.png）。
+- Provider 编辑器显示多模型目录（deepseek-flash），不再只有单模型表单。
+
+截图：![ime](assets/u6-ime-fixed.png) ![model](assets/u6-model-picker.png) ![provider](assets/u6-provider-editor.png) ![tree](assets/u6-tree-version.png)
+
+## 4. 与 work 的区别（已记录）
 - **chat regenerate**：同一棵会话树内新建分支节点，切换 activeLeaf；旧分支节点保留可切回。
 - **work branch**：另开一个会话文件（独立 SessionMeta/日志），不是同一棵树里的节点。
   两者不要共用 UI 语义；M5 做 work 时单独实现"分支会话"。
 
-## 4. 未完成（M2 收尾）
+## 5. 未完成（M2 收尾）
 
-1. UI 分支切换未真机验证；"旧分支"入口目前只能通过切回旧版本（‹）触发，缺少"分支列表/分叉点跳转"视觉。
+1. 分支切换已真机验证（2/2→1/2），但"旧分支"入口仍只能通过切回旧版本（‹）触发，缺少"分支列表/分叉点跳转"视觉。
 2. regenerate 旧回答时，旧分支的**后续消息**在日志里保留，但聊天页没有"旧分支存在"的提示；需要分支指示器。
 3. editResend 旧 user 消息的"已被替代"标记现在事件 JSON 带 revises，UI 应能显示（待真机）。
 4. work branch 的独立会话模型未实现。
-5. 无设备，全部编译/单测验证。
+5. 真机已验证版本切换与旧分支继续；分支指示器/旧分支提示仍未做。
+
