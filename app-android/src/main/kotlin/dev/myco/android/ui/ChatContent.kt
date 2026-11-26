@@ -517,6 +517,8 @@ fun ChatMessages(
     initialActiveLeaf: String? = null,
     onActiveLeafChanged: (leafId: String?) -> Unit = {},
     liveEntries: List<TimelineEntry> = emptyList(),
+    /** 正在流式输出（或刚结束）的回合：该回合的过程组保持展开，结束时不会因收起而让窗口跳一下。 */
+    autoExpandTurn: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     var activeLeaf by remember { mutableStateOf(initialActiveLeaf) }
@@ -547,6 +549,10 @@ fun ChatMessages(
         }
     }
     val expandedProcess = remember { androidx.compose.runtime.mutableStateMapOf<Long, Boolean>() }
+    androidx.compose.runtime.LaunchedEffect(autoExpandTurn) {
+        // 流式回合落盘后过程组默认是收起的；保持在展开状态，内容高度不变，窗口就不会跳
+        if (autoExpandTurn != null) expandedProcess[autoExpandTurn] = true
+    }
     val expandedTools = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     val maxGroupHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.5f).coerceAtMost(400.dp)
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
@@ -600,7 +606,8 @@ fun ChatMessages(
                             keyPrefix = "pb-$turn",
                             expandedTools = expandedTools,
                             maxHeight = maxGroupHeight,
-                            autoScroll = false,
+                            // 刚流式结束的回合：落盘后组体内仍停在底部，和流式时看到的位置一致（不重置回顶部）
+                            autoScroll = autoExpandTurn != null && autoExpandTurn == turn,
                         )
                     }
                 }
@@ -655,10 +662,17 @@ fun ChatMessages(
     }
 }
 
+/** 是否贴在列表底部（用于"跟底/不抢窗口"的状态判断）。 */
+private fun LazyListState.isAtBottomTight(slack: Int = 2): Boolean {
+    val info = layoutInfo
+    val last = info.visibleItemsInfo.lastOrNull() ?: return true
+    return last.index >= info.totalItemsCount - 1 &&
+        last.offset + last.size <= info.viewportEndOffset + slack
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TimelineBody(
-    entries: List<TimelineEntry>,
+private fun TimelineBody(    entries: List<TimelineEntry>,
     keyPrefix: String,
     expandedTools: androidx.compose.runtime.snapshots.SnapshotStateMap<String, Boolean>,
     maxHeight: androidx.compose.ui.unit.Dp,
@@ -666,38 +680,68 @@ private fun TimelineBody(
 ) {
     val listState = rememberLazyListState()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    androidx.compose.runtime.LaunchedEffect(entries.size) {
-        if (autoScroll && entries.isNotEmpty()) listState.animateScrollToItem(entries.size - 1)
+    var userDragging by remember { mutableStateOf(false) }
+    // 用户主动往上看过就不再抢窗口；滚回底部才恢复跟随
+    var followPaused by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(autoScroll, listState) {
+        if (!autoScroll) return@LaunchedEffect
+        // 逐帧跟底：思考/工具文本是在"最后一条"里持续变长的，只按条数 animateScrollToItem 不够
+        while (true) {
+            androidx.compose.runtime.withFrameNanos { }
+            if (userDragging || listState.isScrollInProgress) continue
+            if (followPaused) {
+                if (!listState.isAtBottomTight()) continue
+                followPaused = false
+            }
+            val info = listState.layoutInfo
+            val total = info.totalItemsCount
+            if (total == 0) continue
+            val last = info.visibleItemsInfo.lastOrNull()
+            if (last == null || last.index < total - 1) {
+                // 最后一条还在视口外（内容比组体高、或刚落盘）：直接落到底部
+                listState.scrollToItem(total - 1, 100000)
+                continue
+            }
+            val overflow = last.offset + last.size - info.viewportEndOffset
+            if (overflow > 0) listState.dispatchRawDelta((overflow * 0.35f).coerceIn(1f, 64f))
+        }
     }
     Box(
         Modifier.fillMaxWidth().heightIn(max = maxHeight)
-            .pointerInput(entries.size, maxHeight) {
+            .pointerInput(maxHeight) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
+                    userDragging = true
                     var handling: Boolean? = null
                     var lastY = down.position.y
                     val samples = mutableListOf<Pair<Long, Float>>()
                     samples += down.uptimeMillis to lastY
-                    while (true) {
-                        val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                        if (!change.pressed) break
-                        val dy = change.position.y - lastY
-                        lastY = change.position.y
-                        if (dy != 0f) {
-                            if (handling == null) {
-                                // 手指上滑=内容向下滚(forward)；下滑=backward
-                                handling = if (dy < 0f) listState.canScrollForward else listState.canScrollBackward
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+                            val dy = change.position.y - lastY
+                            lastY = change.position.y
+                            if (dy != 0f) {
+                                if (handling == null) {
+                                    // 手指上滑=内容向下滚(forward)；下滑=backward
+                                    handling = if (dy < 0f) listState.canScrollForward else listState.canScrollBackward
+                                }
+                                if (handling == true) {
+                                    // 组体内部：自己分发，自己 fling，不交给外层
+                                    listState.dispatchRawDelta(-dy)
+                                    change.consume()
+                                    samples += change.uptimeMillis to lastY
+                                    if (samples.size > 8) samples.removeAt(0)
+                                }
+                                // handling == false：手势起点已在边界，不消费，完全交给外层原生滚动（流畅）
                             }
-                            if (handling == true) {
-                                // 组体内部：自己分发，自己 fling，不交给外层
-                                listState.dispatchRawDelta(-dy)
-                                change.consume()
-                                samples += change.uptimeMillis to lastY
-                                if (samples.size > 8) samples.removeAt(0)
-                            }
-                            // handling == false：手势起点已在边界，不消费，完全交给外层原生滚动（流畅）
                         }
+                    } finally {
+                        userDragging = false
+                        // 用户把内容拖离底部 → 停止自动跟随，直到自己滚回底部
+                        if (autoScroll) followPaused = !listState.isAtBottomTight()
                     }
                     if (handling == true && samples.size >= 2) {
                         val first = samples.first()

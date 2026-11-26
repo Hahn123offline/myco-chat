@@ -487,6 +487,8 @@ private fun ChatScreen(
     var streaming by remember { mutableStateOf<String?>(null) }
     var streamingReasoning by remember { mutableStateOf<String?>(null) }
     var liveEntries by remember { mutableStateOf<List<dev.myco.android.ui.TimelineEntry>>(emptyList()) }
+    // 当前正在流式输出（或刚结束）的 turn：用于让该回合的过程组在落盘后仍保持展开，结束时不因收起而跳窗
+    var streamingTurn by remember { mutableStateOf<Long?>(null) }
     var loadingFork by remember { mutableStateOf(false) }
     var followBottom by remember { mutableStateOf(true) }
     val streamTextBuffer = remember { StringBuilder() }
@@ -539,20 +541,30 @@ private fun ChatScreen(
     var showAttachSheet by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
-    suspend fun reload() {
+    suspend fun reload(clearLive: Boolean = false) {
         val res = bridge.query(Query.SessionEvents(sessionId, 0))
-        content = runCatching {
+        val sel = bridge.query(Query.SessionModel(sessionId))
+        val newContent = runCatching {
             if (res is QueryResult.Ok) dev.myco.android.ui.parseChatContent(res.data as? JsonArray) else dev.myco.android.ui.ChatContentState()
         }.getOrElse {
             // 数据异常时宁可显示空会话 + 提示，也不能把整个 App 带崩
             error = "会话数据异常：${it.message ?: it::class.simpleName}"
             dev.myco.android.ui.ChatContentState()
         }
-        if (res is QueryResult.Err) error = "载入失败：${res.code}: ${res.message}"
-        val sel = bridge.query(Query.SessionModel(sessionId))
+        // 一次性提交：内容、分支、live 缓冲同一帧生效，避免"内容已换 / live 还在"或反之的中间帧造成跳窗
+        content = newContent
         if (sel is QueryResult.Ok) {
             activeLeaf = (sel.data as? JsonObject)?.get("activeLeaf")
                 ?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.jsonPrimitive?.content
+        }
+        if (res is QueryResult.Err) error = "载入失败：${res.code}: ${res.message}"
+        if (clearLive) {
+            streamTextBuffer.setLength(0)
+            streamReasoningBuffer.setLength(0)
+            streaming = null
+            streamingReasoning = null
+            liveEntries = emptyList()
+            optimisticUser = null
         }
     }
 
@@ -651,9 +663,11 @@ private fun ChatScreen(
         bridge.events.collect { e ->
             when (e) {
                 is BridgeEvent.ReasoningDelta -> if (e.sessionId == sessionId) {
+                    streamingTurn = e.turnId
                     streamReasoningBuffer.append(e.text)
                 }
                 is BridgeEvent.AssistantDelta -> if (e.sessionId == sessionId) {
+                    streamingTurn = e.turnId
                     if (streaming == null && streamTextBuffer.isEmpty()) {
                         flushReasoningBuffer()
                         liveEntries = liveEntries.map { if (it.kind == "reasoning") it.copy(running = false) else it }
@@ -661,14 +675,10 @@ private fun ChatScreen(
                     streamTextBuffer.append(e.text)
                 }
                 is BridgeEvent.AssistantDone -> if (e.sessionId == sessionId) {
-                    flushStreamBuffers()
-                    streaming = null
-                    streamingReasoning = null
-                    liveEntries = emptyList()
-                    streamTextBuffer.setLength(0)
-                    streamReasoningBuffer.setLength(0)
-                    optimisticUser = null
-                    reload()
+                    // 先 reload 出落盘内容、再在同一个延续里清 live 缓冲：
+                    // 中间帧里正文不会凭空消失，窗口也就不会先跳一下再跳回来
+                    streamingTurn = e.turnId
+                    reload(clearLive = true)
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
                     streamTextBuffer.setLength(0)
@@ -677,6 +687,7 @@ private fun ChatScreen(
                 }
                 is BridgeEvent.SessionUpdated -> Unit
                 is BridgeEvent.ToolStarted -> if (e.sessionId == sessionId) {
+                    streamingTurn = e.turnId
                     flushStreamBuffers()
                     liveEntries = liveEntries.map { if (it.kind == "reasoning") it.copy(running = false) else it }
                     val cur = liveEntries.toMutableList()
@@ -827,30 +838,42 @@ private fun ChatScreen(
                 messages = content.messages + dev.myco.android.ui.model.ChatMessageUi("user", optimisticUser!!)
             )
             // 跟随底部：用户在底部时才跟随流式；用户往上拖就停止跟随，不被抢窗口
+            var userScrolling by remember { mutableStateOf(false) }
             LaunchedEffect(listState) {
-                androidx.compose.runtime.snapshotFlow {
-                    val info = listState.layoutInfo
-                    val last = info.visibleItemsInfo.lastOrNull()
-                    val bottom = last == null || (last.index >= info.totalItemsCount - 1 &&
-                        last.offset + last.size <= info.viewportEndOffset + 4)
-                    listState.isScrollInProgress to bottom
-                }.collect { (scrolling, bottom) ->
-                    if (!scrolling && bottom) followBottom = true
-                    else if (scrolling && !bottom) followBottom = false
+                // 只认"用户自己的拖动"来关掉跟随；程序滚动/回填不算，避免跟随被误关
+                listState.interactionSource.interactions.collect { interaction ->
+                    when (interaction) {
+                        is androidx.compose.foundation.interaction.DragInteraction.Start -> userScrolling = true
+                        is androidx.compose.foundation.interaction.DragInteraction.Stop,
+                        is androidx.compose.foundation.interaction.DragInteraction.Cancel -> {
+                            userScrolling = false
+                            followBottom = atBottom
+                        }
+                        else -> Unit
+                    }
                 }
             }
             LaunchedEffect(sessionId) {
                 while (true) {
                     androidx.compose.runtime.withFrameNanos { }
-                    if (followBottom && !listState.isScrollInProgress) {
-                        val info = listState.layoutInfo
-                        val last = info.visibleItemsInfo.lastOrNull()
-                        if (last != null && last.index == info.totalItemsCount - 1) {
-                            val overflow = last.offset + last.size - info.viewportEndOffset
-                            if (overflow > 0) {
-                                listState.dispatchRawDelta((overflow * 0.35f).coerceIn(1f, 64f))
-                            }
-                        }
+                    if (!followBottom || userScrolling) continue
+                    val info = listState.layoutInfo
+                    val total = info.totalItemsCount
+                    if (total == 0) continue
+                    val last = info.visibleItemsInfo.lastOrNull()
+                    if (last == null) {
+                        listState.scrollToItem(total - 1, 100000)
+                        continue
+                    }
+                    if (last.index < total - 1) {
+                        // 新内容已经长到视口外了：直接落到底部（跟随不是动画，不抢用户手势）
+                        listState.scrollToItem(total - 1, 100000)
+                        continue
+                    }
+                    val overflow = last.offset + last.size - info.viewportEndOffset
+                    if (overflow > 0) {
+                        // 逐帧小步推进：内容每帧长一点，窗口平滑跟着走，不瞬移
+                        listState.dispatchRawDelta((overflow * 0.35f).coerceIn(1f, 64f))
                     }
                 }
             }
@@ -873,6 +896,7 @@ private fun ChatScreen(
                 onActiveLeafChanged = { leaf ->
                     scope.launch { bridge.send(Command.SessionSetActiveLeaf(sessionId, leaf)) }
                 },
+                autoExpandTurn = streamingTurn,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
             if (error != null) {
