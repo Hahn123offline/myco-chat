@@ -97,9 +97,11 @@ class HttpBridgeContractTest {
 
         val collected = mutableListOf<BridgeEvent>()
         val job = launch { http.events.collect { collected += it } }
-        Thread.sleep(500)
+        kotlinx.coroutines.delay(1000) // 让 launch 里的 SSE 连接先建立（Thread.sleep 会阻塞 runBlocking 调度）
         // 直接驱动同一个 bridge：本用例测的是 SSE 转发，不是 HTTP 命令（命令已在其它用例覆盖）
+
         inProcess.send(Command.ChatSend(sessionId, "你好"))
+
         withTimeout(20_000) {
             while (collected.none { it is BridgeEvent.AssistantDone }) {
                 kotlinx.coroutines.delay(50)
@@ -110,6 +112,23 @@ class HttpBridgeContractTest {
         System.err.println("[dbg] collected=${collected.size} types=${collected.map { it::class.simpleName }}")
         assertTrue(collected.any { it is BridgeEvent.AssistantDelta && it.sessionId == sessionId })
         assertTrue(collected.any { it is BridgeEvent.AssistantDone && it.sessionId == sessionId })
+    }
+
+    @Test
+    fun `event replay over http returns sequenced live events`() = runBlocking {
+        val sessionId = (http.send(Command.SessionCreate(title = "replay")) as CommandResult.Ok)
+            .data.jsonObject["sessionId"]!!.jsonPrimitive.content
+        inProcess.send(Command.ChatSend(sessionId, "回放测试"))
+        val replay = http.query(Query.EventReplay(sessionId, 0)) as QueryResult.Ok
+        val arr = replay.data.jsonArray
+        assertTrue(arr.isNotEmpty())
+        val seqs = arr.map { it.jsonObject["seq"]!!.jsonPrimitive.content.toLong() }
+        assertEquals(seqs.sorted(), seqs)
+        assertTrue(seqs.all { it >= 1 })
+        assertTrue(arr.any { it.jsonObject["type"]!!.jsonPrimitive.content == "assistant.done" })
+        // 从末尾再查只应拿到空增量或更新事件
+        val tail = http.query(Query.EventReplay(sessionId, seqs.last())) as QueryResult.Ok
+        assertTrue(tail.data.jsonArray.isEmpty())
     }
 
     @Test
@@ -163,4 +182,8 @@ class HttpBridgeContractTest {
             }
         }
 }
+
+
+
+
 

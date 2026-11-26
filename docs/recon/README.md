@@ -18,6 +18,7 @@
 | [ui-component-behavior.md](ui-component-behavior.md) | 移动端 agent/chat UI 行为拆解（12 张截图 + 4 产品 + 3 开源） | 组件级状态机/手势/转场/数据契约；抽屉 82–85%、消息操作条、思考折叠、输入状态机、撤销 |
 | [backend-feature-gaps.md](backend-feature-gaps.md) | UI 所需能力 vs myco 后端逐项对照 | P0 8 条：事件 seq/重放、消息版本、历史重建、并发、列表字段、思考回传、工具路径、附件缩略图 |
 | [memory-agent-vs-companion.md](memory-agent-vs-companion.md) | agent 与陪伴记忆研究（20 来源） | 推荐 A+C（单库多标签 + domain 策略层）、最小六表、I2 最小范围、三大风险 |
+| [frontend-design-tech.md](frontend-design-tech.md) | 前端设计体系与安卓玻璃/动效/排版/返回手势 | 动效 token、中文行高与光学对齐、Android 毛玻璃只有 Haze/窗口模糊两条路、预测性返回规则 |
 
 > 证据分级不统一是这批材料的通病（dsh-icl 自己就有两套互斥的 E0–E4 定义）。
 > 本目录各报告已各自声明口径；引用数字前先看它的口径表。

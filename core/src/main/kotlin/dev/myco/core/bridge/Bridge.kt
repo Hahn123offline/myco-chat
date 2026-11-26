@@ -15,6 +15,8 @@ sealed class Command {
         val sessionId: String,
         val text: String,
         val attachments: List<AttachmentRef> = emptyList(),
+        /** 幂等键：重试同一 requestId 不会重复跑一轮。 */
+        val requestId: String? = null,
     ) : Command()
 
     /** GUI 选完文件后先存进应用私有目录；返回 AttachmentRef 的 JSON。base64 只在传输层出现。 */
@@ -62,6 +64,9 @@ sealed class Query {
 
     /** 搜索标题与会话内文本（大小写不敏感）。 */
     data class SessionSearch(val query: String, val limit: Int = 50) : Query()
+
+    /** 运行期事件重放：从内存环形缓冲取 seq > fromSeq 的事件（断线/切会话恢复用）。 */
+    data class EventReplay(val sessionId: String, val fromSeq: Long = 0, val limit: Int = 500) : Query()
     data object Providers : Query()
     data object DoctorRun : Query()
 
@@ -70,26 +75,56 @@ sealed class Query {
 }
 
 sealed class BridgeEvent {
-    data class AssistantDelta(val sessionId: String, val turnId: Long, val text: String) : BridgeEvent()
+    /** 每会话单调递增的运行期事件序号（从 1 开始；用于去重/断线重放）。 */
+    abstract val seq: Long
+
+    /** 事件所属会话；全局错误（如 provider 缺失）为 null。 */
+    abstract val sessionId: String?
+
+    data class AssistantDelta(
+        override val sessionId: String,
+        val turnId: Long,
+        val text: String,
+        override val seq: Long = 0,
+    ) : BridgeEvent()
+
     data class AssistantDone(
-        val sessionId: String,
+        override val sessionId: String,
         val turnId: Long,
         val text: String,
         val stopped: Boolean = false,
+        override val seq: Long = 0,
     ) : BridgeEvent()
-    data class Failed(val code: String, val message: String, val retriable: Boolean) : BridgeEvent()
-    data class SessionUpdated(val sessionId: String) : BridgeEvent()
+
+    data class Failed(
+        val code: String,
+        val message: String,
+        val retriable: Boolean,
+        override val sessionId: String? = null,
+        override val seq: Long = 0,
+    ) : BridgeEvent()
+
+    data class SessionUpdated(
+        override val sessionId: String,
+        override val seq: Long = 0,
+    ) : BridgeEvent()
 
     /** 正在调用工具（GUI 可显示"正在使用 xxx"）。 */
-    data class ToolStarted(val sessionId: String, val turnId: Long, val name: String) : BridgeEvent()
+    data class ToolStarted(
+        override val sessionId: String,
+        val turnId: Long,
+        val name: String,
+        override val seq: Long = 0,
+    ) : BridgeEvent()
 
     /** 工具返回（ok=false 时 text 是原因）。 */
     data class ToolFinished(
-        val sessionId: String,
+        override val sessionId: String,
         val turnId: Long,
         val name: String,
         val ok: Boolean,
         val text: String,
+        override val seq: Long = 0,
     ) : BridgeEvent()
 }
 

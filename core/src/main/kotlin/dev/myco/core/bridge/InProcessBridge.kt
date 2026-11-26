@@ -37,8 +37,25 @@ class InProcessBridge(
     private val clientFactory: (ProviderProfile) -> ChatClient,
 ) : Bridge {
 
-    private val _events = MutableSharedFlow<BridgeEvent>(extraBufferCapacity = 256)
+    private val _events = MutableSharedFlow<BridgeEvent>(extraBufferCapacity = 1024)
     override val events: Flow<BridgeEvent> = _events.asSharedFlow()
+
+    // 运行期事件：每会话单调 seq + 环形缓冲（断线/切会话可重放），不落盘（持久历史走 SessionEvents）
+    private val eventSeq = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong>()
+    private val eventBuffers = java.util.concurrent.ConcurrentHashMap<String, ArrayDeque<BridgeEvent>>()
+    private val completedRequests = java.util.concurrent.ConcurrentHashMap<String, CommandResult>()
+
+    private suspend fun emit(sessionId: String?, assign: (Long) -> BridgeEvent) {
+        val key = sessionId ?: ""
+        val seq = eventSeq.computeIfAbsent(key) { java.util.concurrent.atomic.AtomicLong(0) }.incrementAndGet()
+        val event = assign(seq)
+        val buffer = eventBuffers.computeIfAbsent(key) { ArrayDeque() }
+        synchronized(buffer) {
+            buffer.addLast(event)
+            while (buffer.size > EVENT_BUFFER) buffer.removeFirst()
+        }
+        _events.emit(event)
+    }
 
     private val doctor = Doctor(home, sessions, providers, credentials, tools)
 
@@ -50,7 +67,7 @@ class InProcessBridge(
     override suspend fun send(cmd: Command): CommandResult = when (cmd) {
         is Command.SessionCreate -> {
             val meta = sessions.create(cmd.app, cmd.preset, cmd.title)
-            _events.tryEmit(BridgeEvent.SessionUpdated(meta.id))
+            emit(meta.id) { seq -> BridgeEvent.SessionUpdated(meta.id, seq) }
             CommandResult.Ok(buildJsonObject { put("sessionId", meta.id) })
         }
         is Command.AttachmentSave -> {
@@ -72,7 +89,7 @@ class InProcessBridge(
         is Command.SessionRename -> runCatching { sessions.rename(cmd.sessionId, cmd.title) }
             .fold(
                 onSuccess = { meta ->
-                    _events.tryEmit(BridgeEvent.SessionUpdated(meta.id))
+                    emit(meta.id) { seq -> BridgeEvent.SessionUpdated(meta.id, seq) }
                     CommandResult.Ok(buildJsonObject { put("sessionId", meta.id); put("title", meta.title) })
                 },
                 onFailure = { CommandResult.Err("SESSION_RENAME", it.message ?: "改名失败") },
@@ -80,7 +97,7 @@ class InProcessBridge(
         is Command.SessionDelete -> runCatching { sessions.delete(cmd.sessionId) }
             .fold(
                 onSuccess = {
-                    _events.tryEmit(BridgeEvent.SessionUpdated(cmd.sessionId))
+                    emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
                     CommandResult.Ok(buildJsonObject { put("deleted", true) })
                 },
                 onFailure = { CommandResult.Err("SESSION_DELETE", it.message ?: "删除失败") },
@@ -88,7 +105,7 @@ class InProcessBridge(
         is Command.SessionRestore -> runCatching { sessions.restore(cmd.sessionId) }
             .fold(
                 onSuccess = {
-                    _events.tryEmit(BridgeEvent.SessionUpdated(cmd.sessionId))
+                    emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
                     CommandResult.Ok(buildJsonObject { put("restored", true) })
                 },
                 onFailure = { CommandResult.Err("SESSION_RESTORE", it.message ?: "恢复失败") },
@@ -171,9 +188,18 @@ class InProcessBridge(
         }
     }
 
-    private suspend fun chatSend(cmd: Command.ChatSend): CommandResult = runChat(cmd)
+    private suspend fun chatSend(cmd: Command.ChatSend): CommandResult {
+        val key = cmd.requestId?.let { "${cmd.sessionId}:$it" }
+        if (key != null) completedRequests[key]?.let { return it }
+        val result = runChat(cmd)
+        if (key != null) {
+            if (completedRequests.size > 200) completedRequests.clear()
+            completedRequests[key] = result
+        }
+        return result
+    }
 
-    private fun chatStop(cmd: Command.ChatStop): CommandResult {
+    private suspend fun chatStop(cmd: Command.ChatStop): CommandResult {
         val collector = activeTurns.remove(cmd.sessionId)
             ?: return CommandResult.Err("NOT_RUNNING", "该会话没有进行中的回合")
         collector.cancel()
@@ -254,7 +280,7 @@ class InProcessBridge(
                         is ChatChunk.Delta -> {
                             currentStep.append(chunk.text)
                             full.append(chunk.text)
-                            _events.tryEmit(BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text))
+                            emit(cmd.sessionId) { seq -> BridgeEvent.AssistantDelta(cmd.sessionId, turn, chunk.text, seq) }
                         }
                         is ChatChunk.ToolRequest -> toolRequests += chunk
                         is ChatChunk.Done -> chunk.usage?.costUsd?.let { totalCost += it }
@@ -277,7 +303,7 @@ class InProcessBridge(
                         cmd.sessionId,
                         SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = steps, costUsd = totalCost))
                     )
-                    _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString()))
+                    emit(cmd.sessionId) { seq -> BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString(), seq = seq) }
                     finished = true
                     return@async
                 }
@@ -298,7 +324,7 @@ class InProcessBridge(
                         cmd.sessionId,
                         SessionEvent.ToolCall(data = SessionEvent.ToolCall.Data(tr.name, tr.arguments))
                     )
-                    _events.tryEmit(BridgeEvent.ToolStarted(cmd.sessionId, turn, tr.name))
+                    emit(cmd.sessionId) { seq -> BridgeEvent.ToolStarted(cmd.sessionId, turn, tr.name, seq) }
                     val result = tools.execute(tr.name, tr.arguments)
                     val ok = result.isSuccess
                     val out = result.getOrElse { it.message ?: "工具执行失败" }
@@ -308,7 +334,7 @@ class InProcessBridge(
                             data = SessionEvent.ToolResult.Data(tr.name, ok, out, reason = if (ok) null else out)
                         )
                     )
-                    _events.tryEmit(BridgeEvent.ToolFinished(cmd.sessionId, turn, tr.name, ok, out))
+                    emit(cmd.sessionId) { seq -> BridgeEvent.ToolFinished(cmd.sessionId, turn, tr.name, ok, out, seq) }
                     calls += dev.myco.core.llm.ToolCall(tr.id, tr.name, tr.arguments.toString())
                     resultMessages += ChatMessage("tool", out, toolCallId = tr.id, toolName = tr.name)
                 }
@@ -334,7 +360,7 @@ class InProcessBridge(
                 cmd.sessionId,
                 SessionEvent.TurnEnd(data = SessionEvent.TurnEnd.Data(turn, steps = 0, null))
             )
-            _events.tryEmit(BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString(), stopped = true))
+            emit(cmd.sessionId) { seq -> BridgeEvent.AssistantDone(cmd.sessionId, turn, full.toString(), stopped = true, seq = seq) }
             return CommandResult.Ok(buildJsonObject {
                 put("turnId", turn); put("text", full.toString()); put("stopped", true)
             })
@@ -343,7 +369,7 @@ class InProcessBridge(
         }
 
         failed?.let {
-            _events.tryEmit(BridgeEvent.Failed("LLM_FAILED", it.message, it.retriable))
+            emit(cmd.sessionId) { seq -> BridgeEvent.Failed("LLM_FAILED", it.message, it.retriable, cmd.sessionId, seq) }
             return CommandResult.Err("LLM_FAILED", it.message, it.retriable)
         }
         if (!finished) {
@@ -373,6 +399,17 @@ class InProcessBridge(
             val events = runCatching { sessions.readFrom(q.sessionId, q.fromSeq) }
                 .getOrElse { return QueryResult.Err("SESSION_NOT_FOUND", it.message ?: "读取失败") }
             QueryResult.Ok(buildJsonArray { events.forEach { add(eventJson(it)) } })
+        }
+        is Query.EventReplay -> {
+            val buffer = eventBuffers[q.sessionId]
+            if (buffer == null) {
+                QueryResult.Ok(buildJsonArray { })
+            } else {
+                val events = synchronized(buffer) {
+                    buffer.filter { it.seq > q.fromSeq }.takeLast(q.limit.coerceIn(1, EVENT_BUFFER))
+                }
+                QueryResult.Ok(buildJsonArray { events.forEach { add(bridgeEventJson(it)) } })
+            }
         }
         is Query.SessionSearch -> {
             val hits = runCatching { sessions.search(q.query, q.limit) }
@@ -487,6 +524,33 @@ class InProcessBridge(
         }
     }
 
+    private fun bridgeEventJson(e: BridgeEvent): JsonElement = buildJsonObject {
+        put("seq", e.seq)
+        put("sessionId", e.sessionId ?: "")
+        when (e) {
+            is BridgeEvent.AssistantDelta -> {
+                put("type", "assistant.delta")
+                put("turnId", e.turnId); put("text", e.text)
+            }
+            is BridgeEvent.AssistantDone -> {
+                put("type", "assistant.done")
+                put("turnId", e.turnId); put("text", e.text); put("stopped", e.stopped)
+            }
+            is BridgeEvent.Failed -> {
+                put("type", "failed")
+                put("code", e.code); put("message", e.message); put("retriable", e.retriable)
+            }
+            is BridgeEvent.SessionUpdated -> put("type", "session.updated")
+            is BridgeEvent.ToolStarted -> {
+                put("type", "tool.started"); put("turnId", e.turnId); put("name", e.name)
+            }
+            is BridgeEvent.ToolFinished -> {
+                put("type", "tool.finished"); put("turnId", e.turnId); put("name", e.name)
+                put("ok", e.ok); put("text", e.text)
+            }
+        }
+    }
+
     private fun typeName(e: SessionEvent): String = when (e) {
         is SessionEvent.SessionStart -> "session/start"
         is SessionEvent.TurnStart -> "turn/start"
@@ -504,3 +568,7 @@ const val MAX_TOOL_STEPS = 4
 
 /** 所有工具 schema 进每请求的固定前缀预算（字符）。 */
 const val TOOL_BUDGET_CHARS = 24_000
+
+/** 每会话保留的运行期事件条数（断线重放大致窗口）。 */
+const val EVENT_BUFFER = 500
+

@@ -99,6 +99,9 @@ class HttpBridgeClient(
             is Query.SessionSearch -> "/session.search" to buildJsonObject {
                 put("query", q.query); put("limit", q.limit)
             }
+            is Query.EventReplay -> "/event.replay" to buildJsonObject {
+                put("sessionId", q.sessionId); put("fromSeq", q.fromSeq); put("limit", q.limit)
+            }
             is Query.SessionEvents -> "/session.events" to buildJsonObject {
                 put("sessionId", q.sessionId); put("fromSeq", q.fromSeq)
             }
@@ -223,35 +226,43 @@ class HttpBridgeClient(
 
     private fun parseEvent(data: String): BridgeEvent? {
         val o = runCatching { Json.parseToJsonElement(data).jsonObject }.getOrNull() ?: return null
+        val seq = o["seq"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0
+        val sid = o["sessionId"]?.jsonPrimitive?.content ?: ""
         return when (o["type"]?.jsonPrimitive?.content) {
             "assistant.delta" -> BridgeEvent.AssistantDelta(
-                o["sessionId"]?.jsonPrimitive?.content ?: "",
+                sid,
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["text"]?.jsonPrimitive?.content ?: "",
+                seq,
             )
             "assistant.done" -> BridgeEvent.AssistantDone(
-                o["sessionId"]?.jsonPrimitive?.content ?: "",
+                sid,
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["text"]?.jsonPrimitive?.content ?: "",
                 stopped = o["stopped"]?.jsonPrimitive?.content == "true",
+                seq = seq,
             )
             "failed" -> BridgeEvent.Failed(
                 o["code"]?.jsonPrimitive?.content ?: "ERROR",
                 o["message"]?.jsonPrimitive?.content ?: "",
                 o["retriable"]?.jsonPrimitive?.content == "true",
+                sessionId = sid.ifBlank { null },
+                seq = seq,
             )
-            "session.updated" -> BridgeEvent.SessionUpdated(o["sessionId"]?.jsonPrimitive?.content ?: "")
+            "session.updated" -> BridgeEvent.SessionUpdated(sid, seq)
             "tool.started" -> BridgeEvent.ToolStarted(
-                o["sessionId"]?.jsonPrimitive?.content ?: "",
+                sid,
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["name"]?.jsonPrimitive?.content ?: "",
+                seq,
             )
             "tool.finished" -> BridgeEvent.ToolFinished(
-                o["sessionId"]?.jsonPrimitive?.content ?: "",
+                sid,
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["name"]?.jsonPrimitive?.content ?: "",
                 ok = o["ok"]?.jsonPrimitive?.content == "true",
                 text = o["text"]?.jsonPrimitive?.content ?: "",
+                seq = seq,
             )
             else -> null
         }

@@ -12,6 +12,7 @@ import dev.myco.core.spec.ModelProfile
 import dev.myco.core.spec.ProviderProfile
 import dev.myco.core.tools.ToolRegistry
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
@@ -267,6 +268,74 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `bridge events carry monotonic seq and can be replayed`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default")
+        val seen = mutableListOf<BridgeEvent>()
+        val collector = launch {
+            f.bridge.events.collect { seen += it }
+        }
+        kotlinx.coroutines.delay(100) // 让订阅先建立（runBlocking 单线程调度）
+        f.bridge.send(Command.ChatSend(meta.id, "你好"))
+        kotlinx.coroutines.withTimeout(5_000) {
+            while (seen.none { it is BridgeEvent.AssistantDone }) kotlinx.coroutines.delay(20)
+        }
+        collector.cancel()
+        val seqs = seen.filter { it.sessionId == meta.id }.map { it.seq }
+        assertTrue(seqs.size >= 2)
+        assertEquals(seqs.sorted(), seqs)
+        assertEquals(seqs.distinct().size, seqs.size)
+
+        val replay = f.bridge.query(Query.EventReplay(meta.id, 0)) as QueryResult.Ok
+        val arr = replay.data as JsonArray
+        assertTrue(arr.size >= 2)
+        val firstSeq = arr[0].jsonObject["seq"]!!.jsonPrimitive.content.toLong()
+        val lastSeq = arr.last().jsonObject["seq"]!!.jsonPrimitive.content.toLong()
+        assertTrue(firstSeq >= 1)
+        assertTrue(lastSeq > firstSeq)
+        // fromSeq 之后只回放增量
+        val tail = f.bridge.query(Query.EventReplay(meta.id, lastSeq - 1)) as QueryResult.Ok
+        assertTrue((tail.data as JsonArray).size >= 1)
+    }
+
+    @Test
+    fun `chat send with same requestId runs once`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default")
+        val first = f.bridge.send(Command.ChatSend(meta.id, "你好", requestId = "req-1"))
+        val second = f.bridge.send(Command.ChatSend(meta.id, "你好", requestId = "req-1"))
+        assertTrue(first is CommandResult.Ok)
+        assertTrue(second is CommandResult.Ok)
+        assertEquals(first, second)
+        val turns = f.sessions.read(meta.id).count { it is SessionEvent.TurnStart }
+        assertEquals(1, turns)
+    }
+
+    @Test
+    fun `failed event carries sessionId`() = runBlocking {
+        val failing = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    emit(dev.myco.core.llm.ChatChunk.Failed("boom", retriable = false))
+                }
+        }
+        val f = Fixture(client = failing)
+        val meta = f.sessions.create("chat", "chat-default")
+        val seen = mutableListOf<BridgeEvent>()
+        val collector = launch { f.bridge.events.collect { seen += it } }
+        kotlinx.coroutines.delay(100)
+        val res = f.bridge.send(Command.ChatSend(meta.id, "hi"))
+        assertTrue(res is CommandResult.Err)
+        kotlinx.coroutines.withTimeout(5_000) {
+            while (seen.none { it is BridgeEvent.Failed }) kotlinx.coroutines.delay(20)
+        }
+        collector.cancel()
+        val failed = seen.filterIsInstance<BridgeEvent.Failed>().single()
+        assertEquals(meta.id, failed.sessionId)
+        assertTrue(failed.seq >= 1)
+    }
+
+    @Test
     fun `tool loop executes registry and feeds result back`() = runBlocking {
         val client = object : ChatClient {
             var calls = 0
@@ -345,4 +414,5 @@ class InProcessBridgeTest {
         assertTrue(chatOnly is QueryResult.Ok)
     }
 }
+
 

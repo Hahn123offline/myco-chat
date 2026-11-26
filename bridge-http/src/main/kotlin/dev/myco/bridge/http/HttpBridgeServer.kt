@@ -176,6 +176,11 @@ class HttpBridgeServer(
                 query = payload["query"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing query")),
                 limit = payload["limit"]?.jsonPrimitive?.content?.toIntOrNull() ?: 50,
             )
+            "/event.replay" -> Query.EventReplay(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                fromSeq = payload["fromSeq"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
+                limit = payload["limit"]?.jsonPrimitive?.content?.toIntOrNull() ?: 500,
+            )
             "/provider.export" -> Query.ProviderExport
             "/doctor" -> Query.DoctorRun
             else -> return json(ex, 404, err("UNKNOWN_QUERY", name))
@@ -185,17 +190,38 @@ class HttpBridgeServer(
 
     private fun handleEvents(ex: HttpExchange) {
         if (ex.requestMethod != "GET") return json(ex, 405, err("METHOD", "GET only"))
-        val sessionId = ex.requestURI.query?.split("&")
-            ?.mapNotNull { it.split("=").takeIf { p -> p.size == 2 && p[0] == "sessionId" }?.get(1) }
-            ?.firstOrNull()
+        val params = ex.requestURI.query?.split("&")
+            ?.mapNotNull { it.split("=").takeIf { p -> p.size == 2 }?.let { p -> p[0] to p[1] } }
+            .orEmpty()
+        val sessionId = params.firstOrNull { it.first == "sessionId" }?.second
+        val fromSeq = params.firstOrNull { it.first == "fromSeq" }?.second?.toLongOrNull() ?: 0L
         ex.responseHeaders.add("Content-Type", "text/event-stream; charset=utf-8")
         ex.responseHeaders.add("Cache-Control", "no-cache")
         ex.sendResponseHeaders(200, 0)
         val out = ex.responseBody
+
+        var lastSeq = fromSeq
+
         try {
+            // 先补发断线期间的运行期事件（内存环形缓冲），再订阅新事件
+            if (sessionId != null) {
+                val replay = runBlocking { bridge.query(Query.EventReplay(sessionId, fromSeq)) }
+                val arr = (replay as? QueryResult.Ok)?.data as? kotlinx.serialization.json.JsonArray
+                arr?.forEach { el ->
+                    out.write("event: bridge\ndata: $el\n\n".toByteArray(StandardCharsets.UTF_8))
+                    val seq = (el as? kotlinx.serialization.json.JsonObject)?.get("seq")
+                        ?.jsonPrimitive?.content?.toLongOrNull() ?: lastSeq
+                    if (seq > lastSeq) lastSeq = seq
+                }
+                out.flush()
+            }
             runBlocking {
                 bridge.events.collect { e ->
-                    if (sessionId != null && eventSessionId(e) != null && eventSessionId(e) != sessionId) return@collect
+                    if (sessionId != null && e.sessionId != null && e.sessionId != sessionId) return@collect
+                    if (sessionId != null && e.seq <= lastSeq) return@collect
+                    if (e.seq > lastSeq) lastSeq = e.seq
+
+
                     out.write("event: bridge\ndata: ${eventJson(e)}\n\n".toByteArray(StandardCharsets.UTF_8))
                     out.flush()
                 }
@@ -216,28 +242,30 @@ class HttpBridgeServer(
         is BridgeEvent.Failed -> null
     }
 
-    private fun eventJson(e: BridgeEvent): String = when (e) {
-        is BridgeEvent.AssistantDelta -> buildJsonObject {
-            put("type", "assistant.delta"); put("sessionId", e.sessionId); put("turnId", e.turnId); put("text", e.text)
-        }.toString()
-        is BridgeEvent.AssistantDone -> buildJsonObject {
-            put("type", "assistant.done"); put("sessionId", e.sessionId); put("turnId", e.turnId)
-            put("text", e.text); put("stopped", e.stopped)
-        }.toString()
-        is BridgeEvent.Failed -> buildJsonObject {
-            put("type", "failed"); put("code", e.code); put("message", e.message); put("retriable", e.retriable)
-        }.toString()
-        is BridgeEvent.SessionUpdated -> buildJsonObject {
-            put("type", "session.updated"); put("sessionId", e.sessionId)
-        }.toString()
-        is BridgeEvent.ToolStarted -> buildJsonObject {
-            put("type", "tool.started"); put("sessionId", e.sessionId); put("turnId", e.turnId); put("name", e.name)
-        }.toString()
-        is BridgeEvent.ToolFinished -> buildJsonObject {
-            put("type", "tool.finished"); put("sessionId", e.sessionId); put("turnId", e.turnId)
-            put("name", e.name); put("ok", e.ok); put("text", e.text)
-        }.toString()
-    }
+    private fun eventJson(e: BridgeEvent): String = buildJsonObject {
+        put("seq", e.seq)
+        put("sessionId", e.sessionId ?: "")
+        when (e) {
+            is BridgeEvent.AssistantDelta -> {
+                put("type", "assistant.delta"); put("turnId", e.turnId); put("text", e.text)
+            }
+            is BridgeEvent.AssistantDone -> {
+                put("type", "assistant.done"); put("turnId", e.turnId)
+                put("text", e.text); put("stopped", e.stopped)
+            }
+            is BridgeEvent.Failed -> {
+                put("type", "failed"); put("code", e.code); put("message", e.message); put("retriable", e.retriable)
+            }
+            is BridgeEvent.SessionUpdated -> put("type", "session.updated")
+            is BridgeEvent.ToolStarted -> {
+                put("type", "tool.started"); put("turnId", e.turnId); put("name", e.name)
+            }
+            is BridgeEvent.ToolFinished -> {
+                put("type", "tool.finished"); put("turnId", e.turnId)
+                put("name", e.name); put("ok", e.ok); put("text", e.text)
+            }
+        }
+    }.toString()
 
     private fun commandResultJson(r: CommandResult): JsonElement = when (r) {
         is CommandResult.Ok -> buildJsonObject { put("ok", true); put("data", r.data) }
@@ -270,3 +298,7 @@ class HttpBridgeServer(
     private fun err(code: String, msg: String) =
         """{"ok":false,"error":{"code":"$code","message":"$msg","retriable":false}}"""
 }
+
+
+
+
