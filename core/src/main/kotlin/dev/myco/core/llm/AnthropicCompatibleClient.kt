@@ -202,7 +202,13 @@ class AnthropicCompatibleClient(
                 put("type", if (thinkingEnabled) "enabled" else "disabled")
                 if (thinkingEnabled) {
                     // Anthropic 需要 budget_tokens；模型/用户映射给数字时直接用，否则给保守默认
-                    val budget = request.reasoningEffort?.toLongOrNull() ?: 4096L
+                    val budget = request.reasoningEffort?.toLongOrNull()
+                        ?: when (request.reasoningEffort?.lowercase()) {
+                            "low" -> 2048L
+                            "medium" -> 8192L
+                            "high" -> 32768L
+                            else -> 4096L
+                        }
                     put("budget_tokens", budget)
                 }
             })
@@ -326,5 +332,6 @@ class AnthropicCompatibleClient(
         dev.myco.core.spec.AuthProfile.None -> "(none)"
     }
 }
+
 
 

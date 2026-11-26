@@ -1,6 +1,7 @@
 package dev.myco.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -43,9 +47,13 @@ import dev.myco.android.ui.model.ToolStepUi
 import dev.myco.android.ui.model.TurnMetaUi
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /** 解析后的聊天内容。 */
+data class SourceRef(val title: String, val url: String, val site: String? = null)
+
 data class TimelineEntry(
     val kind: String, // reasoning | tool | text
     val text: String = "",
@@ -53,7 +61,20 @@ data class TimelineEntry(
     val args: String = "",
     val ok: Boolean? = null,
     val running: Boolean = false,
+    val sources: List<SourceRef> = emptyList(),
 )
+
+/** 从 web_search 的工具结果里提取来源（title/url/site）。 */
+fun parseSources(raw: String): List<SourceRef> = runCatching {
+    val root = kotlinx.serialization.json.Json.parseToJsonElement(raw).jsonObject
+    val arr = root["results"] as? kotlinx.serialization.json.JsonArray ?: return emptyList()
+    arr.mapNotNull { el ->
+        val o = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+        val url = o["url"]?.jsonPrimitive?.content ?: return@mapNotNull null
+        val title = o["title"]?.jsonPrimitive?.content ?: url
+        SourceRef(title, url, o["site"]?.jsonPrimitive?.content)
+    }
+}.getOrDefault(emptyList())
 
 data class ChatContentState(
     val messages: List<ChatMessageUi> = emptyList(),
@@ -132,12 +153,13 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
                 val okRaw = data?.get("ok")?.jsonPrimitive?.content ?: ""
                 val ok = okRaw.equals("true", ignoreCase = true)
                 val text = data.str("text") ?: ""
+                val sources = if (name == "web_search") parseSources(text) else emptyList()
                 val idx = list.indexOfLast { it.name == name && it.ok == null }
                 if (idx >= 0) list[idx] = list[idx].copy(ok = ok, text = text)
                 else list += ToolStepUi(name, ok, text)
                 val entries = timelines.getOrPut(turn) { mutableListOf() }
                 val tIdx = entries.indexOfLast { it.kind == "tool" && it.name == name && it.running }
-                if (tIdx >= 0) entries[tIdx] = entries[tIdx].copy(ok = ok, text = text, running = false)
+                if (tIdx >= 0) entries[tIdx] = entries[tIdx].copy(ok = ok, text = text, running = false, sources = sources)
             }
             "turn/end" -> {
                 val turn = data?.long("turn") ?: return@forEach
@@ -199,6 +221,10 @@ fun MarkdownText(text: String, modifier: Modifier = Modifier) {
                     CodeBlock(code.toString().trimEnd(), lang)
                 }
                 line.isBlank() -> flushParagraph()
+                line.matches(Regex("^\\\\s*([-*_])(\\\\s*\\\\1){2,}\\\\s*$")) -> {
+                    flushParagraph()
+                    androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                }
                 line.startsWith("#") -> {
                     flushParagraph()
                     val level = line.takeWhile { it == '#' }.length.coerceAtMost(3)
@@ -339,8 +365,11 @@ private fun inlineAnnotated(text: String): AnnotatedString = buildAnnotatedStrin
                 if (end < 0) { append(text[i].toString()); i++ }
                 else {
                     val label = text.substring(i + 1, mid)
-                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
-                        append(label)
+                    val url = text.substring(mid + 2, end).trim()
+                    withLink(LinkAnnotation.Url(url)) {
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
+                            append(label)
+                        }
                     }
                     i = end + 1
                 }
@@ -569,7 +598,30 @@ private fun TimelineFold(
                                 modifier = Modifier.padding(start = MycoSpacing.m),
                             )
                         }
-                        if (entry.text.isNotBlank()) {
+                        if (entry.sources.isNotEmpty()) {
+                            val uriHandler = LocalUriHandler.current
+                            Column(Modifier.padding(start = MycoSpacing.m, top = 2.dp)) {
+                                entry.sources.take(6).forEachIndexed { i, s ->
+                                    Row(
+                                        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp))
+                                            .clickable { runCatching { uriHandler.openUri(s.url) } }
+                                            .padding(vertical = 3.dp),
+                                    ) {
+                                        Text("${i + 1}. ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                        Column(Modifier.weight(1f)) {
+                                            Text(s.title, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                            Text(
+                                                s.site ?: s.url,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (entry.text.isNotBlank()) {
                             Text(
                                 entry.text.take(1200),
                                 style = MaterialTheme.typography.bodySmall,
@@ -702,6 +754,11 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
+
 
 
 

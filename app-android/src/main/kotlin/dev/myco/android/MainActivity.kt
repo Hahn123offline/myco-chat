@@ -17,17 +17,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -484,6 +485,7 @@ private fun ChatScreen(
     var streaming by remember { mutableStateOf<String?>(null) }
     var streamingReasoning by remember { mutableStateOf<String?>(null) }
     var liveEntries by remember { mutableStateOf<List<dev.myco.android.ui.TimelineEntry>>(emptyList()) }
+    var loadingFork by remember { mutableStateOf(false) }
     var optimisticUser by remember { mutableStateOf<String?>(null) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -621,6 +623,9 @@ private fun ChatScreen(
                     liveEntries = cur
                 }
                 is BridgeEvent.AssistantDelta -> if (e.sessionId == sessionId) {
+                    if (streaming == null) {
+                        liveEntries = liveEntries.map { if (it.kind == "reasoning") it.copy(running = false) else it }
+                    }
                     streaming = (streaming ?: "") + e.text
                 }
                 is BridgeEvent.AssistantDone -> if (e.sessionId == sessionId) {
@@ -635,6 +640,7 @@ private fun ChatScreen(
                 }
                 is BridgeEvent.SessionUpdated -> Unit
                 is BridgeEvent.ToolStarted -> if (e.sessionId == sessionId) {
+                    liveEntries = liveEntries.map { if (it.kind == "reasoning") it.copy(running = false) else it }
                     val cur = liveEntries.toMutableList()
                     val pending = streaming
                     if (!pending.isNullOrBlank()) {
@@ -647,8 +653,9 @@ private fun ChatScreen(
                 is BridgeEvent.ToolFinished -> if (e.sessionId == sessionId) {
                     val cur = liveEntries.toMutableList()
                     val idx = cur.indexOfLast { it.kind == "tool" && it.name == e.name && it.running }
-                    if (idx >= 0) cur[idx] = cur[idx].copy(ok = e.ok, text = e.text, running = false)
-                    else cur += dev.myco.android.ui.TimelineEntry(kind = "tool", name = e.name, ok = e.ok, text = e.text)
+                    val srcs = if (e.name == "web_search") dev.myco.android.ui.parseSources(e.text) else emptyList()
+                    if (idx >= 0) cur[idx] = cur[idx].copy(ok = e.ok, text = e.text, running = false, sources = srcs)
+                    else cur += dev.myco.android.ui.TimelineEntry(kind = "tool", name = e.name, ok = e.ok, text = e.text, sources = srcs)
                     liveEntries = cur
                 }
             }
@@ -686,6 +693,11 @@ private fun ChatScreen(
     fun regenerate(message: dev.myco.android.ui.model.ChatMessageUi) {
         val id = message.messageId ?: return
         error = null
+        // 重生成立刻把视图切到分叉点（父节点），不把旧分支内容留在新回答下面
+        loadingFork = true
+        activeLeaf = message.parentId
+        liveEntries = emptyList()
+        streaming = null
         scope.launch {
             val r = bridge.send(Command.ChatRegenerate(sessionId, id))
             if (r is CommandResult.Err) error = "${r.code}: ${r.message}"
@@ -697,6 +709,9 @@ private fun ChatScreen(
         val id = message.messageId ?: return
         error = null
         optimisticUser = newText
+        activeLeaf = message.parentId
+        liveEntries = emptyList()
+        streaming = null
         scope.launch {
             val r = bridge.send(Command.ChatEditResend(sessionId, id, newText))
             if (r is CommandResult.Err) {
@@ -728,6 +743,12 @@ private fun ChatScreen(
                 }
             }
             val listState = rememberLazyListState()
+            suspend fun scrollToLatest() {
+                val total = listState.layoutInfo.totalItemsCount
+                if (total > 0) {
+                    listState.scrollToItem(total - 1, 100000)
+                }
+            }
             val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
             val context = LocalContext.current
             val atBottom by remember {
@@ -742,8 +763,7 @@ private fun ChatScreen(
             )
             // 只在"新消息/新回合开始"时自动滚动；流式增量不强制滚动，避免抢用户手势
             LaunchedEffect(display.messages.size, streaming != null) {
-                val target = listState.layoutInfo.totalItemsCount - 1
-                if (target >= 0 && atBottom && !listState.isScrollInProgress) listState.scrollToItem(target)
+                if (atBottom && !listState.isScrollInProgress) scrollToLatest()
             }
             dev.myco.android.ui.ChatMessages(
                 state = display,
@@ -774,10 +794,7 @@ private fun ChatScreen(
             if (!atBottom && (display.messages.isNotEmpty() || streaming != null)) {
                 Box(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m)) {
                     TextButton(onClick = {
-                        scope.launch {
-                            val target = listState.layoutInfo.totalItemsCount - 1
-                            if (target >= 0) listState.scrollToItem(target)
-                        }
+                        scope.launch { scrollToLatest() }
                     }) { Text("↓ 回到最新") }
                 }
             }
@@ -1380,14 +1397,20 @@ private fun ProviderEditDialog(
     onSave: (ProviderEditor) -> Unit,
 ) {
     var form by remember(initial) { mutableStateOf(initial) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initial.originalId == null) "添加提供方" else "编辑 ${initial.originalId}") },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()).heightIn(max = 420.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        androidx.compose.material3.Surface(
+            Modifier.fillMaxWidth().fillMaxHeight(0.92f),
+            shape = RoundedCornerShape(MycoRadius.sheet),
+        ) {
+            Column(Modifier.fillMaxSize().padding(MycoSpacing.l)) {
+                Text(
+                    if (initial.originalId == null) "添加提供方" else "编辑 ${initial.originalId}",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Column(
+                    Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = MycoSpacing.s),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                 Text("kind: ${form.kind}", style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(form.id, { form = form.copy(id = it) }, label = { Text("Provider ID") }, singleLine = true)
                 OutlinedTextField(form.displayName, { form = form.copy(displayName = it) }, label = { Text("显示名称") }, singleLine = true)
@@ -1483,11 +1506,14 @@ private fun ProviderEditDialog(
                         Text(discoverStatus, style = MaterialTheme.typography.bodySmall)
                     }
                 }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("取消") }
+                    Button(onClick = { onSave(form) }) { Text("保存") }
+                }
             }
-        },
-        confirmButton = { TextButton(onClick = { onSave(form) }) { Text("保存") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
-    )
+        }
+    }
 }
 
 @Composable
@@ -1783,6 +1809,17 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
+
+
+
+
+
+
+
+
 
 
 

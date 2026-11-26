@@ -537,6 +537,30 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `regenerate second answer excludes the old answer from context`() = runBlocking {
+        var lastRequest: dev.myco.core.llm.ChatRequest? = null
+        var calls = 0
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    calls++
+                    lastRequest = request
+                    emit(dev.myco.core.llm.ChatChunk.Delta("A$calls"))
+                    emit(dev.myco.core.llm.ChatChunk.Done("A$calls", finishReason = "stop"))
+                }
+        }
+        val f = Fixture(client = client)
+        val meta = f.sessions.create("chat", "chat-default")
+        f.bridge.send(Command.ChatSend(meta.id, "Q1"))
+        f.bridge.send(Command.ChatSend(meta.id, "Q2"))
+        val secondAnswer = f.sessions.read(meta.id).filterIsInstance<SessionEvent.AssistantMessage>().last()
+        val r = f.bridge.send(Command.ChatRegenerate(meta.id, secondAnswer.data.messageId!!))
+        assertTrue(r is CommandResult.Ok)
+        val texts = lastRequest!!.messages.map { it.role + ":" + it.content }
+        assertEquals(listOf("user:Q1", "assistant:A1", "user:Q2"), texts)
+    }
+
+    @Test
     fun `draft session is unique until first message`() = runBlocking {
         val f = Fixture()
         val r1 = f.bridge.send(Command.SessionEnsureDraft())
@@ -729,6 +753,7 @@ class InProcessBridgeTest {
         assertTrue(chatOnly is QueryResult.Ok)
     }
 }
+
 
 
 
