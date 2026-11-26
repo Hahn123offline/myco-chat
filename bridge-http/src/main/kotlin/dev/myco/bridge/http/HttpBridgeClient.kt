@@ -33,6 +33,8 @@ class HttpBridgeClient(
 
     override suspend fun send(cmd: Command): CommandResult {
         val (name, payload) = when (cmd) {
+            is Command.SessionEnsureDraft -> "session.ensureDraft" to buildJsonObject { put("app", cmd.app); put("preset", cmd.preset) }
+            is Command.SessionGenerateTitle -> "session.generateTitle" to buildJsonObject { put("sessionId", cmd.sessionId) }
             is Command.SessionCreate -> "session.create" to buildJsonObject {
                 put("app", cmd.app); put("preset", cmd.preset); put("title", cmd.title)
             }
@@ -309,3 +311,5 @@ class HttpBridgeClient(
         }
     }
 }
+
+

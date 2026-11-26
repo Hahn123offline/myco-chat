@@ -24,6 +24,8 @@ data class SessionSidecar(
     val providerId: String? = null,
     val modelId: String? = null,
     val reasoningLevel: String? = null,
+    /** 空白"新会话"草稿：不在列表常显，发第一条消息后转正。 */
+    val draft: Boolean = false,
 )
 
 data class SessionModelSelection(
@@ -46,6 +48,7 @@ data class SessionSummary(
     val pinned: Boolean,
     val archivedAt: Long?,
     val deletedAt: Long?,
+    val draft: Boolean = false,
 )
 
 data class SessionSearchHit(
@@ -75,7 +78,7 @@ class SessionStore(private val home: MycoHome) {
         home.ensureLayout()
     }
 
-    fun create(app: String, preset: String, title: String = "新会话"): SessionMeta {
+    fun create(app: String, preset: String, title: String = "新会话", draft: Boolean = false): SessionMeta {
         val meta = SessionMeta(
             id = Ulid.newId(),
             title = title,
@@ -89,6 +92,7 @@ class SessionStore(private val home: MycoHome) {
         val start = SessionEvent.SessionStart(seq = 0, at = meta.createdAt, data = meta)
         appendLine(dir, start)
         seqCache[meta.id] = 0
+        if (draft) writeSidecar(sessionDir(meta.id), SessionSidecar(draft = true))
         return meta
     }
 
@@ -204,6 +208,7 @@ class SessionStore(private val home: MycoHome) {
                 pinned = sidecar?.pinned ?: false,
                 archivedAt = sidecar?.archivedAt,
                 deletedAt = sidecar?.deletedAt,
+                draft = sidecar?.draft ?: false,
             )
         }.sortedWith(compareByDescending<SessionSummary> { it.pinned }.thenByDescending { it.lastMessageAt })
     }
@@ -218,6 +223,12 @@ class SessionStore(private val home: MycoHome) {
         val dir = requireSessionDir(sessionId)
         val current = readSidecar(dir) ?: SessionSidecar()
         writeSidecar(dir, current.copy(archivedAt = if (archived) System.currentTimeMillis() else null))
+    }
+
+    fun setDraft(sessionId: String, draft: Boolean) {
+        val dir = requireSessionDir(sessionId)
+        val current = readSidecar(dir) ?: SessionSidecar()
+        writeSidecar(dir, current.copy(draft = draft))
     }
 
     fun modelSelection(sessionId: String): SessionModelSelection? {
@@ -346,3 +357,5 @@ class SessionStore(private val home: MycoHome) {
         const val SIDECAR_NAME = "meta.v1.json"
     }
 }
+
+

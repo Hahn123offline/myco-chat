@@ -66,6 +66,58 @@ class InProcessBridge(
     private val activeTurns = java.util.concurrent.ConcurrentHashMap<String, ActiveTurn>()
 
     override suspend fun send(cmd: Command): CommandResult = when (cmd) {
+        is Command.SessionEnsureDraft -> {
+            val existing = runCatching {
+                sessions.summaries(includeArchived = false, includeDeleted = false, app = cmd.app)
+                    .firstOrNull { it.draft }
+            }.getOrNull()
+            val id = existing?.id ?: sessions.create(cmd.app, cmd.preset, "新会话", draft = true).id
+            emit(id) { seq -> BridgeEvent.SessionUpdated(id, seq) }
+            CommandResult.Ok(buildJsonObject { put("sessionId", id) })
+        }
+        is Command.SessionGenerateTitle -> run {
+            val history = runCatching { sessions.read(cmd.sessionId) }
+                .getOrElse { return@run CommandResult.Err("SESSION_NOT_FOUND", it.message ?: "会话不存在") }
+            val summary = runCatching {
+                sessions.summaries(includeArchived = true, includeDeleted = true, app = null)
+                    .firstOrNull { it.id == cmd.sessionId }
+            }.getOrNull()
+            if (summary == null || summary.title != "新会话") {
+                return@run CommandResult.Ok(buildJsonObject { put("skipped", true); put("title", summary?.title ?: "") })
+            }
+            val firstUser = history.filterIsInstance<SessionEvent.UserMessage>()
+                .firstOrNull { it.data.revises == null }?.data?.text ?: return@run CommandResult.Ok(buildJsonObject { put("skipped", true) })
+            val stored = runCatching { sessions.modelSelection(cmd.sessionId) }.getOrNull()
+            val provider = stored?.providerId?.let { id -> providers.load().providers.firstOrNull { it.id == id && it.enabled } }
+                ?: providers.firstEnabled()
+                ?: return@run CommandResult.Err("PROVIDER_MISSING", "没有可用 provider")
+            val model = stored?.modelId?.let { id -> provider.models.firstOrNull { it.id == id } }
+                ?: provider.model("chat")
+                ?: return@run CommandResult.Err("MODEL_MISSING", "没有可用模型")
+            val client = clientFactory(provider)
+            val title = runCatching {
+                val sb = StringBuilder()
+                client.stream(
+                    ChatRequest(
+                        model = model.id,
+                        messages = listOf(
+                            ChatMessage(
+                                "user",
+                                "根据用户的第一句话，生成一个不超过 12 个字的会话标题。" +
+                                    "只输出标题，不要引号、句号或解释。\n用户：${firstUser.take(400)}",
+                            )
+                        ),
+                        maxTokens = 64,
+                        thinking = false,
+                    )
+                ).collect { chunk -> if (chunk is ChatChunk.Delta) sb.append(chunk.text) }
+                sb.toString().trim().replace('\n', ' ').trim('"', '“', '”', '。', '.', ' ').take(24)
+            }.getOrNull()
+            if (title.isNullOrBlank()) return@run CommandResult.Err("TITLE_EMPTY", "模型没有生成标题")
+            sessions.rename(cmd.sessionId, title)
+            emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
+            CommandResult.Ok(buildJsonObject { put("title", title) })
+        }
         is Command.SessionCreate -> {
             val meta = sessions.create(cmd.app, cmd.preset, cmd.title)
             emit(meta.id) { seq -> BridgeEvent.SessionUpdated(meta.id, seq) }
@@ -439,6 +491,8 @@ class InProcessBridge(
                     )
                 )
             )
+            // 空白新会话说了一句话 → 转正
+            runCatching { sessions.setDraft(cmd.sessionId, false) }
         }
 
         val client = clientFactory(provider)
@@ -820,6 +874,7 @@ class InProcessBridge(
         m.deletedAt?.let { put("deletedAt", it) }
         put("archived", m.archivedAt != null)
         put("deleted", m.deletedAt != null)
+        put("draft", m.draft)
     }
 
     private fun sessionJson(m: SessionMeta): JsonElement = buildJsonObject {
@@ -936,5 +991,7 @@ const val TOOL_BUDGET_CHARS = 24_000
 
 /** 每会话保留的运行期事件条数（断线重放大致窗口）。 */
 const val EVENT_BUFFER = 500
+
+
 
 

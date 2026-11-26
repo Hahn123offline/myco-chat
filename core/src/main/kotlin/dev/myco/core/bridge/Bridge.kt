@@ -56,6 +56,15 @@ sealed class Command {
         val title: String = "新会话",
     ) : Command()
 
+    /** 确保存在唯一空白"新会话"草稿；已有则复用，没有则创建。 */
+    data class SessionEnsureDraft(
+        val app: String = "chat",
+        val preset: String = "chat-default",
+    ) : Command()
+
+    /** 首条消息后用模型生成短标题（额外一次小请求；已经命名则跳过）。 */
+    data class SessionGenerateTitle(val sessionId: String) : Command()
+
     /** 新增/更新 provider；expectedRevision 不匹配返回 SETTINGS_CONFLICT。 */
     data class ProviderSave(val profile: ProviderProfile, val expectedRevision: Long) : Command()
 

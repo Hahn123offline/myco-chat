@@ -149,6 +149,7 @@ private data class SessionRow(
     val archived: Boolean = false,
     val deleted: Boolean = false,
     val messageCount: Int = 0,
+    val draft: Boolean = false,
 )
 private data class ChatLine(val role: String, val text: String)
 
@@ -197,11 +198,23 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         }
         val current = screen
         if (current == null && sessions.isNotEmpty()) {
-            screen = Screen.Chat(sessions.first().id, sessions.first().title)
+            // 启动时不自动选"最近会话"：交给 ensureDraft 打开唯一的新会话草稿
         } else if (searchQuery.isBlank() && current is Screen.Chat && sessions.none { it.id == current.id }) {
-            // 只在实际删除后切走；抽屉里搜索过滤不应改变当前打开的会话
-            screen = sessions.firstOrNull()?.let { Screen.Chat(it.id, it.title) }
+            // 会话被删除/归档：待 openDraft 接管，不跳到"下一个会话"
+            screen = null
         }
+    }
+
+    suspend fun openDraft(open: Boolean = true): String? {
+        val r = bridge.send(Command.SessionEnsureDraft())
+        if (r !is CommandResult.Ok) return null
+        val id = (r.data as? JsonObject)?.get("sessionId")?.jsonPrimitive?.content ?: return null
+        if (open) {
+            searchQuery = ""
+            screen = Screen.Chat(id, "新会话")
+        }
+        refreshSessions()
+        return id
     }
 
     fun openMostRecent() {
@@ -210,23 +223,22 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
 
     fun createSession() {
         scope.launch {
-            val r = bridge.send(Command.SessionCreate(title = "新会话"))
-            searchQuery = ""
-            refreshSessions()
-            if (r is CommandResult.Ok) {
-                val id = (r.data as? JsonObject)?.get("sessionId")?.jsonPrimitive?.content
-                if (id != null) screen = Screen.Chat(id, "新会话")
-            }
+            openDraft()
             drawerState.close()
         }
     }
 
-    LaunchedEffect(Unit) { refreshSessions() }
+    LaunchedEffect(Unit) {
+        refreshSessions()
+        openDraft()
+    }
     LaunchedEffect(searchQuery) { refreshSessions() }
 
     val drawerBody: @Composable () -> Unit = {
         MycoDrawerContent(
-            sessions = sessions.map { it.toUi() },
+            sessions = sessions
+                .filter { !it.draft || it.id == (screen as? Screen.Chat)?.id }
+                .map { it.toUi() },
             selectedId = (screen as? Screen.Chat)?.id,
             query = searchQuery,
             onQueryChange = { searchQuery = it },
@@ -343,8 +355,9 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                         rowMenu = null
                         scope.launch {
                             drawerState.close()
+                            val wasActive = (screen as? Screen.Chat)?.id == row.id
                             bridge.send(Command.SessionArchive(row.id, true))
-                            refreshSessions()
+                            if (wasActive) openDraft() else refreshSessions()
                             val r = snackbar.showSnackbar(
                                 message = "已归档「${row.title}」",
                                 actionLabel = "撤销",
@@ -400,8 +413,9 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
                     deleteTarget = null
                     scope.launch {
                         drawerState.close()
+                        val wasActive = (screen as? Screen.Chat)?.id == target.id
                         bridge.send(Command.SessionDelete(target.id))
-                        refreshSessions()
+                        if (wasActive) openDraft() else refreshSessions()
                         val result = snackbar.showSnackbar(
                             message = "已删除「${target.title}」",
                             actionLabel = "撤销",
@@ -583,6 +597,10 @@ private fun ChatScreen(
                     providerId = selProviderId, modelId = selModelId, reasoningLevel = selReasoningLevel,
                 )
             )
+            if (r is CommandResult.Ok) {
+                // 首轮结束后用模型生成短标题（额外小请求；失败不影响回答）
+                bridge.send(Command.SessionGenerateTitle(sessionId))
+            }
             if (r is CommandResult.Err) {
                 error = "${r.code}: ${r.message}"
                 optimisticUser = null
@@ -1651,6 +1669,7 @@ private fun parseSessions(arr: JsonArray?): List<SessionRow> = arr.orEmpty().map
         archived = o["archived"]?.jsonPrimitive?.content == "true",
         deleted = o["deleted"]?.jsonPrimitive?.content == "true",
         messageCount = o["messageCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
+        draft = o["draft"]?.jsonPrimitive?.content == "true",
     )
 }.sortedWith(compareByDescending<SessionRow> { it.pinned }.thenByDescending { it.lastMessageAt })
 
@@ -1683,6 +1702,8 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
 
 
 

@@ -15,6 +15,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -478,6 +479,43 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `title generation renames a fresh session once`() = runBlocking {
+        val f = Fixture()
+        val draftId = ((f.bridge.send(Command.SessionEnsureDraft()) as CommandResult.Ok).data as JsonObject)["sessionId"]!!.jsonPrimitive.content
+        f.bridge.send(Command.ChatSend(draftId, "帮我安排明天的会议"))
+        val gen = f.bridge.send(Command.SessionGenerateTitle(draftId))
+        assertTrue(gen is CommandResult.Ok)
+        val title = f.sessions.summaries(app = null).first { it.id == draftId }.title
+        assertTrue(title.isNotBlank())
+        assertTrue(title != "新会话")
+        // 已有标题时跳过，不重复调用
+        val again = f.bridge.send(Command.SessionGenerateTitle(draftId))
+        assertTrue((again as CommandResult.Ok).data.jsonObject["skipped"]?.jsonPrimitive?.content == "true")
+    }
+
+    @Test
+    fun `draft session is unique until first message`() = runBlocking {
+        val f = Fixture()
+        val r1 = f.bridge.send(Command.SessionEnsureDraft())
+        assertTrue(r1 is CommandResult.Ok)
+        val id1 = ((r1 as CommandResult.Ok).data as kotlinx.serialization.json.JsonObject)["sessionId"]!!.jsonPrimitive.content
+        val r2 = f.bridge.send(Command.SessionEnsureDraft())
+        val id2 = ((r2 as CommandResult.Ok).data as kotlinx.serialization.json.JsonObject)["sessionId"]!!.jsonPrimitive.content
+        assertEquals(id1, id2) // 复用同一草稿
+
+        f.bridge.send(Command.ChatSend(id1, "第一条"))
+        val r3 = f.bridge.send(Command.SessionEnsureDraft())
+        val id3 = ((r3 as CommandResult.Ok).data as kotlinx.serialization.json.JsonObject)["sessionId"]!!.jsonPrimitive.content
+        assertTrue(id3 != id1) // 已转正，新草稿另建
+
+        val list = f.bridge.query(Query.SessionList())
+        assertTrue(list is QueryResult.Ok)
+        val arr = (list as QueryResult.Ok).data as JsonArray
+        val drafts = arr.count { (it as JsonObject)["draft"]?.jsonPrimitive?.content == "true" }
+        assertEquals(1, drafts)
+    }
+
+    @Test
     fun `session model selection drives provider model and reasoning level`() = runBlocking {
         var lastRequest: dev.myco.core.llm.ChatRequest? = null
         val client = object : ChatClient {
@@ -648,5 +686,6 @@ class InProcessBridgeTest {
         assertTrue(chatOnly is QueryResult.Ok)
     }
 }
+
 
 
