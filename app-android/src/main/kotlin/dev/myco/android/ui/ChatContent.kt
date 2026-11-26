@@ -51,6 +51,7 @@ import dev.myco.android.ui.model.ChatMessageUi
 import dev.myco.android.ui.model.ChatProcessUi
 import dev.myco.android.ui.model.ToolStepUi
 import dev.myco.android.ui.model.TurnMetaUi
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
@@ -492,6 +493,7 @@ fun ChatMessages(
         }
     }
     val expandedProcess = remember { androidx.compose.runtime.mutableStateMapOf<Long, Boolean>() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val expandedTools = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     val maxGroupHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.5f).coerceAtMost(400.dp)
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
@@ -528,7 +530,17 @@ fun ChatMessages(
                     TimelineHeaderRow(
                         entries = entries,
                         expanded = expandedProcess[turn] ?: false,
-                        onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
+                        onToggle = {
+                            val opening = expandedProcess[turn] != true
+                            expandedProcess[turn] = opening
+                            if (opening) {
+                                scope.launch {
+                                    val idx = listState.layoutInfo.visibleItemsInfo
+                                        .firstOrNull { it.key == "ph-$turn" }?.index
+                                    if (idx != null) listState.animateScrollToItem(idx)
+                                }
+                            }
+                        },
                     )
                 }
                 if (expandedProcess[turn] == true) {
@@ -1039,6 +1051,8 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
 
 
 
