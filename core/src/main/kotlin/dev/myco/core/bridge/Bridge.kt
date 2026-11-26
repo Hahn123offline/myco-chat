@@ -195,6 +195,7 @@ sealed class BridgeEvent {
         override val sessionId: String,
         val turnId: Long,
         val name: String,
+        val args: String = "",
         override val seq: Long = 0,
     ) : BridgeEvent()
 
@@ -224,3 +225,4 @@ interface Bridge {
     suspend fun query(q: Query): QueryResult
     val events: Flow<BridgeEvent>
 }
+

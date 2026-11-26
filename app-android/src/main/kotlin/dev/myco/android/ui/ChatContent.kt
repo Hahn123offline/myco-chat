@@ -46,8 +46,18 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /** 解析后的聊天内容。 */
+data class TimelineEntry(
+    val kind: String, // reasoning | tool | text
+    val text: String = "",
+    val name: String = "",
+    val args: String = "",
+    val ok: Boolean? = null,
+    val running: Boolean = false,
+)
+
 data class ChatContentState(
     val messages: List<ChatMessageUi> = emptyList(),
+    val timelines: Map<Long, List<TimelineEntry>> = emptyMap(),
     val processes: Map<Long, ChatProcessUi> = emptyMap(),
     val metas: Map<Long, TurnMetaUi> = emptyMap(),
     val reasoning: Map<Long, String> = emptyMap(),
@@ -60,6 +70,8 @@ private fun JsonObject.long(key: String): Long? = this[key]?.jsonPrimitive?.cont
 fun parseChatContent(arr: JsonArray?): ChatContentState {
     val messages = mutableListOf<ChatMessageUi>()
     val process = linkedMapOf<Long, MutableList<ToolStepUi>>()
+    val timelines = linkedMapOf<Long, MutableList<TimelineEntry>>()
+    fun timeline(turn: Long) = timelines.getOrPut(turn) { mutableListOf() }
     val reasoning = linkedMapOf<Long, String>()
     val metas = linkedMapOf<Long, TurnMetaUi>()
     arr.orEmpty().forEach { el ->
@@ -85,7 +97,13 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
                 if (!reasoningText.isNullOrBlank()) {
                     data?.long("turn")?.let { turn ->
                         reasoning[turn] = (reasoning[turn]?.plus("\n") ?: "") + reasoningText
+                        timeline(turn) += TimelineEntry(kind = "reasoning", text = reasoningText)
                     }
+                }
+                val nodeForTimeline = data?.str("nodeId")
+                val assistantText = data?.str("text").orEmpty()
+                if (nodeForTimeline == null && assistantText.isNotBlank()) {
+                    data?.long("turn")?.let { turn -> timeline(turn) += TimelineEntry(kind = "text", text = assistantText) }
                 }
                 messages += ChatMessageUi(
                     role = "assistant",
@@ -101,23 +119,25 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
             }
             "tool/call" -> {
                 val turn = data?.long("turn") ?: return@forEach
+                val toolName = data.str("name") ?: "tool"
+                val toolArgs = data["args"]?.toString().orEmpty()
                 process.getOrPut(turn) { mutableListOf() } +=
-                    ToolStepUi(
-                        name = data.str("name") ?: "tool",
-                        ok = null,
-                        text = "",
-                        args = data["args"]?.toString().orEmpty(),
-                    )
+                    ToolStepUi(name = toolName, ok = null, text = "", args = toolArgs)
+                timeline(turn) += TimelineEntry(kind = "tool", name = toolName, args = toolArgs, running = true)
             }
             "tool/result" -> {
                 val turn = data?.long("turn") ?: return@forEach
                 val list = process.getOrPut(turn) { mutableListOf() }
                 val name = data.str("name") ?: "tool"
-                val ok = data.str("ok")?.toBoolean() ?: data.str("ok") == "true"
+                val okRaw = data?.get("ok")?.jsonPrimitive?.content ?: ""
+                val ok = okRaw.equals("true", ignoreCase = true)
                 val text = data.str("text") ?: ""
                 val idx = list.indexOfLast { it.name == name && it.ok == null }
                 if (idx >= 0) list[idx] = list[idx].copy(ok = ok, text = text)
                 else list += ToolStepUi(name, ok, text)
+                val entries = timelines.getOrPut(turn) { mutableListOf() }
+                val tIdx = entries.indexOfLast { it.kind == "tool" && it.name == name && it.running }
+                if (tIdx >= 0) entries[tIdx] = entries[tIdx].copy(ok = ok, text = text, running = false)
             }
             "turn/end" -> {
                 val turn = data?.long("turn") ?: return@forEach
@@ -145,6 +165,7 @@ fun parseChatContent(arr: JsonArray?): ChatContentState {
     }
     return ChatContentState(
         messages = withMarked,
+        timelines = timelines.mapValues { (_, v) -> v.toList() },
         processes = process.mapValues { (_, steps) -> ChatProcessUi(steps) },
         metas = metas,
         reasoning = reasoning,
@@ -373,6 +394,7 @@ fun ChatMessages(
     onVersionSelected: (nodeId: String, version: Int) -> Unit = { _, _ -> },
     initialActiveLeaf: String? = null,
     onActiveLeafChanged: (leafId: String?) -> Unit = {},
+    liveEntries: List<TimelineEntry> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     var activeLeaf by remember { mutableStateOf(initialActiveLeaf) }
@@ -445,15 +467,12 @@ fun ChatMessages(
             val turn = msg.turn
             item(key = "a-$index-${shown.messageId ?: ""}") {
                 Column(Modifier.fillMaxWidth()) {
-                    val turnProcess = turn?.let { state.processes[it] }
-                    val turnReasoning = turn?.let { state.reasoning[it] }
-                    if (turn != null && (turnProcess?.steps?.isNotEmpty() == true || !turnReasoning.isNullOrBlank())) {
-                        ProcessFold(
-                            turn = turn,
-                            process = turnProcess,
-                            reasoning = turnReasoning,
+                    val entries = turn?.let { state.timelines[it] }.orEmpty()
+                    if (entries.isNotEmpty()) {
+                        TimelineFold(
+                            entries = entries,
                             expanded = expandedProcess[turn] ?: true,
-                            onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
+                            onToggle = { if (turn != null) expandedProcess[turn] = expandedProcess[turn] != true },
                         )
                     }
                     MarkdownText(shown.text)
@@ -480,19 +499,97 @@ fun ChatMessages(
                 }
             }
         }
-        if (streamingText != null || streamingReasoning != null) {
+        if (liveEntries.isNotEmpty() || streamingText != null) {
             item(key = "streaming") {
                 Column(Modifier.fillMaxWidth()) {
-                    if (!streamingReasoning.isNullOrBlank()) {
-                        ProcessFold(
-                            turn = -1,
-                            process = null,
-                            reasoning = streamingReasoning,
-                            expanded = true,
-                            onToggle = {},
-                        )
+                    if (liveEntries.isNotEmpty()) {
+                        TimelineFold(entries = liveEntries, expanded = true, onToggle = {})
                     }
                     if (streamingText != null) MarkdownText(streamingText + " ▍")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineFold(
+    entries: List<TimelineEntry>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    val toolCount = entries.count { it.kind == "tool" }
+    Column(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(MycoRadius.control))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.xs),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onToggle, contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)) {
+                Text(if (expanded) "▾" else "▸", style = MaterialTheme.typography.bodyMedium)
+            }
+            Text(
+                if (toolCount > 0) "工具与思考 · $toolCount 个工具" else "思考过程",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (expanded) {
+            entries.forEach { entry ->
+                when (entry.kind) {
+                    "reasoning" -> {
+                        if (entry.text.isNotBlank()) {
+                            Text(
+                                "✳ 思考 · ${entry.text.take(2000)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 2.dp),
+                            )
+                        }
+                    }
+                    "tool" -> {
+                        Text(
+                            "▸ ${entry.name} · " + when {
+                                entry.running -> "进行中…"
+                                entry.ok == false -> "失败"
+                                else -> "完成"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (entry.ok == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                        if (entry.args.isNotBlank() && entry.args != "{}") {
+                            Text(
+                                "参数：${entry.args.take(300)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = MycoSpacing.m),
+                            )
+                        }
+                        if (entry.text.isNotBlank()) {
+                            Text(
+                                entry.text.take(1200),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 8,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = MycoSpacing.m),
+                            )
+                        }
+                    }
+                    "text" -> {
+                        if (entry.text.isNotBlank()) {
+                            Text(
+                                entry.text.take(1200),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(vertical = 2.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -605,6 +702,12 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
+
+
 
 
 

@@ -483,6 +483,7 @@ private fun ChatScreen(
     var content by remember { mutableStateOf(dev.myco.android.ui.ChatContentState()) }
     var streaming by remember { mutableStateOf<String?>(null) }
     var streamingReasoning by remember { mutableStateOf<String?>(null) }
+    var liveEntries by remember { mutableStateOf<List<dev.myco.android.ui.TimelineEntry>>(emptyList()) }
     var optimisticUser by remember { mutableStateOf<String?>(null) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -613,7 +614,11 @@ private fun ChatScreen(
         bridge.events.collect { e ->
             when (e) {
                 is BridgeEvent.ReasoningDelta -> if (e.sessionId == sessionId) {
-                    streamingReasoning = (streamingReasoning ?: "") + e.text
+                    val cur = liveEntries.toMutableList()
+                    val idx = cur.indexOfLast { it.kind == "reasoning" && it.running }
+                    if (idx >= 0) cur[idx] = cur[idx].copy(text = cur[idx].text + e.text)
+                    else cur += dev.myco.android.ui.TimelineEntry(kind = "reasoning", text = e.text, running = true)
+                    liveEntries = cur
                 }
                 is BridgeEvent.AssistantDelta -> if (e.sessionId == sessionId) {
                     streaming = (streaming ?: "") + e.text
@@ -621,15 +626,31 @@ private fun ChatScreen(
                 is BridgeEvent.AssistantDone -> if (e.sessionId == sessionId) {
                     streaming = null
                     streamingReasoning = null
+                    liveEntries = emptyList()
                     optimisticUser = null
                     reload()
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
-                    error = "${e.code}: ${e.message}"; streaming = null; streamingReasoning = null
+                    error = "${e.code}: ${e.message}"; streaming = null; streamingReasoning = null; liveEntries = emptyList()
                 }
                 is BridgeEvent.SessionUpdated -> Unit
-                is BridgeEvent.ToolStarted -> Unit
-                is BridgeEvent.ToolFinished -> Unit
+                is BridgeEvent.ToolStarted -> if (e.sessionId == sessionId) {
+                    val cur = liveEntries.toMutableList()
+                    val pending = streaming
+                    if (!pending.isNullOrBlank()) {
+                        cur += dev.myco.android.ui.TimelineEntry(kind = "text", text = pending)
+                        streaming = null
+                    }
+                    cur += dev.myco.android.ui.TimelineEntry(kind = "tool", name = e.name, args = e.args, running = true)
+                    liveEntries = cur
+                }
+                is BridgeEvent.ToolFinished -> if (e.sessionId == sessionId) {
+                    val cur = liveEntries.toMutableList()
+                    val idx = cur.indexOfLast { it.kind == "tool" && it.name == e.name && it.running }
+                    if (idx >= 0) cur[idx] = cur[idx].copy(ok = e.ok, text = e.text, running = false)
+                    else cur += dev.myco.android.ui.TimelineEntry(kind = "tool", name = e.name, ok = e.ok, text = e.text)
+                    liveEntries = cur
+                }
             }
         }
     }
@@ -640,6 +661,8 @@ private fun ChatScreen(
         val outgoing = pending
         input = ""; pending = emptyList(); error = null
         optimisticUser = text.ifBlank { outgoing.joinToString(" ") { it.name } }
+        liveEntries = emptyList()
+        streaming = null
         scope.launch {
             val r = bridge.send(
                 Command.ChatSend(
@@ -717,14 +740,16 @@ private fun ChatScreen(
             val display = if (optimisticUser == null) content else content.copy(
                 messages = content.messages + dev.myco.android.ui.model.ChatMessageUi("user", optimisticUser!!)
             )
-            LaunchedEffect(display.messages.size, streaming?.length) {
+            // 只在"新消息/新回合开始"时自动滚动；流式增量不强制滚动，避免抢用户手势
+            LaunchedEffect(display.messages.size, streaming != null) {
                 val target = listState.layoutInfo.totalItemsCount - 1
-                if (target >= 0 && atBottom) listState.scrollToItem(target)
+                if (target >= 0 && atBottom && !listState.isScrollInProgress) listState.scrollToItem(target)
             }
             dev.myco.android.ui.ChatMessages(
                 state = display,
                 listState = listState,
                 streamingText = streaming,
+                liveEntries = liveEntries,
                 onCopy = { text ->
                     clipboard.setText(androidx.compose.ui.text.AnnotatedString(text))
                     android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
@@ -1758,6 +1783,9 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
 
 
 

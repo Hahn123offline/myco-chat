@@ -690,7 +690,7 @@ class InProcessBridge(
                             data = SessionEvent.ToolCall.Data(tr.name, tr.arguments, turn = turn)
                         )
                     )
-                    emit(cmd.sessionId) { seq -> BridgeEvent.ToolStarted(cmd.sessionId, turn, tr.name, seq) }
+                    emit(cmd.sessionId) { seq -> BridgeEvent.ToolStarted(cmd.sessionId, turn, tr.name, tr.arguments.toString(), seq) }
                     val result = tools.execute(tr.name, tr.arguments)
                     val ok = result.isSuccess
                     val out = result.getOrElse { it.message ?: "工具执行失败" }
@@ -1035,7 +1035,7 @@ class InProcessBridge(
             }
             is BridgeEvent.SessionUpdated -> put("type", "session.updated")
             is BridgeEvent.ToolStarted -> {
-                put("type", "tool.started"); put("turnId", e.turnId); put("name", e.name)
+                put("type", "tool.started"); put("turnId", e.turnId); put("name", e.name); put("args", e.args)
             }
             is BridgeEvent.ToolFinished -> {
                 put("type", "tool.finished"); put("turnId", e.turnId); put("name", e.name)
@@ -1064,6 +1064,8 @@ const val TOOL_BUDGET_CHARS = 24_000
 
 /** 每会话保留的运行期事件条数（断线重放大致窗口）。 */
 const val EVENT_BUFFER = 500
+
+
 
 
 

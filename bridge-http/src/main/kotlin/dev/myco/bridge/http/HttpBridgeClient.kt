@@ -300,7 +300,8 @@ class HttpBridgeClient(
                 sid,
                 o["turnId"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0,
                 o["name"]?.jsonPrimitive?.content ?: "",
-                seq,
+                args = o["args"]?.jsonPrimitive?.content ?: "",
+                seq = seq,
             )
             "tool.finished" -> BridgeEvent.ToolFinished(
                 sid,
@@ -314,6 +315,7 @@ class HttpBridgeClient(
         }
     }
 }
+
 
 
 
