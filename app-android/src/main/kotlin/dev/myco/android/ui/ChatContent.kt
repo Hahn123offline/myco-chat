@@ -862,11 +862,20 @@ private fun TimelineHeaderRow(
     val toolCount = entries.count { it.kind == "tool" }
     val runningTool = entries.any { it.kind == "tool" && it.running }
     val runningReasoning = entries.any { it.kind == "reasoning" && it.running }
+    val categories = entries.filter { it.kind == "tool" }.map {
+        when (it.name) {
+            "web_search" -> "搜索网页"
+            "read_url" -> "读取网页"
+            "time_now" -> "读取时间"
+            else -> "调用 ${it.name}"
+        }
+    }.distinct()
     val header = when {
         live && runningTool -> "正在使用工具…"
         live && runningReasoning -> "正在思考…"
         live -> "正在处理…"
-        toolCount > 0 -> "过程 · $toolCount 个工具"
+        categories.isNotEmpty() -> "已" + categories.take(3).joinToString("、") +
+            if (categories.size > 3) " 等" else ""
         else -> "思考过程"
     }
     Row(
@@ -1047,11 +1056,20 @@ private fun TimelineFold(
     val expandedTools = remember { androidx.compose.runtime.mutableStateMapOf<Int, Boolean>() }
     val runningTool = entries.any { it.kind == "tool" && it.running }
     val runningReasoning = entries.any { it.kind == "reasoning" && it.running }
+    val categories = entries.filter { it.kind == "tool" }.map {
+        when (it.name) {
+            "web_search" -> "搜索网页"
+            "read_url" -> "读取网页"
+            "time_now" -> "读取时间"
+            else -> "调用 ${it.name}"
+        }
+    }.distinct()
     val header = when {
         live && runningTool -> "正在使用工具…"
         live && runningReasoning -> "正在思考…"
         live -> "正在处理…"
-        toolCount > 0 -> "过程 · $toolCount 个工具"
+        categories.isNotEmpty() -> "已" + categories.take(3).joinToString("、") +
+            if (categories.size > 3) " 等" else ""
         else -> "思考过程"
     }
     Column(
@@ -1271,6 +1289,7 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
 
 
 
