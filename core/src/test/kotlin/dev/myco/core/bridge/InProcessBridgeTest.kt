@@ -478,6 +478,68 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `session model selection drives provider model and reasoning level`() = runBlocking {
+        var lastRequest: dev.myco.core.llm.ChatRequest? = null
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    lastRequest = request
+                    emit(dev.myco.core.llm.ChatChunk.Delta("ok"))
+                    emit(dev.myco.core.llm.ChatChunk.Done("ok"))
+                }
+        }
+        val f = Fixture(client = client)
+        f.providers.save(
+            listOf(
+                dev.myco.core.spec.ProviderProfile(
+                    id = "local", kind = "openai-completions", baseUrl = "http://127.0.0.1:1/v1",
+                    auth = dev.myco.core.spec.AuthProfile.None,
+                    models = listOf(dev.myco.core.spec.ModelProfile("fake-chat", contextWindow = 1024, maxTokens = 128)),
+                ),
+                dev.myco.core.spec.ProviderProfile(
+                    id = "alt", kind = "openai-completions", baseUrl = "http://127.0.0.1:2/v1",
+                    auth = dev.myco.core.spec.AuthProfile.None,
+                    models = listOf(
+                        dev.myco.core.spec.ModelProfile(
+                            id = "smart", contextWindow = 8192, maxTokens = 1024,
+                            reasoning = dev.myco.core.spec.ReasoningProfile(
+                                efforts = mapOf("off" to null, "low" to "low", "high" to "high"),
+                                default = "off",
+                            ),
+                        )
+                    ),
+                ),
+            ),
+            expectedRevision = 1,
+        )
+        val meta = f.sessions.create("chat", "chat-default")
+        val set = f.bridge.send(Command.SessionSetModel(meta.id, "alt", "smart", "low"))
+        assertTrue(set is CommandResult.Ok)
+        f.bridge.send(Command.ChatSend(meta.id, "hi"))
+        assertEquals("smart", lastRequest!!.model)
+        assertEquals(true, lastRequest!!.thinking)
+        assertEquals("low", lastRequest!!.reasoningEffort)
+
+        // 显式指定 default=off：关闭思考、不传 effort
+        f.bridge.send(Command.ChatSend(meta.id, "hi2", reasoningLevel = "off"))
+        assertEquals(false, lastRequest!!.thinking)
+        assertEquals(null, lastRequest!!.reasoningEffort)
+
+        val q = f.bridge.query(Query.SessionModel(meta.id))
+        assertTrue(q is QueryResult.Ok)
+        assertEquals("alt", ((q as QueryResult.Ok).data as kotlinx.serialization.json.JsonObject)["providerId"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `unsupported reasoning level is rejected`() = runBlocking {
+        val f = Fixture()
+        val meta = f.sessions.create("chat", "chat-default")
+        val r = f.bridge.send(Command.ChatSend(meta.id, "hi", reasoningLevel = "ultra"))
+        assertTrue(r is CommandResult.Err)
+        assertEquals("REASONING_UNSUPPORTED", (r as CommandResult.Err).code)
+    }
+
+    @Test
     fun `tool loop executes registry and feeds result back`() = runBlocking {
         val client = object : ChatClient {
             var calls = 0

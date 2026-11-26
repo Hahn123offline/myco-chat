@@ -41,6 +41,8 @@ data class ChatRequest(
     val temperature: Double? = null,
     /** null = 由客户端按 provider 默认值决定；false 显式关闭思考（DeepSeek 默认开，关掉省钱）。 */
     val thinking: Boolean? = null,
+    /** 模型能力映射后的推理强度 API 值（如 low/medium/high）；null=不传该参数。 */
+    val reasoningEffort: String? = null,
     val tools: List<ToolSpec> = emptyList(),
 )
 

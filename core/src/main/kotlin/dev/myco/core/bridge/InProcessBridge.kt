@@ -125,8 +125,19 @@ class InProcessBridge(
             result
         }
         is Command.ChatStop -> chatStop(cmd)
-        is Command.SessionRename -> runCatching { sessions.rename(cmd.sessionId, cmd.title) }
-            .fold(
+        is Command.SessionSetModel -> runCatching {
+            sessions.setModelSelection(cmd.sessionId, cmd.providerId, cmd.modelId, cmd.reasoningLevel)
+        }.fold(
+            onSuccess = {
+                emit(cmd.sessionId) { seq -> BridgeEvent.SessionUpdated(cmd.sessionId, seq) }
+                CommandResult.Ok(buildJsonObject {
+                    put("providerId", cmd.providerId); put("modelId", cmd.modelId)
+                    put("reasoningLevel", cmd.reasoningLevel)
+                })
+            },
+            onFailure = { CommandResult.Err("SESSION_MODEL", it.message ?: "保存模型选择失败") },
+        )
+        is Command.SessionRename -> runCatching { sessions.rename(cmd.sessionId, cmd.title) }            .fold(
                 onSuccess = { meta ->
                     emit(meta.id) { seq -> BridgeEvent.SessionUpdated(meta.id, seq) }
                     CommandResult.Ok(buildJsonObject { put("sessionId", meta.id); put("title", meta.title) })
@@ -334,10 +345,42 @@ class InProcessBridge(
     }
 
     private suspend fun runChatInternal(cmd: Command.ChatSend, regen: RegenCtx?, edit: EditCtx? = null): CommandResult {
-        val provider = providers.firstEnabled()
-            ?: return CommandResult.Err("PROVIDER_MISSING", "还没有配置 provider，请先在设置里添加")
-        val model = provider.model("chat")
-            ?: return CommandResult.Err("MODEL_MISSING", "provider ${provider.id} 没有 chat 角色模型")
+        // 会话级模型选择：请求显式 > 会话保存 > 第一个可用 provider 的 chat 角色
+        val stored = runCatching { sessions.modelSelection(cmd.sessionId) }.getOrNull()
+        val providerId = cmd.providerId ?: stored?.providerId
+        val provider = if (providerId != null) {
+            providers.load().providers.firstOrNull { it.id == providerId && it.enabled }
+                ?: return CommandResult.Err("PROVIDER_MISSING", "provider 不存在或已停用：$providerId")
+        } else {
+            providers.firstEnabled()
+                ?: return CommandResult.Err("PROVIDER_MISSING", "还没有配置 provider，请先在设置里添加")
+        }
+        val modelId = cmd.modelId ?: stored?.modelId
+        val model = if (modelId != null) {
+            provider.models.firstOrNull { it.id == modelId }
+                ?: return CommandResult.Err("MODEL_MISSING", "provider ${provider.id} 没有模型：$modelId")
+        } else {
+            provider.model("chat")
+                ?: return CommandResult.Err("MODEL_MISSING", "provider ${provider.id} 没有 chat 角色模型")
+        }
+        // 推理等级 → 模型自己声明的 API 参数值（efforts[level]，null 表示该档关闭思考）
+        val explicitLevel = cmd.reasoningLevel
+        val storedLevel = stored?.reasoningLevel?.takeIf { level ->
+            model.reasoning?.efforts?.containsKey(level) == true
+        }
+        val level = explicitLevel ?: storedLevel ?: model.reasoning?.default
+        val apiValue = when {
+            level == null -> null
+            model.reasoning?.efforts?.containsKey(level) != true ->
+                return CommandResult.Err("REASONING_UNSUPPORTED", "模型 ${model.id} 不支持推理等级：$level")
+            else -> model.reasoning.efforts[level]
+        }
+        val thinking = when {
+            level == null -> cmd.thinking
+            apiValue == null -> false
+            else -> true
+        }
+        val reasoningEffort = apiValue
 
         // 工具 schema 进每轮请求前缀：超预算直接拒绝，不偷偷裁剪（模型看到的必须可复现）
         val allToolSpecs = tools.list().map { ToolSpec(it.name, it.description, it.parameters) }
@@ -424,7 +467,8 @@ class InProcessBridge(
                         model = model.id,
                         messages = messages,
                         maxTokens = model.maxTokens,
-                        thinking = cmd.thinking,
+                        thinking = thinking,
+                        reasoningEffort = reasoningEffort,
                         tools = toolSpecs,
                     )
                 ).collect { chunk ->
@@ -658,6 +702,21 @@ class InProcessBridge(
                 .getOrElse { return QueryResult.Err("SESSION_NOT_FOUND", it.message ?: "读取失败") }
             QueryResult.Ok(buildJsonArray { events.forEach { add(eventJson(it)) } })
         }
+        is Query.SessionModel -> {
+            val sel = runCatching { sessions.modelSelection(q.sessionId) }.getOrNull()
+            QueryResult.Ok(buildJsonObject {
+                put("providerId", sel?.providerId); put("modelId", sel?.modelId)
+                put("reasoningLevel", sel?.reasoningLevel)
+                val p = sel?.providerId?.let { id -> providers.load().providers.firstOrNull { it.id == id } }
+                if (p != null) {
+                    put("providerName", p.displayName ?: p.id)
+                    put("providerAvailable", p.enabled)
+                    val m = sel?.modelId?.let { mid -> p.models.firstOrNull { it.id == mid } }
+                    put("modelName", m?.name ?: m?.id ?: sel?.modelId)
+                    put("modelAvailable", m != null)
+                }
+            })
+        }
         is Query.EventReplay -> {
             val buffer = eventBuffers[q.sessionId]
             if (buffer == null) {
@@ -877,4 +936,5 @@ const val TOOL_BUDGET_CHARS = 24_000
 
 /** 每会话保留的运行期事件条数（断线重放大致窗口）。 */
 const val EVENT_BUFFER = 500
+
 

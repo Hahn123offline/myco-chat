@@ -10,6 +10,8 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -198,6 +200,38 @@ class ToolCallParsingTest {
     }
 
     @Test
+    fun `anthropic merges consecutive tool results into one user message`() = runBlocking {
+        val sse = "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+        CountingHttpServer { Pair(200, sse) }.use { srv ->
+            val h = home()
+            val cred = CredentialResolver(h, emptyMap())
+            cred.set("TEST_KEY", "sk-test")
+            val messages = listOf(
+                ChatMessage(
+                    "assistant", "",
+                    toolCalls = listOf(
+                        ToolCall("toolu_1", "time_now", "{}"),
+                        ToolCall("toolu_2", "web_search", "{\"query\":\"x\"}"),
+                    ),
+                ),
+                ChatMessage("tool", "r1", toolCallId = "toolu_1", toolName = "time_now"),
+                ChatMessage("tool", "r2", toolCallId = "toolu_2", toolName = "web_search"),
+            )
+            AnthropicCompatibleClient(anthropicProvider(srv.port), cred)
+                .stream(ChatRequest("m", messages)).toList()
+            val body = kotlinx.serialization.json.Json.parseToJsonElement(srv.lastBody()).jsonObject
+            val wire = body["messages"]!!.jsonArray
+            assertEquals(2, wire.size)
+            val userMsg = wire[1].jsonObject
+            assertEquals("user", userMsg["role"]!!.jsonPrimitive.content)
+            val blocks = userMsg["content"]!!.jsonArray
+            assertEquals(2, blocks.size)
+            assertEquals("toolu_1", blocks[0].jsonObject["tool_use_id"]!!.jsonPrimitive.content)
+            assertEquals("toolu_2", blocks[1].jsonObject["tool_use_id"]!!.jsonPrimitive.content)
+        }
+    }
+
+    @Test
     fun `openai accumulates tool_call arguments across deltas`() = runBlocking {
         val sse = buildString {
             append("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"function\":{\"name\":\"time_now\",\"arguments\":\"{\\\"a\\\"\"}}]}}]}\n\n")
@@ -349,6 +383,7 @@ class LlmRetryTest {
         }
     }
 }
+
 
 
 

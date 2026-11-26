@@ -46,6 +46,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -435,6 +436,12 @@ private fun ChatScreen(
     val chatPrefs = remember { context.getSharedPreferences("myco.chat", android.content.Context.MODE_PRIVATE) }
     var thinking by remember { mutableStateOf(chatPrefs.getBoolean("thinking", false)) }
     var webSearch by remember { mutableStateOf(chatPrefs.getBoolean("webSearch", true)) }
+    var providersUi by remember { mutableStateOf<List<ProviderUi>>(emptyList()) }
+    var selProviderId by remember { mutableStateOf<String?>(null) }
+    var selModelId by remember { mutableStateOf<String?>(null) }
+    var selReasoningLevel by remember { mutableStateOf<String?>(null) }
+    var showModelPicker by remember { mutableStateOf(false) }
+    var modelPickerError by remember { mutableStateOf<String?>(null) }
     val initialVersions = remember {
         chatPrefs.all.mapNotNull { (k, v) ->
             if (k.startsWith("v_") && v is Int) k.removePrefix("v_") to v else null
@@ -524,7 +531,20 @@ private fun ChatScreen(
         }.onFailure { error = "相机不可用：${it.message}" }
     }
 
+    suspend fun loadModelInfo() {
+        val provRes = bridge.query(Query.Providers)
+        if (provRes is QueryResult.Ok) providersUi = parseProviders(provRes.data as? JsonObject)
+        val selRes = bridge.query(Query.SessionModel(sessionId))
+        if (selRes is QueryResult.Ok) {
+            val o = selRes.data as? JsonObject
+            selProviderId = o?.get("providerId")?.jsonPrimitive?.content
+            selModelId = o?.get("modelId")?.jsonPrimitive?.content
+            selReasoningLevel = o?.get("reasoningLevel")?.jsonPrimitive?.content
+        }
+    }
+
     LaunchedEffect(sessionId) {
+        loadModelInfo()
         reload()
         bridge.events.collect { e ->
             when (e) {
@@ -554,7 +574,13 @@ private fun ChatScreen(
         input = ""; pending = emptyList(); error = null
         optimisticUser = text.ifBlank { outgoing.joinToString(" ") { it.name } }
         scope.launch {
-            val r = bridge.send(Command.ChatSend(sessionId, text, outgoing, thinking = thinking, webSearch = webSearch))
+            val r = bridge.send(
+                Command.ChatSend(
+                    sessionId, text, outgoing,
+                    thinking = thinking, webSearch = webSearch,
+                    providerId = selProviderId, modelId = selModelId, reasoningLevel = selReasoningLevel,
+                )
+            )
             if (r is CommandResult.Err) {
                 error = "${r.code}: ${r.message}"
                 optimisticUser = null
@@ -588,7 +614,23 @@ private fun ChatScreen(
     }
 
     Scaffold(
-        topBar = { MycoTopBar(title = title, onMenu = onMenu) },
+        topBar = {
+            val currentProvider = providersUi.firstOrNull { it.id == selProviderId }
+            val currentModel = currentProvider?.models?.firstOrNull { it.id == selModelId }
+            val label = when {
+                currentModel != null -> currentModel.name ?: currentModel.id
+                else -> "默认模型"
+            }
+            MycoTopBar(
+                title = title,
+                onMenu = onMenu,
+                actions = {
+                    TextButton(onClick = { showModelPicker = true }) {
+                        Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                },
+            )
+        },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
             val listState = rememberLazyListState()
@@ -750,6 +792,87 @@ private fun ChatScreen(
                 }) { Text("发送") }
             },
             dismissButton = { TextButton(onClick = { editTarget = null }) { Text("取消") } },
+        )
+    }
+    if (showModelPicker) {
+        val selectedProvider = providersUi.firstOrNull { it.id == selProviderId }
+        val selectedModel = selectedProvider?.models?.firstOrNull { it.id == selModelId }
+        AlertDialog(
+            onDismissRequest = { showModelPicker = false },
+            title = { Text("选择模型") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 420.dp)) {
+                    modelPickerError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                    providersUi.filter { it.enabled }.forEach { p ->
+                        Text(
+                            p.displayName.ifBlank { p.id },
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(top = MycoSpacing.s),
+                        )
+                        if (p.models.isEmpty()) {
+                            Text("（没有模型）", style = MaterialTheme.typography.bodySmall)
+                        }
+                        p.models.forEach { m ->
+                            val checked = p.id == selProviderId && m.id == selModelId
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(selected = checked, onClick = {
+                                    scope.launch {
+                                        val level = m.reasoningDefault
+                                        val r = bridge.send(Command.SessionSetModel(sessionId, p.id, m.id, level))
+                                        if (r is CommandResult.Err) {
+                                            modelPickerError = "${r.code}: ${r.message}"
+                                        } else {
+                                            selProviderId = p.id; selModelId = m.id; selReasoningLevel = level
+                                        }
+                                    }
+                                })
+                                Column(Modifier.weight(1f)) {
+                                    Text(m.name ?: m.id, style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        "${m.id} · ${m.contextWindow} ctx · ${m.maxTokens} out",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (selectedModel != null && selectedModel.reasoningEfforts.isNotEmpty()) {
+                        Text("思考强度", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = MycoSpacing.m))
+                        Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s)) {
+                            FilterChip(
+                                selected = selReasoningLevel == null,
+                                onClick = {
+                                    scope.launch {
+                                        bridge.send(Command.SessionSetModel(sessionId, selProviderId, selModelId, null))
+                                        selReasoningLevel = null
+                                    }
+                                },
+                                label = { Text("默认") },
+                            )
+                            selectedModel.reasoningEfforts.keys.forEach { level ->
+                                FilterChip(
+                                    selected = selReasoningLevel == level,
+                                    onClick = {
+                                        scope.launch {
+                                            val r = bridge.send(Command.SessionSetModel(sessionId, selProviderId, selModelId, level))
+                                            if (r is CommandResult.Err) modelPickerError = "${r.code}: ${r.message}"
+                                            else selReasoningLevel = level
+                                        }
+                                    },
+                                    label = { Text(level) },
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showModelPicker = false }) { Text("关闭") } },
         )
     }
 }
@@ -1181,7 +1304,14 @@ private fun KeyDialog(ref: String, onDismiss: () -> Unit, onSave: (String) -> Un
 
 // ---------- provider 编辑模型 ----------
 
-private data class ModelUi(val id: String, val contextWindow: Long, val maxTokens: Long)
+private data class ModelUi(
+    val id: String,
+    val contextWindow: Long,
+    val maxTokens: Long,
+    val name: String? = null,
+    val reasoningEfforts: Map<String, String?> = emptyMap(),
+    val reasoningDefault: String? = null,
+)
 
 private data class ProviderUi(
     val id: String,
@@ -1190,6 +1320,7 @@ private data class ProviderUi(
     val baseUrl: String,
     val authRef: String?,
     val configured: Boolean,
+    val enabled: Boolean,
     val models: List<ModelUi>,
 ) {
     fun toEditor(): ProviderEditor = ProviderEditor(
@@ -1277,6 +1408,11 @@ private fun parseProviders(doc: JsonObject?): List<ProviderUi> {
                 id = m["id"]?.jsonPrimitive?.content ?: return@mapNotNull null,
                 contextWindow = m["contextWindow"]?.jsonPrimitive?.longOrNull ?: 0L,
                 maxTokens = m["maxTokens"]?.jsonPrimitive?.longOrNull ?: 0L,
+                name = m["name"]?.jsonPrimitive?.content,
+                reasoningEfforts = ((m["reasoning"] as? JsonObject)?.get("efforts") as? JsonObject)
+                    ?.mapValues { (_, v) -> if (v is kotlinx.serialization.json.JsonNull) null else v.jsonPrimitive.content }
+                    ?: emptyMap(),
+                reasoningDefault = (m["reasoning"] as? JsonObject)?.get("default")?.jsonPrimitive?.content,
             )
         } ?: emptyList()
         ProviderUi(
@@ -1286,6 +1422,7 @@ private fun parseProviders(doc: JsonObject?): List<ProviderUi> {
             baseUrl = o["baseUrl"]?.jsonPrimitive?.content ?: "",
             authRef = if (auth?.get("type")?.jsonPrimitive?.content == "api-key") auth["ref"]?.jsonPrimitive?.content else null,
             configured = credential?.get("configured")?.jsonPrimitive?.content == "true",
+            enabled = o["enabled"]?.jsonPrimitive?.content != "false",
             models = models,
         )
     }
@@ -1351,6 +1488,10 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
+
+
+
 
 
 

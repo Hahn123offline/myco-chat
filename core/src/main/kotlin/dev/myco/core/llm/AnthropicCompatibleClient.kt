@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -197,9 +198,16 @@ class AnthropicCompatibleClient(
             put("model", request.model)
             put("max_tokens", request.maxTokens ?: provider.model()?.maxTokens ?: 8192L)
             put("stream", true)
-            put("thinking", buildJsonObject { put("type", if (thinkingEnabled) "enabled" else "disabled") })
+            put("thinking", buildJsonObject {
+                put("type", if (thinkingEnabled) "enabled" else "disabled")
+                if (thinkingEnabled) {
+                    // Anthropic 需要 budget_tokens；模型/用户映射给数字时直接用，否则给保守默认
+                    val budget = request.reasoningEffort?.toLongOrNull() ?: 4096L
+                    put("budget_tokens", budget)
+                }
+            })
             request.temperature?.let { put("temperature", it) }
-            put("messages", buildJsonArray { request.messages.forEach { add(messageJson(it)) } })
+            put("messages", messagesJson(request.messages))
             if (request.tools.isNotEmpty()) {
                 put("tools", buildJsonArray {
                     request.tools.forEach { t ->
@@ -214,6 +222,30 @@ class AnthropicCompatibleClient(
         }.toString()
     }
 
+    /** Anthropic 要求：assistant 的多个 tool_use 必须由紧随其后的**同一个 user 消息**中的多个 tool_result 应答。 */
+    private fun messagesJson(messages: List<ChatMessage>): JsonArray = buildJsonArray {
+        var i = 0
+        while (i < messages.size) {
+            val m = messages[i]
+            if (m.role == "tool") {
+                val blocks = buildJsonArray {
+                    while (i < messages.size && messages[i].role == "tool") {
+                        val t = messages[i]
+                        add(buildJsonObject {
+                            put("type", "tool_result")
+                            put("tool_use_id", t.toolCallId ?: "")
+                            put("content", t.content)
+                        })
+                        i++
+                    }
+                }
+                add(buildJsonObject { put("role", "user"); put("content", blocks) })
+            } else {
+                add(messageJson(m))
+                i++
+            }
+        }
+    }
     private fun messageJson(m: ChatMessage) = buildJsonObject {
         when {
             m.role == "tool" -> {
@@ -294,3 +326,5 @@ class AnthropicCompatibleClient(
         dev.myco.core.spec.AuthProfile.None -> "(none)"
     }
 }
+
+

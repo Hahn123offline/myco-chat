@@ -21,6 +21,19 @@ sealed class Command {
         val thinking: Boolean? = null,
         /** 本轮是否允许联网搜索工具（null=默认允许；false 时过滤 web_search/read_url）。 */
         val webSearch: Boolean? = null,
+        /** 会话级模型选择；null=用会话里保存的选择/默认 provider。 */
+        val providerId: String? = null,
+        val modelId: String? = null,
+        /** 推理等级（off/low/medium/high…，值由 ModelProfile.reasoning.efforts 映射）。 */
+        val reasoningLevel: String? = null,
+    ) : Command()
+
+    /** 记住会话级模型选择（按会话记忆，不写全局）。 */
+    data class SessionSetModel(
+        val sessionId: String,
+        val providerId: String?,
+        val modelId: String?,
+        val reasoningLevel: String? = null,
     ) : Command()
 
     /** 语音转写（可选能力）：DeepSeek ASR；返回 text/durationMs 填入输入框。 */
@@ -98,6 +111,9 @@ sealed class Query {
         val includeDeleted: Boolean = false,
     ) : Query()
     data class SessionEvents(val sessionId: String, val fromSeq: Long = 0) : Query()
+
+    /** 会话当前模型选择（含 provider 是否仍存在/可用）。 */
+    data class SessionModel(val sessionId: String) : Query()
 
     /** 搜索标题与会话内文本（大小写不敏感）。 */
     data class SessionSearch(

@@ -185,6 +185,9 @@ class OpenAiCompatibleClient(
         if (deepseek || request.thinking != null) {
             put("thinking", buildJsonObject { put("type", if (request.thinking == true) "enabled" else "disabled") })
         }
+        if (request.reasoningEffort != null && provider.compat?.supportsReasoningEffort != false) {
+            put("reasoning_effort", request.reasoningEffort)
+        }
         put("messages", buildJsonArray {
             request.messages.forEach { m -> add(messageJson(m)) }
         })

@@ -20,6 +20,16 @@ data class SessionSidecar(
     val deletedAt: Long? = null,
     val pinned: Boolean = false,
     val archivedAt: Long? = null,
+    /** 会话级模型选择（按会话记忆） */
+    val providerId: String? = null,
+    val modelId: String? = null,
+    val reasoningLevel: String? = null,
+)
+
+data class SessionModelSelection(
+    val providerId: String?,
+    val modelId: String?,
+    val reasoningLevel: String?,
 )
 
 /** 列表/搜索用的会话摘要：把 sidecar 与最近消息信息合成，组件不碰文件系统。 */
@@ -208,6 +218,19 @@ class SessionStore(private val home: MycoHome) {
         val dir = requireSessionDir(sessionId)
         val current = readSidecar(dir) ?: SessionSidecar()
         writeSidecar(dir, current.copy(archivedAt = if (archived) System.currentTimeMillis() else null))
+    }
+
+    fun modelSelection(sessionId: String): SessionModelSelection? {
+        val dir = requireSessionDir(sessionId)
+        val s = readSidecar(dir) ?: return null
+        if (s.providerId == null && s.modelId == null && s.reasoningLevel == null) return null
+        return SessionModelSelection(s.providerId, s.modelId, s.reasoningLevel)
+    }
+
+    fun setModelSelection(sessionId: String, providerId: String?, modelId: String?, reasoningLevel: String?) {
+        val dir = requireSessionDir(sessionId)
+        val current = readSidecar(dir) ?: SessionSidecar()
+        writeSidecar(dir, current.copy(providerId = providerId, modelId = modelId, reasoningLevel = reasoningLevel))
     }
 
     /** 永久删除：删会话日志、sidecar 与该会话附件目录；不可恢复。 */

@@ -152,6 +152,12 @@ class HttpBridgeServer(
                 text = payload["text"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing text")),
                 requestId = payload["requestId"]?.jsonPrimitive?.content,
             )
+            "session.setModel" -> Command.SessionSetModel(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
+                providerId = payload["providerId"]?.jsonPrimitive?.content,
+                modelId = payload["modelId"]?.jsonPrimitive?.content,
+                reasoningLevel = payload["reasoningLevel"]?.jsonPrimitive?.content,
+            )
             "session.rename" -> Command.SessionRename(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
                 title = payload["title"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing title")),
@@ -201,6 +207,9 @@ class HttpBridgeServer(
                 app = payload["app"]?.jsonPrimitive?.content,
                 includeArchived = payload["includeArchived"]?.jsonPrimitive?.content == "true",
                 includeDeleted = payload["includeDeleted"]?.jsonPrimitive?.content == "true",
+            )
+            "/session.model" -> Query.SessionModel(
+                sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
             )
             "/session.events" -> Query.SessionEvents(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
