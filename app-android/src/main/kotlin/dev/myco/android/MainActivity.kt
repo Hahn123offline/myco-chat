@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -12,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,7 +61,6 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -89,6 +88,8 @@ import dev.myco.android.ui.SettingsRow
 import dev.myco.android.ui.MycoTheme
 import dev.myco.android.ui.MycoTopBar
 import dev.myco.android.ui.SectionHeader
+import dev.myco.android.ui.rememberPredictiveNavState
+import dev.myco.android.ui.swipeRightToExit
 import dev.myco.android.ui.ThemeMode
 import dev.myco.android.ui.ThemePrefs
 import dev.myco.android.ui.swipeRightToOpenDrawer
@@ -196,9 +197,10 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
     var deleteTarget by remember { mutableStateOf<SessionRow?>(null) }
     // 当前活跃的会话窗口：设置页返回时回到它（"聊天窗口→多会话→设置→聊天窗口"的环）
     var lastChatScreen by remember { mutableStateOf<Screen.Chat?>(null) }
-    // 预测式返回预览进度：backPreview = 抽屉收起；settingsBackPreview = 设置向右滑出
-    var backPreview by remember { mutableFloatStateOf(0f) }
-    var settingsBackPreview by remember { mutableFloatStateOf(0f) }
+    // 可复用的预测式退出进度：抽屉收起 / 设置页 / 回收站各一份（M5 在这里叠加更多动效）
+    val drawerNav = rememberPredictiveNavState()
+    val settingsNav = rememberPredictiveNavState()
+    val binNav = rememberPredictiveNavState()
     LaunchedEffect(screen) {
         (screen as? Screen.Chat)?.let { lastChatScreen = it }
     }
@@ -336,86 +338,120 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
         }
         val main: @Composable () -> Unit = {
             Box(Modifier.fillMaxSize()) {
-                // 设置/回收站等页面覆盖在会话窗口之上：预测式返回时上层向右滑出，下面的会话先露出来
-                val baseChat = lastChatScreen
-                if (baseChat != null && screen !is Screen.Chat) {
-                    androidx.compose.runtime.key(baseChat.id) {
+                // 聊天窗口常驻基座：设置/回收站覆盖其上，退出动画露出的是真实会话内容
+                val chat = (screen as? Screen.Chat) ?: lastChatScreen
+                if (chat != null) {
+                    androidx.compose.runtime.key(chat.id) {
                         ChatScreen(
                             bridge = bridge,
-                            sessionId = baseChat.id,
-                            title = baseChat.title,
-                            // 底下这层只是给"设置向右退出"的预测式预览露出用，保持和正常聊天页同样的顶栏布局
+                            sessionId = chat.id,
+                            title = chat.title,
                             onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
-                            onSwipeOpenDrawer = null,
+                            onSwipeOpenDrawer = if (wide || screen !is Screen.Chat) null
+                                else ({ scope.launch { drawerState.open() } }),
                         )
                     }
                 }
-                when (val s = screen) {
-                    null -> Box(Modifier.fillMaxSize()) // 启动瞬间不再闪"开始聊天"页；由 ensureDraft 接管
-                    is Screen.Chat -> androidx.compose.runtime.key(s.id) {
-                        ChatScreen(
+                // 设置层：自己是当前页时跟随 settingsNav 右滑；作为回收站下面的露出层时保持静止
+                if (screen is Screen.Settings || screen is Screen.SessionBin) {
+                    val settingsCurrent = screen is Screen.Settings
+                    Box(
+                        Modifier.fillMaxSize()
+                            .graphicsLayer {
+                                translationX = if (settingsCurrent) settingsNav.progress * screenWidthPx else 0f
+                            }
+                            .then(
+                                if (settingsCurrent) {
+                                    Modifier.swipeRightToExit(settingsNav, enabled = true) { leaveSettings() }
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                    ) {
+                        SettingsScreen(
                             bridge = bridge,
-                            sessionId = s.id,
-                            title = s.title,
-                            onMenu = if (wide) null else ({ scope.launch { drawerState.open() } }),
-                            onSwipeOpenDrawer = if (wide) null else ({ scope.launch { drawerState.open() } }),
+                            themeMode = themeMode,
+                            onThemeChange = onThemeChange,
+                            onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
+                            onBack = { scope.launch { settingsNav.exit { leaveSettings() } } },
                         )
                     }
-                    Screen.Settings -> {
-                        Box(
-                            Modifier.fillMaxSize().graphicsLayer {
-                                translationX = settingsBackPreview * screenWidthPx
-                            },
-                        ) {
-                            SettingsScreen(
-                                bridge = bridge,
-                                themeMode = themeMode,
-                                onThemeChange = onThemeChange,
-                                onOpenBin = { kind -> screen = Screen.SessionBin(kind) },
-                                onBack = { leaveSettings() },
-                            )
-                        }
+                }
+                // 回收站/归档：叠在设置层上，右滑退出回设置
+                val bin = screen as? Screen.SessionBin
+                if (bin != null) {
+                    Box(
+                        Modifier.fillMaxSize()
+                            .graphicsLayer { translationX = binNav.progress * screenWidthPx }
+                            .swipeRightToExit(binNav, enabled = true) { screen = Screen.Settings },
+                    ) {
+                        SessionBinScreen(
+                            bridge = bridge,
+                            kind = bin.kind,
+                            onBack = { scope.launch { binNav.exit { screen = Screen.Settings } } },
+                        )
                     }
-                    is Screen.SessionBin -> SessionBinScreen(
-                        bridge = bridge,
-                        kind = s.kind,
-                        onBack = { screen = Screen.Settings },
-                    )
                 }
                 SnackbarHost(
                     hostState = snackbar,
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
                 )
                 if (!wide) {
-                    // 会话管理（抽屉）打开时返回 = 预测式关闭抽屉，回到聊天窗口
+                    // 会话管理（抽屉）打开时返回 = 预测式关闭抽屉（抽屉内容 + 遮罩一起跟手）
                     PredictiveBackHandler(enabled = drawerState.isOpen) { progress ->
+                        var first = true
+                        var jumped = false
                         try {
-                            progress.collect { event -> backPreview = event.progress }
-                            backPreview = 1f
-                            drawerState.snapTo(DrawerValue.Closed)
+                            progress.collect { event ->
+                                // 按键/无中间进度直接到 1：当作"常规退出"，从 0 播同一套退出动画
+                                if (first && event.progress >= 0.95f) jumped = true
+                                first = false
+                                if (!jumped) drawerNav.onGestureProgress(event.progress)
+                            }
+                            if (jumped) drawerNav.reset()
+                            drawerNav.exit { drawerState.snapTo(DrawerValue.Closed) }
                         } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                            backPreview = 0f
                             throw cancelled
                         } finally {
-                            backPreview = 0f
+                            drawerNav.reset()
                         }
                     }
                 }
-                // 设置返回 = 直接回当前活跃会话窗口（预测式：设置页向右滑出）
+                // 设置返回 = 回当前活跃会话窗口（预测式：设置页向右滑出）
                 PredictiveBackHandler(enabled = drawerState.isClosed && screen is Screen.Settings) { progress ->
+                    var first = true
+                    var jumped = false
                     try {
-                        progress.collect { event -> settingsBackPreview = event.progress }
-                        settingsBackPreview = 1f
-                        leaveSettings()
+                        progress.collect { event ->
+                            if (first && event.progress >= 0.95f) jumped = true
+                            first = false
+                            if (!jumped) settingsNav.onGestureProgress(event.progress)
+                        }
+                        if (jumped) settingsNav.reset()
+                        settingsNav.exit { leaveSettings() }
                     } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                        settingsBackPreview = 0f
                         throw cancelled
                     } finally {
-                        settingsBackPreview = 0f
+                        settingsNav.reset()
                     }
                 }
-                BackHandler(enabled = screen is Screen.SessionBin) {
-                    screen = Screen.Settings
+                // 回收站/归档返回 = 右滑回设置
+                PredictiveBackHandler(enabled = drawerState.isClosed && screen is Screen.SessionBin) { progress ->
+                    var first = true
+                    var jumped = false
+                    try {
+                        progress.collect { event ->
+                            if (first && event.progress >= 0.95f) jumped = true
+                            first = false
+                            if (!jumped) binNav.onGestureProgress(event.progress)
+                        }
+                        if (jumped) binNav.reset()
+                        binNav.exit { screen = Screen.Settings }
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } finally {
+                        binNav.reset()
+                    }
                 }
                 // 聊天窗口是根：不拦截系统返回 → 直接退出到桌面（系统自带预测式退场动画）
             }
@@ -432,16 +468,34 @@ private fun MycoApp(themeMode: ThemeMode, onThemeChange: (ThemeMode) -> Unit) {
             val drawerWidthPx = with(androidx.compose.ui.platform.LocalDensity.current) { drawerWidth.toPx() }
             ModalNavigationDrawer(
                 drawerState = drawerState,
-                gesturesEnabled = true, // 支持左右滑动开关抽屉；系统返回手势由 PredictiveBackHandler 接管
+                // 只有聊天窗口允许用抽屉原生手势（右滑开 / 左滑关）；设置/回收站右滑是"退出"，不能被抽屉抢走
+                gesturesEnabled = screen is Screen.Chat,
+                // 遮罩自己画：要跟预测式进度（以及原生拖拽的 drawer offset）一起变化
+                scrimColor = androidx.compose.ui.graphics.Color.Transparent,
                 drawerContent = {
                     // 预测式关闭预览：手势进度让抽屉整体向左滑出，露出下面的聊天窗口
                     ModalDrawerSheet(
                         Modifier.width(drawerWidth).graphicsLayer {
-                            translationX = -backPreview * drawerWidthPx
+                            translationX = -drawerNav.progress * drawerWidthPx
                         },
                     ) { drawerBody() }
                 },
-            ) { main() }
+            ) {
+                val drawerOffset = drawerState.offset
+                Box(Modifier.fillMaxSize()) {
+                    main()
+                    val openFraction =
+                        (1f - kotlin.math.abs(drawerOffset.value) / drawerWidthPx).coerceIn(0f, 1f)
+                    val scrimAlpha = 0.32f * openFraction * (1f - drawerNav.progress)
+                    if (scrimAlpha > 0.005f) {
+                        Box(
+                            Modifier.fillMaxSize().background(
+                                androidx.compose.ui.graphics.Color.Black.copy(alpha = scrimAlpha),
+                            ),
+                        )
+                    }
+                }
+            }
         }
     }
 

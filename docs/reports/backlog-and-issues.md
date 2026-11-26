@@ -57,13 +57,14 @@
 ### P3 M3 手势 / 返回（已实现，2026-11-26）
 - 正文右滑开抽屉：`swipeRightToOpenDrawer`（只观察 Final pass、横向占优 + 96dp 阈值，不影响竖向滚动）；
 - 单条归档/删除：非当前会话时**抽屉保持打开**（仅当前会话被操作才关抽屉进新草稿）；
-- **返回语义（2026-11-26 二次整改，见 `back-semantics-report.md`）**：
-  - 聊天窗口返回 = 退出 App 回桌面（不拦截，走系统预测式退场）；
-  - 会话管理（抽屉）→聊天窗口：预测式抽屉左滑出；
-  - 设置→聊天窗口：预测式设置页右滑出，直接回进入设置前的活跃会话（不是回抽屉）；
-  - 环：聊天窗口→多会话→设置→聊天窗口；两处预测动画。
-- 报告：`docs/reports/m3-gesture-report.md`、`docs/reports/back-semantics-report.md`。
-- 仍欠：设置下基座聊天不是常驻实例（流式跨设置可能重建 live 过程）；抽屉预览遮罩仍全暗；回收站返回非预测式。
+- **预测式导航（2026-11-26 扩展，见 `predictive-nav-report.md`）**：
+  - 可复用接口 `PredictiveNavState` + `Modifier.swipeRightToExit`（进度源统一，M5 可直接叠加动效）；
+  - 抽屉关闭：抽屉内容 + **遮罩**一起跟手（遮罩 alpha 由 drawer offset 与预测进度共同决定）；
+  - 设置→聊天窗口、回收站→设置：系统手势、返回箭头点击、页面右滑拖拽**同一套右滑动画**；
+  - 设置页右滑不再被抽屉手势抢走（`gesturesEnabled` 仅聊天页）；
+  - 聊天窗口作为常驻基座，设置/回收站覆盖其上（露出真实内容，流式不中断）。
+- 报告：`docs/reports/m3-gesture-report.md`、`docs/reports/back-semantics-report.md`、`docs/reports/predictive-nav-report.md`。
+- 仍欠：设置/回收站"进入"没有推入动画（M5）；宽屏抽屉无手势（返回仍可用）；抽屉预览用位移近似 offset。
 
 
 
