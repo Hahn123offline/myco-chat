@@ -41,9 +41,11 @@
 - 仍欠：切分支**锚点修正**（DSH demo 有，我们没做，列表会轻微位移）；work 分支独立会话文件（设计如此）。
 
 
-### P2 展开动画覆盖内层
-- 现象：外层过程组体有展开动画，但小思考/工具行的展开/收起仍是瞬间出现（AnimatedVisibility 只包了外层）。
-- 目标：内层行内容也用展开动画（高度 + 淡入淡出），且不影响窗口坐标。
+### P2 展开动画覆盖内层（已实现，2026-11-26）
+- 现象：外层过程组体有展开动画，但小思考/工具行的展开/收起仍是瞬间出现。
+- 修复：详情 item 固定存在 + `AnimatedVisibility(expandVertically/shrinkVertically + fadeIn/fadeOut, 180/160ms)`；行间距从 arrangement 挪进 item padding，零高度详情不再撑出空隙；展开只向下长、不动窗口。
+- 报告：`docs/reports/inner-expand-animation-report.md`（20fps 录屏逐帧验证，4 段动画各约 4 帧）。
+
 
 ### P2 正文引用/来源链路
 - 来源缩略行/Sheet 已完成；还差 chat-demo 式正文 `[citation:N]` 角标（需要 citations 数据来源；当前无服务端 citations）。

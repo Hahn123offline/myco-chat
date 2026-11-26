@@ -798,22 +798,43 @@ private fun TimelineBody(    entries: List<TimelineEntry>,
             state = listState,
             userScrollEnabled = false,
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            // 行间距放到 item 内部：收起后的详情 item 高度为 0，不会额外撑出空隙
+            verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
             entries.forEachIndexed { entryIndex, entry ->
                 val key = "$keyPrefix-$entryIndex"
                 if (entry.kind == "text") {
-                    item(key = "rh-$key") { TimelineEntryContent(entry) }
+                    item(key = "rh-$key") {
+                        Box(Modifier.padding(bottom = 2.dp)) { TimelineEntryContent(entry) }
+                    }
                 } else {
                     stickyHeader(key = "rh-$key") {
-                        TimelineEntryHeader(
-                            entry = entry,
-                            expanded = expandedTools[key] == true,
-                            onToggle = { expandedTools[key] = expandedTools[key] != true },
-                        )
+                        Box(Modifier.padding(bottom = 2.dp)) {
+                            TimelineEntryHeader(
+                                entry = entry,
+                                expanded = expandedTools[key] == true,
+                                onToggle = { expandedTools[key] = expandedTools[key] != true },
+                            )
+                        }
                     }
-                    if (expandedTools[key] == true) {
-                        item(key = "rc-$key") { TimelineEntryContent(entry) }
+                    // 详情固定占一个 item，用 AnimatedVisibility 做高度 + 淡入淡出：内层展开/收起也有动画，
+                    // 收起后高度为 0（不占位、不影响窗口坐标）
+                    item(key = "rc-$key") {
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = expandedTools[key] == true,
+                            enter = androidx.compose.animation.expandVertically(
+                                animationSpec = androidx.compose.animation.core.tween(180),
+                            ) + androidx.compose.animation.fadeIn(
+                                animationSpec = androidx.compose.animation.core.tween(180),
+                            ),
+                            exit = androidx.compose.animation.shrinkVertically(
+                                animationSpec = androidx.compose.animation.core.tween(160),
+                            ) + androidx.compose.animation.fadeOut(
+                                animationSpec = androidx.compose.animation.core.tween(160),
+                            ),
+                        ) {
+                            Box(Modifier.padding(bottom = 2.dp)) { TimelineEntryContent(entry) }
+                        }
                     }
                 }
             }
