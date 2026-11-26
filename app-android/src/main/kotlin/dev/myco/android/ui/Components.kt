@@ -350,33 +350,59 @@ fun ChatComposer(
     streaming: Boolean,
     enabled: Boolean = true,
     onAttach: (() -> Unit)? = null,
+    onVoice: (() -> Unit)? = null,
+    thinking: Boolean = false,
+    onToggleThinking: (() -> Unit)? = null,
+    webSearch: Boolean = false,
+    onToggleWebSearch: (() -> Unit)? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     GlassSurface(Modifier.fillMaxWidth(), RoundedCornerShape(MycoRadius.sheet), highlight = focused) {
-        Row(
-            Modifier.fillMaxWidth().padding(MycoSpacing.s),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
-        ) {
-            if (onAttach != null) {
-                OutlinedButton(onClick = onAttach, shape = RoundedCornerShape(MycoRadius.control)) {
-                    Text("＋", fontSize = 18.sp)
+        Column(Modifier.fillMaxWidth().padding(MycoSpacing.s)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
+            ) {
+                if (onAttach != null) {
+                    OutlinedButton(onClick = onAttach, shape = RoundedCornerShape(MycoRadius.control)) {
+                        Text("＋", fontSize = 18.sp)
+                    }
+                }
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("说点什么…") },
+                    maxLines = 4,
+                    shape = RoundedCornerShape(MycoRadius.control),
+                    interactionSource = interaction,
+                )
+                when {
+                    streaming -> OutlinedButton(onClick = onStop) { Text("停止") }
+                    value.isNotBlank() || enabled -> Button(onClick = onSend, enabled = value.isNotBlank() || enabled) { Text("发送") }
+                    onVoice != null -> OutlinedButton(onClick = onVoice, shape = RoundedCornerShape(MycoRadius.control)) { Text("🎤") }
+                    else -> Button(onClick = onSend, enabled = false) { Text("发送") }
                 }
             }
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("说点什么…") },
-                maxLines = 4,
-                shape = RoundedCornerShape(MycoRadius.control),
-                interactionSource = interaction,
-            )
-            if (streaming) {
-                OutlinedButton(onClick = onStop) { Text("停止") }
-            } else {
-                Button(onClick = onSend, enabled = enabled && value.isNotBlank()) { Text("发送") }
+            if (onToggleThinking != null || onToggleWebSearch != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s), modifier = Modifier.padding(top = MycoSpacing.s)) {
+                    if (onToggleThinking != null) {
+                        androidx.compose.material3.FilterChip(
+                            selected = thinking,
+                            onClick = onToggleThinking,
+                            label = { Text("深度思考") },
+                        )
+                    }
+                    if (onToggleWebSearch != null) {
+                        androidx.compose.material3.FilterChip(
+                            selected = webSearch,
+                            onClick = onToggleWebSearch,
+                            label = { Text("智能搜索") },
+                        )
+                    }
+                }
             }
         }
     }

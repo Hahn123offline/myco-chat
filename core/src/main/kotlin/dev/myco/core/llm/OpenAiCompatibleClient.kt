@@ -180,6 +180,11 @@ class OpenAiCompatibleClient(
         put("stream", true)
         request.maxTokens?.let { put("max_tokens", it) }
         request.temperature?.let { put("temperature", it) }
+        // DeepSeek 默认开思考（贵/慢），必须显式关闭；泛 OpenAI 兼容服务不认这个字段，只在明确要求时发
+        val deepseek = provider.baseUrl?.contains("deepseek.com", ignoreCase = true) == true
+        if (deepseek || request.thinking != null) {
+            put("thinking", buildJsonObject { put("type", if (request.thinking == true) "enabled" else "disabled") })
+        }
         put("messages", buildJsonArray {
             request.messages.forEach { m -> add(messageJson(m)) }
         })

@@ -50,12 +50,18 @@ class HttpBridgeClient(
             is Command.SessionDeletePermanent -> "session.deletePermanent" to buildJsonObject { put("sessionId", cmd.sessionId) }
             is Command.ChatSend -> "chat.send" to buildJsonObject {
                 put("sessionId", cmd.sessionId); put("text", cmd.text)
+                cmd.requestId?.let { put("requestId", it) }
+                cmd.thinking?.let { put("thinking", it) }
+                cmd.webSearch?.let { put("webSearch", it) }
                 if (cmd.attachments.isNotEmpty()) {
                     put("attachments", dev.myco.core.spec.MycoJson.encodeToJsonElement(
                         kotlinx.serialization.builtins.ListSerializer(dev.myco.core.spec.AttachmentRef.serializer()),
                         cmd.attachments,
                     ))
                 }
+            }
+            is Command.TranscribeAudio -> "audio.transcribe" to buildJsonObject {
+                put("name", cmd.name); put("mime", cmd.mime); put("base64", cmd.base64)
             }
             is Command.AttachmentSave -> "attachment.save" to buildJsonObject {
                 put("sessionId", cmd.sessionId); put("name", cmd.name)

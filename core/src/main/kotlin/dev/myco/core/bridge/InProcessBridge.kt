@@ -86,6 +86,24 @@ class InProcessBridge(
             )
         }
         is Command.ChatSend -> chatSend(cmd)
+        is Command.TranscribeAudio -> {
+            val provider = providers.firstEnabled()
+                ?: return CommandResult.Err("PROVIDER_MISSING", "还没有配置 provider")
+            val client = dev.myco.core.capability.DeepSeekToolsClient.fromProvider(provider, credentials)
+                ?: return CommandResult.Err("ASR_UNAVAILABLE", "当前 provider 不支持 DeepSeek ASR")
+            runCatching {
+                val bytes = java.util.Base64.getDecoder().decode(cmd.base64)
+                client.asr(bytes, cmd.name)
+            }.fold(
+                onSuccess = { r ->
+                    CommandResult.Ok(buildJsonObject {
+                        put("text", r.text)
+                        r.durationMs?.let { put("durationMs", it) }
+                    })
+                },
+                onFailure = { CommandResult.Err("ASR_FAILED", it.message ?: "语音转写失败") },
+            )
+        }
         is Command.ChatRegenerate -> {
             val key = cmd.requestId?.let { "${cmd.sessionId}:regen:$it" }
             if (key != null) completedRequests[key]?.let { return it }
@@ -292,7 +310,10 @@ class InProcessBridge(
             ?: return CommandResult.Err("MODEL_MISSING", "provider ${provider.id} 没有 chat 角色模型")
 
         // 工具 schema 进每轮请求前缀：超预算直接拒绝，不偷偷裁剪（模型看到的必须可复现）
-        val toolSpecs = tools.list().map { ToolSpec(it.name, it.description, it.parameters) }
+        val allToolSpecs = tools.list().map { ToolSpec(it.name, it.description, it.parameters) }
+        val toolSpecs = if (cmd.webSearch == false) {
+            allToolSpecs.filterNot { it.name == "web_search" || it.name == "read_url" }
+        } else allToolSpecs
         val schemaChars = tools.schemaChars()
         if (schemaChars > TOOL_BUDGET_CHARS) {
             return CommandResult.Err("TOOL_BUDGET", "工具 schema 超预算：$schemaChars > $TOOL_BUDGET_CHARS 字符")
@@ -368,6 +389,7 @@ class InProcessBridge(
                         model = model.id,
                         messages = messages,
                         maxTokens = model.maxTokens,
+                        thinking = cmd.thinking,
                         tools = toolSpecs,
                     )
                 ).collect { chunk ->

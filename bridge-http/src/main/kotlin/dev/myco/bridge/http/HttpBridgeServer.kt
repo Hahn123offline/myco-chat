@@ -92,8 +92,16 @@ class HttpBridgeServer(
                     sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
                     text = payload["text"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing text")),
                     attachments = attachments,
+                    requestId = payload["requestId"]?.jsonPrimitive?.content,
+                    thinking = payload["thinking"]?.jsonPrimitive?.content?.toBooleanStrictOrNull(),
+                    webSearch = payload["webSearch"]?.jsonPrimitive?.content?.toBooleanStrictOrNull(),
                 )
             }
+            "audio.transcribe" -> Command.TranscribeAudio(
+                name = payload["name"]?.jsonPrimitive?.content ?: "audio.wav",
+                mime = payload["mime"]?.jsonPrimitive?.content ?: "audio/wav",
+                base64 = payload["base64"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing base64")),
+            )
             "attachment.save" -> Command.AttachmentSave(
                 sessionId = payload["sessionId"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing sessionId")),
                 name = payload["name"]?.jsonPrimitive?.content ?: return json(ex, 400, err("PAYLOAD", "missing name")),

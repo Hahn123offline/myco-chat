@@ -404,6 +404,8 @@ private fun ChatScreen(
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var pending by remember { mutableStateOf<List<dev.myco.core.spec.AttachmentRef>>(emptyList()) }
+    var thinking by remember { mutableStateOf(false) }
+    var webSearch by remember { mutableStateOf(true) }
     var showAttachSheet by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
     val context = LocalContext.current
@@ -447,6 +449,29 @@ private fun ChatScreen(
     }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { attachUri(it) }
+    }
+    val pickAudio = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                runCatching {
+                    val resolver = context.contentResolver
+                    val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("读取音频失败")
+                    val name = displayName(context, uri)
+                    val mime = resolver.getType(uri) ?: "audio/wav"
+                    val r = bridge.send(
+                        Command.TranscribeAudio(
+                            name = name,
+                            mime = mime,
+                            base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP),
+                        )
+                    )
+                    if (r is CommandResult.Err) error("${r.code}: ${r.message}")
+                    val text = ((r as CommandResult.Ok).data as JsonObject)["text"]?.jsonPrimitive?.content ?: ""
+                    if (text.isBlank()) error("没有识别到文字")
+                    input = (input + " " + text).trim()
+                }.onFailure { error = "语音转写失败：${it.message}" }
+            }
+        }
     }
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) cameraUri?.let { attachUri(it) }
@@ -493,7 +518,7 @@ private fun ChatScreen(
         input = ""; pending = emptyList(); error = null
         optimisticUser = text.ifBlank { outgoing.joinToString(" ") { it.name } }
         scope.launch {
-            val r = bridge.send(Command.ChatSend(sessionId, text, outgoing))
+            val r = bridge.send(Command.ChatSend(sessionId, text, outgoing, thinking = thinking, webSearch = webSearch))
             if (r is CommandResult.Err) {
                 error = "${r.code}: ${r.message}"
                 optimisticUser = null
@@ -587,6 +612,11 @@ private fun ChatScreen(
                     streaming = streaming != null,
                     enabled = input.isNotBlank() || pending.isNotEmpty(),
                     onAttach = { showAttachSheet = true },
+                    onVoice = { pickAudio.launch(arrayOf("audio/*")) },
+                    thinking = thinking,
+                    onToggleThinking = { thinking = !thinking },
+                    webSearch = webSearch,
+                    onToggleWebSearch = { webSearch = !webSearch },
                 )
             }
         }

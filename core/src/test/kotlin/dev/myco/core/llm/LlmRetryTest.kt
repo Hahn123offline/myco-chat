@@ -189,6 +189,15 @@ class ToolCallParsingTest {
     }
 
     @Test
+    fun `openai sends thinking when requested`() = runBlocking {
+        CountingHttpServer { Pair(200, "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n") }.use { srv ->
+            OpenAiCompatibleClient(provider(srv.port, "openai-completions"), CredentialResolver(home(), emptyMap()))
+                .stream(ChatRequest("m", listOf(ChatMessage("user", "hi")), thinking = true)).toList()
+            assertTrue(srv.lastBody().contains("\"thinking\":{\"type\":\"enabled\"}"))
+        }
+    }
+
+    @Test
     fun `openai accumulates tool_call arguments across deltas`() = runBlocking {
         val sse = buildString {
             append("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"function\":{\"name\":\"time_now\",\"arguments\":\"{\\\"a\\\"\"}}]}}]}\n\n")

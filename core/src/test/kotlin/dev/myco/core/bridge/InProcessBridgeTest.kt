@@ -414,6 +414,35 @@ class InProcessBridgeTest {
     }
 
     @Test
+    fun `send flags control thinking and web search tools`() = runBlocking {
+        var lastRequest: dev.myco.core.llm.ChatRequest? = null
+        val client = object : ChatClient {
+            override fun stream(request: dev.myco.core.llm.ChatRequest): kotlinx.coroutines.flow.Flow<dev.myco.core.llm.ChatChunk> =
+                kotlinx.coroutines.flow.flow {
+                    lastRequest = request
+                    emit(dev.myco.core.llm.ChatChunk.Delta("ok"))
+                    emit(dev.myco.core.llm.ChatChunk.Done("ok"))
+                }
+        }
+        val f = Fixture(client = client)
+        f.tools.register(dev.myco.core.tools.timeNowTool())
+        f.tools.register(
+            dev.myco.core.tools.ToolDef(
+                name = "web_search", summary = "s", description = "d",
+            ) { "{}" }
+        )
+        val meta = f.sessions.create("chat", "chat-default")
+        f.bridge.send(Command.ChatSend(meta.id, "hi", thinking = true, webSearch = false))
+        assertEquals(true, lastRequest!!.thinking)
+        assertTrue(lastRequest!!.tools.none { it.name == "web_search" })
+        assertTrue(lastRequest!!.tools.any { it.name == "time_now" })
+
+        f.bridge.send(Command.ChatSend(meta.id, "hi2", thinking = false, webSearch = true))
+        assertEquals(false, lastRequest!!.thinking)
+        assertTrue(lastRequest!!.tools.any { it.name == "web_search" })
+    }
+
+    @Test
     fun `tool loop executes registry and feeds result back`() = runBlocking {
         val client = object : ChatClient {
             var calls = 0

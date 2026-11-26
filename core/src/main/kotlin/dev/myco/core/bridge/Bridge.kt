@@ -17,6 +17,17 @@ sealed class Command {
         val attachments: List<AttachmentRef> = emptyList(),
         /** 幂等键：重试同一 requestId 不会重复跑一轮。 */
         val requestId: String? = null,
+        /** 本轮是否开思考（null=provider 默认；UI 模式 chips 显式传 false/true）。 */
+        val thinking: Boolean? = null,
+        /** 本轮是否允许联网搜索工具（null=默认允许；false 时过滤 web_search/read_url）。 */
+        val webSearch: Boolean? = null,
+    ) : Command()
+
+    /** 语音转写（可选能力）：DeepSeek ASR；返回 text/durationMs 填入输入框。 */
+    data class TranscribeAudio(
+        val name: String,
+        val mime: String,
+        val base64: String,
     ) : Command()
 
     /** GUI 选完文件后先存进应用私有目录；返回 AttachmentRef 的 JSON。base64 只在传输层出现。 */
