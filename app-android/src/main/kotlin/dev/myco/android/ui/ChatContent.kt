@@ -649,7 +649,13 @@ private fun TimelineBody(
 }
 
 private val GroupBodyScrollIsolation = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-    // 组体内滚动到边界时，允许手指继续拖外层；但惯性/甩动不传递给外层
+    // 严格隔离：组体内滚动到边界后，同一手势的剩余位移与惯性都不交给外层（撞墙）
+    override fun onPostScroll(
+        consumed: androidx.compose.ui.geometry.Offset,
+        available: androidx.compose.ui.geometry.Offset,
+        source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
+    ): androidx.compose.ui.geometry.Offset = available
+
     override suspend fun onPostFling(
         consumed: androidx.compose.ui.unit.Velocity,
         available: androidx.compose.ui.unit.Velocity,
@@ -1174,6 +1180,7 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
 
 
 
