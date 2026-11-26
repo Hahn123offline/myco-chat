@@ -1,21 +1,23 @@
 # myco 后续工作清单与已知问题（2026-11-26）
 
-> 用途：上下文压缩前落盘，后续会话从这里恢复。当前最新提交 `14421a4`（已 push）。
-> 测试基线：`:core:test` 86 + `:bridge-http:test` 7 = **94 绿**；`:app-android:assembleDebug`、`:app-desktop:installDist` 通过。
+> 用途：上下文压缩/新会话时从这里恢复。当前最新提交 `6e36128`（本地 `main`，未 push：VPN 开启时 GitHub 不可达）。
+> 测试基线：`:core:test` 86 + `:bridge-http:test` 7 + `:app-android:testDebugUnitTest` 7 = **100 绿**；`:app-android:assembleDebug`、`:app-desktop:installDist` 通过。
 
 ## 0. 当前已完成（不要再重做）
 
 - 事件契约 B0/B1：seq/sessionId、500 事件重放、HTTP/SSE fromSeq、requestId 幂等。
 - 会话 B2：摘要/preview/置顶/归档/软删/永久删除/搜索、抽屉菜单、回收站/归档页、批量选择（全选/批量归档/批量删除+撤销）。
 - 消息模型 B3：regenerate 同 nodeId 版本链、editResend（append-only + revises）、会话互斥、stop turnId。
-- 会话树：parentId、activeLeaf、activePath；regenerate/editResend 创建新分支；旧分支保留；版本切换切 activeLeaf。
+- 会话树：parentId、activeLeaf、activePath；regenerate/editResend 创建新分支；旧分支保留；版本切换切 activeLeaf；**用户消息分支 `‹ N/M ›` 切换器（2026-11-26 新增）**。
 - 新会话语义：唯一草稿、首条消息转正、标题模型生成、删除/归档当前会话后进入新草稿。
 - 模型：会话级 provider/model 选择、reasoning level 自定义映射、模型目录编辑（全屏 Dialog）、第三方模板、API key 只写、auth.ref 自动生成。
 - 聊天 UI：助手全宽无气泡、Markdown（标题/列表/引用/代码块/表格/`---` 分隔线/可点链接）、消息操作条、版本切换、footer。
-- 过程时间线：reasoning/tool/text 按事件顺序实时流式；小行折叠（思考单行预览、工具摘要）、组体限高内滚、内层 sticky header、外层不吸顶、组体内外滚动隔离（手势代际）、展开动画（外层组体）、展开不移动窗口、逐帧平滑跟底、组头按工具类别汇总。
+- 过程时间线：reasoning/tool/text 按事件顺序实时流式；小行折叠（思考单行预览、工具摘要）、组体限高内滚、内层 sticky header、外层不吸顶、组体内外滚动隔离（手势代际）、外层+内层展开动画、展开不移动窗口、**统一进度逐帧跟底（流式思考/工具/正文都跟、结束不跳）**、组头按工具类别汇总。
 - 来源：web_search 解析 title/url/site/snippet/date；回答下缩略行（favicon/首字母 + 数量）+ 底部 Sheet 完整列表；工具详情按类型展示。
 - 后台保活：生成期间前台服务 + 通知权限请求；实测切 Home 后 1000 词生成完成。
+- **长会话"死会话"闪退已修复**（LazyColumn 重复 key；`resolveVisibleMessages` + 唯一分支渲染）。
 - 多份调研：`docs/recon/dsh-ui-implementation.md`、`docs/recon/deepseek-citation-ui.md`。
+- 本轮报告：`docs/reports/p0-dead-session-report.md`、`p1-autoscroll-report.md`、`user-branch-report.md`、`inner-expand-animation-report.md`。
 
 ## 1. 大块（按建议优先级）
 
@@ -71,42 +73,50 @@
 5. **标题生成**：首条消息后额外一次模型调用；chat 顶栏标题不实时刷新（抽屉刷新可见）；失败静默。
 6. **通知权限**：Android 13+ 首次发送请求；拒绝后 FGS 仍生效但通知不可见。
 7. **模型配置**：deepseek-flash 需要手动开启“支持思考强度”并设 high 参数；Anthropic 字符串档位映射 low=2048/medium=8192/high=32768；OpenAI 发 `reasoning_effort`。
-8. **editResend UI** 未完成真机点验；旧消息“已被替代”标记需设备确认。
+8. **editResend UI** 已真机点验（2026-11-26，见 `user-branch-report.md`）；旧消息"已被替代"标记正常。
 9. **回收站/归档撤销** 点击时序未完成真机点验。
 10. **工具调用结果展示**：web_search 卡片已展示前 3 来源；其它工具 JSON 仅截断文本。
 11. **事件重放环在内存**，进程重启后不能回放增量（历史仍从 JSONL）。
 12. **组体滚动**：Android 真机上组体区域使用 PointerInput 手动分发；与选择文字/长按等交互的兼容需回归。
 13. **无 work 分支/多会话并发生成 UI**；FGS refcount 已处理并发生成。
 14. **Markdown 非全集**：链接可点，但表格宽度/嵌套列表/公式/半截 fence 未处理。
-15. **消息版本切换持久化**存储 `v_nodeId` 偏好；切分支时 activeLeaf 会持久化，但 user 分支尚无 UI。
+15. **分支切换无锚点修正**：切 user/assistant 版本后列表可能轻微位移（DSH demo 有 anchor 修正）。
+16. **发送后软键盘不自动收起**：流式期间聊天视口被压缩，观感一般。
 
-## 3. 真机待回归清单（Android 15，设备 7e7c5a68）
+## 3. 真机回归清单（Android 15，设备 7e7c5a68）
 
-- 长会话打开（P0）；
-- 深度思考全程：思考行流式/不卡/折叠展开；
-- 过程组展开动画 + 小行动画（P2）；
-- 流式跟底：思考段、工具段、正文段统一跟随，结束不跳（P1）；
-- 用户编辑重发两次的分支 UI（P1）；
-- 组体内外滚动边界与惯性（已改，继续观察）；
-- 来源缩略行/Sheet/点击；
-- 后台/锁屏生成；
-- 单条删除/归档/撤销时序。
+### 2026-11-26 已回归（本轮）
+
+- [x] 长会话打开（P0 死会话）——4 个会话反复切换无崩溃；
+- [x] 流式跟底：思考/工具/正文统一跟随，结束不跳（录屏抽帧核对）；
+- [x] 用户编辑重发两次形成 `‹ 3/3 ›`，切分支后上下文正确（事件 parentId 核对）；
+- [x] 过程组内层小行展开/收起动画（20fps 录屏逐帧核对）；
+- [x] 组体边界拖动交外层原生滚动后无竞争（本轮未复现异常）。
+
+### 仍待回归
+
+- [ ] 深度思考长文本全程 + 组体内 sticky 头；
+- [ ] 组体内外滚动边界与惯性（极端长列表）；
+- [ ] 来源缩略行/Sheet/点击；
+- [ ] 后台/锁屏生成；
+- [ ] 单条删除/归档/撤销时序；
+- [ ] assistant 版本切换（‹ 1/N ›）与 regenerate 在分支下的组合。
 
 ## 4. 开发/验证命令
 
 ```powershell
 cd E:\myco-chat
-& 'E:\11-15\tools\gradle-8.9\bin\gradle.bat' -p E:\myco-chat :core:test :bridge-http:test :app-android:assembleDebug :app-desktop:installDist --console=plain
+& 'E:\11-15\tools\gradle-8.9\bin\gradle.bat' -p E:\myco-chat :core:test :bridge-http:test :app-android:testDebugUnitTest :app-android:assembleDebug :app-desktop:installDist --console=plain
 adb -s 7e7c5a68 install -r app-android\build\outputs\apk\debug\app-android-debug.apk
 ```
 
-- 关键文件：`core/src/main/kotlin/dev/myco/core/bridge/InProcessBridge.kt`（事件/流/树/标题/FGS）、`app-android/.../MainActivity.kt`（Shell/ChatScreen/发请求/FGS）、`app-android/.../ui/ChatContent.kt`（时间线/折叠/来源/Markdown/滚动控制）、`app-android/.../ui/Favicons.kt`。
+- 关键文件：`core/.../bridge/InProcessBridge.kt`（事件/流/树/标题/FGS）、`app-android/.../MainActivity.kt`（Shell/ChatScreen/发请求/FGS/跟底）、`app-android/.../ui/ChatContent.kt`（时间线/折叠/来源/Markdown/滚动控制/可见分支/展开动画）、`app-android/.../ui/Favicons.kt`。
 - 事件/会话 schema：`specs/session-events.schema.json`；fixtures 校验 23/23。
-- 当前分支 main，远程 `https://github.com/Hahn123offline/myco-chat.git`；最新提交 `14421a4`。
+- 当前分支 main，远程 `https://github.com/Hahn123offline/myco-chat.git`；最新提交 `6e36128`（未 push）。
 
 ## 5. 恢复时的第一件事
 
-1. `git log --oneline -5` 确认 `14421a4` 之后没有新提交；
-2. 读本文件，先修 **P0 死会话闪退**（抓 logcat）；
-3. 再按 P1 自动滚动统一进度 / 用户分支；
-4. 每步跑测试 + 真机验证 + 更新 `docs/reports/`。
+1. `git log --oneline -5` 确认最新是 `6e36128`（或在它之后）；
+2. 读本文件；P0/P1 自动滚动/用户分支/内层动画均已完成，**不要重做**；
+3. 下一步建议按优先级：P2 正文 `[citation:N]` 角标 + 来源 Sheet 截断提示 → P3 M3 手势/预测式返回 → P3 M5 设计系统；分支切换锚点修正（体验 polish）可穿插；
+4. 每步跑测试 + 真机验证 + 更新 `docs/reports/`；GitHub 不可达时只本地提交、不要尝试 push。
