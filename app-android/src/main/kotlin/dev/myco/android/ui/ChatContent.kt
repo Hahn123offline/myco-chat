@@ -1,5 +1,6 @@
 package dev.myco.android.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -432,6 +433,7 @@ private fun CodeBlock(code: String, lang: String) {
 }
 
 /** 聊天内容渲染：助手全宽无气泡、Markdown、版本切换、过程折叠、footer、操作条。 */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatMessages(
     state: ChatContentState,
@@ -488,6 +490,7 @@ fun ChatMessages(
         }
     }
     val expandedProcess = remember { androidx.compose.runtime.mutableStateMapOf<Long, Boolean>() }
+    val expandedTools = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
         .groupBy { it.nodeId!! }
         .mapValues { (_, list) -> list.sortedBy { it.version } }
@@ -516,16 +519,29 @@ fun ChatMessages(
             if (msg.nodeId != null && msg.version != active) return@forEachIndexed
             val shown = msg
             val turn = msg.turn
+            val entries = turn?.let { state.timelines[it] }.orEmpty()
+            if (entries.isNotEmpty() && turn != null) {
+                stickyHeader(key = "ph-$turn") {
+                    TimelineHeaderRow(
+                        entries = entries,
+                        expanded = expandedProcess[turn] ?: false,
+                        onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
+                    )
+                }
+                if (expandedProcess[turn] == true) {
+                    entries.forEachIndexed { entryIndex, entry ->
+                        item(key = "pe-$turn-$entryIndex") {
+                            TimelineEntryRow(
+                                entry = entry,
+                                expanded = expandedTools["$turn-$entryIndex"] == true,
+                                onToggle = { expandedTools["$turn-$entryIndex"] = expandedTools["$turn-$entryIndex"] != true },
+                            )
+                        }
+                    }
+                }
+            }
             item(key = "a-$index-${shown.messageId ?: ""}") {
                 Column(Modifier.fillMaxWidth()) {
-                    val entries = turn?.let { state.timelines[it] }.orEmpty()
-                    if (entries.isNotEmpty()) {
-                        TimelineFold(
-                            entries = entries,
-                            expanded = expandedProcess[turn] ?: false,
-                            onToggle = { if (turn != null) expandedProcess[turn] = expandedProcess[turn] != true },
-                        )
-                    }
                     MarkdownText(shown.text)
                     MessageActions(
                         message = shown,
@@ -553,13 +569,120 @@ fun ChatMessages(
             }
         }
         if (liveEntries.isNotEmpty() || streamingText != null) {
-            item(key = "streaming") {
-                Column(Modifier.fillMaxWidth()) {
-                    if (liveEntries.isNotEmpty()) {
-                        TimelineFold(entries = liveEntries, expanded = true, onToggle = {}, live = true)
+            if (liveEntries.isNotEmpty()) {
+                stickyHeader(key = "live-ph") { TimelineHeaderRow(entries = liveEntries, expanded = true, onToggle = {}, live = true) }
+                liveEntries.forEachIndexed { entryIndex, entry ->
+                    item(key = "live-pe-$entryIndex") {
+                        TimelineEntryRow(
+                            entry = entry,
+                            expanded = expandedTools["live-$entryIndex"] == true,
+                            onToggle = { expandedTools["live-$entryIndex"] = expandedTools["live-$entryIndex"] != true },
+                        )
                     }
-                    if (streamingText != null) MarkdownText(streamingText + " ▍")
                 }
+            }
+            if (streamingText != null) {
+                item(key = "streaming") {
+                    Column(Modifier.fillMaxWidth()) { MarkdownText(streamingText + " ▍") }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun TimelineHeaderRow(
+    entries: List<TimelineEntry>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    live: Boolean = false,
+) {
+    val toolCount = entries.count { it.kind == "tool" }
+    val runningTool = entries.any { it.kind == "tool" && it.running }
+    val runningReasoning = entries.any { it.kind == "reasoning" && it.running }
+    val header = when {
+        live && runningTool -> "正在使用工具…"
+        live && runningReasoning -> "正在思考…"
+        live -> "正在处理…"
+        toolCount > 0 -> "过程 · $toolCount 个工具"
+        else -> "思考过程"
+    }
+    Row(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = MycoSpacing.s, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(if (expanded) "▾" else "▸", style = MaterialTheme.typography.bodySmall)
+        Text(header, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun TimelineEntryRow(entry: TimelineEntry, expanded: Boolean, onToggle: () -> Unit) {
+    when (entry.kind) {
+        "reasoning" -> {
+            if (entry.text.isNotBlank()) {
+                Text(
+                    "✳ 思考 · ${entry.text.take(2000)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = MycoSpacing.s, top = 2.dp, bottom = 2.dp),
+                )
+            }
+        }
+        "tool" -> {
+            Column(Modifier.fillMaxWidth().padding(start = MycoSpacing.s)) {
+                Row(
+                    Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        (if (expanded) "▾ " else "▸ ") + entry.name + " · " + when {
+                            entry.running -> "进行中…"
+                            entry.ok == false -> "失败"
+                            else -> "完成"
+                        } + if (entry.sources.isNotEmpty()) " · 已阅读 ${entry.sources.size} 个网页" else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (entry.ok == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                if (expanded) {
+                    if (entry.args.isNotBlank() && entry.args != "{}") {
+                        Text(
+                            "参数：${entry.args.take(300)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = MycoSpacing.m),
+                        )
+                    }
+                    if (entry.sources.isEmpty() && entry.text.isNotBlank()) {
+                        Text(
+                            entry.text.take(1200),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 8,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = MycoSpacing.m),
+                        )
+                    }
+                }
+            }
+        }
+        "text" -> {
+            if (entry.text.isNotBlank()) {
+                Text(
+                    entry.text.take(1200),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = MycoSpacing.s, top = 2.dp, bottom = 2.dp),
+                )
             }
         }
     }
@@ -870,6 +993,10 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
+
+
+
 
 
 
