@@ -499,7 +499,6 @@ fun ChatMessages(
         }
     }
     val expandedProcess = remember { androidx.compose.runtime.mutableStateMapOf<Long, Boolean>() }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val expandedTools = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     val maxGroupHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.5f).coerceAtMost(400.dp)
     val nodes = state.messages.filter { it.role == "assistant" && it.nodeId != null }
@@ -536,21 +535,15 @@ fun ChatMessages(
                     TimelineHeaderRow(
                         entries = entries,
                         expanded = expandedProcess[turn] ?: false,
-                        onToggle = {
-                            val opening = expandedProcess[turn] != true
-                            expandedProcess[turn] = opening
-                            if (opening) {
-                                scope.launch {
-                                    val idx = listState.layoutInfo.visibleItemsInfo
-                                        .firstOrNull { it.key == "ph-$turn" }?.index
-                                    if (idx != null) listState.animateScrollToItem(idx)
-                                }
-                            }
-                        },
+                        onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
                     )
                 }
-                if (expandedProcess[turn] == true) {
-                    item(key = "pb-$turn") {
+                item(key = "pb-$turn") {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = expandedProcess[turn] == true,
+                        enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+                    ) {
                         TimelineBody(
                             entries = entries,
                             keyPrefix = "$turn",
@@ -1289,6 +1282,7 @@ private fun Footer(meta: TurnMetaUi) {
         modifier = Modifier.padding(top = 2.dp),
     )
 }
+
 
 
 

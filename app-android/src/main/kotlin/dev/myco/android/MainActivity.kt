@@ -832,8 +832,17 @@ private fun ChatScreen(
             }
             LaunchedEffect(sessionId) {
                 while (true) {
-                    kotlinx.coroutines.delay(60)
-                    if (followBottom && !listState.isScrollInProgress) scrollToLatest()
+                    androidx.compose.runtime.withFrameNanos { }
+                    if (followBottom && !listState.isScrollInProgress) {
+                        val info = listState.layoutInfo
+                        val last = info.visibleItemsInfo.lastOrNull()
+                        if (last != null && last.index == info.totalItemsCount - 1) {
+                            val overflow = last.offset + last.size - info.viewportEndOffset
+                            if (overflow > 0) {
+                                listState.dispatchRawDelta((overflow * 0.35f).coerceIn(1f, 64f))
+                            }
+                        }
+                    }
                 }
             }
             dev.myco.android.ui.ChatMessages(
@@ -1881,6 +1890,7 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
+
 
 
 
