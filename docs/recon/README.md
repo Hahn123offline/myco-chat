@@ -15,6 +15,9 @@
 | [runtime-options.md](runtime-options.md) | 运行时选型（建议 D9 拍板用） | 7 候选五维打分：Kotlin/JVM 单核心 89 分最高；nodejs-mobile/CodePush/RN SSE 的否决证据；1 周 spike 判据 |
 | [deepseek-chat-demo-ui.md](deepseek-chat-demo-ui.md) | 官方 `deepseek-ai/chat-demo`（MIT） | chat 壳的结构参考：回复五态、贴底滚动、首 token 三段反馈、移动键盘、会话分组；但它没有 provider 管理 |
 | [mobile-chat-ux.md](mobile-chat-ux.md) | 移动端 chat UX 基线 + 开源项目/DSH Go 可抄点（M1–M6 用） | 单条会话=长按菜单、流式四态、40px 贴底规则、过程折叠、imePadding、M4 双形态推荐 |
+| [ui-component-behavior.md](ui-component-behavior.md) | 移动端 agent/chat UI 行为拆解（12 张截图 + 4 产品 + 3 开源） | 组件级状态机/手势/转场/数据契约；抽屉 82–85%、消息操作条、思考折叠、输入状态机、撤销 |
+| [backend-feature-gaps.md](backend-feature-gaps.md) | UI 所需能力 vs myco 后端逐项对照 | P0 8 条：事件 seq/重放、消息版本、历史重建、并发、列表字段、思考回传、工具路径、附件缩略图 |
+| [memory-agent-vs-companion.md](memory-agent-vs-companion.md) | agent 与陪伴记忆研究（20 来源） | 推荐 A+C（单库多标签 + domain 策略层）、最小六表、I2 最小范围、三大风险 |
 
 > 证据分级不统一是这批材料的通病（dsh-icl 自己就有两套互斥的 E0–E4 定义）。
 > 本目录各报告已各自声明口径；引用数字前先看它的口径表。
