@@ -3,6 +3,7 @@ package dev.myco.android.ui.m5.chat.ui
 
 import dev.myco.android.ui.m5.chat.model.NestedScrollArbiter
 import dev.myco.android.ui.m5.chat.model.ScrollFollowPolicy
+import org.junit.Assume
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -184,5 +185,67 @@ class ChatListContractTest {
     @Test
     fun `stream status block height is 34dp`() {
         assertEquals(34f, ChatScrollMetrics.STREAM_STATUS_HEIGHT_DP, 0.001f) // §3.10 字段 2
+    }
+
+    // ------------------------------------------------------------ §3.2 回底钮无障碍（Lead 2026-11-27 真机缺陷）
+
+    @Test
+    fun `to bottom button has a centralized non blank accessible label`() {
+        // 规格 §3.2 字段 11：`button` + 可调名「回到底部」
+        assertTrue(ChatA11y.TO_BOTTOM.isNotBlank())
+        assertEquals("回到底部", ChatA11y.TO_BOTTOM)
+        // UI 只允许从集中函数取名字（防"图标按钮无 desc"回归）
+        assertEquals(ChatA11y.TO_BOTTOM, ChatA11y.toBottomContentDescription())
+        assertTrue(ChatA11y.TO_BOTTOM_TEST_TAG.isNotBlank())
+        assertTrue(ChatA11y.TO_BOTTOM_TEST_TAG.endsWith("to-bottom"))
+    }
+
+    @Test
+    fun `to bottom button ui references the centralized label and test tag`() {
+        // 测试层拿不到 Compose 语义（无 compose-ui-test 依赖）→ 用静态断言锁"常量被 UI 引用"。
+        // 语义树本身的权威验收 = uiautomator（Lead 2026-11-27 已在 host-GPU 模拟器复核，见 ChatA11y KDoc）：
+        //   adb shell uiautomator dump → 单个 <node resource-id="chat.to-bottom" content-desc="回到底部" clickable="true"/>。
+        // 找不到源码（非预期工作目录）时跳过，避免环境差异导致假红。
+        val source = readMainSource("ui/m5/chat/ui/ScrollFollowUi.kt")
+        Assume.assumeTrue("找不到 ScrollFollowUi.kt 源码，跳过静态断言", source != null)
+        val text = source!!
+        assertTrue(
+            "回底钮必须用集中常量设置 contentDescription",
+            text.contains("contentDescription = ChatA11y.toBottomContentDescription()"),
+        )
+        assertTrue(
+            "回底钮必须带稳定 testTag 供 uiautomator 定位",
+            text.contains("ChatA11y.TO_BOTTOM_TEST_TAG"),
+        )
+        assertTrue(
+            "必须打开 testTagsAsResourceId 才能 dump 出 resource-id",
+            text.contains("testTagsAsResourceId = true"),
+        )
+        assertTrue("可调名常量不能在 UI 里被硬编码绕过", !text.contains("contentDescription = \"回到"))
+        // 回归防线（真机反证）：mergeDescendants=true 会把 desc 拆成**子节点**，
+        // 父节点 `chat.to-bottom` 变成空 content-desc → 自动化假阴性。
+        assertFalse(
+            "回底钮不得使用合并语义（会被拆成子语义节点）",
+            text.contains(".semantics(mergeDescendants"),
+        )
+        assertFalse("图标不得 clearAndSetSemantics（会多一个语义子节点）", text.contains("clearAndSetSemantics"))
+    }
+
+    @Test
+    fun `every action bar key has a non blank accessible description`() {
+        // 操作条图标键的可调名来源（base `IconAction` 必填 contentDescription，BP-19）。
+        MessageActionsContract.KEY_ORDER.forEach { key ->
+            assertTrue("$key 缺可调名", MessageActionsContract.keyDescription(key).isNotBlank())
+        }
+    }
+
+    /** 读主源码（`src/main/kotlin/dev/myco/android/<relative>`）：兼容 Gradle 单测不同工作目录。 */
+    private fun readMainSource(relative: String): String? {
+        val roots = listOf(".", "app-android", "..", "../app-android", "../../app-android")
+        roots.forEach { root ->
+            val file = java.io.File(root, "src/main/kotlin/dev/myco/android/$relative")
+            if (file.isFile) return file.readText()
+        }
+        return null
     }
 }

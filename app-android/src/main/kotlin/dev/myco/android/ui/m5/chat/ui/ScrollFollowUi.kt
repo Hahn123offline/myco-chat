@@ -49,10 +49,12 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.myco.android.ui.m5.M5Icon
@@ -322,13 +324,41 @@ internal fun Modifier.absorbsInnerEdgeScroll(
 )
 
 /**
+ * chat 面板的无障碍标签 / 测试钩子（**集中常量**，UI 必须引用，单测断言 → 防"图标按钮无 desc"回归）。
+ *
+ * 背景（Lead 2026-11-27 真机发现）：纯图标按钮在 `uiautomator dump` 里是 `clickable=true` 而
+ * `content-desc` 为空，读屏与自动化都只能靠坐标找。规格 §3.2 字段 11 规定可调名「回到底部」；
+ * 这里再给一个 `testTag` 并把 `testTagsAsResourceId` 打开 → dump 里能看到
+ * `resource-id="chat.to-bottom"`，不再需要猜坐标。
+ *
+ * 实现约束（**真机反证，勿改回**）：desc/testTag 必须与 `clickable` 落在**同一个 layout node**
+ * 且用**非合并**语义（`semantics { }`，不要 `mergeDescendants = true`）。加了 mergeDescendants 后
+ * Compose 会把 desc 拆到一个子 SemanticsNode，父节点 `chat.to-bottom` 仍是空 `content-desc`。
+ * 真机验证（host GPU 模拟器，420dpi / 1080×2400，`uiautomator dump`）：
+ * `<node class="android.widget.Button" resource-id="chat.to-bottom" content-desc="回到底部"
+ *  clickable="true" focusable="true" bounds="[917,1985][1043,2111]" />`（自闭合、无子节点）。
+ */
+object ChatA11y {
+    /** §3.2 字段 11 的规格术语：可调名「回到底部」。 */
+    const val TO_BOTTOM: String = "回到底部"
+
+    /** uiautomator / 自动化用的稳定选择器（配合 `testTagsAsResourceId` → resource-id）。 */
+    const val TO_BOTTOM_TEST_TAG: String = "chat.to-bottom"
+
+    /** 回底钮的可调名（UI 只能从这里取，单测锁死非空 + 与规格术语一致）。 */
+    fun toBottomContentDescription(): String = TO_BOTTOM
+}
+
+/**
  * 回到底部圆钮（§3.2）。
  *
  * - 44×44dp，`end=16`、`bottom = composer 高 + 16dp`（由调用方算好）；
  * - **overlay 不占位**（G-01）：调用方把它放在列表之上的 Box 里；
  * - 显隐迟滞在 `ScrollFollowPolicy` 里（>160 显示 / ≤24 隐藏），本组件只演 160ms scale+opacity；
- * - 图标 ↓ 20dp、`contentDescription="回到底部"`、单击回底并恢复跟随（§3.2 字段 4/5）。
+ * - 图标 ↓ 20dp、可调名 = [ChatA11y.toBottomContentDescription]（§3.2 字段 11 / G-16 无障碍）；
+ *   单击回底并恢复跟随（§3.2 字段 4/5）。
  */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 internal fun BackToBottomButtonUi(
     visible: Boolean,
@@ -354,11 +384,23 @@ internal fun BackToBottomButtonUi(
                 .shadow(6.dp, CircleShape)
                 .clip(CircleShape)
                 .background(colors.surface)
-                .clickable(role = Role.Button, onClickLabel = "回到底部", onClick = onClick)
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = ChatA11y.TO_BOTTOM,
+                    onClick = onClick,
+                )
+                // 关键：**非合并语义**（不要 mergeDescendants=true）+ 与 clickable/testTag 同一 layout node
+                // → 所有语义配置折进同一个 SemanticsNode，uiautomator 的同一个 <node> 上同时有
+                // clickable / content-desc / resource-id。
+                // 反证（2026-11-27 真机）：加 mergeDescendants=true 会让 desc 单独变成**子节点**，
+                // 父节点 `chat.to-bottom` 仍是空 content-desc（自动化假阴性）。
                 .semantics {
                     role = Role.Button
-                    contentDescription = "回到底部"
-                },
+                    contentDescription = ChatA11y.toBottomContentDescription()
+                    // uiautomator dump 里暴露 resource-id（testTagsAsResourceId 与 testTag 同节点）。
+                    testTagsAsResourceId = true
+                }
+                .testTag(ChatA11y.TO_BOTTOM_TEST_TAG),
             contentAlignment = Alignment.Center,
         ) {
             M5Icon(
