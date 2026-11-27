@@ -187,8 +187,15 @@ fun ChatMessagesM5(
                                 clip = true,
                             ),
                         ) {
+                            val groupMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.45f)
+                                .coerceAtMost(360f).dp
+                            val groupScroll = rememberScrollState()
                             Column(
-                                Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = groupMax)
+                                    .verticalScroll(groupScroll)
+                                    .padding(start = 20.dp, top = 2.dp),
                                 verticalArrangement = Arrangement.spacedBy(7.dp),
                             ) {
                                 entries.forEachIndexed { i, e ->
@@ -426,7 +433,17 @@ private fun ThinkingLineM5(entry: TimelineEntry, expanded: Boolean, onToggle: ()
                         DetailBlock("结果") { DetailText(entry.text) }
                     }
                 } else {
-                    DetailBlock(null) { DetailText(entry.text.trim().ifBlank { "（无内容）" }) }
+                    // 思考/写入内容不包块：直接是正文式文本（旧展示习惯）
+                    val scroll = rememberScrollState()
+                    Text(
+                        entry.text.trim().ifBlank { "（无内容）" }.take(4000),
+                        style = M5Type.caption,
+                        color = p.textSecondary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 220.dp)
+                            .verticalScroll(scroll),
+                    )
                 }
             }
         }
@@ -512,8 +529,15 @@ private fun StreamingTurnM5(liveEntries: List<TimelineEntry>, text: String?) {
                     clip = true,
                 ),
             ) {
+                val groupMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.45f)
+                    .coerceAtMost(360f).dp
+                val groupScroll = rememberScrollState()
                 Column(
-                    Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = groupMax)
+                        .verticalScroll(groupScroll)
+                        .padding(start = 20.dp, top = 2.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
                     liveEntries.forEachIndexed { i, e ->
