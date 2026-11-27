@@ -13,7 +13,7 @@
 | `chat` | 聊天主界面（轮/消息/过程/操作） | 🟡 M5 壳有，密度远低于 DSH | `ui-chat` | — | **P0 第一优先** |
 | `sidebar` | 会话导航（列表/搜索/分组/行菜单/筛选） | 🟡 旧历史页 + 抽屉半成品 | `ui-sidebar`, `ui-sidebar-browser`, `ui-conversation`, `ui-session`（壳）+ `ui-workspace`（会话行/分组/搜索/多标签）+ `ui-sidebar-right/files/documentpreview/terminal` | `chat` | 高 |
 | `composer` | 输入区状态机（发送/停止/排队/附件/命令/触发词） | 🟡 有，缺排队/命令/触发词 | `ui-chat`, `ui-input-trigger`, `ui-attachment`, `ui-commands` | `chat` | 高 |
-| `model` | 模型 + 思考强度 + agent preset（合并面板） | 🟡 简易 sheet | `ui-model-selection`, `ui-agent-preset` | `composer` | 高 |
+| `model` | **两维：模型 × 推理等级**（+ 预设小节预留，首版不做） | 🟡 简易 sheet（四维合并，需拆） | `ui-model-selection`, `ui-agent-preset`, dsh-Go/太墟 面板 | `composer` | 高 |
 | `settings` | 设置壳 + 子页 | 🟡 单页堆叠 | `ui-settings`, `ui-settings-shell` | — | 高 |
 | `settings.general` | 通用（语言/主题/字体/内容宽度） | ❌ | `ui-settings-general`, `ui-theme`, `locale`（注意：`ui-locale` 包不存在，实际是 `locale`） | `settings` | 中 |
 | `settings.models` | 模型与 provider 管理 | 🟡 有 provider 编辑 | `ui-settings-models` | `settings` | 高 |
@@ -49,6 +49,30 @@
 
 ## 3. 覆盖面自检（P1 门禁）
 
-- [ ] 70 个 `ui-*` 包每一个都被归入某面板/基座，或标注"不适用（myco 无此概念）+ 理由"。
-- [ ] myco 现有每个页面/弹层都能在表里找到归属，或明确标 ⏸ 不做。
-- [ ] 每个 `❌` 面板都有一份 spec（可以是"最小可用版"），不允许"没想到所以没有"。
+- [x] `ui-*` 包已被 10 份事实库归位（`ref/dsh-*.md` §1 各自的包→面板表）。
+- [x] myco 现有每个页面/弹层都能在表里找到归属（`ref/legacy-myco.md` §1）。
+- [ ] 每个 `❌` 面板都有一份 spec（P3 进行中）。
+- [x] 移动端三个参考（dsh-Go / 太墟 / mobile-adapt）的面板已归位（`ref/dsh-go.md`、`ref/taixu.md`、`ref/dsh-mobile.md`）。
+
+## 4. 参考实现有、myco 首版不做的面板（⏸，需用户确认）
+
+> 来源：`ref/taixu.md` §1 指出太墟有 **7 个概念在 myco 面板注册表中没有 ID**。
+> 这里逐条给结论：**新建 / 合并进现有面板 / 明确不做**。未确认前不进实现。
+
+| 概念 | 太墟里的形态 | myco 的处置 | 理由 |
+|---|---|---|---|
+| `home` | 4 个"覆盖根页"之一（多入口首页） | ⏸ **待用户确认** | 用户此前说过"聊天/工作后续分离"，若要做分离就需要一个入口页；首版可不做 |
+| `bot` | 多 Bot 管理与切换 | 🔁 **合并进 `model` 或独立 `persona` 面板** | myco 是陪伴型单人格，persona 是长期记忆的一部分，不是"多 bot 市场" |
+| `workflow` | 工作流编辑与运行 | ⏸ 不做 | myco 无编排需求 |
+| `git` | 仓库状态/提交 | ⏸ 不做 | 无代码工作区 |
+| `terminal` | 内置终端 | ⏸ 不做 | 无 shell 运行环境 |
+| `browser` | 内置浏览器（工具产物查看） | 🔁 合并进 `tool` 面板的"打开链接/预览" | 只需查看工具产出的网页结果，不需要完整浏览器 |
+| `onboarding` | 首次引导 | 🟡 **最小引导**（provider 配置 + 权限 + 首次发送） | 新用户首次进入必须能配好 provider，否则发不出消息；legacy 已有 provider 编辑器可复用 |
+
+## 5. 追加证据包（P1 第二批次）
+
+| 事实库 | 覆盖对象 | 关键补充 |
+|---|---|---|
+| `ref/dsh-go.md` | Flutter 手机客户端（2261 交互点 / 72 节点） | 回底钮双形态、过程组"inline + 逐帧补偿"、工具"行/井/页"三层、滚动到边**主动转发拖动**、命中区分层口径 |
+| `ref/taixu.md` | Kotlin/Compose 移动 agent（2154 交互点 / 54 节点） | **A2UI/render_surface 完整契约**（抽象数据的现成范本）、Navigation3 单栈 + 4 覆盖根页 + 1 抽屉、三档宽度几何、分层 BackHandler 优先链 |
+| `ref/dsh-mobile.md` | 两个"把桌面 UI 搬手机"的壳/适配层 | 命中区 44 的实际做法与"扩边无隔离"的缺陷；Android 壳完全没做键盘避让 |

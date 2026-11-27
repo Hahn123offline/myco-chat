@@ -50,10 +50,11 @@
    **长按发送键**出「插话 / 停下先处理 / 排队」三选一（`CS:930-990`）。键盘由 `Scaffold.resizeToAvoidBottomInset:true` +
    自定义 `MultiChildLayout` 同帧排版（`CS:1871,2610-2666`）；横屏打字时顶栏与 dock 让位（`CS:1841-1859,2498-2559,2565-2606`）。
 
-8. **导航 = 左抽屉（会话）+ 右快速面板 + ≥840dp 三栏；返回键有明确优先级**：抽屉跟手拖动、松手按速度弹簧落位
-   （`HS:199-233`）；面板位移用 paint-only `Transform`（`HS:588-604`）；`PopScope` 顺序：右面板 → 结束多选 → 关抽屉
-   （`HS:319-333`）；二级页 iOS 式推入 + 20dp 边缘返回 + Android 预测性返回（`PT:15-35,428-442`）。
-   窗口分类用 Material 3 断点**且高度 <480 一律 compact**（横屏手机）（`AL:20-49`）。
+8. **导航 = 左抽屉（会话）+ 右快速面板 + ≥840dp 三栏；没有底部导航**：全仓 `NavigationBar(`/`BottomNavigationBar` **0 处**
+   （主题里只定义了 `navigationBarTheme`，`AT:471-493`，未被使用）；二级页是 `MaterialPageRoute` 多页面栈（`HS:249`），
+   抽屉跟手拖动、松手按速度弹簧落位（`HS:199-233`）；面板位移用 paint-only `Transform`（`HS:588-604`）；
+   `PopScope` 顺序：右面板 → 结束多选 → 关抽屉（`HS:319-333`）；二级页 iOS 式推入 + 20dp 边缘返回 + Android 预测性返回
+   （`PT:15-35,428-442`）。窗口分类用 Material 3 断点**且高度 <480 一律 compact**（横屏手机）（`AL:20-49`）。
 
 9. **主题是集中 token，不是散落样式**：`AppMotion`（按压 90 / 快 160 / 标准 240 / 折叠 280 / 强调 340 / 弹层 380-260 /
    页面 480 ms，弹簧落位，`MO:18-186`）；三级玻璃 `GlassSurface` 同屏真模糊 ≤3 件、低端机/高对比度降级不透明
@@ -76,54 +77,54 @@
 
 | 目录 | findings | → 面板/节点 |
 |---|---|---|
-| `ui/chat//` | 398 | `chat.tool.plugin-view`（插件原生视图（DshUi 工具卡 / 表单 / 图表 / 选择）） ×58；`chat.msg.image`（正文/工具图片 + 全屏查看器 + 图库） ×41；`chat.turn.process`（整轮过程折叠（摘要行 + 展开过程 + 改动/产物卡）） ×23；`chat.empty`（空态（新对话页 / 建议卡 / 工作区与文件夹入口）） ×22；`chat.dock`（输入条上方 dock（目标条 / 待办条 / 运行条 + 目标 sheet）） ×20；`trajectory.sheet`（执行轨迹 / 用量 / 产物预览 sheet） ×19；`chat.msg.assistant-markdown`（助手正文 Markdown + <details> 折叠 + 密钥遮罩） ×19；`attachment.panel`（附件面板（相册/拍照/文件 + 生成模式 + 本对话权限/手机操控入口）） ×19；`chat.tool.detail`（工具详情井 / 步骤详情页 / diff 页（限高内滚 + 截断 + 全文页）） ×18；`chat.list.scroll-follow`（消息列表：贴底跟随 + 头部插入历史） ×17；`chat.header`（聊天顶栏（玻璃件 + 标题胶囊 + 模型chip + 新对话键）） ×16；`model.sheet`（模型 / 思考强度 / Agent 预设选择面板） ×16；`composer.attach`（＋ 附件键 / 附件条 / 移除） ×15；`chat.msg.notice`（系统提示行 / 活动条 / 后台任务通知 / 会话卡） ×13；`approval.card`（审批卡（批准/拒绝/本对话都允许）+ 权限胶囊） ×13；`chat.msg.code-block`（代码块（限高内滚 + 横向渐隐 + 复制/换行）） ×10；`chat.msg.user`（用户气泡 + 消息长按菜单 + 引用条） ×10；`approval.question`（提问卡（选项 / 自由文本 / 回答后卡片）） ×9；`chat.msg.thinking`（思考行（32dp 单行 + 三行实时窗口 + 展开全文）） ×9；`composer.send-stop`（发送/停止/麦克风四态键 + 长按发送模式） ×7；`composer.mention`（@ 提及选择器） ×6；`chat.msg.actions`（回复操作条（复制/分享/朗读/分叉/重答/⋯）） ×5；`composer.slash`（斜杠命令面板） ×4；`chat.tool.row`（工具调用行（32dp 摘要 + 状态尾 + 失败/沙箱标记）） ×4；`chat.list.to-bottom`（回到底部 / 待确认计数胶囊（overlay）） ×3；`composer.voice`（语音输入（听写 / 识别中 / 音量条）） ×2 |
-| `ui/tavern//` | 285 | `tavern.chat`（酒馆对话（树状分支 / 候选回复 ‹2/5› / 消息长按 / 草稿）） ×67；`tavern.characters`（角色卡 / 人设 / 群聊 / 频道） ×60；`tavern.library`（资源库（角色包 / 世界书 / 预设 / 正则 / 快捷回复 / 导入导出）） ×53；`tavern.stage`（舞台侧面板（本局/状态/导演/本回合）+ VN/互动/骰子/故事书） ×49；`tavern.home`（酒馆首页（书架 / 对话 / 资源库 / 我的）+ 搜索/收藏/用量） ×36；`tavern.settings`（酒馆设置（音频 / 分支 / 偏好）） ×20 |
-| `ui/settings//` | 195 | `settings.appearance`（外观（主题工作室 / 主题包 / 壁纸 / 启动屏 / 图标 / 界面与个性化）） ×93；`settings.voice`（语音与媒体服务（语音模型 / 识别 / 媒体服务配置）） ×38；`settings.system`（系统（诊断 / Linux 环境 / 后台保活指南 / 性能 / 隐私 / 关于 / 更新 / 安全模式恢复）） ×34；`settings.home`（设置首页（分组 hub + 搜索）） ×27；`settings.notifications`（通知设置 + 应用内通知路由（提醒条 / 后台网络）） ×2；`settings.engine`（引擎管理（运行时 / 日志 / 重置 / 设置 schema 表单 / agent loop）） ×1 |
-| `ui/companion//` | 143 | `companion.room`（伙伴小屋（WebView 房间 + Flutter 浮层对话 + 输入条）） ×78；`companion.activity`（伙伴任务 / 记忆 / 通知 / 语音 / 助手设置） ×65 |
-| `ui/phone//` | 113 | `phone.control`（手机操控（主屏 / 技能 / 系统操作 / 确认方式 / 无障碍恢复）） ×86；`phone.modes`（非干扰模式 / Android 壳 / 访问授权选择） ×27 |
-| `ui/shell//` | 111 | `sidebar.drawer`（会话抽屉（品牌/搜索/工作区/筛选/会话行/多选/身份栏）） ×86；`base.layout`（布局基座（HomeShell / 自适应三栏 / 二级页框架 / 转场）） ×11；`sidebar.search`（会话搜索页（关键词 / 结果 / 筛选）） ×10；`sidebar.quick-panel`（右侧快速面板（模式/网页/设置/本会话信息）） ×4 |
-| `ui/plugins//` | 99 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×99 |
-| `ui/bots//` | 88 | `bots.manage`（Bot 管理（列表 / 详情 / 新建 / 房间 / 记忆 / 安装卡）） ×63；`bots.chat`（Bot 对话 / 群聊（浮顶栏 + 卡片 + 输入条）） ×25 |
-| `ui/remote//` | 65 | `remote.hosts`（远程宿主（宿主切换 sheet / 远程页 / 会话备份 / 连接进度）） ×36；`remote.pairing`（配对 / SSH 主机表单 / 中继登录 / 主机密钥） ×29 |
-| `ui/providers//` | 60 | `settings.models`（模型渠道 / Provider / 模型页 / 订阅） ×60 |
-| `ui/features//` | 59 | `settings.features`（功能页（定时任务 / 作业 / 权限 / 预设 / 技能 / 会话导出）） ×59 |
-| `ui/common//` | 57 | `base.primitives.row`（通用行/卡片/分段/胶囊/搜索框/空态（列表基元）） ×30；`base.primitives.sheet`（底部弹层基座（showAppSheet / 标题栏 / 风险提示 / 短提示 / 丢弃守卫）） ×14；`base.primitives.pressable`（按压反馈基座（Pressable：缩放 / 弹簧 / 触感 / 滚动中不闪）） ×13 |
-| `ui/workshop//` | 53 | `workshop.page`（创意工坊（浏览 / 已装 / 我的 / 发布 / 安装 / 举报）） ×53 |
-| `ui/engine_settings//` | 51 | `settings.engine`（引擎管理（运行时 / 日志 / 重置 / 设置 schema 表单 / agent loop）） ×51 |
-| `ui/forum//` | 47 | `forum.page`（论坛（首页 / 话题 / 发帖 / 搜索 / 通知 / 账号）） ×47 |
-| `ui/engine//` | 34 | `settings.engine`（引擎管理（运行时 / 日志 / 重置 / 设置 schema 表单 / agent loop）） ×34 |
-| `ui/onboarding//` | 32 | `onboarding.setup`（首启引导（欢迎 / 运行时选择 / 安装 / 连通 / API key / 外观步骤）） ×32 |
-| `ui/speech//` | 31 | `speech.call`（语音通话（玻璃球 / 字幕 / 静音挂断扬声器 / 就地审批）） ×31 |
-| `ui/workspace//` | 30 | `workspace.browser`（工作区 / 文件浏览 / 目录选择 / 表格） ×30 |
-| `ui/pets//` | 29 | `pets.stage`（宠物舞台（聊天页浮层 / 点击拖拽 / 气泡 / 菜单 / 设置）） ×29 |
-| `ui/session//` | 26 | `sidebar.session-detail`（会话详情（概览 / 插件 / 产物 / 上传）） ×26 |
-| `ui/terminal//` | 25 | `terminal.page`（会话终端（全屏暗色 + 键行 + 手势）） ×25 |
-| `ui/share//` | 23 | `share.panel`（分享面板（范围 / 内容开关 / 图片 / 链接 / 文件 / 分享码 / 托管链接）） ×23 |
-| `ui/safe_mode//` | 20 | `settings.system`（系统（诊断 / Linux 环境 / 后台保活指南 / 性能 / 隐私 / 关于 / 更新 / 安全模式恢复）） ×20 |
-| `ui/update//` | 18 | `settings.system`（系统（诊断 / Linux 环境 / 后台保活指南 / 性能 / 隐私 / 关于 / 更新 / 安全模式恢复）） ×18 |
-| `ui/share_code//` | 17 | `share.panel`（分享面板（范围 / 内容开关 / 图片 / 链接 / 文件 / 分享码 / 托管链接）） ×17 |
-| `ui/files//` | 16 | `workspace.browser`（工作区 / 文件浏览 / 目录选择 / 表格） ×16 |
-| `ui/account//` | 15 | `account.page`（账号（登录 / 资料 / 余额 / 订阅入口）） ×15 |
-| `ui/web//` | 13 | `web.viewer`（内嵌网页（DSH Web / 本地网页）） ×13 |
-| `ui/agents//` | 12 | `subagent.team`（子代理团队（头部胶囊 / 团队页 / 成员行）） ×9；`chat.header`（聊天顶栏（玻璃件 + 标题胶囊 + 模型chip + 新对话键）） ×3 |
-| `ui/access//` | 11 | `phone.modes`（非干扰模式 / Android 壳 / 访问授权选择） ×11 |
-| `ui/cordis//` | 10 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×10 |
-| `ui/replay//` | 9 | `replay.page`（回放（会话回放 / 分享码播放器）） ×9 |
-| `ui_config//` | 8 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×8 |
-| `ui/community//` | 7 | `community.page`（社区 / 求星提示） ×7 |
-| `ui/notify//` | 7 | `settings.notifications`（通知设置 + 应用内通知路由（提醒条 / 后台网络）） ×7 |
-| `ui/launch//` | 6 | `settings.appearance`（外观（主题工作室 / 主题包 / 壁纸 / 启动屏 / 图标 / 界面与个性化）） ×6 |
-| `ui/share_hosted//` | 6 | `share.panel`（分享面板（范围 / 内容开关 / 图片 / 链接 / 文件 / 分享码 / 托管链接）） ×6 |
-| `ui/theme//` | 6 | `base.theme`（主题与 token（玻璃 / 形状 / 间距 / 动效 / 转场 / 视觉特效）） ×6 |
-| `ui/wallpaper//` | 6 | `settings.appearance`（外观（主题工作室 / 主题包 / 壁纸 / 启动屏 / 图标 / 界面与个性化）） ×6 |
-| `ui/fx//` | 6 | `base.theme`（主题与 token（玻璃 / 形状 / 间距 / 动效 / 转场 / 视觉特效）） ×6 |
-| `share_code//` | 3 | `excluded`（§3） ×3 |
-| `tavern//` | 3 | `excluded`（§3） ×3 |
-| `dev//` | 2 | `excluded`（§3） ×2 |
-| `ui/star//` | 2 | `community.page`（社区 / 求星提示） ×2 |
-| `plugins//` | 2 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×2 |
-| `pets//` | 1 | `excluded`（§3） ×1 |
-| `ui/modes//` | 1 | `base.layout`（布局基座（HomeShell / 自适应三栏 / 二级页框架 / 转场）） ×1 |
+| `ui/chat/` | 398 | `chat.tool.plugin-view`（插件原生视图（DshUi 工具卡 / 表单 / 图表 / 选择）） ×58；`chat.msg.image`（正文/工具图片 + 全屏查看器 + 图库） ×41；`chat.turn.process`（整轮过程折叠（摘要行 + 展开过程 + 改动/产物卡）） ×23；`chat.empty`（空态（新对话页 / 建议卡 / 工作区与文件夹入口）） ×22；`chat.dock`（输入条上方 dock（目标条 / 待办条 / 运行条 + 目标 sheet）） ×20；`trajectory.sheet`（执行轨迹 / 用量 / 产物预览 sheet） ×19；`chat.msg.assistant-markdown`（助手正文 Markdown + <details> 折叠 + 密钥遮罩） ×19；`attachment.panel`（附件面板（相册/拍照/文件 + 生成模式 + 本对话权限/手机操控入口）） ×19；`chat.tool.detail`（工具详情井 / 步骤详情页 / diff 页（限高内滚 + 截断 + 全文页）） ×18；`chat.list.scroll-follow`（消息列表：贴底跟随 + 头部插入历史） ×17；`chat.header`（聊天顶栏（玻璃件 + 标题胶囊 + 模型chip + 新对话键）） ×16；`model.sheet`（模型 / 思考强度 / Agent 预设选择面板） ×16；`composer.attach`（＋ 附件键 / 附件条 / 移除） ×15；`chat.msg.notice`（系统提示行 / 活动条 / 后台任务通知 / 会话卡） ×13；`approval.card`（审批卡（批准/拒绝/本对话都允许）+ 权限胶囊） ×13；`chat.msg.code-block`（代码块（限高内滚 + 横向渐隐 + 复制/换行）） ×10；`chat.msg.user`（用户气泡 + 消息长按菜单 + 引用条） ×10；`approval.question`（提问卡（选项 / 自由文本 / 回答后卡片）） ×9；`chat.msg.thinking`（思考行（32dp 单行 + 三行实时窗口 + 展开全文）） ×9；`composer.send-stop`（发送/停止/麦克风四态键 + 长按发送模式） ×7；`composer.mention`（@ 提及选择器） ×6；`chat.msg.actions`（回复操作条（复制/分享/朗读/分叉/重答/⋯）） ×5；`composer.slash`（斜杠命令面板） ×4；`chat.tool.row`（工具调用行（32dp 摘要 + 状态尾 + 失败/沙箱标记）） ×4；`chat.list.to-bottom`（回到底部 / 待确认计数胶囊（overlay）） ×3；`composer.voice`（语音输入（听写 / 识别中 / 音量条）） ×2 |
+| `ui/tavern/` | 285 | `tavern.chat`（酒馆对话（树状分支 / 候选回复 ‹2/5› / 消息长按 / 草稿）） ×67；`tavern.characters`（角色卡 / 人设 / 群聊 / 频道） ×60；`tavern.library`（资源库（角色包 / 世界书 / 预设 / 正则 / 快捷回复 / 导入导出）） ×53；`tavern.stage`（舞台侧面板（本局/状态/导演/本回合）+ VN/互动/骰子/故事书） ×49；`tavern.home`（酒馆首页（书架 / 对话 / 资源库 / 我的）+ 搜索/收藏/用量） ×36；`tavern.settings`（酒馆设置（音频 / 分支 / 偏好）） ×20 |
+| `ui/settings/` | 195 | `settings.appearance`（外观（主题工作室 / 主题包 / 壁纸 / 启动屏 / 图标 / 界面与个性化）） ×93；`settings.voice`（语音与媒体服务（语音模型 / 识别 / 媒体服务配置）） ×38；`settings.system`（系统（诊断 / Linux 环境 / 后台保活指南 / 性能 / 隐私 / 关于 / 更新 / 安全模式恢复）） ×34；`settings.home`（设置首页（分组 hub + 搜索）） ×27；`settings.notifications`（通知设置 + 应用内通知路由（提醒条 / 后台网络）） ×2；`settings.engine`（引擎管理（运行时 / 日志 / 重置 / 设置 schema 表单 / agent loop）） ×1 |
+| `ui/companion/` | 143 | `companion.room`（伙伴小屋（WebView 房间 + Flutter 浮层对话 + 输入条）） ×78；`companion.activity`（伙伴任务 / 记忆 / 通知 / 语音 / 助手设置） ×65 |
+| `ui/phone/` | 113 | `phone.control`（手机操控（主屏 / 技能 / 系统操作 / 确认方式 / 无障碍恢复）） ×86；`phone.modes`（非干扰模式 / Android 壳 / 访问授权选择） ×27 |
+| `ui/shell/` | 111 | `sidebar.drawer`（会话抽屉（品牌/搜索/工作区/筛选/会话行/多选/身份栏）） ×86；`base.layout`（布局基座（HomeShell / 自适应三栏 / 二级页框架 / 转场）） ×11；`sidebar.search`（会话搜索页（关键词 / 结果 / 筛选）） ×10；`sidebar.quick-panel`（右侧快速面板（模式/网页/设置/本会话信息）） ×4 |
+| `ui/plugins/` | 99 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×99 |
+| `ui/bots/` | 88 | `bots.manage`（Bot 管理（列表 / 详情 / 新建 / 房间 / 记忆 / 安装卡）） ×63；`bots.chat`（Bot 对话 / 群聊（浮顶栏 + 卡片 + 输入条）） ×25 |
+| `ui/remote/` | 65 | `remote.hosts`（远程宿主（宿主切换 sheet / 远程页 / 会话备份 / 连接进度）） ×36；`remote.pairing`（配对 / SSH 主机表单 / 中继登录 / 主机密钥） ×29 |
+| `ui/providers/` | 60 | `settings.models`（模型渠道 / Provider / 模型页 / 订阅） ×60 |
+| `ui/features/` | 59 | `settings.features`（功能页（定时任务 / 作业 / 权限 / 预设 / 技能 / 会话导出）） ×59 |
+| `ui/common/` | 57 | `base.primitives.row`（通用行/卡片/分段/胶囊/搜索框/空态（列表基元）） ×30；`base.primitives.sheet`（底部弹层基座（showAppSheet / 标题栏 / 风险提示 / 短提示 / 丢弃守卫）） ×14；`base.primitives.pressable`（按压反馈基座（Pressable：缩放 / 弹簧 / 触感 / 滚动中不闪）） ×13 |
+| `ui/workshop/` | 53 | `workshop.page`（创意工坊（浏览 / 已装 / 我的 / 发布 / 安装 / 举报）） ×53 |
+| `ui/engine_settings/` | 51 | `settings.engine`（引擎管理（运行时 / 日志 / 重置 / 设置 schema 表单 / agent loop）） ×51 |
+| `ui/forum/` | 47 | `forum.page`（论坛（首页 / 话题 / 发帖 / 搜索 / 通知 / 账号）） ×47 |
+| `ui/engine/` | 34 | `settings.engine`（引擎管理（运行时 / 日志 / 重置 / 设置 schema 表单 / agent loop）） ×34 |
+| `ui/onboarding/` | 32 | `onboarding.setup`（首启引导（欢迎 / 运行时选择 / 安装 / 连通 / API key / 外观步骤）） ×32 |
+| `ui/speech/` | 31 | `speech.call`（语音通话（玻璃球 / 字幕 / 静音挂断扬声器 / 就地审批）） ×31 |
+| `ui/workspace/` | 30 | `workspace.browser`（工作区 / 文件浏览 / 目录选择 / 表格） ×30 |
+| `ui/pets/` | 29 | `pets.stage`（宠物舞台（聊天页浮层 / 点击拖拽 / 气泡 / 菜单 / 设置）） ×29 |
+| `ui/session/` | 26 | `sidebar.session-detail`（会话详情（概览 / 插件 / 产物 / 上传）） ×26 |
+| `ui/terminal/` | 25 | `terminal.page`（会话终端（全屏暗色 + 键行 + 手势）） ×25 |
+| `ui/share/` | 23 | `share.panel`（分享面板（范围 / 内容开关 / 图片 / 链接 / 文件 / 分享码 / 托管链接）） ×23 |
+| `ui/safe_mode/` | 20 | `settings.system`（系统（诊断 / Linux 环境 / 后台保活指南 / 性能 / 隐私 / 关于 / 更新 / 安全模式恢复）） ×20 |
+| `ui/update/` | 18 | `settings.system`（系统（诊断 / Linux 环境 / 后台保活指南 / 性能 / 隐私 / 关于 / 更新 / 安全模式恢复）） ×18 |
+| `ui/share_code/` | 17 | `share.panel`（分享面板（范围 / 内容开关 / 图片 / 链接 / 文件 / 分享码 / 托管链接）） ×17 |
+| `ui/files/` | 16 | `workspace.browser`（工作区 / 文件浏览 / 目录选择 / 表格） ×16 |
+| `ui/account/` | 15 | `account.page`（账号（登录 / 资料 / 余额 / 订阅入口）） ×15 |
+| `ui/web/` | 13 | `web.viewer`（内嵌网页（DSH Web / 本地网页）） ×13 |
+| `ui/agents/` | 12 | `subagent.team`（子代理团队（头部胶囊 / 团队页 / 成员行）） ×9；`chat.header`（聊天顶栏（玻璃件 + 标题胶囊 + 模型chip + 新对话键）） ×3 |
+| `ui/access/` | 11 | `phone.modes`（非干扰模式 / Android 壳 / 访问授权选择） ×11 |
+| `ui/cordis/` | 10 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×10 |
+| `ui/replay/` | 9 | `replay.page`（回放（会话回放 / 分享码播放器）） ×9 |
+| `ui_config/` | 8 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×8 |
+| `ui/community/` | 7 | `community.page`（社区 / 求星提示） ×7 |
+| `ui/notify/` | 7 | `settings.notifications`（通知设置 + 应用内通知路由（提醒条 / 后台网络）） ×7 |
+| `ui/launch/` | 6 | `settings.appearance`（外观（主题工作室 / 主题包 / 壁纸 / 启动屏 / 图标 / 界面与个性化）） ×6 |
+| `ui/share_hosted/` | 6 | `share.panel`（分享面板（范围 / 内容开关 / 图片 / 链接 / 文件 / 分享码 / 托管链接）） ×6 |
+| `ui/theme/` | 6 | `base.theme`（主题与 token（玻璃 / 形状 / 间距 / 动效 / 转场 / 视觉特效）） ×6 |
+| `ui/wallpaper/` | 6 | `settings.appearance`（外观（主题工作室 / 主题包 / 壁纸 / 启动屏 / 图标 / 界面与个性化）） ×6 |
+| `ui/fx/` | 6 | `base.theme`（主题与 token（玻璃 / 形状 / 间距 / 动效 / 转场 / 视觉特效）） ×6 |
+| `share_code/` | 3 | `excluded`（§3） ×3 |
+| `tavern/` | 3 | `excluded`（§3） ×3 |
+| `dev/` | 2 | `excluded`（§3） ×2 |
+| `ui/star/` | 2 | `community.page`（社区 / 求星提示） ×2 |
+| `plugins/` | 2 | `settings.plugins`（插件（市场 / 已装 / 详情 / 配置 / 原生 seat / Cordis / ui.json 配置）） ×2 |
+| `pets/` | 1 | `excluded`（§3） ×1 |
+| `ui/modes/` | 1 | `base.layout`（布局基座（HomeShell / 自适应三栏 / 二级页框架 / 转场）） ×1 |
 
 ### 1.2 无交互点的目录（不是 UI / 没有可点单元）
 
@@ -450,42 +451,6 @@
 | 12 | 依据 | E0 `ui/chat/dock/dock_stack.dart:198-219`；E0 `ui/chat/dock/goal_sheet.dart:23,55`；E0 `ui/chat/dock/todo_bar.dart:151-155`；E0 `ui/chat/chat_screen.dart:2498-2559`。 |
 | 13 | 反证 + 验收 | **反证**：若把目标/待办放进顶栏，手机上顶栏被挤成两行且与标题抢宽；若它常驻不折叠，横屏打字时聊天只剩一条缝。**验收** GO-19：真机有目标时出目标条、点开可编辑、横屏打字时让位。 |
 
-#### `bots.chat` — Bot 对话 / 群聊（浮顶栏 + 卡片 + 输入条）　（findings 25）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `bots.chat`。所属：聊天面板的 Bot 变体（复用 chat 行：`MarkdownBody`/`UserBubble`，`ui/bots/bot_chat_kit.dart:1-5`）。出现条件：打开某个 Bot/群聊会话。 |
-| 2 | 网格与定位 | 页框 = 玻璃下的列表 + 底部卡片与输入条（`bot_chat_kit.dart:1-5`）；浮顶栏可折叠；输入条复用 `Composer`。 |
-| 3 | 命中区 | 消息整块可点/长按（复用 chat 菜单）；卡片按钮 `minimumSize` 5 处 + `shrinkWrap` 4 处（`bot_chat_kit.dart:1120-1123,1254-1257`、`room_chat_page.dart:408-420`）。 |
-| 4 | 手势 | 同上（单击、长按、拖动滚动）；另有「切模型/回答问题」卡片交互。 |
-| 5 | 行为 | Bot 卡片：提问/视图/选模型 → 回答后继续；群聊：多角色发言。 |
-| 6 | 视觉状态 | 同 chat；Bot 卡片有 `waiting` 态。 |
-| 7 | 布局占位与展开形态 | 同 chat（参与布局流、卡片在流里）。 |
-| 8 | 滚动语义 | 列表滚动 + 下拉加载更早（`bot_chat_kit.dart:427-452`：`ScrollNotification(depth:0)` + 距顶 400 触发 `loadEarlier`）；到边不转交（页面根）。 |
-| 9 | 动效 | 卡片展开 160~240 ms；浮顶栏收起。 |
-| 10 | 边界态 | 空会话 → 空态；Bot 失败 → 提示行；大字号 → 卡片换行；横屏 → 限宽。 |
-| 11 | 无障碍 | 复用 chat 语义；Bot 卡片按钮有 label。 |
-| 12 | 依据 | E0 `ui/bots/bot_chat_kit.dart:1-5,112-189,218,427-452,559,1120-1123,1254-1257`；E0 `ui/bots/room_chat_page.dart:408-420`。 |
-| 13 | 反证 + 验收 | **反证**：若为 Bot 另写一套聊天界面，行高/长按菜单/滚动跟随会与主聊天不一致（dsh-Go 明确复用 chat 行组件）；若 Bot 的「回答问题」卡不在流里而在浮层，用户会漏答。**验收** GO-52：真机 Bot 对话与主聊天手感一致、卡片可就地回答。 |
-
-#### `speech.call` — 语音通话（玻璃球 / 字幕 / 静音挂断扬声器 / 就地审批）　（findings 31）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `speech.call`。所属：聊天面板→语音通话（全屏页）。出现条件：顶栏通话键（`ui/chat/chat_screen.dart:2004`→`_callFromHeader`）。 |
-| 2 | 网格与定位 | 全屏：暗场/人物背景 + 中央玻璃球 + 下方字幕 + 底部三键（静音/挂断/扬声器）+ 审批/提问卡浮在上方（`ui/speech/voice_call_page.dart:1-8`）。 |
-| 3 | 命中区 | 底部三键 44+；审批卡按钮同 `approval_card`；`maxHeight` 3 处（`call_parts.dart:459`、`voice_call_page.dart:650-653`）。 |
-| 4 | 手势 | 单击 = 静音/挂断/扬声器/回答审批；长按 = 无；上滑 = 收起字幕（未见）。 |
-| 5 | 行为 | 通话 → 语音对话（TTS/ASR）；审批 → 就地回答；挂断 → 回到聊天并保留记录。 |
-| 6 | 视觉状态 | `listening`（波形）/`speaking`（球呼吸）/`muted`/`error`。 |
-| 7 | 布局占位与展开形态 | 全屏路由（G-03 C），不占聊天布局。 |
-| 8 | 滚动语义 | 无滚动（全屏固定）；字幕区截断。 |
-| 9 | 动效 | 玻璃球呼吸 2.4 s（`AppMotion.breath`）；波形跟音量。 |
-| 10 | 边界态 | 无语音模型 → 入口不出现/提示去设置；网络差 → 重连；大字号 → 字幕增高；横屏 → 元素重排。 |
-| 11 | 无障碍 | 三键有 label；通话状态播报。 |
-| 12 | 依据 | E0 `ui/speech/voice_call_page.dart:1-8,490-495,650-676,913`；E0 `ui/speech/call/call_parts.dart:459`；E0 `ui/speech/call/call_backdrop.dart:178-184`；E0 `ui/chat/chat_screen.dart:2004`。 |
-| 13 | 反证 + 验收 | **反证**：若通话时审批弹回聊天页，用户正在说话却被强制跳页（dsh-Go 把审批卡搬进通话页）；若挂断不清状态，下次进聊天会看到"通话中"。**验收** GO-64：真机发起通话、静音/扬声器/挂断、就地回答审批。 |
-
 #### `share.panel` — 分享面板（范围 / 内容开关 / 图片 / 链接 / 文件 / 分享码 / 托管链接）　（findings 46）
 
 | # | 字段 | 内容 |
@@ -503,24 +468,6 @@
 | 11 | 无障碍 | 开关/行 label；摘要卡数字播报。 |
 | 12 | 依据 | E0 `ui/share/share_panel_pages.dart:1-11,119-144,259-298,449-467`；E0 `ui/share/share_picker.dart:31,260`；E0 `ui/share/share_image_page.dart:276-405,557-567`；E0 `ui/share_code/share_code_panel.dart:379`；E0 `ui/share_code/import_sheet.dart:50`；E0 `ui/share_code/profile_share_sheet.dart:27`；E0 `ui/share_code/share_content_sheet.dart`；E0 `ui/share_code/share_code_widgets.dart`；E0 `ui/share_hosted/hosted_links_page.dart`；E0 `ui/share_hosted/hosted_links_tile.dart`；E0 `ui/share_hosted/manage_links_button.dart:21`。 |
 | 13 | 反证 + 验收 | **反证**：若分享直接把整段对话（含工具输出/密钥）导出，用户会泄露敏感内容（dsh-Go 有内容开关 + 密钥遮罩 `secret_mask`）；若分享只有「复制文本」一种，手机上没法把回复变成图片发微信。**验收** GO-69：真机分享回复成图片/链接/文件，关掉「工具调用」后内容不含工具输出。 |
-
-#### `pets.stage` — 宠物舞台（聊天页浮层 / 点击拖拽 / 气泡 / 菜单 / 设置）　（findings 29）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `pets.stage`。所属：聊天面板→宠物浮层（可关）。出现条件：用户开启宠物（`ui/pets/pet_stage.dart:1-10`）；每页 1 个 `PetStage`。 |
-| 2 | 网格与定位 | 覆盖在页面之上的图层，不改变列表布局（`pet_stage.dart:1-3`）；宠物站在输入条上方胶囊顶上（`PerchKind.composer`，`ui/chat/composer.dart:392-395`）；气泡/菜单为主要可点件（`minimumSize` 2 处：`overlay_settings_tile.dart:170`、`pet_bubble.dart:79`）。 |
-| 3 | 命中区 | 只有宠物身体接收触摸（`pet_stage.dart:6-7`）；气泡/菜单按钮整块可点。 |
-| 4 | 手势 | 单击 = 互动（左右不同）；连点 = 挠痒；拖动 = 移动；长按 = 菜单（`onLongPress` 5 处）；60 s 空闲睡觉。 |
-| 5 | 行为 | 互动 → 改变状态/气泡台词；菜单 → 宠物设置/隐藏；回合结束/别处等待 → 主动出气泡（`pet_stage.dart:3-7`）。 |
-| 6 | 视觉状态 | `idle`/`walking`/`sleeping`/`reacting`/`bubble`。 |
-| 7 | 布局占位与展开形态 | 浮层 overlay，不占布局（G-01 同族）；宠物位置随输入条高度变化同帧跟随。 |
-| 8 | 滚动语义 | 不滚；`HitTestBehavior.translucent` 让指针穿透到列表（`pet_stage.dart:183-185`）。 |
-| 9 | 动效 | 宠物动作逐帧（walk/hop）；气泡淡入。 |
-| 10 | 边界态 | 关闭宠物 → 不渲染；资源缺失 → 静态图/不显示；大字号 → 气泡文字增大；横屏 → 舞台重排。 |
-| 11 | 无障碍 | 宠物有「互动/菜单」语义；气泡文字可读屏。 |
-| 12 | 依据 | E0 `ui/pets/pet_stage.dart:1-10,183-185`；E0 `ui/pets/pet_bubble.dart:66-79`；E0 `ui/pets/pet_menu.dart:44-80`；E0 `ui/pets/pet_picker.dart:146`；E0 `ui/pets/pet_settings_page.dart`；E0 `ui/pets/overlay_settings_tile.dart:87-172`；E0 `ui/chat/composer.dart:392-395`。 |
-| 13 | 反证 + 验收 | **反证**：若宠物占布局高度，聊天区每帧都被它的移动重排（dsh-Go 用 overlay + 只让身体接收触摸）；若它吞掉触摸，列表就没法滚。**验收** GO-72：真机点宠物有反应、拖动能移动、滚列表不被挡、可关闭。 |
 
 ### 2.2 输入区状态机（面板 ID：`composer`；归位：myco `composer`）
 
@@ -804,132 +751,6 @@
 | 12 | 依据 | E0 `ui/session/session_detail_page.dart:430,730`；E0 `ui/session/conversation_overview.dart:69-119`；E0 `ui/session/conversation_panel.dart:72,158`；E0 `ui/session/session_artifacts.dart`；E0 `ui/session/workspace_upload.dart`；E0 `ui/shell/adaptive/adaptive_layout.dart:75-76,225-230`；E0 `ui/shell/adaptive/detail_sheet.dart`。 |
 | 13 | 反证 + 验收 | **反证**：若详情只能整页打开，平板上"边看会话边改插件"被打断；若宽屏右栏可无限宽，聊天列会被压到不可读（dsh-Go 给面板 320~420 并让聊天 ≥400）。**验收** GO-31：真机手机开详情页返回、平板右栏常驻、中屏 sheet 两档可拖。 |
 
-#### `remote.hosts` — 远程宿主（宿主切换 sheet / 远程页 / 会话备份 / 连接进度）　（findings 36）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `remote.hosts`。所属：侧栏/远程。`host_switcher.dart`（宿主切换 sheet）、`remote_screen.dart`（远程管理页）、`session_backup_page.dart`（会话备份）、`link_progress.dart`（连接进度）。 |
-| 2 | 网格与定位 | 切换 sheet 列表（`host_switcher.dart:74-169`）；远程页为列表 + 状态卡；备份页为文件/会话列表；进度条在行内（`link_progress.dart:182-195`）。 |
-| 3 | 命中区 | 行整行可点；`shrinkWrap` 1 处（`remote_screen.dart:453`）；进度条按钮 `minimumSize 0×36`（`link_progress.dart:182-195`）。 |
-| 4 | 手势 | 单击 = 切宿主/连接；长按 = 删除/重命名；下拉 = 刷新连接。 |
-| 5 | 行为 | 切宿主 → 当前会话/模型/插件集合全部切换（需确认）；连接 → 握手/配对；备份 → 上传/下载会话。 |
-| 6 | 视觉状态 | `default`/`connected`（绿点）/`connecting`（转圈）/`error`（红）/`offline`。 |
-| 7 | 布局占位与展开形态 | 参与布局流；sheet-overlay 用于切换。 |
-| 8 | 滚动语义 | 列表滚；到边不转交。 |
-| 9 | 动效 | 连接进度条动画；切宿主后列表淡入。 |
-| 10 | 边界态 | 无宿主 → 空态 + 添加；连接失败 → 错误详情（`showRemoteNetworkDetails`）；大字号 → 行高增；横屏 → 限宽。 |
-| 11 | 无障碍 | 行 label + 状态播报；连接失败错误可读屏。 |
-| 12 | 依据 | E0 `ui/remote/host_switcher.dart:39-169`；E0 `ui/remote/remote_screen.dart:452-453,660`；E0 `ui/remote/session_backup_page.dart`；E0 `ui/remote/link_progress.dart:182-195`；E0 `ui/shell/home_shell.dart:411-414`。 |
-| 13 | 反证 + 验收 | **反证**：若切换宿主不确认直接切，正在跑的回合会丢（dsh-Go 在切换前有状态/确认）；若连接失败只显示红点，用户无法自助排查（dsh-Go 有网络详情 sheet）。**验收** GO-54：真机切宿主、连接失败看详情、备份会话。 |
-
-#### `remote.pairing` — 配对 / SSH 主机表单 / 中继登录 / 主机密钥　（findings 29）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `remote.pairing`。所属：远程→配对。`pairing_page.dart`（配对码/扫码）、`ssh_host_form.dart`（SSH 主机表单）、`relay_login_sheet.dart`（中继登录）、`host_key_dialog.dart`（主机密钥确认）。 |
-| 2 | 网格与定位 | 表单页 + 弹层；配对页含二维码/倒计时；`minimumSize` 2 处（`pairing_page.dart:776` 168×56、`ssh_host_form.dart:858` + `shrinkWrap`）。 |
-| 3 | 命中区 | 按钮整块可点；密钥确认对话框两键；二维码长按可保存（未见）。 |
-| 4 | 手势 | 单击 = 配对/登录/确认；长按 = 复制配对码；拖动未见。 |
-| 5 | 行为 | 配对成功 → 新增宿主并连接；SSH 表单 → 保存后测试连接；主机密钥 → 首次确认后记住。 |
-| 6 | 视觉状态 | `default`/`busy`（配对中）/`error`（码过期/密钥不匹配）。 |
-| 7 | 布局占位与展开形态 | 参与布局流；对话框/表单。 |
-| 8 | 滚动语义 | 表单滚；到边不转交。 |
-| 9 | 动效 | 倒计时；配对成功对勾。 |
-| 10 | 边界态 | 配对码过期 → 重新生成；SSH 连接失败 → 行内错误；大字号 → 表单换行；横屏 → 限宽。 |
-| 11 | 无障碍 | 表单字段 label；密钥指纹可读屏。 |
-| 12 | 依据 | E0 `ui/remote/pairing_page.dart:776`；E0 `ui/remote/ssh_host_form.dart:858-859`；E0 `ui/remote/relay_login_sheet.dart:13,84`；E0 `ui/remote/host_key_dialog.dart:44-217`。 |
-| 13 | 反证 + 验收 | **反证**：若 SSH 主机密钥首次连接不确认（无 TOFU 提示），中间人可劫持；若配对码不复用倒计时，过期码会一直显示"失败"。**验收** GO-55：真机配对成功、SSH 首连弹指纹、错误可重试。 |
-
-#### `forum.page` — 论坛（首页 / 话题 / 发帖 / 搜索 / 通知 / 账号）　（findings 47）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `forum.page`。所属：论坛面板（myco 无此概念）。`forum_home_page.dart`（最新/热门/分类胶囊 + 话题列表 + 下拉刷新 + 无限加载）、`forum_topic_page.dart`、`forum_composer_sheet.dart`、`forum_search_page.dart`、`forum_notifications_page.dart`、`forum_account_sheet.dart`、`forum_post_body.dart`。 |
-| 2 | 网格与定位 | 首页：分类胶囊横滚 + 话题卡列表 + 下拉刷新（`forum_home_page.dart:82` `ListView`）；发帖 sheet（`forum_composer_sheet.dart:101`）；`minimumSize` 11 处（`forum_account_sheet.dart:114,333,341`）。 |
-| 3 | 命中区 | 整卡可点；投票/点赞键独立；`shrinkWrap` 行。 |
-| 4 | 手势 | 单击 = 进话题/点赞/投票；长按 = 复制链接；下拉 = 刷新；滚动到底 = 加载更多。 |
-| 5 | 行为 | 发帖 → 进 composer sheet；登录 → 账号 sheet（Discourse）；点赞/收藏 → 状态即时。 |
-| 6 | 视觉状态 | `default`/`liked`/`pinned`/`solved`/`loading`。 |
-| 7 | 布局占位与展开形态 | 参与布局流；composer sheet。 |
-| 8 | 滚动语义 | 首页纵向滚 + 下拉刷新 + 触底加载（`ScrollUpdateNotification`，`forum_home_page.dart:162`、`forum_topic_page.dart:298`）。 |
-| 9 | 动效 | 下拉刷新指示；加载更多 spinner；点赞动画。 |
-| 10 | 边界态 | 未登录 → 只读 + 登录入口；无网络 → 错误 + 重试；大字号 → 卡换行；横屏 → 限宽。 |
-| 11 | 无障碍 | 卡/按钮 label；点赞数播报。 |
-| 12 | 依据 | E0 `ui/forum/forum_home_page.dart:1-5,82,162`；E0 `ui/forum/forum_topic_page.dart:298`；E0 `ui/forum/forum_composer_sheet.dart:90-101,304`；E0 `ui/forum/forum_search_page.dart`；E0 `ui/forum/forum_notifications_page.dart:106`；E0 `ui/forum/forum_account_sheet.dart:28-114,247,333-341`；E0 `ui/forum/forum_post_body.dart:166,275-287,476`；E0 `ui/forum/forum_widgets.dart`。 |
-| 13 | 反证 + 验收 | **反证**：若论坛只做 WebView，发帖/登录的键盘与文件选择在手机上体验差；若不做下拉刷新与触底加载，长列表只能手动重进。**验收** GO-62：真机刷话题、发帖（含登录）、搜索、看通知。 |
-
-#### `workshop.page` — 创意工坊（浏览 / 已装 / 我的 / 发布 / 安装 / 举报）　（findings 53）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `workshop.page`。所属：工坊面板（myco 无此概念）。`workshop_browse.dart`、`workshop_installed*.dart`、`workshop_mine*.dart`、`workshop_item_sheet.dart`、`workshop_publish_*`、`workshop_report_sheet.dart`、`workshop_sign_in.dart`、`workshop_disclosure.dart`。 |
-| 2 | 网格与定位 | 列表页 + 详情 sheet（`workshop_item_sheet.dart:34`）+ 发布表单（多步）；`minimumSize` 20 处（`workshop_disclosure.dart:124-130`、`workshop_installed_sheet.dart:288`）；`shrinkWrap` 3 处。 |
-| 3 | 命中区 | 卡整块可点；安装/更新键独立；发布表单字段行。 |
-| 4 | 手势 | 单击 = 详情；安装 = 下载+校验+写盘（进度）；发布 = 多步表单 + 预览；举报 = sheet。 |
-| 5 | 行为 | 安装 → 进已装并生效；发布 → 上传（需登录）；删除 → 确认。 |
-| 6 | 视觉状态 | `default`/`installed`/`update`/`installing`（进度）/`failed`（红）。 |
-| 7 | 布局占位与展开形态 | 参与布局流；详情/安装为 sheet；发布为页。 |
-| 8 | 滚动语义 | 列表滚；到边不转交。 |
-| 9 | 动效 | 安装进度；sheet 进/出 380/260 ms；发布步骤切换 300 ms。 |
-| 10 | 边界态 | 未登录 → 发布入口转登录；空间不足/哈希不符 → 安装失败原因（`workshop_item_sheet.dart:1-8` 注释：安装由 provider 复核 freshness/version/hash/空间）；大字号 → 卡换行；横屏 → 限宽。 |
-| 11 | 无障碍 | 卡/按钮 label；安装进度播报。 |
-| 12 | 依据 | E0 `ui/workshop/workshop_browse.dart:109,222`；E0 `ui/workshop/workshop_item_sheet.dart:1-8,34`；E0 `ui/workshop/workshop_installed_sheet.dart:51-288`；E0 `ui/workshop/workshop_installed.dart:297`；E0 `ui/workshop/workshop_mine_sheet.dart:323-354`；E0 `ui/workshop/workshop_mine.dart`；E0 `ui/workshop/workshop_publish_page.dart:837`；E0 `ui/workshop/workshop_publish_form.dart`；E0 `ui/workshop/workshop_publish_preview.dart:224-225`；E0 `ui/workshop/workshop_publish_recovery.dart:62`；E0 `ui/workshop/workshop_report_sheet.dart:199-241`；E0 `ui/workshop/workshop_sign_in.dart:102-129`；E0 `ui/workshop/workshop_disclosure.dart:28-130`；E0 `ui/workshop/workshop_widgets.dart:188-273`。 |
-| 13 | 反证 + 验收 | **反证**：若安装不在客户端复核版本/哈希/空间，坏包或半装会直接把 App 弄坏（dsh-Go 在 provider 里统一复核）；若发布只给一个文件框，手机上无法完成"填表—预览—发布"。**验收** GO-63：真机安装/更新/卸载工坊项、发布流程可走到预览。 |
-
-#### `terminal.page` — 会话终端（全屏暗色 + 键行 + 手势）　（findings 25）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `terminal.page`。所属：会话终端（myco 无此概念）。出现条件：从会话详情/顶栏进（`ui/terminal/terminal_page.dart:1-3`：官方 Web 右栏终端，手机做成全屏页）。 |
-| 2 | 网格与定位 | 全屏：顶部胶囊 tab + 暗色终端卡 + 键盘上方的键行（`terminal_page.dart:1-3`，`terminal_keys.dart`）；键行键高 `TerminalBar.keyHeight`（`terminal_keys.dart:534-535`）。 |
-| 3 | 命中区 | 键行每键整块可点（`onPointerDown/Move/Up`，`terminal_keys.dart:452-456`）；终端区手势 = 滚动/选择。 |
-| 4 | 手势 | 单击 = 发送按键/字符；长按 = 连发（`_press/_move/_release` 长按重复）；拖动终端 = 滚动缓冲（`terminal_screen.dart:462-466`）。 |
-| 5 | 行为 | 按键 → 写进远端 shell；tab → 切会话；清屏/复制等。 |
-| 6 | 视觉状态 | `default`/`pressed`（键态）/`error`（连接断）。 |
-| 7 | 布局占位与展开形态 | 全屏页；键行固定在键盘上方（`SafeArea` 3 处）。 |
-| 8 | 滚动语义 | 终端缓冲纵向滚（`terminal_screen.dart:462-466`）；到边不转交（页面根）。 |
-| 9 | 动效 | 键按下高亮即时；无动画。 |
-| 10 | 边界态 | 连接断 → 提示行 + 重连；无 shell → 空态；大字号 → 键行换行；横屏 → 键更多。 |
-| 11 | 无障碍 | 键有 label；终端输出可读屏（性能考虑可能限流）。 |
-| 12 | 依据 | E0 `ui/terminal/terminal_page.dart:1-3,85,143,226,368-455`；E0 `ui/terminal/terminal_keys.dart:289,452-456,526-535`；E0 `ui/terminal/terminal_screen.dart:462-466,563`。 |
-| 13 | 反证 + 验收 | **反证**：若把终端做成只读日志，手机上的 Agent 排障只能看不能动；若键行用系统键盘，一屏被键盘吃掉一半且没有 Ctrl/Esc。**验收** GO-65：真机执行命令、长按连发、断线重连。 |
-
-#### `community.page` — 社区 / 求星提示　（findings 9）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `community.page`。所属：社区面板（myco 无此概念）。`community_page.dart` + widgets + `star_prompt_dialog.dart`（求 star 弹窗）。 |
-| 2 | 网格与定位 | 列表页卡片 + 弹窗；`minimumSize` 5 处（`community_widgets.dart:190-198`、`star_prompt_dialog.dart:124`）。 |
-| 3 | 命中区 | 卡整块可点；弹窗两键整块可点。 |
-| 4 | 手势 | 单击 = 打开链接/进子页；弹窗 = 稍后/去 star。 |
-| 5 | 行为 | 外链 → `url_launcher` 打开；star 弹窗频率受控（`star_prompt_host`，`ui/star`）。 |
-| 6 | 视觉状态 | `default`/`pressed`；弹窗遮罩。 |
-| 7 | 布局占位与展开形态 | 参与布局流；弹窗 overlay。 |
-| 8 | 滚动语义 | 页面滚；到边不转交。 |
-| 9 | 动效 | 弹窗进/出 380/260 ms。 |
-| 10 | 边界态 | 网络失败 → 卡片提示；大字号 → 卡换行；横屏 → 限宽。 |
-| 11 | 无障碍 | 卡/按钮 label。 |
-| 12 | 依据 | E0 `ui/community/community_page.dart:88-211`；E0 `ui/community/community_widgets.dart:110-198`；E0 `ui/star/star_prompt_dialog.dart:124-129`；E0 `ui/star/star_prompt_host.dart`。 |
-| 13 | 反证 + 验收 | **反证**：若求 star 弹窗每次启动都出，用户会被反复打断（dsh-Go 用 host 做频率控制）。**验收** GO-67：真机社区页可进、求星弹窗可关闭且不重复弹。 |
-
-#### `replay.page` — 回放（会话回放 / 分享码播放器）　（findings 9）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `replay.page`。所属：回放面板。`replay_page.dart`（回放列表/播放）+ 顶层 `share_code/replay_viewer.g.dart`（生成的 Web 播放器）。 |
-| 2 | 网格与定位 | 列表页 + 播放页；`minimumSize` 8 处（`replay_page.dart:300,473,570`）。 |
-| 3 | 命中区 | 列表行整行可点；播放控制键整块可点。 |
-| 4 | 手势 | 单击 = 播放/暂停/拖进度；长按 = 速度（未见）。 |
-| 5 | 行为 | 回放 → 按时间轴重演消息；分享码 → 打开 Web 播放器。 |
-| 6 | 视觉状态 | `playing`/`paused`/`ended`。 |
-| 7 | 布局占位与展开形态 | 参与布局流；播放页全屏。 |
-| 8 | 滚动语义 | 列表滚；播放页内滚；到边不转交。 |
-| 9 | 动效 | 播放进度动画；键切图标 160 ms。 |
-| 10 | 边界态 | 无回放数据 → 空态；损坏 → 错误；大字号 → 行高增；横屏 → 限宽。 |
-| 11 | 无障碍 | 控制键 label；播放进度播报。 |
-| 12 | 依据 | E0 `ui/replay/replay_page.dart:120-156,217,253-298,375-391,473,534,570`；E0 `share_code/replay_viewer.g.dart`（生成的 Web 资源，见 §3 排除）。 |
-| 13 | 反证 + 验收 | **反证**：若回放只是把消息一次性列出来，用户看不到"当时是怎么一步步生成的"；若播放器只做 Web 版，手机上分享码打不开。**验收** GO-68：真机回放可播放暂停、分享码可打开。 |
-
 ### 2.8 设置壳（面板 ID：`settings`；归位：myco `settings`）
 
 #### `settings.home` — 设置首页（分组 hub + 搜索）　（findings 27）
@@ -1021,42 +842,6 @@
 | 11 | 无障碍 | 行/按钮 label；开关语义；任务状态播报。 |
 | 12 | 依据 | E0 `ui/features/schedules_page.dart:1-14`；E0 `ui/features/schedule_editor/schedule_editor_page.dart:563`；E0 `ui/features/schedule_editor/schedule_pickers.dart:32-101`；E0 `ui/features/jobs_page.dart`；E0 `ui/features/permission_page.dart`；E0 `ui/features/agent_presets_page.dart:94-163`；E0 `ui/features/preset_editor/preset_editor_page.dart`；E0 `ui/features/skills_page.dart`；E0 `ui/features/skill_use.dart:50-62`；E0 `ui/features/session_export_page.dart`；E0 `ui/features/all_features_page.dart`；E0 `ui/features/phone_skill_use.dart:101`。 |
 | 13 | 反证 + 验收 | **反证**：若定时任务只能在宿主 Web 里建，手机上无法管理自动化；若「立即运行」不显示运行状态，用户重复触发。**验收** GO-45：真机新建/编辑/立即运行/删除定时任务；权限四档可切换。 |
-
-#### `onboarding.setup` — 首启引导（欢迎 / 运行时选择 / 安装 / 连通 / API key / 外观步骤）　（findings 32）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `onboarding.setup`。所属：引导流程（多步全屏）。出现条件：首次启动或重置后（`ui/onboarding/welcome_page.dart:12-14`）。步骤：欢迎 → 运行时选择（本地 PRoot / 远程）→ 运行时安装/进度 → 连接/API key → 外观。 |
-| 2 | 网格与定位 | `OnboardingScaffold` 统一页框（`ui/onboarding/onboarding_scaffold.dart:78`）；底部主按钮 `minimumSize` 1 处（`connect_page.dart:356`）+ `shrinkWrap` 1 处（`usage_notice_row.dart:76`）；进度页 `ListView`（`setup_progress.dart:486`）。 |
-| 3 | 命中区 | 按钮整块可点；步骤指示器不可点；用量统计开关行 `shrinkWrap` 整行点。 |
-| 4 | 手势 | 单击 = 下一步/选择/重试；返回 = 上一步（`PopScope` 1 处）；长按无。 |
-| 5 | 行为 | 选择运行时 → 下载/安装（长任务 + 进度）；连接 → 输入地址/扫码；API key → 校验并保存（脱敏显示 `maskApiKey`）；完成后进主页。 |
-| 6 | 视觉状态 | `default`/`selected`（运行时选择）/`installing`（进度）/`error`（失败可重试）/`done`。 |
-| 7 | 布局占位与展开形态 | 全屏步骤页；安装进度步骤可滚。 |
-| 8 | 滚动语义 | 安装进度列表滚；到边不转交。 |
-| 9 | 动效 | 步骤切换 300 ms（`AppMotion.page`）；安装进度呼吸。 |
-| 10 | 边界态 | 无网络 → 安装失败 + 重试；架构不支持 → 说明；用户跳过 → 允许（远程模式）；大字号 → 步骤内容滚；横屏 → 居中式布局。 |
-| 11 | 无障碍 | 每步有标题语义；用量统计开关有说明文案；错误播报。 |
-| 12 | 依据 | E0 `ui/onboarding/welcome_page.dart:12-14,128`；E0 `ui/onboarding/onboarding_scaffold.dart:78`；E0 `ui/onboarding/runtime_choice.dart`；E0 `ui/onboarding/runtime_setup_page.dart:354`；E0 `ui/onboarding/setup_progress.dart:445-486`；E0 `ui/onboarding/connect_page.dart:356`；E0 `ui/onboarding/api_key_page.dart:151-227`；E0 `ui/onboarding/local_install.dart`；E0 `ui/onboarding/appearance_step.dart`；E0 `ui/onboarding/usage_notice_row.dart:51-76`。 |
-| 13 | 反证 + 验收 | **反证**：若首启直接进空聊天页，用户不知道要装引擎/配 key（dsh-Go 把安装做成引导步骤 + 进度可恢复）；若 API key 明文回显，用户可能被旁观者看到。**验收** GO-70：真机全流程走完、安装进度可恢复、key 脱敏显示。 |
-
-#### `account.page` — 账号（登录 / 资料 / 余额 / 订阅入口）　（findings 15）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `account.page`。所属：设置→账号。出现条件：点设置首页账号行或远程页账号（`ui/account/account_page.dart`）。 |
-| 2 | 网格与定位 | 头像 + 资料行 + 余额/订阅卡；`minimumSize` 1 处（`account_widgets.dart:358`）。 |
-| 3 | 命中区 | 行整行可点；登录/退出键整块可点。 |
-| 4 | 手势 | 单击 = 登录/退出/管理订阅；长按 = 复制账号 id（未见）。 |
-| 5 | 行为 | 登录 → 走账号 API（`state/account_api.dart`）；退出 → 清本地凭据；订阅 → 打开订阅页。 |
-| 6 | 视觉状态 | `logged-out`/`logged-in`/`loading`/`error`。 |
-| 7 | 布局占位与展开形态 | 参与布局流；无展开。 |
-| 8 | 滚动语义 | 页面滚；到边不转交。 |
-| 9 | 动效 | 登录中 spinner；资料淡入。 |
-| 10 | 边界态 | 离线 → 显示缓存资料 + 提示；未登录 → 登录卡；大字号 → 行高增；横屏 → 限宽。 |
-| 11 | 无障碍 | 行/按钮 label；账号邮箱脱敏播报。 |
-| 12 | 依据 | E0 `ui/account/account_page.dart:96-97,197-204,303,388,461`；E0 `ui/account/account_widgets.dart:358`。 |
-| 13 | 反证 + 验收 | **反证**：若账号信息在设置里明文显示完整 token/邮箱，旁观者可读；若退出不清本地凭据，换人用机仍能发消息。**验收** GO-71：真机登录/退出、离线看缓存资料、凭据清除。 |
 
 ### 2.9 通用（外观）（面板 ID：`settings.general`；归位：myco `settings.general`）
 
@@ -1198,24 +983,6 @@
 | 12 | 依据 | E0 `ui/shell/adaptive/adaptive_layout.dart:11-49,79-109,143-181,219-230`；E0 `ui/shell/home_shell.dart:74-96,135-233,259-333,382-400,588-604`；E0 `ui/shell/page_frame.dart:14-40`；E0 `ui/theme/page_transitions.dart:15-35,428-442`；E0 `ui/theme/motion.dart:148-152,182-186`。 |
 | 13 | 反证 + 验收 | **反证**：若手机上沿用桌面三栏，360dp 屏会被切成三条不可读；若横屏手机按宽度判成平板（915×412），每列只剩一条缝（dsh-Go 用「最短边」判手机）；若面板位移用 `Positioned` 每帧重布局，中端机会掉帧（dsh-Go 用 paint-only）。**验收** GO-32：真机竖屏单列、横屏单列、平板三栏、二级页边缘滑动可返回。 |
 
-#### `web.viewer` — 内嵌网页（DSH Web / 本地网页）　（findings 13）
-
-| # | 字段 | 内容 |
-|---|---|---|
-| 1 | 身份与出现条件 | `web.viewer`。所属：网页浏览（DSH Web 在手机上的入口）。出现条件：抽屉「网页版」（`ui/shell/home_shell.dart:236-247`）或本地 web 页（`ui/web/local_web_screen.dart`）。 |
-| 2 | 网格与定位 | 全屏 WebView（`webview_flutter`）；顶部浮层返回/刷新；`minimumSize` 5 处（`local_web_screen.dart:137-143`、`web_view_page.dart:1162`）；`shrinkWrap` 1 处（`:1365`）。 |
-| 3 | 命中区 | 返回/刷新键整块可点；WebView 内由网页自己决定。 |
-| 4 | 手势 | 系统返回 = 网页内后退优先，再退出（`web_view_page.dart` 有 `PopScope`）；手势由页面吞掉（注入 CSS `overscroll-behavior:none`，`:472-476`）。 |
-| 5 | 行为 | 外部链接 → 交给系统浏览器/应用内打开（`web_handle.dart`）；登录态由 WebView 保持。 |
-| 6 | 视觉状态 | `default`/`loading`（进度条）/`error`（加载失败 + 重试）。 |
-| 7 | 布局占位与展开形态 | 全屏页（路由）。 |
-| 8 | 滚动语义 | WebView 内部滚；注入样式关闭 overscroll 链（`web_view_page.dart:472-476`）；外层不参与。 |
-| 9 | 动效 | 加载进度条；页面切换原生过渡。 |
-| 10 | 边界态 | 加载失败 → 错误页 + 重试；离线 → 提示；大字号 → 网页自身缩放（原生不跟随）；横屏 → WebView 重排。 |
-| 11 | 无障碍 | 返回/刷新键有 label；WebView 语义由 H5 提供。 |
-| 12 | 依据 | E0 `ui/web/web_view_page.dart:472-476,1085,1162,1365,1396-1406`；E0 `ui/web/local_web_screen.dart:136-143`；E0 `ui/web/web_handle.dart:67-146`；E0 `ui/shell/home_shell.dart:236-247`。 |
-| 13 | 反证 + 验收 | **反证**：若把 DSH Web 直接塞进聊天 App 的同一页面栈，系统返回会先退 App 而不是网页内导航；若 WebView 允许 overscroll 链，网页滚到底会拖着整个页面晃。**验收** GO-66：真机打开网页版、网页内导航、返回先退网页再退 App。 |
-
 ### 2.16 主题 token（面板 ID：`base.theme`；归位：myco `base.theme`）
 
 #### `base.theme` — 主题与 token（玻璃 / 形状 / 间距 / 动效 / 转场 / 视觉特效）　（findings 11）
@@ -1279,7 +1046,7 @@
 | # | 字段 | 内容 |
 |---|---|---|
 | 1 | 身份与出现条件 | `base.primitives.sheet`。所属：基座→弹层。全 App 的弹层统一入口（`showAppSheet`，`ui/common/app_sheet.dart:45-58`）；带标题栏、分组、关闭键、拖拽把手、风险提示、短提示（brief notice）、未保存丢弃守卫。 |
-| 2 | 网格与定位 | 内容左右留白 20（`kSheetGutter`，`ui/common/app_sheet.dart:25-29`）；标题栏高度与关闭键尺寸由 `SheetTitleBar.inset` 统一（`ui/common/sheet_title_bar.dart:60`）；全局拖拽把手 36×4（`ui/theme/app_theme.dart:386`）；弹层默认 `showDragHandle:true`（`:389`）。 |
+| 2 | 网格与定位 | 内容左右留白 20（`kSheetGutter`，`ui/common/app_sheet.dart:25-29`）；标题栏高度与关闭键尺寸由 `SheetTitleBar.inset` 统一（`ui/common/sheet_title_bar.dart:60`）；全局拖拽把手 36×4（`ui/theme/app_theme.dart:386`）；弹层默认 `showDragHandle:true`（`:389`）。全仓直接调 `showModalBottomSheet` 仅 1 处，其余都走 `showAppSheet`（E0：全量 grep）。 |
 | 3 | 命中区 | 关闭键/拖拽把手/行均整块可点；`SheetTitleBar` 关闭键（`sheet_title_bar.dart:60`）；`RiskNotice` 按钮 `minimumSize: fromHeight`（`risk_notice.dart:276`）且开关 `shrinkWrap`（`:329`）。 |
 | 4 | 手势 | 下拉把手 = 关闭；点遮罩 = 关闭（可配 `dismissal`）；返回键 = 关闭（`PopScope`，`app_sheet.dart` 内 2 处）；风险提示需勾选后确认。 |
 | 5 | 行为 | 弹层可返回选择结果（`showAppSheet<T>`）；`RiskNotice` 强制确认；`DiscardGuard` 在离开前拦截未保存改动（`ui/common/discard_guard.dart`）。 |
@@ -1370,6 +1137,24 @@
 
 ### 2.20 Bot 管理（候选新面板）（面板 ID：`bots`；归位：myco 无）
 
+#### `bots.chat` — Bot 对话 / 群聊（浮顶栏 + 卡片 + 输入条）　（findings 25）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `bots.chat`。所属：聊天面板的 Bot 变体（复用 chat 行：`MarkdownBody`/`UserBubble`，`ui/bots/bot_chat_kit.dart:1-5`）。出现条件：打开某个 Bot/群聊会话。 |
+| 2 | 网格与定位 | 页框 = 玻璃下的列表 + 底部卡片与输入条（`bot_chat_kit.dart:1-5`）；浮顶栏可折叠；输入条复用 `Composer`。 |
+| 3 | 命中区 | 消息整块可点/长按（复用 chat 菜单）；卡片按钮 `minimumSize` 5 处 + `shrinkWrap` 4 处（`bot_chat_kit.dart:1120-1123,1254-1257`、`room_chat_page.dart:408-420`）。 |
+| 4 | 手势 | 同上（单击、长按、拖动滚动）；另有「切模型/回答问题」卡片交互。 |
+| 5 | 行为 | Bot 卡片：提问/视图/选模型 → 回答后继续；群聊：多角色发言。 |
+| 6 | 视觉状态 | 同 chat；Bot 卡片有 `waiting` 态。 |
+| 7 | 布局占位与展开形态 | 同 chat（参与布局流、卡片在流里）。 |
+| 8 | 滚动语义 | 列表滚动 + 下拉加载更早（`bot_chat_kit.dart:427-452`：`ScrollNotification(depth:0)` + 距顶 400 触发 `loadEarlier`）；到边不转交（页面根）。 |
+| 9 | 动效 | 卡片展开 160~240 ms；浮顶栏收起。 |
+| 10 | 边界态 | 空会话 → 空态；Bot 失败 → 提示行；大字号 → 卡片换行；横屏 → 限宽。 |
+| 11 | 无障碍 | 复用 chat 语义；Bot 卡片按钮有 label。 |
+| 12 | 依据 | E0 `ui/bots/bot_chat_kit.dart:1-5,112-189,218,427-452,559,1120-1123,1254-1257`；E0 `ui/bots/room_chat_page.dart:408-420`。 |
+| 13 | 反证 + 验收 | **反证**：若为 Bot 另写一套聊天界面，行高/长按菜单/滚动跟随会与主聊天不一致（dsh-Go 明确复用 chat 行组件）；若 Bot 的「回答问题」卡不在流里而在浮层，用户会漏答。**验收** GO-52：真机 Bot 对话与主聊天手感一致、卡片可就地回答。 |
+
 #### `bots.manage` — Bot 管理（列表 / 详情 / 新建 / 房间 / 记忆 / 安装卡）　（findings 63）
 
 | # | 字段 | 内容 |
@@ -1388,7 +1173,45 @@
 | 12 | 依据 | E0 `ui/bots/bots_page.dart:112-266`；E0 `ui/bots/bot_details_page.dart:348,437`；E0 `ui/bots/new_bot_page.dart`；E0 `ui/bots/new_room_sheet.dart:138-149`；E0 `ui/bots/room_details_page.dart`；E0 `ui/bots/room_relay_limit_sheet.dart`；E0 `ui/bots/working_folder_sheet.dart`；E0 `ui/bots/memory_card.dart`；E0 `ui/bots/install_card.dart`；E0 `ui/bots/bot_sheets.dart:26-182`；E0 `ui/bots/bot_mention.dart:207-231`；E0 `ui/bots/duplicate_bot_row.dart`；E0 `ui/bots/drawer_row.dart`。 |
 | 13 | 反证 + 验收 | **反证**：若 Bot 只能通过导入文件创建、无管理页，手机上删不掉/改不了（dsh-Go 有完整管理页）；若房间中继上限不给提示，群聊会静默丢消息。**验收** GO-53：真机新建 Bot/房间、改成员、看记忆。 |
 
-### 2.21 酒馆（候选新面板）（面板 ID：`tavern`；归位：myco 无）
+### 2.21 远程宿主（候选新面板）（面板 ID：`remote`；归位：myco 无）
+
+#### `remote.hosts` — 远程宿主（宿主切换 sheet / 远程页 / 会话备份 / 连接进度）　（findings 36）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `remote.hosts`。所属：侧栏/远程。`host_switcher.dart`（宿主切换 sheet）、`remote_screen.dart`（远程管理页）、`session_backup_page.dart`（会话备份）、`link_progress.dart`（连接进度）。 |
+| 2 | 网格与定位 | 切换 sheet 列表（`host_switcher.dart:74-169`）；远程页为列表 + 状态卡；备份页为文件/会话列表；进度条在行内（`link_progress.dart:182-195`）。 |
+| 3 | 命中区 | 行整行可点；`shrinkWrap` 1 处（`remote_screen.dart:453`）；进度条按钮 `minimumSize 0×36`（`link_progress.dart:182-195`）。 |
+| 4 | 手势 | 单击 = 切宿主/连接；长按 = 删除/重命名；下拉 = 刷新连接。 |
+| 5 | 行为 | 切宿主 → 当前会话/模型/插件集合全部切换（需确认）；连接 → 握手/配对；备份 → 上传/下载会话。 |
+| 6 | 视觉状态 | `default`/`connected`（绿点）/`connecting`（转圈）/`error`（红）/`offline`。 |
+| 7 | 布局占位与展开形态 | 参与布局流；sheet-overlay 用于切换。 |
+| 8 | 滚动语义 | 列表滚；到边不转交。 |
+| 9 | 动效 | 连接进度条动画；切宿主后列表淡入。 |
+| 10 | 边界态 | 无宿主 → 空态 + 添加；连接失败 → 错误详情（`showRemoteNetworkDetails`）；大字号 → 行高增；横屏 → 限宽。 |
+| 11 | 无障碍 | 行 label + 状态播报；连接失败错误可读屏。 |
+| 12 | 依据 | E0 `ui/remote/host_switcher.dart:39-169`；E0 `ui/remote/remote_screen.dart:452-453,660`；E0 `ui/remote/session_backup_page.dart`；E0 `ui/remote/link_progress.dart:182-195`；E0 `ui/shell/home_shell.dart:411-414`。 |
+| 13 | 反证 + 验收 | **反证**：若切换宿主不确认直接切，正在跑的回合会丢（dsh-Go 在切换前有状态/确认）；若连接失败只显示红点，用户无法自助排查（dsh-Go 有网络详情 sheet）。**验收** GO-54：真机切宿主、连接失败看详情、备份会话。 |
+
+#### `remote.pairing` — 配对 / SSH 主机表单 / 中继登录 / 主机密钥　（findings 29）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `remote.pairing`。所属：远程→配对。`pairing_page.dart`（配对码/扫码）、`ssh_host_form.dart`（SSH 主机表单）、`relay_login_sheet.dart`（中继登录）、`host_key_dialog.dart`（主机密钥确认）。 |
+| 2 | 网格与定位 | 表单页 + 弹层；配对页含二维码/倒计时；`minimumSize` 2 处（`pairing_page.dart:776` 168×56、`ssh_host_form.dart:858` + `shrinkWrap`）。 |
+| 3 | 命中区 | 按钮整块可点；密钥确认对话框两键；二维码长按可保存（未见）。 |
+| 4 | 手势 | 单击 = 配对/登录/确认；长按 = 复制配对码；拖动未见。 |
+| 5 | 行为 | 配对成功 → 新增宿主并连接；SSH 表单 → 保存后测试连接；主机密钥 → 首次确认后记住。 |
+| 6 | 视觉状态 | `default`/`busy`（配对中）/`error`（码过期/密钥不匹配）。 |
+| 7 | 布局占位与展开形态 | 参与布局流；对话框/表单。 |
+| 8 | 滚动语义 | 表单滚；到边不转交。 |
+| 9 | 动效 | 倒计时；配对成功对勾。 |
+| 10 | 边界态 | 配对码过期 → 重新生成；SSH 连接失败 → 行内错误；大字号 → 表单换行；横屏 → 限宽。 |
+| 11 | 无障碍 | 表单字段 label；密钥指纹可读屏。 |
+| 12 | 依据 | E0 `ui/remote/pairing_page.dart:776`；E0 `ui/remote/ssh_host_form.dart:858-859`；E0 `ui/remote/relay_login_sheet.dart:13,84`；E0 `ui/remote/host_key_dialog.dart:44-217`。 |
+| 13 | 反证 + 验收 | **反证**：若 SSH 主机密钥首次连接不确认（无 TOFU 提示），中间人可劫持；若配对码不复用倒计时，过期码会一直显示"失败"。**验收** GO-55：真机配对成功、SSH 首连弹指纹、错误可重试。 |
+
+### 2.22 酒馆（候选新面板）（面板 ID：`tavern`；归位：myco 无）
 
 #### `tavern.home` — 酒馆首页（书架 / 对话 / 资源库 / 我的）+ 搜索/收藏/用量　（findings 36）
 
@@ -1497,6 +1320,206 @@
 | 11 | 无障碍 | 行/开关 label；滑块语义值。 |
 | 12 | 依据 | E0 `ui/tavern/tavern_settings_page.dart`；E0 `ui/tavern/tavern_audio_section.dart:45-86`；E0 `ui/tavern/tavern_branches_page.dart:148-305`。 |
 | 13 | 反证 + 验收 | **反证**：若分支管理不给可视化树，用户无法知道当前在哪个分支、也无法回到主线；若音量只跟系统，角色语音与背景音无法平衡。**验收** GO-61（仅当 P2 纳入）：真机切分支、调音量、开关环境音。 |
+
+### 2.23 论坛（候选新面板）（面板 ID：`forum`；归位：myco 无）
+
+#### `forum.page` — 论坛（首页 / 话题 / 发帖 / 搜索 / 通知 / 账号）　（findings 47）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `forum.page`。所属：论坛面板（myco 无此概念）。`forum_home_page.dart`（最新/热门/分类胶囊 + 话题列表 + 下拉刷新 + 无限加载）、`forum_topic_page.dart`、`forum_composer_sheet.dart`、`forum_search_page.dart`、`forum_notifications_page.dart`、`forum_account_sheet.dart`、`forum_post_body.dart`。 |
+| 2 | 网格与定位 | 首页：分类胶囊横滚 + 话题卡列表 + 下拉刷新（`forum_home_page.dart:82` `ListView`）；发帖 sheet（`forum_composer_sheet.dart:101`）；`minimumSize` 11 处（`forum_account_sheet.dart:114,333,341`）。 |
+| 3 | 命中区 | 整卡可点；投票/点赞键独立；`shrinkWrap` 行。 |
+| 4 | 手势 | 单击 = 进话题/点赞/投票；长按 = 复制链接；下拉 = 刷新；滚动到底 = 加载更多。 |
+| 5 | 行为 | 发帖 → 进 composer sheet；登录 → 账号 sheet（Discourse）；点赞/收藏 → 状态即时。 |
+| 6 | 视觉状态 | `default`/`liked`/`pinned`/`solved`/`loading`。 |
+| 7 | 布局占位与展开形态 | 参与布局流；composer sheet。 |
+| 8 | 滚动语义 | 首页纵向滚 + 下拉刷新 + 触底加载（`ScrollUpdateNotification`，`forum_home_page.dart:162`、`forum_topic_page.dart:298`）。 |
+| 9 | 动效 | 下拉刷新指示；加载更多 spinner；点赞动画。 |
+| 10 | 边界态 | 未登录 → 只读 + 登录入口；无网络 → 错误 + 重试；大字号 → 卡换行；横屏 → 限宽。 |
+| 11 | 无障碍 | 卡/按钮 label；点赞数播报。 |
+| 12 | 依据 | E0 `ui/forum/forum_home_page.dart:1-5,82,162`；E0 `ui/forum/forum_topic_page.dart:298`；E0 `ui/forum/forum_composer_sheet.dart:90-101,304`；E0 `ui/forum/forum_search_page.dart`；E0 `ui/forum/forum_notifications_page.dart:106`；E0 `ui/forum/forum_account_sheet.dart:28-114,247,333-341`；E0 `ui/forum/forum_post_body.dart:166,275-287,476`；E0 `ui/forum/forum_widgets.dart`。 |
+| 13 | 反证 + 验收 | **反证**：若论坛只做 WebView，发帖/登录的键盘与文件选择在手机上体验差；若不做下拉刷新与触底加载，长列表只能手动重进。**验收** GO-62：真机刷话题、发帖（含登录）、搜索、看通知。 |
+
+### 2.24 创意工坊（候选新面板）（面板 ID：`workshop`；归位：myco 无）
+
+#### `workshop.page` — 创意工坊（浏览 / 已装 / 我的 / 发布 / 安装 / 举报）　（findings 53）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `workshop.page`。所属：工坊面板（myco 无此概念）。`workshop_browse.dart`、`workshop_installed*.dart`、`workshop_mine*.dart`、`workshop_item_sheet.dart`、`workshop_publish_*`、`workshop_report_sheet.dart`、`workshop_sign_in.dart`、`workshop_disclosure.dart`。 |
+| 2 | 网格与定位 | 列表页 + 详情 sheet（`workshop_item_sheet.dart:34`）+ 发布表单（多步）；`minimumSize` 20 处（`workshop_disclosure.dart:124-130`、`workshop_installed_sheet.dart:288`）；`shrinkWrap` 3 处。 |
+| 3 | 命中区 | 卡整块可点；安装/更新键独立；发布表单字段行。 |
+| 4 | 手势 | 单击 = 详情；安装 = 下载+校验+写盘（进度）；发布 = 多步表单 + 预览；举报 = sheet。 |
+| 5 | 行为 | 安装 → 进已装并生效；发布 → 上传（需登录）；删除 → 确认。 |
+| 6 | 视觉状态 | `default`/`installed`/`update`/`installing`（进度）/`failed`（红）。 |
+| 7 | 布局占位与展开形态 | 参与布局流；详情/安装为 sheet；发布为页。 |
+| 8 | 滚动语义 | 列表滚；到边不转交。 |
+| 9 | 动效 | 安装进度；sheet 进/出 380/260 ms；发布步骤切换 300 ms。 |
+| 10 | 边界态 | 未登录 → 发布入口转登录；空间不足/哈希不符 → 安装失败原因（`workshop_item_sheet.dart:1-8` 注释：安装由 provider 复核 freshness/version/hash/空间）；大字号 → 卡换行；横屏 → 限宽。 |
+| 11 | 无障碍 | 卡/按钮 label；安装进度播报。 |
+| 12 | 依据 | E0 `ui/workshop/workshop_browse.dart:109,222`；E0 `ui/workshop/workshop_item_sheet.dart:1-8,34`；E0 `ui/workshop/workshop_installed_sheet.dart:51-288`；E0 `ui/workshop/workshop_installed.dart:297`；E0 `ui/workshop/workshop_mine_sheet.dart:323-354`；E0 `ui/workshop/workshop_mine.dart`；E0 `ui/workshop/workshop_publish_page.dart:837`；E0 `ui/workshop/workshop_publish_form.dart`；E0 `ui/workshop/workshop_publish_preview.dart:224-225`；E0 `ui/workshop/workshop_publish_recovery.dart:62`；E0 `ui/workshop/workshop_report_sheet.dart:199-241`；E0 `ui/workshop/workshop_sign_in.dart:102-129`；E0 `ui/workshop/workshop_disclosure.dart:28-130`；E0 `ui/workshop/workshop_widgets.dart:188-273`。 |
+| 13 | 反证 + 验收 | **反证**：若安装不在客户端复核版本/哈希/空间，坏包或半装会直接把 App 弄坏（dsh-Go 在 provider 里统一复核）；若发布只给一个文件框，手机上无法完成"填表—预览—发布"。**验收** GO-63：真机安装/更新/卸载工坊项、发布流程可走到预览。 |
+
+### 2.25 宠物（候选新面板）（面板 ID：`pets`；归位：myco 无）
+
+#### `pets.stage` — 宠物舞台（聊天页浮层 / 点击拖拽 / 气泡 / 菜单 / 设置）　（findings 29）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `pets.stage`。所属：聊天面板→宠物浮层（可关）。出现条件：用户开启宠物（`ui/pets/pet_stage.dart:1-10`）；每页 1 个 `PetStage`。 |
+| 2 | 网格与定位 | 覆盖在页面之上的图层，不改变列表布局（`pet_stage.dart:1-3`）；宠物站在输入条上方胶囊顶上（`PerchKind.composer`，`ui/chat/composer.dart:392-395`）；气泡/菜单为主要可点件（`minimumSize` 2 处：`overlay_settings_tile.dart:170`、`pet_bubble.dart:79`）。 |
+| 3 | 命中区 | 只有宠物身体接收触摸（`pet_stage.dart:6-7`）；气泡/菜单按钮整块可点。 |
+| 4 | 手势 | 单击 = 互动（左右不同）；连点 = 挠痒；拖动 = 移动；长按 = 菜单（`onLongPress` 5 处）；60 s 空闲睡觉。 |
+| 5 | 行为 | 互动 → 改变状态/气泡台词；菜单 → 宠物设置/隐藏；回合结束/别处等待 → 主动出气泡（`pet_stage.dart:3-7`）。 |
+| 6 | 视觉状态 | `idle`/`walking`/`sleeping`/`reacting`/`bubble`。 |
+| 7 | 布局占位与展开形态 | 浮层 overlay，不占布局（G-01 同族）；宠物位置随输入条高度变化同帧跟随。 |
+| 8 | 滚动语义 | 不滚；`HitTestBehavior.translucent` 让指针穿透到列表（`pet_stage.dart:183-185`）。 |
+| 9 | 动效 | 宠物动作逐帧（walk/hop）；气泡淡入。 |
+| 10 | 边界态 | 关闭宠物 → 不渲染；资源缺失 → 静态图/不显示；大字号 → 气泡文字增大；横屏 → 舞台重排。 |
+| 11 | 无障碍 | 宠物有「互动/菜单」语义；气泡文字可读屏。 |
+| 12 | 依据 | E0 `ui/pets/pet_stage.dart:1-10,183-185`；E0 `ui/pets/pet_bubble.dart:66-79`；E0 `ui/pets/pet_menu.dart:44-80`；E0 `ui/pets/pet_picker.dart:146`；E0 `ui/pets/pet_settings_page.dart`；E0 `ui/pets/overlay_settings_tile.dart:87-172`；E0 `ui/chat/composer.dart:392-395`。 |
+| 13 | 反证 + 验收 | **反证**：若宠物占布局高度，聊天区每帧都被它的移动重排（dsh-Go 用 overlay + 只让身体接收触摸）；若它吞掉触摸，列表就没法滚。**验收** GO-72：真机点宠物有反应、拖动能移动、滚列表不被挡、可关闭。 |
+
+### 2.26 首启引导（候选新面板）（面板 ID：`onboarding`；归位：myco 无）
+
+#### `onboarding.setup` — 首启引导（欢迎 / 运行时选择 / 安装 / 连通 / API key / 外观步骤）　（findings 32）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `onboarding.setup`。所属：引导流程（多步全屏）。出现条件：首次启动或重置后（`ui/onboarding/welcome_page.dart:12-14`）。步骤：欢迎 → 运行时选择（本地 PRoot / 远程）→ 运行时安装/进度 → 连接/API key → 外观。 |
+| 2 | 网格与定位 | `OnboardingScaffold` 统一页框（`ui/onboarding/onboarding_scaffold.dart:78`）；底部主按钮 `minimumSize` 1 处（`connect_page.dart:356`）+ `shrinkWrap` 1 处（`usage_notice_row.dart:76`）；进度页 `ListView`（`setup_progress.dart:486`）。 |
+| 3 | 命中区 | 按钮整块可点；步骤指示器不可点；用量统计开关行 `shrinkWrap` 整行点。 |
+| 4 | 手势 | 单击 = 下一步/选择/重试；返回 = 上一步（`PopScope` 1 处）；长按无。 |
+| 5 | 行为 | 选择运行时 → 下载/安装（长任务 + 进度）；连接 → 输入地址/扫码；API key → 校验并保存（脱敏显示 `maskApiKey`）；完成后进主页。 |
+| 6 | 视觉状态 | `default`/`selected`（运行时选择）/`installing`（进度）/`error`（失败可重试）/`done`。 |
+| 7 | 布局占位与展开形态 | 全屏步骤页；安装进度步骤可滚。 |
+| 8 | 滚动语义 | 安装进度列表滚；到边不转交。 |
+| 9 | 动效 | 步骤切换 300 ms（`AppMotion.page`）；安装进度呼吸。 |
+| 10 | 边界态 | 无网络 → 安装失败 + 重试；架构不支持 → 说明；用户跳过 → 允许（远程模式）；大字号 → 步骤内容滚；横屏 → 居中式布局。 |
+| 11 | 无障碍 | 每步有标题语义；用量统计开关有说明文案；错误播报。 |
+| 12 | 依据 | E0 `ui/onboarding/welcome_page.dart:12-14,128`；E0 `ui/onboarding/onboarding_scaffold.dart:78`；E0 `ui/onboarding/runtime_choice.dart`；E0 `ui/onboarding/runtime_setup_page.dart:354`；E0 `ui/onboarding/setup_progress.dart:445-486`；E0 `ui/onboarding/connect_page.dart:356`；E0 `ui/onboarding/api_key_page.dart:151-227`；E0 `ui/onboarding/local_install.dart`；E0 `ui/onboarding/appearance_step.dart`；E0 `ui/onboarding/usage_notice_row.dart:51-76`。 |
+| 13 | 反证 + 验收 | **反证**：若首启直接进空聊天页，用户不知道要装引擎/配 key（dsh-Go 把安装做成引导步骤 + 进度可恢复）；若 API key 明文回显，用户可能被旁观者看到。**验收** GO-70：真机全流程走完、安装进度可恢复、key 脱敏显示。 |
+
+### 2.27 账号（候选新面板）（面板 ID：`account`；归位：myco 无）
+
+#### `account.page` — 账号（登录 / 资料 / 余额 / 订阅入口）　（findings 15）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `account.page`。所属：设置→账号。出现条件：点设置首页账号行或远程页账号（`ui/account/account_page.dart`）。 |
+| 2 | 网格与定位 | 头像 + 资料行 + 余额/订阅卡；`minimumSize` 1 处（`account_widgets.dart:358`）。 |
+| 3 | 命中区 | 行整行可点；登录/退出键整块可点。 |
+| 4 | 手势 | 单击 = 登录/退出/管理订阅；长按 = 复制账号 id（未见）。 |
+| 5 | 行为 | 登录 → 走账号 API（`state/account_api.dart`）；退出 → 清本地凭据；订阅 → 打开订阅页。 |
+| 6 | 视觉状态 | `logged-out`/`logged-in`/`loading`/`error`。 |
+| 7 | 布局占位与展开形态 | 参与布局流；无展开。 |
+| 8 | 滚动语义 | 页面滚；到边不转交。 |
+| 9 | 动效 | 登录中 spinner；资料淡入。 |
+| 10 | 边界态 | 离线 → 显示缓存资料 + 提示；未登录 → 登录卡；大字号 → 行高增；横屏 → 限宽。 |
+| 11 | 无障碍 | 行/按钮 label；账号邮箱脱敏播报。 |
+| 12 | 依据 | E0 `ui/account/account_page.dart:96-97,197-204,303,388,461`；E0 `ui/account/account_widgets.dart:358`。 |
+| 13 | 反证 + 验收 | **反证**：若账号信息在设置里明文显示完整 token/邮箱，旁观者可读；若退出不清本地凭据，换人用机仍能发消息。**验收** GO-71：真机登录/退出、离线看缓存资料、凭据清除。 |
+
+### 2.28 终端（候选新面板）（面板 ID：`terminal`；归位：myco 无）
+
+#### `terminal.page` — 会话终端（全屏暗色 + 键行 + 手势）　（findings 25）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `terminal.page`。所属：会话终端（myco 无此概念）。出现条件：从会话详情/顶栏进（`ui/terminal/terminal_page.dart:1-3`：官方 Web 右栏终端，手机做成全屏页）。 |
+| 2 | 网格与定位 | 全屏：顶部胶囊 tab + 暗色终端卡 + 键盘上方的键行（`terminal_page.dart:1-3`，`terminal_keys.dart`）；键行键高 `TerminalBar.keyHeight`（`terminal_keys.dart:534-535`）。 |
+| 3 | 命中区 | 键行每键整块可点（`onPointerDown/Move/Up`，`terminal_keys.dart:452-456`）；终端区手势 = 滚动/选择。 |
+| 4 | 手势 | 单击 = 发送按键/字符；长按 = 连发（`_press/_move/_release` 长按重复）；拖动终端 = 滚动缓冲（`terminal_screen.dart:462-466`）。 |
+| 5 | 行为 | 按键 → 写进远端 shell；tab → 切会话；清屏/复制等。 |
+| 6 | 视觉状态 | `default`/`pressed`（键态）/`error`（连接断）。 |
+| 7 | 布局占位与展开形态 | 全屏页；键行固定在键盘上方（`SafeArea` 3 处）。 |
+| 8 | 滚动语义 | 终端缓冲纵向滚（`terminal_screen.dart:462-466`）；到边不转交（页面根）。 |
+| 9 | 动效 | 键按下高亮即时；无动画。 |
+| 10 | 边界态 | 连接断 → 提示行 + 重连；无 shell → 空态；大字号 → 键行换行；横屏 → 键更多。 |
+| 11 | 无障碍 | 键有 label；终端输出可读屏（性能考虑可能限流）。 |
+| 12 | 依据 | E0 `ui/terminal/terminal_page.dart:1-3,85,143,226,368-455`；E0 `ui/terminal/terminal_keys.dart:289,452-456,526-535`；E0 `ui/terminal/terminal_screen.dart:462-466,563`。 |
+| 13 | 反证 + 验收 | **反证**：若把终端做成只读日志，手机上的 Agent 排障只能看不能动；若键行用系统键盘，一屏被键盘吃掉一半且没有 Ctrl/Esc。**验收** GO-65：真机执行命令、长按连发、断线重连。 |
+
+### 2.29 内嵌网页（面板 ID：`web`；归位：myco 无）
+
+#### `web.viewer` — 内嵌网页（DSH Web / 本地网页）　（findings 13）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `web.viewer`。所属：网页浏览（DSH Web 在手机上的入口）。出现条件：抽屉「网页版」（`ui/shell/home_shell.dart:236-247`）或本地 web 页（`ui/web/local_web_screen.dart`）。 |
+| 2 | 网格与定位 | 全屏 WebView（`webview_flutter`）；顶部浮层返回/刷新；`minimumSize` 5 处（`local_web_screen.dart:137-143`、`web_view_page.dart:1162`）；`shrinkWrap` 1 处（`:1365`）。 |
+| 3 | 命中区 | 返回/刷新键整块可点；WebView 内由网页自己决定。 |
+| 4 | 手势 | 系统返回 = 网页内后退优先，再退出（`web_view_page.dart` 有 `PopScope`）；手势由页面吞掉（注入 CSS `overscroll-behavior:none`，`:472-476`）。 |
+| 5 | 行为 | 外部链接 → 交给系统浏览器/应用内打开（`web_handle.dart`）；登录态由 WebView 保持。 |
+| 6 | 视觉状态 | `default`/`loading`（进度条）/`error`（加载失败 + 重试）。 |
+| 7 | 布局占位与展开形态 | 全屏页（路由）。 |
+| 8 | 滚动语义 | WebView 内部滚；注入样式关闭 overscroll 链（`web_view_page.dart:472-476`）；外层不参与。 |
+| 9 | 动效 | 加载进度条；页面切换原生过渡。 |
+| 10 | 边界态 | 加载失败 → 错误页 + 重试；离线 → 提示；大字号 → 网页自身缩放（原生不跟随）；横屏 → WebView 重排。 |
+| 11 | 无障碍 | 返回/刷新键有 label；WebView 语义由 H5 提供。 |
+| 12 | 依据 | E0 `ui/web/web_view_page.dart:472-476,1085,1162,1365,1396-1406`；E0 `ui/web/local_web_screen.dart:136-143`；E0 `ui/web/web_handle.dart:67-146`；E0 `ui/shell/home_shell.dart:236-247`。 |
+| 13 | 反证 + 验收 | **反证**：若把 DSH Web 直接塞进聊天 App 的同一页面栈，系统返回会先退 App 而不是网页内导航；若 WebView 允许 overscroll 链，网页滚到底会拖着整个页面晃。**验收** GO-66：真机打开网页版、网页内导航、返回先退网页再退 App。 |
+
+### 2.30 语音通话（候选新面板）（面板 ID：`speech`；归位：myco 无）
+
+#### `speech.call` — 语音通话（玻璃球 / 字幕 / 静音挂断扬声器 / 就地审批）　（findings 31）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `speech.call`。所属：聊天面板→语音通话（全屏页）。出现条件：顶栏通话键（`ui/chat/chat_screen.dart:2004`→`_callFromHeader`）。 |
+| 2 | 网格与定位 | 全屏：暗场/人物背景 + 中央玻璃球 + 下方字幕 + 底部三键（静音/挂断/扬声器）+ 审批/提问卡浮在上方（`ui/speech/voice_call_page.dart:1-8`）。 |
+| 3 | 命中区 | 底部三键 44+；审批卡按钮同 `approval_card`；`maxHeight` 3 处（`call_parts.dart:459`、`voice_call_page.dart:650-653`）。 |
+| 4 | 手势 | 单击 = 静音/挂断/扬声器/回答审批；长按 = 无；上滑 = 收起字幕（未见）。 |
+| 5 | 行为 | 通话 → 语音对话（TTS/ASR）；审批 → 就地回答；挂断 → 回到聊天并保留记录。 |
+| 6 | 视觉状态 | `listening`（波形）/`speaking`（球呼吸）/`muted`/`error`。 |
+| 7 | 布局占位与展开形态 | 全屏路由（G-03 C），不占聊天布局。 |
+| 8 | 滚动语义 | 无滚动（全屏固定）；字幕区截断。 |
+| 9 | 动效 | 玻璃球呼吸 2.4 s（`AppMotion.breath`）；波形跟音量。 |
+| 10 | 边界态 | 无语音模型 → 入口不出现/提示去设置；网络差 → 重连；大字号 → 字幕增高；横屏 → 元素重排。 |
+| 11 | 无障碍 | 三键有 label；通话状态播报。 |
+| 12 | 依据 | E0 `ui/speech/voice_call_page.dart:1-8,490-495,650-676,913`；E0 `ui/speech/call/call_parts.dart:459`；E0 `ui/speech/call/call_backdrop.dart:178-184`；E0 `ui/chat/chat_screen.dart:2004`。 |
+| 13 | 反证 + 验收 | **反证**：若通话时审批弹回聊天页，用户正在说话却被强制跳页（dsh-Go 把审批卡搬进通话页）；若挂断不清状态，下次进聊天会看到"通话中"。**验收** GO-64：真机发起通话、静音/扬声器/挂断、就地回答审批。 |
+
+### 2.31 社区（候选新面板）（面板 ID：`community`；归位：myco 无）
+
+#### `community.page` — 社区 / 求星提示　（findings 9）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `community.page`。所属：社区面板（myco 无此概念）。`community_page.dart` + widgets + `star_prompt_dialog.dart`（求 star 弹窗）。 |
+| 2 | 网格与定位 | 列表页卡片 + 弹窗；`minimumSize` 5 处（`community_widgets.dart:190-198`、`star_prompt_dialog.dart:124`）。 |
+| 3 | 命中区 | 卡整块可点；弹窗两键整块可点。 |
+| 4 | 手势 | 单击 = 打开链接/进子页；弹窗 = 稍后/去 star。 |
+| 5 | 行为 | 外链 → `url_launcher` 打开；star 弹窗频率受控（`star_prompt_host`，`ui/star`）。 |
+| 6 | 视觉状态 | `default`/`pressed`；弹窗遮罩。 |
+| 7 | 布局占位与展开形态 | 参与布局流；弹窗 overlay。 |
+| 8 | 滚动语义 | 页面滚；到边不转交。 |
+| 9 | 动效 | 弹窗进/出 380/260 ms。 |
+| 10 | 边界态 | 网络失败 → 卡片提示；大字号 → 卡换行；横屏 → 限宽。 |
+| 11 | 无障碍 | 卡/按钮 label。 |
+| 12 | 依据 | E0 `ui/community/community_page.dart:88-211`；E0 `ui/community/community_widgets.dart:110-198`；E0 `ui/star/star_prompt_dialog.dart:124-129`；E0 `ui/star/star_prompt_host.dart`。 |
+| 13 | 反证 + 验收 | **反证**：若求 star 弹窗每次启动都出，用户会被反复打断（dsh-Go 用 host 做频率控制）。**验收** GO-67：真机社区页可进、求星弹窗可关闭且不重复弹。 |
+
+### 2.32 回放（候选新面板）（面板 ID：`replay`；归位：myco 无）
+
+#### `replay.page` — 回放（会话回放 / 分享码播放器）　（findings 9）
+
+| # | 字段 | 内容 |
+|---|---|---|
+| 1 | 身份与出现条件 | `replay.page`。所属：回放面板。`replay_page.dart`（回放列表/播放）+ 顶层 `share_code/replay_viewer.g.dart`（生成的 Web 播放器）。 |
+| 2 | 网格与定位 | 列表页 + 播放页；`minimumSize` 8 处（`replay_page.dart:300,473,570`）。 |
+| 3 | 命中区 | 列表行整行可点；播放控制键整块可点。 |
+| 4 | 手势 | 单击 = 播放/暂停/拖进度；长按 = 速度（未见）。 |
+| 5 | 行为 | 回放 → 按时间轴重演消息；分享码 → 打开 Web 播放器。 |
+| 6 | 视觉状态 | `playing`/`paused`/`ended`。 |
+| 7 | 布局占位与展开形态 | 参与布局流；播放页全屏。 |
+| 8 | 滚动语义 | 列表滚；播放页内滚；到边不转交。 |
+| 9 | 动效 | 播放进度动画；键切图标 160 ms。 |
+| 10 | 边界态 | 无回放数据 → 空态；损坏 → 错误；大字号 → 行高增；横屏 → 限宽。 |
+| 11 | 无障碍 | 控制键 label；播放进度播报。 |
+| 12 | 依据 | E0 `ui/replay/replay_page.dart:120-156,217,253-298,375-391,473,534,570`；E0 `share_code/replay_viewer.g.dart`（生成的 Web 资源，见 §3 排除）。 |
+| 13 | 反证 + 验收 | **反证**：若回放只是把消息一次性列出来，用户看不到"当时是怎么一步步生成的"；若播放器只做 Web 版，手机上分享码打不开。**验收** GO-68：真机回放可播放暂停、分享码可打开。 |
 
 ---
 

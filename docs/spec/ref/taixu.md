@@ -43,11 +43,9 @@
 9. **A2UI（`render_surface`）是完整闭环**：LLM 输出 A2UI v0.9 JSON 消息数组 → 进程级 `A2uiSurfaceBus` 登记并校验 → `androidx.a2ui` 官方引擎 + **自定义 Catalog 白名单**（Basic 15 组件 + 宿主 Image/Video/AudioPlayer + Table = 19 类）在 Compose 渲染 → 用户交互/运行时错误格式化后**回注原会话**（忙时 `steer`、闲时 `send`）。
    证据：`E0` `harness/src/main/java/top/wkbin/taixu/harness/A2uiSurfaceContract.kt:14-37`（工具名/描述/参数 Schema）、`harness/.../A2uiSurfaceBus.kt:16-26,195-207,237-245`、`feature/a2uipoc/.../TaiXuA2uiRenderer.kt:57-67,104-136,144-166,189-253`、`feature/chat/.../A2uiChatBridge.kt:15-26`。**完整契约见 §5。**
 
-10. **命中区是三套规则并存，不是一套**：① 图标钮"视觉 40dp + 20dp 图标"（明确**拒绝** Material 48dp touch-target 与 60dp FAB）；② 行内动作 28dp 行高（思考/工具行），内嵌次级图标钮实测 `18dp`/`16dp`/`12dp`；③ 对文字链/小行提供显式 `Modifier.minimumInteractiveComponentSize() = sizeIn(48.dp,48.dp)` 助手，按处选择性使用。
-    证据：`E0` `feature/components/src/main/java/top/wkbin/taixu/ui/miuix/Buttons.kt:171`；`E0` `feature/chat/.../ComposerSendButton.kt:20-24`（`ComposerActionSize = 40.dp`，注释"不再叠 Material 的 48dp minimumInteractive"）；`E0` `ChatMessageBubbles.kt:609,631,644`（18/18/16dp）、`ToolStepsCard.kt:59-60`（12dp chevron）；`E1` `docs/UI_GUIDELINES.md:15`。→ **与 myco 44/48dp 底线冲突，进 §4 Q-TX-02。**
-
-11. **内滚冲突由"结构上不产生嵌套滚动"+"显式排序"两条一起解决**：① 聊天主列是 LazyColumn，任何内嵌纵向懒列表都会拿到无限高约束并崩溃，因此 A2UI 的 `List` 被**整体覆写**（≤12 项展平成 `Column`，>12 项才 `LazyColumn(heightIn(max=320.dp))`）；② 主列关掉 `overscrollEffect`（`overscrollEffect = null`，防 EdgeEffect 残留 pending scroll 与程序化滚动冲突闪退）；③ 设置页的 `scrollEndHaptic().overScrollVertical().nestedScroll(topBarCollapse)` 明确要求 **nestedScroll 在 overscroll 内侧**，否则下拉先橡皮筋、大标题不展开。
-    证据：`E0` `feature/a2uipoc/.../TaiXuNonLazyList.kt:27-51,86-122,196-197`；`E0` `feature/chat/.../ChatMessageList.kt:143-152`；`E0` `feature/components/.../RuntimeSettingsScaffold.kt:98-109`。→ **G-04 第三输入的骨架见 §6.4。**
+10. **跨面板的两条工程约束：命中区"三套规则" + 内滚"结构上不产生嵌套"。**
+    ① 命中区：图标钮"视觉 40dp + 20dp 图标"（明确**拒绝** Material 48dp touch-target 与 60dp FAB）；行内动作 28dp 行高（思考/工具行），内嵌次级图标钮实测 `18dp`/`16dp`/`12dp`；对文字链/小行另给显式 `Modifier.minimumInteractiveComponentSize() = sizeIn(48.dp,48.dp)` 助手按处选用。证据：`E0` `feature/components/.../miuix/Buttons.kt:171`、`ComposerSendButton.kt:20-24`、`ChatMessageBubbles.kt:609,631,644`、`ToolStepsCard.kt:59-60`；`E1` `docs/UI_GUIDELINES.md:15`。→ **与 myco 44/48dp 底线冲突，进 §4 Q-TX-02。**
+    ② 内滚：聊天主列是 LazyColumn，任何内嵌纵向懒列表都会拿到无限高约束并崩溃，因此 A2UI 的 `List` 被**整体覆写**（≤12 项展平成 `Column`，>12 项才 `LazyColumn(heightIn(max=320.dp))`）；主列关掉 `overscrollEffect`（防 EdgeEffect 残留 pending scroll 与程序化滚动冲突闪退）；设置页的 `scrollEndHaptic().overScrollVertical().nestedScroll(topBarCollapse)` 明确要求 **nestedScroll 在 overscroll 内侧**，否则下拉先橡皮筋、大标题不展开。证据：`E0` `TaiXuNonLazyList.kt:27-51,86-122,196-197`、`ChatMessageList.kt:143-152`、`RuntimeSettingsScaffold.kt:98-109`。→ **G-04 第三输入的骨架见 §6.5。**
 
 ---
 
@@ -83,7 +81,8 @@
 
 > 格式照抄 `docs/spec/schema-node.md` §2 金标准样本。**每个节点 13 行、缺一不合格。**
 > 字段 13 里的"验收 ID"用 `TX-<节点短名>-NN` 占位（P3 分配到 `CHAT-xx`/`BASE-xx` 时改号，不冲突）。
-> 附：`§2.7 归位简表` 覆盖 myco 首版不做/低优先的 17 个节点（只登记身份、关键证据、反证，不展开 13 字段——因为它们**不进 myco 首版实现**，展开等于伪造精度）。
+> 附：`§2.8 归位简表` 覆盖 myco 首版不做/低优先的 17 个节点（只登记身份、关键证据、反证，不展开 13 字段——因为它们**不进 myco 首版实现**，展开等于伪造精度）。
+> **节点数对账**：本文共 **54 个节点**（37 个满 13 字段 + 17 个简表）；`taixu.facts.csv` 出现 **52 个 node_id** —— 差额 2 个是 `base.theme.tokens`（token 定义处没有可点的扫描命中）与 `base.renderer.tool-registry`（注册表是 `when` 分支，无 `onClick`/`clickable` 命中）。两者仍有 E0 证据，只是不在扫描器分母里。
 
 ### 2.1 基座：导航与面板容器
 
@@ -230,7 +229,7 @@
 | 9 | 动效 | `transitionSpec` = fadeIn(defaultEffects 0.25) + fadeOut(fastEffects 0.18) + SizeTransform(defaultSpatial 0.35)（`A2uiSurface.kt:130-151`）；骨架 shimmer 1.2s 扫光 + 2.4s 呼吸、子项错峰 0.15s（`TaiXuA2uiSkeleton.kt:271-278`）。 |
 | 10 | 边界态 | ① 载荷畸形 → `publishFromTool` 返回失败文案让模型自纠（`A2uiSurfaceBus.kt:195-198`）；② 组件不在 Catalog → 深度校验在**工具执行期**就拒绝（`TaiXuA2uiRenderer.kt:144-166`）；③ 重复 createSurface → 吞掉 `already exists`（`:127,221-223`）；④ 运行时错误按 15s 冷却回传（`:227-248`）；⑤ 会话删除 → `releaseSession` 拆 surface（`A2uiSurfaceBus.kt:115-129`）；⑥ 预览列表只留 8 条但路由表留 1024 条（`:338-341`）；⑦ 加载宽限期后仍无 surface → 回退原文（`A2uiPocScreen.kt:94-129`）。 |
 | 11 | 无障碍 | `a2uiAccessibility` 映射 label/description；Button 校验失败时 `semantics{ error(message) }`（`MiuixA2uiBasicCatalogV1Button.kt:87-91`）；`List` 的 align/label 映射（`TaiXuNonLazyList.kt:166-194`）。**运行时错误不播报**（未见 `liveRegion`）。 |
-| 12 | 依据 | `E0` `harness/.../A2uiSurfaceBus.kt` 全文件；`E0` `harness/.../A2uiSurfaceContract.kt:12-47`；`E0` `feature/a2uipoc/.../TaiXuA2uiRenderer.kt`、`TaiXuA2uiCatalog.kt`、`TaiXuA2uiInputNormalizer.kt`、`TaiXuNonLazyList.kt`、`miuix/A2uiSurface.kt`、`miuix/A2uiAccessibility.kt`；`E1` `README.md:30`（"Agent 可通过 `render_surface` 输出 A2UI 声明式界面"）。 |
+| 12 | 依据 | `E0` `harness/.../A2uiSurfaceBus.kt` 全文件；`E0` `harness/.../A2uiSurfaceContract.kt:12-47`；`E0` `feature/a2uipoc/.../TaiXuA2uiRenderer.kt`、`TaiXuA2uiCatalog.kt`、`TaiXuA2uiInputNormalizer.kt`、`TaiXuNonLazyList.kt`、`miuix/A2uiSurface.kt`、`miuix/A2uiAccessibility.kt`；`E1` `README.md:65`（"Agent 可通过 `render_surface` 输出 A2UI 声明式界面"）。 |
 | 13 | 反证 + 验收 | **反证**：若 Agent 能渲染任意组件类型（无 Catalog），等于把"任意 UI + 任意行为"下放给模型 —— 一次幻觉就能造出假"确认删除"按钮骗用户点；太墟用 Catalog 白名单（组件必须命中目录，否则工具期就报错）+ URL 白名单（只 http/https）+ 值型组件必须走数据绑定，三处共同构成安全边界。若不覆写 List，聊天里滑到那张卡就崩进程（官方实现用 LazyColumn 拿无限高）。**验收**：`TX-A2UI-01` 杜撰组件名 → 工具返回失败原因且聊天流无卡片（单测 `A2uiSurfaceBusTest` + 真机）；`TX-A2UI-02` 垂直 20 项 List 卡片内滚、聊天不崩（真机）；`TX-A2UI-03` 表单填值 + 点提交 → 会话收到带 dataModel 的 `[A2UI 界面事件]`（真机 + 日志）；`TX-A2UI-04` 删会话后该 surface 不残留（单测 `releaseSession`）。 |
 
 ### 2.3 聊天面板
@@ -266,7 +265,7 @@
 | 7 | 布局占位与展开形态 | 不适用。**FAB 是 overlay 不占位**（`ChatMessageViewport` 的 Box 兄弟层 + zIndex），列表末项留白由 `bottomContentPadding` 提供（`:113-114`）。 |
 | 8 | 滚动语义 | **主列 `overscrollEffect = null`**（`ChatMessageList.kt:145-146`）：注释写明 EdgeEffect 拖拽分派会残留 pending scroll，触发 LazyListState 校验闪退 —— 这是"内滚到边再传速"在 Compose 上的一个真实故障面。滚动锚定：绝对底部用 `scrollBy` 越过末项剩余高度（`ChatListScroll.kt:32-45`）。 |
 | 9 | 动效 | 贴底 `animateScrollToItem`（经 `runProgrammaticScroll` 串行器，`ChatListScroll.kt:25-29`）；FAB 有无入场动画未查证（条件渲染 `if (visible)`，无 AnimatedVisibility）。 |
-| 10 | 边界态 | ① `totalItemsCount=0`：`lastLazyItemIndex` 返回 null 直接 return（防 `Index should be non-negative`，`:8-24`）；② 首屏：会话切换后按 `currentSessionKey` 只定位一次（`ChatScreen.kt:241,264-267`）；③ 流式增长中 FAB 抗抖：`derivedStateOf + 64dp tolerance`（`:92-94`）；④ 拖拽与程序化滚动冲突：`rememberProgrammaticScrollGuard(listState)`（`ChatScreen.kt:174-177`）；⑤ 用户上滑阅读时流式输出不抢滚动（`:258-267` 只在 `followLatest || userSent` 时滚）。 |
+| 10 | 边界态 | ① `totalItemsCount=0`：`lastLazyItemIndex` 返回 null 直接 return（防 `Index should be non-negative`，`:8-24`）；② 首屏：会话切换后按 `currentSessionKey` 只定位一次（`ChatScreen.kt:241,264-267`）；③ 流式增长中 FAB 抗抖：`derivedStateOf + 64dp tolerance`（`:92-94`）；④ 拖拽与程序化滚动冲突：`rememberProgrammaticScrollGuard(listState)`（`ChatScreen.kt:174-177`）；⑤ 用户上滑阅读时流式输出不抢滚动（`:258-267` 只在 `followLatest \|\| userSent` 时滚）。 |
 | 11 | 无障碍 | FAB 有 `contentDescription`（`R.string.chat_scroll_to_bottom`）；流式新内容**不**自动播报（未见 `liveRegion`）。 |
 | 12 | 依据 | `E0` `feature/chat/.../ChatScrollToBottomButton.kt:27-108`；`E0` `ChatListScroll.kt:7-45`；`E0` `ChatImeFollowLatest.kt:10-18`；`E0` `ChatScreen.kt:174-177,256-271`；`E0` `ChatMessageList.kt:143-152`；`E0` `ChatPaneContent.kt:162-177`；`E1` `docs/ARCHITECTURE_RULES.md:47`（"软键盘弹出仅在仍跟随最新消息且用户没有滚动时定位底部"）。 |
 | 13 | 反证 + 验收 | **反证**：若"新 token 到达就无条件贴底"，用户上滑读历史时每帧被拽回底部 —— 等于无法阅读；太墟用"仅跟随态才贴底 + 拖拽即退出跟随 + 回到底自动恢复"三态解决。若用 `scrollToItem(末项)` 代替 `scrollBy(大值)`，末项高于一屏时只能停在其顶部，流式增长仍看不见尾巴（`ChatListScroll.kt:32-35` 注释）。**验收**：`TX-SCROLL-01` 上滑读取 → 流式输出不拽回（真机录屏）；`TX-SCROLL-02` 回到绝对底部后恢复自动跟随（真机，连续 3 轮）；`TX-SCROLL-03` 键盘弹出时若在底部则贴底、若在看历史则不动（真机两种情形）；`TX-SCROLL-04` 回底按钮不占布局高度、滚到底自动消失（截图像素 + 真机）。 |
@@ -430,7 +429,7 @@
 | 9 | 动效 | `A2uiSurface` 的 `AnimatedContent`（加载→成功）+ `SizeTransform(clip=false)`；卡片内容更新播放同上（`A2uiSurface.kt:74-95,130-151`）。 |
 | 10 | 边界态 | ① 载荷为空 → "载荷为空"错误卡；② surfaceId 对不上 → 宽限期后回退原文；③ 会话删除 → `releaseSession` 拆 surface，卡片下次渲染回退原文；④ 同一会话 80+ 张卡 → 去重表 1024 容量（`TaiXuA2uiRenderer.kt:87-88,314-315`）；⑤ 同 surfaceId 跨会话隔离（`engineSurfaceId` 前缀）。 |
 | 11 | 无障碍 | 由 Catalog 组件语义（见 `base.renderer.a2ui`）；错误卡是纯文本，无 role。 |
-| 12 | 依据 | `E0` `feature/chat/.../ChatToolCards.kt:133-136`；`E0` `feature/a2uipoc/.../A2uiPocScreen.kt:45-160`；`E0` `ChatScreen.kt:371`（`LocalA2uiSessionId provides currentSessionId`）；`E0` `ChatTimelineProjection.kt:80-84`（不进过程链）；`E0` `ChatTimelineSpacing.kt:22-26`（不计紧凑行）；`E1` `README.md:30`。 |
+| 12 | 依据 | `E0` `feature/chat/.../ChatToolCards.kt:133-136`；`E0` `feature/a2uipoc/.../A2uiPocScreen.kt:45-160`；`E0` `ChatScreen.kt:371`（`LocalA2uiSessionId provides currentSessionId`）；`E0` `ChatTimelineProjection.kt:80-84`（不进过程链）；`E0` `ChatTimelineSpacing.kt:22-26`（不计紧凑行）；`E1` `README.md:65`。 |
 | 13 | 反证 + 验收 | **反证**：若把 A2UI 卡塞进过程链（当成普通工具步骤），它会被"首 8 步"截断、要展开才看得见，而它恰恰是**用户要点按操作的界面**（不是日志）；所以必须切断链、独立成卡。若失败时静默（只留空白），用户只会看到一张空卡、模型也不知道渲染失败 —— 太墟把错误回传会话让模型自纠。**验收**：`TX-A2UISURF-01` 卡片始终独立于过程链且不随链折叠消失（真机）；`TX-A2UISURF-02` 非法载荷显示错误卡 + 原文（真机构造）；`TX-A2UISURF-03` 同 surfaceId 二次 `render_surface` 后界面原地更新而非新增卡片（真机 + 计数）。 |
 
 #### `chat.msg.subagent-card`（子代理卡 / 分支浏览 / 成果抽屉）
@@ -784,7 +783,7 @@
 | `home.screen` | 系统概览：体检 / 资源 / 引擎状态 / 远程服务 / WebChat 卡 | `HomeScreen.kt:119,201`（nestedScroll）、`:333`（`EnvironmentDoctorCard`）、`:810`（`RuntimeEngineStatusCard`）、`HomeResourceMetricCard.kt` | 若把体检项埋在设置里，沙箱没装好的用户第一步就卡住 | **缺口**：新建 `panels/home.md` 或归 `settings.general` |
 | `bot.screen` | Bot 列表 / 详情 / 群聊 / 像素办公室 / 群治理 / 预算 / 计划 | `BotsScreen.kt:44`、`GroupChatScreen.kt:231`、`GroupInfoDialog.kt`、`GroupBudgetDialog.kt`、`PixelOffice*`、`TeamArchitectureGraph.kt` | 多智能体协作若不显示"谁在做什么"，用户无法判断该找哪个 agent | **缺口**：归 `subagent`（只做树/状态，不做像素办公室） |
 | `workflow.editor` | 可视化工作流：DAG 画布 / 运行 / 审批 / 计划 / 结果 | `WorkflowScreen.kt:66,106,251,286`、`WorkflowCanvas2D.kt:171`（pointerInput 拖拽）、`WorkflowApprovalDialog.kt`、`WorkflowScheduleDialog.kt`、`WorkflowStructuredResultButton.kt` | DAG 画布在 360dp 屏上几乎不可操作（节点/连线最小可视尺寸不足） | **缺口**：myco 首版 ⏸（`plan` 面板只借其"步骤状态"） |
-| `developer.screen` | 开发者/诊断：运行时控制、ADB 日志、远程命令 | `DeveloperScreen.kt:62,534`、`AdbLogcatScreen.kt:1-`、`AgentDiagnosticsSection.kt`、`RemoteCommandPanel.kt` | 若无日志入口，agent 出错时用户只能靠"再试一次" | 归 `settings.plugins`/诊断（低优先） |
+| `developer.screen` | 开发者/诊断：运行时控制、ADB 日志、远程命令 | `DeveloperScreen.kt:62,534`、`AdbLogcatScreen.kt`（18 个交互点）、`AgentDiagnosticsSection.kt`、`RemoteCommandPanel.kt` | 若无日志入口，agent 出错时用户只能靠"再试一次" | 归 `settings.plugins`/诊断（低优先） |
 | `git.screen` | Git 工作台：改动/提交/分支/标签/远程/AI 提交说明 | `GitScreen.kt:70,400,513,624,770`、`GitChangesTab.kt:179,204,227`（48dp 助手） | 若把 Git 操作塞进聊天消息，误触 push 无法撤销 | **缺口**：建议 `workspace.git` 子面板 |
 | `terminal.pane` | 原生 PTY 终端（多会话 / Ctrl+C / 尺寸变化） | `TaiXuTerminalHost.kt:29`（`OVER_SCROLL_NEVER`）、`TerminalScreen.kt`、`TerminalSessionDialogs.kt`、`TerminalExtraKeys.kt` | 终端若与聊天共用滚动容器，Ctrl+C 长按会被误判为滚动 | 归 `base.sidebar-right`（myco 已提右栏终端） |
 | `browser.pane` | 多 Tab WebView / URL 栏 / 调试 / 网络时间线 | `BrowserScreen.kt:57,89,181,257,406`、`NetworkTimelineSheet.kt`、`SnapshotSheet.kt` | 内嵌浏览器在手机上会与抽屉边缘手势冲突（太墟用 `canSwipeOpenNavigation` 规避） | **缺口**：myco 首版 ⏸ |
@@ -834,3 +833,273 @@
 | **Q-TX-15** | 工具详情抽屉：内滚与"下拉关闭"同向，未见 `nestedScroll` 仲裁 → 可能是 G-04 的反例 | `E0` `ToolDetailsSheet.kt:75-76`（`verticalScroll`）+ `miuix/Dialogs.kt:139-189`（sheet 下拉） | A. 内滚到顶才允许下拉关闭（G-04 式）；B. 跟太墟（不仲裁，需实测是否误关）；C. 关闭下拉、只留按钮 |
 | **Q-TX-16** | 思考流式视口固定 160dp，不随字号缩放 | `E0` `ChatMessageBubbles.kt:707`（`heightIn(max = 160.dp)`） | A. 改成 `160dp * fontScale` 或改为"屏高比例"；B. 保持固定（大字号下显示行数减少） |
 | **Q-TX-17** | Diff 内联在聊天列表项里，编辑 diff 用了 LazyColumn（嵌套滚动风险，与 A2UI List 同类）但未见限高 | `E0` `ToolDiffView.kt:107`（`LazyColumn` 虚拟化）、`:63`（`fillMaxWidth`，无 `heightIn`） | A. myco 必须给 diff 限高或改非懒列表（否则同 A2UI 崩溃面）；B. 一律进 sheet 展示 |
+
+---
+
+## 5. A2UI / `render_surface` 完整契约
+
+> 本节是"抽象数据 → 可组合渲染"的**完整可复刻契约**：谁产出、什么格式、怎么校验、怎么映射到 Compose、用户动作怎么回传、失败怎么降级。
+> 关键文件：`harness/.../A2uiSurfaceContract.kt`（对模型暴露的工具契约）、`harness/.../A2uiSurfaceBus.kt`（进程级总线/校验/路由）、`feature/a2uipoc/**`（渲染器/目录/归一化/媒体/骨架/预览）。
+
+### 5.1 端到端数据流（一张图 + 逐步证据）
+
+```
+LLM ──render_surface(surfaceId,title,messages)──▶ ToolExecutor
+                                                   │ HarnessServiceToolBackend.kt:55
+                                                   ▼
+                                   A2uiSurfaceBus.publishFromTool(args, sessionId)
+                                   ├─ parseToolArgs：surfaceId/title/messages 三段校验
+                                   ├─ parseMessagesArray：双转义修复 + version 白名单
+                                   ├─ deepValidator(messagesJson)：官方 parser 逐条解析 + 组件名必须命中 Catalog + root 恰一个
+                                   ├─ publish()：写 StateFlow(≤8) + routes(LRU 1024)
+                                   └─ 返回给模型的成功文案（含"用相同 surfaceId 更新"的指令）
+                                                   │
+聊天 UI ◀── surfaces StateFlow ── A2uiPocSurfaceCard(call)
+                                                   │ scopeMessages(sessionId) + engineSurfaceId
+                                                   ▼
+                                   TaiXuA2uiRenderer.processMessages(归一化 → parser.parse → processor.processMessage)
+                                                   │  指纹去重（SHA-256，LRU 1024）
+                                                   ▼
+                                   processor.activeSurfaces ── SurfaceView(surfaceId) ── A2uiSurface(三态) ── Catalog 组件
+                                                   │
+用户点按 ──▶ Catalog 组件 dispatchAction(action) ──▶ processor.outboundEvents
+                                                   ├─ A2uiClientEventMessage → publishUserEvent(+dataModel)
+                                                   │      └─ formatUserEvent("[A2UI 界面事件] …")
+                                                   │             └─ A2uiChatBridge.dispatch：running ? steer : send
+                                                   │                    (回到发起该 surface 的会话)
+                                                   └─ A2uiClientErrorMessage → 冷却 15s → publishErrorEvent
+                                                          └─ formatErrorEvent("[A2UI 界面错误] …") → 模型自纠
+```
+
+证据链：`E0` `harness/src/main/java/top/wkbin/taixu/harness/HarnessServiceToolBackend.kt:55`（`HarnessTool.RENDER_SURFACE -> A2uiSurfaceBus.publishFromTool(request.args, request.sessionId)`）；`E0` `A2uiSurfaceBus.kt:195-207,262-284,300-329`；`E0` `feature/a2uipoc/.../A2uiPocScreen.kt:57-132`；`E0` `TaiXuA2uiRenderer.kt:104-136,189-253,263-287`；`E0` `A2uiChatBridge.kt:15-26`；`E0` `A2uiPocInstaller.kt:22-24`（启动时注册深度校验/释放回调/事件循环）。
+
+### 5.2 数据格式（对模型暴露的契约 = 事实源）
+
+**(a) 工具定义（`function` schema）** —— `A2uiSurfaceContract.kt:14-46`
+
+| 字段 | 类型 | 约束 | 证据 |
+|---|---|---|---|
+| `surfaceId` | string | 必填；`[A-Za-z0-9_.:-]+`，≤64 字符；更新同一界面必须复用原 id | `A2uiSurfaceContract.kt:37`（schema）+ `A2uiSurfaceBus.kt:265-267`（正则/长度）+ `:345`（`SURFACE_ID_REGEX`） |
+| `title` | string | 可选（缺省 "A2UI 界面"）；≤80 字符 | `A2uiSurfaceBus.kt:268-269,335` |
+| `messages` | string | 必填；**A2UI 协议消息数组的 JSON 字符串**，长度 8..200 000；**禁止二次转义** | `A2uiSurfaceBus.kt:270-273,336-337` |
+| 工具名 | — | `render_surface` | `A2uiSurfaceContract.kt:14` |
+
+工具描述里**显式告诉模型的硬约束**（`A2uiSurfaceContract.kt:24-34`，E1 级别：这是提示词而不是解析器强制）：
+① `version` 固定 `v0.9`；② `catalogId` 固定为太墟目录；③ 首条 `createSurface`（新界面用全新 `surfaceId`），其后 `updateComponents`（**扁平 components**，容器用 `children`/`child` 引用子组件 id，**恰一个 `root`**），`deleteSurface` 移除；④ 文本写明文常量、不用表达式；⑤ 不得杜撰组件类型；⑥ 对比/排行用 `Table`（`columns` ≤6 列、`rows[].cells` ≤12 行且与 `columns` 等长）；⑦ 用户交互会以 `[A2UI 界面事件]` 回传。
+
+**(b) 协议消息（A2UI v0.9，JSON Lines 数组，逐条处理）**
+
+| 消息 | 结构（本仓实际读取的字段） | 宿主行为 | 证据 |
+|---|---|---|---|
+| `createSurface` | `{surfaceId, catalogId, [sendDataModel]}` | 建 surface；`catalogId` 若为官方 basic id 会被改写为太墟 id；`sendDataModel` 被**强制置 true** | `TaiXuA2uiCatalog.kt:47-48`；`TaiXuA2uiInputNormalizer.kt:73-81` |
+| `updateComponents` | `{surfaceId, components[]}`，每项 `{id, component, ...props}` | 组件名必须在 Catalog 内；`updateComponents` 出现时全局必须有且仅有一个 `id="root"` | `TaiXuA2uiRenderer.kt:144-166` |
+| `deleteSurface` | `{surfaceId}` | 拆引擎 surface + 清路由 + 清去重指纹 | `TaiXuA2uiRenderer.kt:108,133,169-183`；`A2uiSurfaceBus.kt:183-189` |
+| `updateDataModel` | `{surfaceId, path, value}` | 归一化器自动**追加**，用于给值型组件种初值 | `TaiXuA2uiInputNormalizer.kt:108-121` |
+
+**枚举/版本白名单**：`SUPPORTED_VERSIONS = ["v0.9","v0.9.1"]`（`A2uiSurfaceBus.kt:348`，注释"与官方 `A2uiJsonMessageParser.SUPPORTED_VERSIONS` 对齐，库升级需联动核对"）；每条消息必须是**带 `version` 的 JSON 对象**（`:318-329`）。
+**容错（针对模型真实错误率）**：`parseMessagesArray` 三级修复 —— ① 直接是数组；② 整体被二次编码成 JSON 字符串 → 剥一层；③ 引号带多余反斜杠（`[{\"version\"…]`）→ 替换 `\"` 为 `"` 再解析（`:294-316`）。
+
+**(c) surfaceId 的会话作用域（两级 id）**
+
+- **模型看到的** = 裸 id（如 `s1`）；**引擎内部的** = `"<sessionId>:<裸id>"`（`A2uiSurfaceBus.engineSurfaceId`，`A2uiSurfaceBus.kt:159-163`）。
+- 聊天卡渲染前对**整份消息**做 `scopeMessages`，把每条消息里的 `surfaceId` 改成引擎 id（`TaiXuA2uiCatalog.kt:50-66`）；这一步让"两个会话都用 `s1`"互不干扰（单测 `A2uiSurfaceBusTest.kt:176-180`）。
+- **幂等**：入参已带本会话前缀则原样返回；否则"用相同 surfaceId 再更新"会被拼成 `会话:会话:界面` → `Surface not found`（作者注释，`:152-163`）。
+- **回传模型时**再剥掉前缀（`displaySurfaceId`，`:169-173`），保证模型看到的口径与工具回执一致。
+
+**(d) 数据模型（表单值）的契约**
+
+- 官方 Basic Catalog 的值型组件（`TextField`/`CheckBox`/`ChoicePicker`/`Slider`/`DateTimeInput`）**只有 `value` 写成 `{"path":"/xxx"}` 才可交互**：官方用 `bindUpdater(ValueProperty)` + `isEnabled = onValueChange != null` 判定，常量 value 会让组件"能渲染、不能输入、不回传、无提示"（作者注释，`TaiXuA2uiInputNormalizer.kt:15-34`）。
+- 太墟的归一化：常量 `value` → `{"path":"/__taixu_inputs/<组件id转义>"}` + 追加 `updateDataModel` 种原值；`createSurface.sendDataModel` 强制 `true`（否则出站事件不带数据模型，用户输入回不到模型）。组件 id 按 RFC 6901 转义（`~`→`~0`、`/`→`~1`，`:38,40-41,99-124,147-148`）。
+- 出站事件的 `clientDataModel.surfaces[surfaceId]` 被包成 `Map<String,Any?>`（数组/标量根包进 `value`，`TaiXuA2uiRenderer.kt:293-297`），最终出现在 `A2uiUserEvent.dataModel`（`A2uiSurfaceBus.kt:42-55`）。
+
+### 5.3 目录与组件清单（19 类，白名单即安全边界）
+
+目录 = **官方 Basic Catalog 全组件** + 太墟 `Table`，`catalogId = https://taixu.app/a2ui/catalog/v1`（`A2uiSurfaceContract.kt:20-22`；`TaiXuA2uiCatalog.kt:40-45`）。
+
+| # | 组件 | 来源 | 宿主实现要点（E0） |
+|---|---|---|---|
+| 1 | `Text` | miuix 适配 | `MiuixA2uiBasicCatalogV1Text.kt` |
+| 2 | `Icon` | miuix 适配 | `MiuixA2uiBasicCatalogV1Icon.kt` |
+| 3 | `Row` | miuix 适配 | `MiuixA2uiBasicCatalogV1Row.kt`（容器） |
+| 4 | `Column` | miuix 适配 | `MiuixA2uiBasicCatalogV1Column.kt` |
+| 5 | `Card` | miuix 适配 | `MiuixA2uiBasicCatalogV1Card.kt` |
+| 6 | `Tabs` | miuix 适配 | `MiuixA2uiBasicCatalogV1Tabs.kt` |
+| 7 | `Modal` | miuix 适配 | `MiuixA2uiBasicCatalogV1Modal.kt` |
+| 8 | `Divider` | miuix 适配 | `MiuixA2uiBasicCatalogV1Divider.kt` |
+| 9 | `Button` | miuix 适配 | 三 variant（Primary/Secondary/Borderless）+ `checks` 校验失败禁用 + `semantics{error}` + `dispatchAction`（`MiuixA2uiBasicCatalogV1Button.kt:53-91,201-244`） |
+| 10 | `TextField` | miuix 适配 | 值型（见 5.2d） |
+| 11 | `CheckBox` | miuix 适配 | 值型 |
+| 12 | `ChoicePicker` | miuix 适配 | 值型 |
+| 13 | `Slider` | miuix 适配 | 值型 |
+| 14 | `DateTimeInput` | miuix 适配 | 值型 |
+| 15 | `List` | **太墟覆写** | 纵向 ≤12 项展平 `Column`；>12 项 `LazyColumn(heightIn(max=320dp))`；横向 `LazyRow`（`TaiXuNonLazyList.kt:52-126,196-197`） |
+| 16 | `Image` | **太墟实现** | Coil；只接受 http/https；7 个 variant 各自尺寸（Icon 24 / Avatar 40 / Small 100 / Medium 200高 / Large 400高 / Header 200高）与 ContentScale 映射；骨架屏占位；被拒显示提示（`TaiXuA2uiImage.kt:33-89`） |
+| 17 | `Video` | **太墟实现** | Media3（`TaiXuA2uiPlayers.kt`） |
+| 18 | `AudioPlayer` | **太墟实现** | Media3（`TaiXuA2uiPlayers.kt`） |
+| 19 | `Table` | **太墟新增** | 只读；`columns` ≤6 且必填、`rows[].cells` ≤12 行且与 columns 等长（`isAdditionalPropertiesAllowed=false`）；表头 `labelMedium/SemiBold`、正文 `bodyMedium`、单元格 `widthIn(min=72dp)`、最多 2 行 ellipsis；超宽 `horizontalScroll`；容器 `shapes.medium + surfaceContainerLow + padding 12dp`（`TaiXuA2uiCatalog.kt:73-161`） |
+
+另有宿主函数两个：`openUrl`（只 http/https、`FLAG_ACTIVITY_NEW_TASK`，`ActivityNotFound` 转 `A2uiRuntimeException`）与 ICU `pluralize`（`TaiXuA2uiClientFunctions.kt:21-69`；`TaiXuA2uiMediaPolicy.kt:31-45`）。
+> 逐组件的**完整属性 schema**（各组件除 `value` 外的 props）来自官方 Basic Catalog，本仓只覆写上述 5 类，故**不在本仓源码内**（E1：官方规范 v0.9；本仓对"属性名/类型/子组件引用必须符合 Catalog"的强制只体现在深度校验的组件名检查 + 运行时错误回传，`TaiXuA2uiRenderer.kt:144-166`）。
+
+### 5.4 渲染映射（协议 → Compose）
+
+1. **宿主三态**：`A2uiSurface(surfaceModel)` 用 `observeA2uiComponentState` 得到 `Loading / Error / Success`，`AnimatedContent` 切换（`A2uiSurface.kt:54-106`）；Loading 用**太墟骨架屏**（不是官方转圈，`TaiXuA2uiRenderer.kt:274-284`），Error 用 `errorContainer` 卡片（`A2uiSurface.kt:120-128`）。
+2. **尺寸动画**：`SizeTransform(clip = false)` + `defaultSpatialSpec`（folmeSpring damping .9/response .35），淡入 `defaultEffectsSpec`(0.25)、淡出 `fastEffectsSpec`(0.18)（`A2uiSurface.kt:130-151`）。
+3. **容器/布局**由各 Catalog 组件自己的 `TypedContent` 决定；太墟只保证：颜色/形状/字阶全部走 `RuntimeTheme`，不硬编码（`TaiXuA2uiCatalog.kt:112-126`、`A2uiSurface.kt:36-51`）。
+4. **嵌套滚动禁令**（最重要的一条工程约束）：A2UI 卡是**聊天 LazyColumn 的一个 item**，纵向约束 `maxHeight = Infinity`；官方 `List` 的垂直 `LazyColumn` 会触发 `checkScrollableContainerConstraints()` 断言、**进程被杀**（"滑到那张卡就闪退"）。所以 `List` 必须覆写：短列表展平、长列表限高（`TaiXuNonLazyList.kt:27-51`）。
+5. **骨架屏**：`TaiXuA2uiSkeletonGroup` 把三条无限动画集中到容器（无骨架时不跑）：1.2s 径向扫光 + 2.4s 呼吸（0.86–1.0）、子项错峰 0.15s、根骨架高 64dp（`TaiXuA2uiSkeleton.kt:46-59,271-280`）；Image/List 子项加载态复用同一骨架。
+6. **失败降级三级**：① 加载宽限期内 → 骨架；② 宽限期过且没有 surface → **原文 JSON 兜底卡**（`errorContainer@0.4` + 前 1200 字 monospace 10 行，`A2uiPocScreen.kt:94-129,134-160`）；③ 组件级 Error → 局部错误文案（`TaiXuNonLazyList.kt:141-147`、Button 内置 `fa2ui_render_failed`）。
+
+### 5.5 动作回传（用户操作 → 会话）
+
+| 环节 | 实现 | 证据 |
+|---|---|---|
+| 组件派发 | Button `onClick = { dispatchAction(currentAction) }`（`action` 是协议里的 `Map<String,Any?>`） | `MiuixA2uiBasicCatalogV1Button.kt:64-65` |
+| 引擎出站 | `processor.outboundEvents` 收集 `A2uiClientEventMessage` / `A2uiClientErrorMessage` | `TaiXuA2uiRenderer.kt:196-252` |
+| 会话路由 | `A2uiSurfaceBus.routeFor(message.surfaceId)` 查"surfaceId → 会话/标题"（预览列表淘汰后仍有 routes） | `A2uiSurfaceBus.kt:134-150`；`TaiXuA2uiRenderer.kt:200,238` |
+| 事件对象 | `A2uiUserEvent{surfaceId, surfaceTitle, sessionId, componentId, eventName(=message.type), context(=message.context), timestamp, dataModel}` | `A2uiSurfaceBus.kt:42-55` |
+| 文本化 | `formatUserEvent` → `[A2UI 界面事件] 用户在界面「标题」…触发了交互：组件 componentId=…，事件 eventName=…，携带 context=…，表单数据 dataModel=…`（dataModel 截断 2 000 字符） | `A2uiSurfaceBus.kt:237-252,343-344` |
+| 注入会话 | `A2uiChatBridge.dispatch`：**忙时 `steer`（挂到当前运行）、闲时 `send`**；`sessionId` 空则丢弃 | `A2uiChatBridge.kt:18-23` |
+| 错误回传 | 同一 surface 15s 冷却（防"每个非法组件一条错误"刷爆会话）；`already exists` 噪声被抑制；文案要求模型"用相同 surfaceId 带完整 components 重发" | `TaiXuA2uiRenderer.kt:217-249,316`；`A2uiSurfaceBus.kt:255-260` |
+| 释放 | 删会话 → `releaseSession` → 拆引擎 surface + 清 routes + 清指纹；`deleteSurface` 后 `forgetEngineSurface` | `A2uiSurfaceBus.kt:115-129,183-189`；`TaiXuA2uiRenderer.kt:169-183`；`SessionDeletion.kt:25`；`HarnessLoop.kt:529` |
+
+**关键设计**：交互不是"前端自己处理"，而是**作为一条用户消息回到 agent 循环**——模型看到 `[A2UI 界面事件]` 后决定下一步（这也是"抽象数据 + 可组合渲染"能在 agent 应用里闭环的原因）。
+
+### 5.6 校验 / 白名单 / 降级（四层防线）
+
+| 层 | 时机 | 检查 | 失败表现 | 证据 |
+|---|---|---|---|---|
+| L1 参数层 | 工具执行前 | `surfaceId` 必填+正则+≤64；`title` ≤80；`messages` 长度 8..200k | 工具返回 `render_surface 参数校验未通过：…请修正参数后重新调用` | `A2uiSurfaceBus.kt:195-198,262-284` |
+| L2 协议层 | 同上 | 数组非空、每项含 `version`、版本 ∈ {v0.9, v0.9.1}；三级双转义修复 | 工具返回失败 + 修复提示文案 | `:300-329` |
+| L3 组件/结构层 | 同上（`deepValidator` 钩子，由 a2uipoc 注册） | 官方 parser 逐条解析；`component` 必须命中 Catalog（否则列出可用组件名）；有 `updateComponents` 时 `id="root"` **恰一个** | 工具返回 `A2UI 协议校验失败：…`（harness 保持零 a2ui 依赖，校验实现放 feature） | `TaiXuA2uiRenderer.kt:144-166`；`A2uiSurfaceBus.kt:86-92`；`A2uiPocInstaller.kt:22` |
+| L4 渲染层 | 渲染时 | 组件级 Error / 运行时错误 | 局部错误文案 + `[A2UI 界面错误]` 回传模型（15s 冷却）；surface 不出现则原文兜底 | `TaiXuA2uiRenderer.kt:217-249`；`A2uiPocScreen.kt:94-160` |
+
+**安全边界（"与工具白名单同构"的哲学，E0 注释原文 `A2uiSurfaceBus.kt:17-19`）**：
+- **组件白名单**：模型只能使用 Catalog 内声明的组件（L3 强制）。
+- **URL 白名单**：`openUrl`/Image/Video/Audio 一律只允许绝对 http/https，且拒绝带 `userInfo` 的 URL（防 `https://user:pass@host`）、拒绝含空白字符；`javascript:`/`data:`/`file:` 全部拒绝（`TaiXuA2uiMediaPolicy.kt:17-25`、`TaiXuA2uiClientFunctions.kt:30-33`）。
+- **无任意代码**：协议里没有表达式求值，文本必须明文常量（`A2uiSurfaceContract.kt:30` E1 提示 + 本仓无求值实现）。
+- **输入必须可回传**：值型组件被归一化成数据绑定，避免"模型以为用户能填、其实组件被静默禁用"的假界面。
+
+### 5.7 已知限制与缺口（给 myco 的负面清单）
+
+1. **无 a11y 动态播报**：错误卡/加载态无 `liveRegion`；`A2uiAccessibility` 只映射静态 label/description（E0 未见 `liveRegion`/`stateDescription` 映射）。
+2. **组件属性 schema 不在本仓**：只有 `Table` 是完整自研；其余依赖官方 Basic Catalog，版本升级风险集中在 `TaiXuA2uiRenderer.kt:47-49`（作者注明"唯一对接点"）。
+3. **预览列表只留 8 条**（`MAX_CACHED_SURFACES=8`），但 routes 留 1024 条保证点击仍能回会话（`A2uiSurfaceBus.kt:338-341`）—— **列表与路由是两套容量**，myco 若照抄需接受"卡片历史不可回顾"。
+4. **同 surfaceId 的历史卡片不会互相更新**：聊天里每个 `render_surface` 调用是一张独立卡（各自持有当时的 `ToolCall.args`），引擎内是同一个 surface——即"历史卡显示的是旧载荷的静态结果"（E0 由 `A2uiPocSurfaceCard(call)` 从 `call.args` 解析 + 引擎单 surface 推断，**属 E2 边界**，需真机确认历史卡行为）。
+5. **未做 A2UI 主题 schema 定制**：`themeSchema = basic.themeSchema` 原样透传（`TaiXuA2uiCatalog.kt:44`），模型不能指定颜色/字号（安全但表达力受限）。
+6. **嵌套滚动只解决"不崩"**：长 List 在卡片内 320dp 限高内滚，与聊天主列仍构成两层纵向滚动 —— **G-04 的"到边不传速"未做任何仲裁**（E0 未见 `nestedScroll`）。这是 myco 采用同类范式时必须补的一课。
+7. **表单一改值就要一次交互才回传**：TextField 按键只写数据模型、不产生出站事件（作者注释 `TaiXuA2uiInputNormalizer.kt:29-30`），所以"用户填完不点按钮"模型永远不知道 —— myco 若要"边填边预览"，需另加节流上报。
+
+### 5.8 给 myco「无限抽屉抽象接口」的映射建议（E1，供 P2 拍板，**不是结论**）
+
+| 太墟 A2UI 概念 | 可映射到 myco 的什么 | 注意 |
+|---|---|---|
+| Catalog（组件白名单） | 抽屉能渲染的**原子组件集合**（行/卡/表单/列表/图表） | myco 的抽屉内容若也要"数据驱动"，必须先定 Catalog；否则退化成硬编码 |
+| 协议消息（create/update/delete + 数据模型） | 抽屉的**内容更新协议**（打开/更新/关闭 + 局部数据） | 抽屉有"层叠/邻接"，比 A2UI 的扁平 surface 多一维：需要 surfaceId → 抽屉 id + 层级 |
+| `catalogId` 版本化 | 抽屉 schema 版本 | 老数据要能降级渲染 |
+| 用户事件回传会话 | 抽屉内操作 → 作为消息回给 agent | 与 myco 的 `composer` 语义天然契合 |
+| 三态渲染 + 原文兜底 | 抽屉内容失败时降级为"原始数据可读" | 比"空白 + 转圈"可靠 |
+| `List` 覆写 / 限高 320dp | 抽屉内嵌套滚动策略 | **必须先定 G-04 仲裁**，否则两层滚动手势打架 |
+
+---
+
+## 6. 导航与面板架构 —— 与 myco「无限抽屉」的对照结论
+
+### 6.1 太墟的全貌（E0 结构图）
+
+```
+Activity
+└─ TaiXuApplication / MainActivity
+   └─ TaiXuTheme（动态取色）
+      └─ ProvideRuntimeWidthClass（600/840dp 断点）
+         └─ TaiXuNavHost
+            ├─ ChatViewModel / BrowserViewModel / SettingsViewModel（Activity 作用域，跨页共享）
+            ├─ activeStack: NavBackStack<NavKey>  ← 唯一一条（Navigation3 单栈）
+            ├─ showNavigation / sidebarDocked / showNewSession（rememberSaveable）
+            └─ ChatNavigationDrawer（抽屉三态壳）
+               └─ RuntimeAdaptiveNavigationScaffold
+                  ├─ rail（Medium/Expanded）
+                  ├─ drawerContent = SessionsSideDrawer（固定内容：会话分区）
+                  └─ content = Surface { NavDisplay(activeStack) }
+                        ├─ 根覆盖页：Home / Workspace / Bots / Settings
+                        ├─ 智枢：AgentDestination → ChatScreen
+                        │     └─ ChatAdaptiveLayout（Pager/Overlay/Docked）
+                        │           ├─ chatContent（消息列表 + 输入区）
+                        │           └─ companion：Terminal / Browser / TwinPhone
+                        ├─ 二级页：60+（Workflow/Git/CodeEditor/ToolDetail/Settings 子页/…）
+                        └─ 面板栈之外的浮层：sheet / dialog / 悬浮聊天
+```
+
+### 6.2 与 myco「无限抽屉（层叠覆盖 + 抽象邻接数据）」逐项对照
+
+| 维度 | 太墟（E0） | myco 无限抽屉需求 | 结论 |
+|---|---|---|---|
+| **层数** | **2 层**：抽屉（1 个固定内容）+ 导航栈 | N 层堆叠、任意层可覆盖上一层 | **能力缺口**：太墟没有"多层抽屉同时存在"的概念，`showNavigation` 是单布尔（`TaiXuNavHost.kt:105`） |
+| **抽屉内容** | 硬编码 `SessionsSideDrawer`（会话分区：项目/Bot/最近/远程） | 抽象邻接数据驱动（每层内容由数据描述） | **能力缺口**：`ChatNavigationDrawer.kt:97-171` 的 `drawerContent` 无面板槽位 |
+| **邻接关系** | 无（抽屉只列会话，不表达"从 A 能到 B"） | 抽象邻接图 | **未见实现** |
+| **并存能力** | 同一时刻：1 个抽屉 / 1 个根页 / 对话 + 最多 1 个伴随面板（Expanded 为双栏） | 多面板并存（层叠可见） | **部分具备**：只剩"停靠侧栏 + 对话 + 伴随面板"三栏极端形态（`ChatAdaptiveLayout.kt:287-301` + `RuntimeAdaptiveNavigationScaffold.kt:113-130`） |
+| **可见抓手** | 无（抽屉靠边缘滑动/菜单键，无把手） | 无可见抓手（myco 铁律） | **一致**：`E1` `ARCHITECTURE_RULES.md:52`"抽屉通过滑动或点击主页面遮罩关闭，不放关闭按钮" |
+| **转场** | reveal 配对滑动（前景整体横移）+ 覆盖侧栏 progress 滑入；页面用 Navigation3 默认转场 | 层叠覆盖的转场 | **可借**：配对滑动 = "前景推走露出下层"最接近层叠感的实现（`RuntimeRevealNavigationDrawer.kt:53-56,153-175`） |
+| **状态保持** | `movableContentOf` 迁移 + `rememberSaveable` 上提 + `rememberSaveableStateHolderNavEntryDecorator` | 面板切走再回来状态不丢 | **直接可借** |
+| **宽度** | 抽屉 `min(75%,360dp)` / 侧栏 320dp / rail 84dp | 层叠面宽度需分级 | **可借**：三档宽度已验证（`RuntimeRevealNavigationDrawer.kt:67`、`RuntimeAdaptiveNavigationScaffold.kt:52`、`RuntimeNavigationRail.kt:32-33`） |
+| **返回键** | 单栈 + 分层 BackHandler（见 6.3） | 返回 = 关最上层 | **可借**：优先链模型 |
+| **手势权限** | 仅聊天根页可滑开抽屉 | 需定义哪层可滑 | **可借**：`canSwipeOpenNavigation` 的思路（按栈顶页决定） |
+
+### 6.3 返回键语义对照（可复刻的优先链）
+
+| 优先级 | 太墟处理 | 证据 |
+|---|---|---|
+| 1 | 虚拟屏全屏 → 退出全屏 | `ChatAdaptiveLayout.kt:185-186` |
+| 2 | 虚拟屏页（容器内）→ 若 agent 正在自动操控则"接管提示"，否则向虚拟屏注入 `KEYCODE_BACK` | `:187-201` |
+| 3 | 浏览器页 → `browserPluginBack(...)` | `:202` |
+| 4 | 伴随面板覆盖态 → 关闭面板 | `:203` |
+| 5 | 抽屉可见 → 关闭抽屉（并 `keyboard.hide()`） | `RuntimeRevealNavigationDrawer.kt:131`；`RuntimeAdaptiveNavigationScaffold.kt:106` |
+| 6 | 导航栈 → `popBack()`（栈底不动作） | `TaiXuNavHost.kt:157-159,653` |
+| 7 | 栈底（如 Home）→ 再按回到智枢 | `TaiXuNavHost.kt:190` |
+
+**myco 可借点**：把"层"排序成一条**显式链表**（每一层注册自己的 `BackHandler`），而不是在根节点 `when` 里穷举。太墟的做法就是"每个浮层组件自己 `BackHandler(enabled=...)` + Navigation3 兜底"，天然支持增层（缺点是**顺序隐式依赖于组合顺序**，多层同名时最内层先响应——需要 myco 用显式 depth 排序）。
+
+### 6.4 转场与"多面板并存"的极限
+
+- 太墟能并存的**最多形态**：Expanded（≥840dp）时 = 侧栏 320dp + 对话 + 伴随面板（可用宽度 ≥720dp 才 Docked）= **三栏**（`ChatAdaptiveLayout.kt:139-140,287-301`）。手机（Compact）永远只有 1 栏。
+- 不能并存：两个根页（Home + Workspace）不能同屏；两个抽屉不能叠加；A2UI 卡不能"浮"在聊天之上（只能内嵌）。
+- **对 myco 的意义**：如果"无限抽屉"的卖点是"多层同屏可见/可对比"（例如左边聊天、右边同时打开文件 Diff + 设置），太墟**提供不了现成实现**；它提供的是"单栈 + 单抽屉 + 宽屏双栏"的最简稳态。myco 需要自己设计"层叠几何"（每层偏移 + 缩放 + 圆角 + 阴影），这是太墟**未见实现**的部分（§4 未列 E2 猜想，因为这是纯设计空白）。
+
+### 6.5 手势与命中区（G-04 第三个输入的骨架）
+
+太墟给 G-04 的不是"到边不传速"的现成答案（它**没做**通用 nestedScroll 仲裁），而是**四个真实故障面 + 三条可迁移规则**：
+
+**故障面（E0）**
+1. **嵌套纵向懒列表在聊天 LazyColumn 里必崩**（无限高约束断言）→ 覆写 List + 限高 320dp（`TaiXuNonLazyList.kt:27-51,196-197`）。
+2. **EdgeEffect 残留 pending scroll + 程序化滚动** 会触发 "entered drag with non-zero pending scroll" 闪退 → `overscrollEffect = null` + `runProgrammaticScroll` 串行器（`ChatMessageList.kt:145-146`、`ChatListScroll.kt:25-29`、`ChatScreen.kt:174-177`）。
+3. **sheet 内滚与下拉关闭同向**（工具详情）→ 未见仲裁（Q-TX-15），是 G-04 反例。
+4. **思考流式内滚**若不感知"用户拖动"，会每帧把用户推回尾部 → 用 `DragInteraction` 判意图（`ChatMessageBubbles.kt:528-544`），这是"手势=意图"的原生实现。
+
+**可迁移规则**
+- **规则 A（顺序）**：`scrollEndHaptic().overScrollVertical().nestedScroll(topBarConnection)` —— nestedScroll 必须在 overscroll **内侧**，否则下拉先橡皮筋、大标题不展开（`RuntimeSettingsScaffold.kt:98-109` 注释原文）。
+- **规则 B（意图判定）**：`DragInteraction.Start → following=false`；`Stop/Cancel → following = 是否已到边缘`；`canScrollForward=false → following=true`（`ChatScrollToBottomButton.kt:52-66`）。等价于"一次手势一个意图；只有新手势才重新判断"。
+- **规则 C（到边恢复）**：内滚到边后**不传速**，但"到边"这一状态可以安全地把意图交还外层（`liveScroll.value >= max - 2 → following=true`，`ChatMessageBubbles.kt:541`）。myco 可把这条写成 G-04 的判据：*到边不是失败，是"下一个手势归外层"的信号*。
+
+### 6.6 结论：可迁移 / 不可迁移 / 未见实现
+
+**可直接迁移（E0 已实现且证据充分）**
+1. **单栈 + 覆盖根页**替代多栈/多标签（`TaiXuNavHost.kt:103,186-634`；`MainPageNavigation.kt:10-22`）。
+2. **抽屉三态由 600/840dp 断点驱动 + `movableContentOf` 迁移**（`RuntimeWindowSize.kt:15-31`；`RuntimeAdaptiveNavigationScaffold.kt:86-87`）。
+3. **手势权限按栈顶分配**（`MainPageNavigation.kt:7`）。
+4. **分层 `BackHandler` 优先链 + Navigation3 兜底**（`ChatAdaptiveLayout.kt:184-205`）。
+5. **隐藏层 `clearAndSetSemantics` + 保持组合**（`RuntimeRevealNavigationDrawer.kt:145-160`；`RuntimeAdaptiveNavigationScaffold.kt:124-140`）。
+6. **宽屏三档几何**（抽屉 360 / 侧栏 320 / rail 84；内容 840 居中）（`RuntimeRevealNavigationDrawer.kt:67`、`RuntimeAdaptiveNavigationScaffold.kt:52`、`RuntimeNavigationRail.kt:32`、`docs/UI_GUIDELINES.md:47`）。
+7. **A2UI 的"目录白名单 + 数据协议 + 事件回传"**作为抽屉内容抽象接口的范式（§5，Q-TX-07 待拍板）。
+
+**不可直接迁移（与 myco 目标冲突或需重设计）**
+1. **单抽屉单布尔**（`showNavigation`）→ myco 需要"层栈"数据结构，不能用布尔。
+2. **抽屉内容硬编码**→ myco 需要"面板注册表 + 每层内容数据"。
+3. **严格单栏手机布局**→ 若 myco 的"无限抽屉"要求手机也能两层可见（层叠卡片露出），太墟的 reveal 抽屉（前景全宽覆盖）不满足，需要自定义层叠几何。
+4. **40dp 图标命中区**（`ComposerSendButton.kt:20-24`）与 myco 44/48dp 底线冲突（Q-TX-02）。
+
+**未见实现（myco 必须自己设计，不得假装太墟有）**
+1. **多层抽屉同时可见**（层叠覆盖）。
+2. **抽象邻接数据**（"从当前层能到哪些层"的数据表达）。
+3. **面板感知的转场语义**（太墟只有"推走/滑入"，无"层叠面缩退"）。
+4. 通用 nestedScroll 仲裁（G-04 的"到边不传速"）——太墟只解决了"不崩"和"意图判定"两半。
+
