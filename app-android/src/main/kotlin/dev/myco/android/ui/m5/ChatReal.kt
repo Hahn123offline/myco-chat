@@ -1,5 +1,6 @@
 package dev.myco.android.ui.m5
 
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,12 +13,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
@@ -113,6 +117,7 @@ fun ChatMessagesM5(
         }
         val userVersions = remember(state.messages) { userVersionGroups(state.messages) }
         val expandedProcess = remember { mutableStateMapOf<Long, Boolean>() }
+        val expandedLines = remember { mutableStateMapOf<String, Boolean>() }
         LaunchedEffect(autoExpandTurn) {
             if (autoExpandTurn != null) expandedProcess[autoExpandTurn] = true
         }
@@ -164,6 +169,7 @@ fun ChatMessagesM5(
                         ThinkingHeaderM5(
                             entries = entries,
                             expanded = expandedProcess[turn] ?: false,
+                            live = false,
                             onToggle = { expandedProcess[turn] = expandedProcess[turn] != true },
                         )
                     }
@@ -177,7 +183,12 @@ fun ChatMessagesM5(
                                 Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
                                 verticalArrangement = Arrangement.spacedBy(7.dp),
                             ) {
-                                entries.forEach { e -> ThinkingLineM5(e) }
+                                entries.forEachIndexed { i, e ->
+                                    val key = "p-$turn-$i"
+                                    ThinkingLineM5(e, expandedLines[key] == true) {
+                                        expandedLines[key] = expandedLines[key] != true
+                                    }
+                                }
                             }
                         }
                     }
@@ -253,17 +264,21 @@ private fun UserBranchBarM5(
 }
 
 @Composable
-private fun ThinkingHeaderM5(entries: List<TimelineEntry>, expanded: Boolean, onToggle: () -> Unit) {
+private fun ThinkingHeaderM5(
+    entries: List<TimelineEntry>,
+    expanded: Boolean,
+    live: Boolean,
+    onToggle: () -> Unit,
+) {
     val p = LocalM5.current.palette
-    val toolCount = entries.count { it.kind == "tool" }
-    val hasReasoning = entries.any { it.kind == "reasoning" }
-    val summary = buildString {
-        if (hasReasoning) append("思考")
-        if (toolCount > 0) {
-            if (isNotEmpty()) append(" · ")
-            append("执行了 $toolCount 个命令")
-        }
-        if (isEmpty()) append("过程")
+    val last = entries.lastOrNull()
+    val summary = when {
+        last == null -> if (live) "思考中…" else "过程"
+        last.kind == "reasoning" ->
+            last.text.lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(48) ?: "思考"
+        last.kind == "tool" ->
+            (if (last.running) "运行中 · " else "") + last.name + (if (last.ok == false) "（失败）" else "")
+        else -> last.text.lineSequence().firstOrNull()?.trim()?.take(48)?.ifBlank { "写入" } ?: "写入"
     }
     Row(
         Modifier
@@ -278,21 +293,44 @@ private fun ThinkingHeaderM5(entries: List<TimelineEntry>, expanded: Boolean, on
     ) {
         M5Icon(if (expanded) M5Icons.chevronDown else M5Icons.chevronRight, Modifier.size(13.dp), p.textTertiary)
         Spacer(Modifier.width(7.dp))
+        if (live) {
+            PulseDot(p.moss)
+            Spacer(Modifier.width(6.dp))
+        }
         Text(summary, style = M5Type.caption, color = p.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
-private fun ThinkingLineM5(entry: TimelineEntry) {
+private fun PulseDot(color: Color) {
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "think-pulse")
+    val alpha by transition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(durationMillis = 700),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+        ),
+        label = "think-pulse-alpha",
+    )
+    Box(
+        Modifier.size(5.dp).clip(SuperellipseShape(2.5.dp)).background(color.copy(alpha = alpha)),
+    )
+}
+
+@Composable
+private fun ThinkingLineM5(entry: TimelineEntry, expanded: Boolean, onToggle: () -> Unit) {
     val p = LocalM5.current.palette
     val icon: M5IconSpec
     val title: String
     val detail: String
+    val full: String
     when (entry.kind) {
         "reasoning" -> {
             icon = M5Icons.spark
             title = "思考"
-            detail = entry.text.lineSequence().firstOrNull().orEmpty()
+            detail = entry.text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+            full = entry.text.trim()
         }
         "tool" -> {
             icon = M5Icons.chevronRight
@@ -302,26 +340,57 @@ private fun ThinkingLineM5(entry: TimelineEntry) {
                 else -> "运行命令"
             }
             detail = entry.name + if (entry.args.isNotBlank() && entry.args != "{}") " · ${entry.args.take(80)}" else ""
+            full = buildString {
+                if (entry.args.isNotBlank() && entry.args != "{}") append("参数：").append(entry.args).append("\n")
+                if (entry.text.isNotBlank()) append(entry.text)
+            }.trim()
         }
         else -> {
             icon = M5Icons.copy
             title = "写入"
-            detail = entry.text.lineSequence().firstOrNull().orEmpty()
+            detail = entry.text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+            full = entry.text.trim()
         }
     }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        M5Icon(icon, Modifier.size(13.dp), p.textTertiary)
-        Spacer(Modifier.width(7.dp))
-        Text(title, style = M5Type.caption, color = p.textSecondary)
-        Spacer(Modifier.width(6.dp))
-        Text(
-            detail,
-            style = M5Type.caption,
-            color = p.textTertiary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() }
+                .padding(vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            M5Icon(icon, Modifier.size(13.dp), p.textTertiary)
+            Spacer(Modifier.width(7.dp))
+            Text(title, style = M5Type.caption, color = p.textSecondary)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                detail,
+                style = M5Type.caption,
+                color = p.textTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(6.dp))
+            M5Icon(
+                if (expanded) M5Icons.chevronDown else M5Icons.chevronRight,
+                Modifier.size(11.dp),
+                p.textTertiary,
+            )
+        }
+        androidx.compose.animation.AnimatedVisibility(visible = expanded) {
+            val scroll = rememberScrollState()
+            Text(
+                full.ifBlank { "（无内容）" },
+                style = M5Type.caption,
+                color = p.textTertiary,
+                modifier = Modifier
+                    .padding(start = 20.dp, top = 2.dp, bottom = 2.dp)
+                    .heightIn(max = 220.dp)
+                    .verticalScroll(scroll),
+            )
+        }
     }
 }
 
@@ -345,19 +414,27 @@ private fun MetaLineM5(meta: TurnMetaUi) {
 @Composable
 private fun StreamingTurnM5(liveEntries: List<TimelineEntry>, text: String?) {
     val p = LocalM5.current.palette
+    var liveExpanded by remember { mutableStateOf(false) }
+    val lineExpanded = remember { mutableStateMapOf<Int, Boolean>() }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (liveEntries.isNotEmpty()) {
-            Text(
-                "正在思考…",
-                style = M5Type.caption,
-                color = p.textSecondary,
-                modifier = Modifier.padding(vertical = 4.dp),
+            ThinkingHeaderM5(
+                entries = liveEntries,
+                expanded = liveExpanded,
+                live = true,
+                onToggle = { liveExpanded = !liveExpanded },
             )
-            Column(
-                Modifier.fillMaxWidth().padding(start = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp),
-            ) {
-                liveEntries.forEach { e -> ThinkingLineM5(e) }
+            androidx.compose.animation.AnimatedVisibility(visible = liveExpanded) {
+                Column(
+                    Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    liveEntries.forEachIndexed { i, e ->
+                        ThinkingLineM5(e, lineExpanded[i] == true) {
+                            lineExpanded[i] = lineExpanded[i] != true
+                        }
+                    }
+                }
             }
         }
         if (text != null) {
