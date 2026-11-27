@@ -1,4 +1,4 @@
-// 验收 ID：CHAT-28 CHAT-29 CHAT-30 CHAT-31 CHAT-32 CHAT-33 CHAT-48 CHAT-51 CHAT-62
+// 验收 ID：CHAT-28 CHAT-29 CHAT-30 CHAT-31 CHAT-32 CHAT-33 CHAT-48 CHAT-51
 //
 // 消息操作条 + 版本切换器（`docs/spec/panels/chat.md` §3.16 `chat.msg.actions` /
 // §3.17 `chat.msg.version-switcher`）。

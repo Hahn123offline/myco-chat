@@ -133,6 +133,8 @@ class MainActivity : ComponentActivity() {
             var mode by remember { mutableStateOf(initial) }
             val galleryMode = remember { intent?.getBooleanExtra("m5_gallery", false) == true }
             val chatSampleMode = remember { intent?.getBooleanExtra("m5_chat", false) == true }
+              val shellMode = remember { intent?.getBooleanExtra("m5_shell", false) == true }
+              val chatDemoMode = remember { intent?.getBooleanExtra("m5_chat_demo", false) == true }
             MycoTheme(mode) {
                 if (galleryMode) {
                     val dark = when (mode) {
@@ -145,7 +147,11 @@ class MainActivity : ComponentActivity() {
                         onToggleDark = { mode = if (dark) ThemeMode.LIGHT else ThemeMode.DARK },
                         onClose = { finish() },
                     )
-                } else if (chatSampleMode) {
+                } else if (chatDemoMode) {
+                      dev.myco.android.ui.m5.M5ChatDemo()
+                  } else if (shellMode) {
+                      dev.myco.android.ui.m5.M5ShellDemo()
+                  } else if (chatSampleMode) {
                     val dark = when (mode) {
                         ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
                         ThemeMode.LIGHT -> false

@@ -1,4 +1,4 @@
-// 验收 ID：CHAT-09 CHAT-10 CHAT-12 CHAT-13 CHAT-35 CHAT-36 CHAT-37 CHAT-38 CHAT-39 CHAT-40
+// 验收 ID：CHAT-09 CHAT-10 CHAT-12 CHAT-13 CHAT-33 CHAT-36 CHAT-37 CHAT-38 CHAT-39 CHAT-40
 //          CHAT-53 CHAT-58
 //
 // chat 列表滚动跟随（`docs/spec/panels/chat.md` §3.1 `chat.list.scroll-follow` /

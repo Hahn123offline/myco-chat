@@ -41,7 +41,7 @@ fun M5EmptyState(onSuggestion: (String) -> Unit) {
         ) {
             Text("开始一段对话", style = M5Type.headline, color = p.text)
             Text(
-                "她记得你们聊过的事。",
+                "从任何一件小事开始。",
                 style = M5Type.caption,
                 color = p.textTertiary,
                 modifier = Modifier.padding(top = 6.dp),

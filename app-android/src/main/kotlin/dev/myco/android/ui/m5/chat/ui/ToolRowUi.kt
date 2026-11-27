@@ -1,4 +1,5 @@
-// 验收 ID：CHAT-20 CHAT-21 CHAT-22 CHAT-23 CHAT-24 CHAT-25 CHAT-26 CHAT-27 CHAT-48
+// 验收 ID：CHAT-20 CHAT-21 CHAT-22 CHAT-23 CHAT-24 CHAT-25 CHAT-27 CHAT-48
+//          （CHAT-26「全文页返回恢复井位置」属 route push，本层只给回调，`TODO(lead)`）
 //
 // 工具行 + 工具详情「井」（`docs/spec/panels/chat.md` §3.8 `chat.tool.row` / §3.9 `chat.tool.details`）。
 //
