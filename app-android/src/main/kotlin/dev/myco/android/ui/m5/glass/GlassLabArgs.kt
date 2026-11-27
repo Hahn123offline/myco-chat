@@ -31,6 +31,7 @@ data class GlassLabArgs(
     val band: Float = 6f,
     val disp: Float = 1f,
     val tintAlpha: Float = 0.04f,
+    val noshader: Boolean = false,
 ) {
     companion object {
         fun from(intent: Intent?): GlassLabArgs {
@@ -57,6 +58,7 @@ data class GlassLabArgs(
                 band = intent.getFloatExtra("glass_band", 6f),
                 disp = intent.getFloatExtra("glass_disp", 1f),
                 tintAlpha = intent.getFloatExtra("glass_tint", 0.04f),
+                noshader = intent.getBooleanExtra("glass_noshader", false),
             )
         }
     }

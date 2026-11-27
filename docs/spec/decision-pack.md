@@ -542,3 +542,18 @@ D-01…D-20 全部有结论，P3 可以开工。其中三条带连带影响：
 | **D-76** | **采用社区移植 shader（v1）**：结构骨架取自 `himanshu-lal4/react-native-liquid-glassmorphism`（**MIT**），数值剖面参照 Haze（**Apache-2.0，只参照数值不复制代码**），折射物理公式来自 `design-systems`/`archisvaze`（**MIT**） | 证据与逐行差异见 `docs/spec/ref/liquid-glass-shaders.md`；候选代码 `scratch/glass-shaders/m5glass-v1.agsl` |
 | **D-77** | **修正现有 shader 三个缺陷**：① 位移改为**向内**（无 LayerOutsets，向外会被 clamp 拉边）；② 法线差分加宽 `e=clamp(band*0.3,1,16)` + `axisFade` 消除中线硬缝，色散改为**与位移成正比**；③ 两个 graphicsLayer 合并为**单个 `createChainEffect(material, blur)`**，且 shader SDF 必须与 clip 同曲线（`uShapeN`：2 圆角矩形 / 4 超椭圆） | 缺陷在 `primitives/GlassSurface.kt` 的 `AGSL_GLASS` 与 Physics 实验版中同样存在 |
 | **D-78** | **明确"结构不允许"清单**（不做近似，G-21）：真 3D 折射/局部放大/焦散、环境反射（无 env/cubemap）、跨窗口捕获（只能同窗口）、全光谱色散（只做 RGB 三波段）、API<33 玻璃、向外位移、视频 SurfaceView 捕获（未验证） | 写入报告与规格，实现侧遇到即换 A 路线 |
+
+### 6.22 玻璃材质 v1 验收与裁决（D-79…D-82）
+
+| ID | 决定 | 依据 |
+|---|---|---|
+| **D-79** | `dispersion` token 从"像素值 1px"改为**比例（相对位移）**，v1 取 **0.05**（社区建议区间 0.018–0.05） | 物理色散应正比于位移；实测 R=4.75 < G=7.85 < B=11.00 px（理论 4.725/7.875/11.025），方向正确 |
+| **D-80** | **遮罩纳入 backdrop**（玻璃显示的是 scrim 压暗后的背景），与 Web `backdrop-filter` 行为一致 | 实测截图与 Web 对照一致；避免"玻璃比背景还亮"的割裂 |
+| **D-81** | **Dialog 类浮层（M5Sheet/M5Modal/M5Lightbox）保持 A 不透明**：独立 window 捕获不到主窗口内容（G-21 结构不允许）。玻璃形态用**同树内** `M5GlassSheet`/`M5GlassDrawer`，接进 `GlassBackdrop` 的 overlay 槽；`M5Modal` 迁移到 in-window 作为后续批次 | 实测确认 Dialog 捕获为空；不伪造 |
+| **D-82** | 保持 `uSat = 1.0`（不启用饱和补偿）；玻璃验证 Activity 作为 debug 入口保留（intent extras 驱动，不进产品流程） | 饱和补偿会破坏"内区逐位不变"的验收口径；调试入口成本低、可复核 |
+
+**v1 实测数字（API35 / host GPU / 硬件加速）**：
+- T1 直通等价：玻璃区逐位不同 **0 / 1,124,280，maxDiff=0**
+- T2 折射 A/B：变化 16,346px（玻璃体 1.45%），bbox≈玻璃体，**内区 0 变化**，到边界 max 11.0px（< band+1）
+- T3 色散：带内-only，**R<G<B 位移方向正确**，内区 0
+- T4 转光 90°：高光左→右移动（左带 −5.10 / 右带 +4.94），变化全在 band 内，内区 0

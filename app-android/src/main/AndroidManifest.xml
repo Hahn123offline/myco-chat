@@ -25,6 +25,13 @@
             </intent-filter>
         </activity>
 
+        <!-- P4 玻璃材质验证入口（同一 Compose 树内的 glass sheet/drawer；不参与产品路径）：
+             adb shell am start -n dev.myco.android/.ui.m5.primitives.M5GlassTestActivity ... -->
+        <activity
+            android:name=".ui.m5.primitives.M5GlassTestActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Myco" />
+
         <!-- A7：主动说话可以后台发；A8：不做常驻承诺，仅尽力而为 -->
         <service
             android:name=".MycoForegroundService"

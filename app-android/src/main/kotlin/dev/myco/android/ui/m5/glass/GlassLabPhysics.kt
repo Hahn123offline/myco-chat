@@ -167,6 +167,7 @@ fun PhysicsGlassBody(
     dispPx: Float = 1f,
     rimStrength: Float = 0.55f,
     shadowStrength: Float = 0.25f,
+    shaderEnabled: Boolean = true,
 ) {
     val density = LocalDensity.current
     val blurPx = with(density) { blurDp.dp.toPx() }
@@ -187,7 +188,14 @@ fun PhysicsGlassBody(
             dispPx,
             rimStrength,
             shadowStrength,
+            shaderEnabled,
         ) {
+            if (!shaderEnabled) {
+                return@remember PhysicsGlassEffect(
+                    null,
+                    "未启用 shader（API31–32 路径：只有 blur + tint）",
+                )
+            }
             buildPhysicsGlassEffect(
                 widthPx = pxSize.width.toFloat(),
                 heightPx = pxSize.height.toFloat(),
@@ -289,6 +297,7 @@ fun PhysicsScene(args: GlassLabArgs, scrollPx: Float) {
                         dispPx = dispPx,
                         rimStrength = rim,
                         shadowStrength = 0.25f,
+                        shaderEnabled = !args.noshader,
                     )
                 }
                 Spacer(Modifier.height(20.dp))

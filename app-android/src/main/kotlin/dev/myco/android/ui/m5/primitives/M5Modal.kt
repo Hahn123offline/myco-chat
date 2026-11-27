@@ -9,6 +9,13 @@
 //
 // 本文件同时提供三个浮层共用的 G-18 点遮罩手势（`scrimTapToDismiss`），sheet/menu/lightbox 复用同一份，
 // 保证"按下与松手都在遮罩上才关"只有一处实现（G-18 单一真源）。
+//
+// 玻璃材质（G-19 路线 B / G-21 / D-74）：
+//  * ⚠️ 本 Modal 用 `Dialog` = **独立 window**，背景捕获层（`GlassBackdrop`）只能覆盖同一 Compose 树、
+//    同一 window 的内容 → **该位置结构不允许捕获背景**（`GlassStructuralLimits.INDEPENDENT_WINDOW_REASON`）。
+//  * 因此本文件**保持 A 不透明 neumorphism**（卡片 `colors.surface`），不做"半透明 + blur / tint"伪造。
+//  * 居中弹窗若要玻璃形态，必须改成同一树内的 overlay（Lead 接线时用 `GlassBackdrop` overlay 槽 + `GlassSurface`），
+//    且要自己补焦点陷阱 / 返回键 / 遮罩命中 —— 本轮不动（D-75 的 modal 玻璃留待 Lead 裁决）。
 package dev.myco.android.ui.m5.primitives
 
 import androidx.compose.animation.core.Animatable

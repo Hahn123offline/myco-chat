@@ -1,0 +1,56 @@
+P4 玻璃材质 v1（M5Glass）验收原始数字
+设备：emulator-5554 (AVD myco35) · API 35 · host GPU (AMD Radeon 890M / GLES 3.1, skiagl)
+date: 2026-11-27 · 状态：GlassDiagnostics.status=FULL（AGSL 编译成功，logcat `M5Glass`）
+玻璃体：sheet，屏幕 bbox = x 0..1079, y 1359..2399（1080×1041 px）；density=2.625
+token：blur 24dp=63px / band 6dp=15.75px / refract 3dp=7.875px / tint 4%白 / rim 35% / shadow 25%
+（验收 A/B 档把 rim/shadow/色散关掉，隔离"纯折射"）
+
+== T1 直通等价：只 blur vs chain(shader 直通, blur) ==
+命令 A：--ez glass_pureblur true
+命令 B：--ef glass_refract 0 --ef glass_rim 0 --ef glass_shadow 0 --ef glass_disp 0
+全图逐位不同像素：44 / 2,592,000（全部落在状态栏 y=47..79, x=933..965 = 电池/信号图标抗锯齿）
+玻璃区域（y>=1359）逐位不同像素：0 / 1,124,280，maxDiff = 0
+结论：chain 顺序 / 坐标 / uniform 绑定名全部正确，直通分支与纯 blur 逐位一致。
+
+== T2 折射 A/B：refract=0 vs refract=3dp（背景用 8px 高频条纹保证各边都有对比度）==
+命令 A：--es glass_bg stripes --ef glass_refract 0 --ef glass_rim 0 --ef glass_shadow 0 --ef glass_disp 0
+命令 B：--es glass_bg stripes --ef glass_refract 3 --ef glass_rim 0 --ef glass_shadow 0 --ef glass_disp 0
+比较区域 y=1200..2399（1080×1200 = 1,296,000 px）
+变化像素（阈值 >2）：16,346 = 1.26%（占全图 0.63%；占玻璃体 1.45%）
+变化外接框：x=2..1077 y=1366..2397（宽 1076 高 1032）≈ 玻璃体本身（差的 2px 是 clip 抗锯齿边）
+变化像素到玻璃边界的距离：max=11.0px，p99=11.0px，mean=6.0px
+   → 100.000% 在 band(15.75px)+1px 以内（band 外 0 px）
+内区（SDF dist > band+maxDisp+2 = 25.62px）：逐位不同像素 0 / 1,017,912，maxDiff = 0
+（对照：矩形内缩 60px：变化 0 / 871,872，maxDiff=0）
+最大单通道差：9（模糊后的内容梯度很缓，位移 7.9px 也只有个位数差）
+补充（产品列表背景，同参数）：变化 2,258 px = 玻璃体 0.20%；外接框只覆盖左半边
+（右侧背景过暗无对比度 → 阈值以下）；内区 0 / maxDiff=0。
+
+== T3a 色散档只在带内（blur=0 放大可测性；band=6dp，disp token 0 -> 0.4px，ratio 0.05）==
+命令 A：--es glass_bg stripes --ef glass_refract 3 --ef glass_blur 0 --ef glass_band 6 --ef glass_tint 0 --ef glass_rim 0 --ef glass_shadow 0 --ef glass_disp 0
+命令 B：同上 --ef glass_disp 0.4
+变化像素（阈值 >1）：2,271 = 0.18%（比较区域）；外接框 x=2..1077 y=1360..2396 = 玻璃体
+到边界距离：max=15.0px（≤ band+1），100% 在 band 内；内区逐位不同 0 / 1,017,912，maxDiff=0
+最大单通道差 94（条纹被 0.4px 级色散分离）
+
+== T3b 色散方向：R 位移 < G 位移 < B 位移（正常色散 n_R < n_G < n_B）==
+探针：fine-stripe 背景、blur=0、band=40dp=105px、tint=0、rim/shadow=0、refract=3dp、disp token 3.15px（ratio 0.4）
+方法：与"无玻璃背景"逐通道一维互相关（线性插值亚像素），量测沿内法线的采样位移
+x=5..20px（平台）：R=4.75  G=7.85  B=11.00
+x=25: R=4.50 G=7.90 B=9.50 | x=35: 3.10/5.55/6.20 | x=45: 2.30/4.05/5.50
+x=55: 1.70/2.35/3.55 | x=65: 1.15/2.15/2.70 | x=80: 0.50/0.85/1.00 | x=100: 0/0/0
+→ 所有采样位置均满足 R<G<B；位移在 x≈100px（= band 105px）归零。
+理论校验：offset = maxDisp = 7.875px；uDispersion=0.4 → 预测 R=7.875·0.6=4.725，B=7.875·1.4=11.025，
+实测 4.75 / 11.00（误差 <0.05px）。
+
+== T4 光向旋转 90°：边缘高光/内阴影沿边移动 ==
+命令 A：默认光向 (-0.707,-0.707)（左上主光，rim=35% shadow=25%）
+命令 B：--ef glass_light_deg 90 → 光向旋转 90°
+亮度变化 ΔL（B−A，正=变亮）：
+  左边带 (x 0..29)：  mean = −5.10
+  右边带 (x 1050..1079)：mean = +4.94
+  顶边带 (y 1359..1400)：mean = −0.01
+  底边带 (y 2350..2398)：mean = −0.00
+变化像素（|ΔL|>1）：29,070；变化 bbox = 玻璃体；到边界距离 max=14.6px（≤ band+1），100% 在 band 内；
+内区逐位不同 0 / 1,017,912，maxDiff=0
+→ 高光从"上+左"转到"上+右"（左暗右亮，上下不变），证明高光由法线 N·L 算出而非贴图/等宽描边。

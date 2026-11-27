@@ -9,6 +9,11 @@
 //
 // 已知缺口（写进回复「待 Lead 裁决」）：双指缩放需要与 pager 做多指手势仲裁，P4 先做双击 1×/2×（BP-40 主项），
 // 双指缩放留 TODO(lead)。缩放态禁翻页已按 BP-41 实现（`userScrollEnabled = !zoomed`）。
+//
+// 玻璃材质（G-19 路线 B / G-21 / D-74）：
+//  * ⚠️ 本 Lightbox 用 `Dialog` = **独立 window**，背景捕获层拿不到主窗口内容 → **该位置结构不允许捕获背景**
+//    （`GlassStructuralLimits.INDEPENDENT_WINDOW_REASON`）。
+//  * 且灯箱语义是"全屏黑底看图"（底不需要透出），按 D-75 保持**不透明黑底**；不做玻璃/半透明伪造。
 package dev.myco.android.ui.m5.primitives
 
 import androidx.compose.animation.core.Animatable
