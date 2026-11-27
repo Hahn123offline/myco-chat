@@ -1130,6 +1130,40 @@ private fun ChatScreen(
                     onOpen = { onSwipeOpenDrawer?.invoke() },
                 )
             if (m5Ui) {
+                  val useNewChatList = true // 新列表（ChatListM5）；回滚只需改 false，旧实现保留在 else
+                  if (useNewChatList) {
+                      dev.myco.android.ui.m5.chat.ui.ChatListM5(
+                          state = dev.myco.android.ui.m5.chat.model.ChatTimelineInput(
+                              messages = display.messages,
+                              timelines = display.timelines,
+                              metas = display.metas,
+                              turnSources = display.turnSources,
+                              live = if (streamingTurn != null || streaming != null || liveEntries.isNotEmpty()) {
+                                  dev.myco.android.ui.m5.chat.model.LiveTurnInput(
+                                      turnId = streamingTurn,
+                                      userText = optimisticUser,
+                                      entries = liveEntries,
+                                      streamingText = streaming,
+                                  )
+                              } else {
+                                  null
+                              },
+                          ),
+                          listState = listState,
+                          // TODO(lead): 用真实可视高（屏高−insets−顶栏−composer）替换估算值
+                          aStableViewportHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.62f,
+                          modifier = listModifier,
+                          bottomContentPadding = 0.dp, // Scaffold bottomBar 已让出输入区高度
+                          expansionResetKey = sessionId,
+                          emptyContent = { dev.myco.android.ui.m5.M5EmptyState(onSuggestion = { input = it }) },
+                          callbacks = dev.myco.android.ui.m5.chat.ui.ChatListCallbacks(
+                              onRegenerate = { regenerate(it) },
+                              onUserLongPress = { userMenuTarget = it },
+                              onUserEditResend = { msg -> editTarget = msg; editText = msg.text },
+                              onVersionSwitch = { nodeId, v -> chatPrefs.edit().putInt("v_$nodeId", v).apply() },
+                          ),
+                      )
+                  } else {
                 dev.myco.android.ui.m5.ChatMessagesM5(
                     state = display,
                     listState = listState,
@@ -1154,7 +1188,8 @@ private fun ChatScreen(
                     autoExpandTurn = streamingTurn,
                     onSuggestion = { input = it },
                     modifier = listModifier,
-                )
+                    )
+                  }
             } else {
                 dev.myco.android.ui.ChatMessages(
                     state = display,
@@ -2316,8 +2351,6 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
-
-
 
 
 
