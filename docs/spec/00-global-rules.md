@@ -191,6 +191,8 @@ const toggle = () => setExpandedVersion(p => p === version ? null : version)
 
 ## G-09 行内层级 = secondary，一档低于正文
 
+**适用范围（M3 收紧）**：本规则只适用于**过程成员行**（思考行、工具行、组头）的标题/摘要/流式摘要。**不适用于**过程组标题之外的正文、以及 DSH 过程组标题本身（DSH 过程组标题用正文字号 14pt，`ChatGroupSeat` 节点 E0，与本规则的 secondary 相冲突 → 以"过程成员行"为界，组标题按正文处理）。
+
 **规则**：折叠行标题/摘要、流式摘要等"过程性文字"使用 secondary 字号/行高
 （正文 −1 档；正文 >14 时 −2 档），且**位置与正文光学对齐**
 （`thinkBody` 左缩进 = leading 宽 + gap，不是任意值）。
