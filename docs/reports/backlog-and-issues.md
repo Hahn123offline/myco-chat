@@ -146,3 +146,19 @@ adb -s 7e7c5a68 install -r app-android\build\outputs\apk\debug\app-android-debug
 2. 读本文件；P0/P1 自动滚动/用户分支/内层动画均已完成，**不要重做**；
 3. 下一步建议按优先级：P2 正文 `[citation:N]` 角标 + 来源 Sheet 截断提示 → P3 M3 手势/预测式返回 → P3 M5 设计系统；分支切换锚点修正（体验 polish）可穿插；
 4. 每步跑测试 + 真机验证 + 更新 `docs/reports/`；GitHub 不可达时只本地提交、不要尝试 push。
+
+---
+
+## 6. 状态更新 2026-11-27：UI 规格化工程启动（本文 §3–§5 已过时）
+
+- M5 视觉系统 + 聊天页 M5 壳已完成并装机（最新提交见 `git log`），**验收由用户真机完成**。
+- 新的主线不是"继续补 M5 补丁"，而是 **UI 契约库工程**：
+  **唯一权威 = [`docs/spec/`](../spec/README.md)**（铁律 G-00 禁推测、节点 13 字段、面板穷举、
+  验收清单、待拍板清单、P1 开工手册）。
+- 用户已拍板：思考行改「不封顶+头部吸附」、折叠摘要完全按 DSH、展开动画 240dp 阈值、
+  首批面板 = `base.layout/primitives + chat + sidebar + composer + model + attachment + settings`。
+  **这些决定会推翻现有思考行实现（封顶内滚/spring/最后活动行摘要），等 P4 一次性重做。**
+- 机器盘点工具：[`tools/ui-audit/ui_audit.py`](../../tools/ui-audit/ui_audit.py)（scan / check 已验证）。
+  实测分母：DSH 全客户端 3060 个交互点（1918 文件），`ui-chat` 单包 141；myco 全量 158。
+- 下一步：等网络恢复 → 照 [`docs/spec/p1-kickoff.md`](../spec/p1-kickoff.md) 拉 5 个参考仓库 → 六路并行审计。
+

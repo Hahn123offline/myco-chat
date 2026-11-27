@@ -42,7 +42,7 @@
 | 6 | 视觉状态 | `default`：标题字重 400（`module.css:28-30`）；`running`：`data-state=running`，摘要文字 shimmer 流动（`TextShimmer`）+ 呼吸指示；`settled`：`data-state=ok`，静态文字；`expanded`：`data-expanded`，头部变 sticky 且底色遮挡；`preview 关闭`：隐藏圆点与摘要只留标题（`module.css:68-71`）。**无 hover/focus 特殊样式**（Web 默认）。 |
 | 7 | 布局占位与展开形态 | **形态 A：inline-uncapped + sticky header**（G-03）。折叠：`contain: size layout` + 固定高 → 摘要文字变化**不引起任何兄弟重排**（G-02）。展开：根节点**不封顶**随内容长高，下方兄弟（工具行、正文）**整体下移**；头部 `position: sticky; top: 0`（`module.css:15-22`）。**不做内部滚动**。 |
 | 8 | 滚动语义 | 展开后内容随**外层会话**一起滚；内层无滚动容器 → G-04 不适用。头部 sticky 吸附在会话视口顶部，`z-index:1` + 页面底色。 |
-| 9 | 动效 | **展开/收起无高度动画**——模式切换只切 CSS display，不 unmount 摘要（`ReasoningRow.tsx:38-39` 注释）。持续动效只有两处：运行中摘要文字 shimmer（`TextShimmer`），流式摘要右端 48px 渐隐遮罩（G-05，`module.css:59-66`）。无动画可中断问题。 |
+| 9 | 动效 | **已拍板**（Q-04/G-10）：展开后内容通常远超 240dp → **直接切换，不做高度动画**；仅当实测 ≤240dp 时才允许纵向 spring。持续动效两处：运行中摘要 shimmer（`TextShimmer`），流式摘要右端 48px 渐隐遮罩（G-05，`module.css:59-66`）。DSH 侧无高度动画是因为模式切换只切 CSS display、不 unmount 摘要（`ReasoningRow.tsx:38-39`）。 |
 | 10 | 边界态 | 摘要文本：`running` 时取**最后一个已完成段落的第一个非空行**；`settled` 时取**首行**（`ReasoningRow.tsx:11-32,56`）。两者都**删除 `**` 加粗标记**（`:57`）。空摘要 → 整个圆点+摘要隐藏（`:58-59` + `module.css:68-71`）。超长 → 单行 nowrap + ellipsis（静态）/ 渐隐（流式）。reasoning 为空但存在 → 行仍出现（待 P1 确认可否为空）。大字号：跟随 `--dsh-content-font-delta` 同步增高。 |
 | 11 | 无障碍 | 运行中输出视觉隐藏文案「正在思考」（`ReasoningRow.tsx:84`，G-08）。行本身是 disclosure：需 `aria-expanded`（由 `DisclosureRow` 提供，**P1 补 E0**）。键盘可展开（Web）。移动端：TalkBack 报「思考，可展开/已展开」。 |
 | 12 | 依据 | `E0` `dsh packages/client/ui-chat/src/client/chat/ReasoningRow.tsx:9,11-32,56-57,70-94,38-39,84`；`E0` `ReasoningRow.module.css:6-9,15-22,28-51,59-66,68-77`；`E0` `use-disclosure.ts:11-20`；`E1` 轮内位置（待 `conversation-nodes/assistant.ts`）；`E1` 无障碍 aria（待 `DisclosureRow` 源码）。 |

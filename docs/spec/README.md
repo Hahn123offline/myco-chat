@@ -34,6 +34,7 @@
 | [00-global-rules.md](00-global-rules.md) | 全局规则 G-xx：网格、占位、滚动、展开、动效、返回、无障碍 |
 | [schema-node.md](schema-node.md) | 节点 13 字段定义 + 金标准样本（照抄格式） |
 | [10-panels.md](10-panels.md) | 面板注册表：穷举全部页面 + 参考证据包 + 现状 + 优先级 |
+| [p1-kickoff.md](p1-kickoff.md) | **P1 开工手册**：拉仓库、跑盘点、六路并行分工、覆盖率门禁 |
 | `panels/<id>.md` | 每面板规格：线框 + 网格表 + 状态矩阵 + 交互表（13 字段）+ 验收 ID |
 | [acceptance.md](acceptance.md) | 逐项验收清单（唯一打勾处） |
 | [open-questions.md](open-questions.md) | 待用户拍板清单（E2 条目的唯一去处） |
