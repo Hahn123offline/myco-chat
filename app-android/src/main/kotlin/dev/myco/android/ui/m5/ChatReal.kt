@@ -572,26 +572,24 @@ fun M5BackToLatest(onClick: () -> Unit) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     M5Theme(dark) {
         val p = LocalM5.current.palette
+        // 只占右下角一个小圆钮，不铺整行条带
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.Center,
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.End,
         ) {
             NeoSurface(
-                radius = 16.dp,
+                modifier = Modifier.size(36.dp),
+                radius = 18.dp,
                 material = NeoMaterial.Raised,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                 onClick = onClick,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    M5Icon(M5Icons.chevronDown, Modifier.size(13.dp), p.textSecondary)
-                    Spacer(Modifier.width(6.dp))
-                    Text("回到最新", style = M5Type.caption, color = p.textSecondary)
+                Box(Modifier.fillMaxSize(), Alignment.Center) {
+                    M5Icon(M5Icons.chevronDown, Modifier.size(16.dp), p.textSecondary)
                 }
             }
         }
     }
 }
-
 @Composable
 private fun StreamingTextM5(text: String) {
     val p = LocalM5.current.palette
