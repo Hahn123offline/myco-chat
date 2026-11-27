@@ -534,3 +534,11 @@ D-01…D-20 全部有结论，P3 可以开工。其中三条带连带影响：
 | **D-73** | **M5 玻璃材质 token（已定）**：`blur 24dp`（浮层）/ modal 32–40dp；`tint 4% 白`；`refract 3dp`；`band 6dp`；`dispersion 1px`；`rim 35%`；`innerShadow 25%`。依据：physics 场景实测（`40–48`），全部满足"边缘-only、内部零变化"判据 |
 | **D-74** | **玻璃只在 API 33+ 启用**（需要 RuntimeShader 才有"玻璃标识"）。**API 31–32 的"裸 blur+tint"不算玻璃**（实测像磨砂面板、无边缘弯折）→ 按 G-21 不做这种半成品的近似，**一律走 A 不透明 neumorphism**；API <31 同样走 A |
 | **D-75** | 玻璃只用于**浮层**（抽屉 / sheet / modal / 模型选择 / 灯箱）；常驻顶栏与输入区保持 A | 与 G-19 / D-69 一致 |
+
+### 6.21 社区 shader 移植结论与采用（D-76…D-78）
+
+| ID | 决定 | 说明 |
+|---|---|---|
+| **D-76** | **采用社区移植 shader（v1）**：结构骨架取自 `himanshu-lal4/react-native-liquid-glassmorphism`（**MIT**），数值剖面参照 Haze（**Apache-2.0，只参照数值不复制代码**），折射物理公式来自 `design-systems`/`archisvaze`（**MIT**） | 证据与逐行差异见 `docs/spec/ref/liquid-glass-shaders.md`；候选代码 `scratch/glass-shaders/m5glass-v1.agsl` |
+| **D-77** | **修正现有 shader 三个缺陷**：① 位移改为**向内**（无 LayerOutsets，向外会被 clamp 拉边）；② 法线差分加宽 `e=clamp(band*0.3,1,16)` + `axisFade` 消除中线硬缝，色散改为**与位移成正比**；③ 两个 graphicsLayer 合并为**单个 `createChainEffect(material, blur)`**，且 shader SDF 必须与 clip 同曲线（`uShapeN`：2 圆角矩形 / 4 超椭圆） | 缺陷在 `primitives/GlassSurface.kt` 的 `AGSL_GLASS` 与 Physics 实验版中同样存在 |
+| **D-78** | **明确"结构不允许"清单**（不做近似，G-21）：真 3D 折射/局部放大/焦散、环境反射（无 env/cubemap）、跨窗口捕获（只能同窗口）、全光谱色散（只做 RGB 三波段）、API<33 玻璃、向外位移、视频 SurfaceView 捕获（未验证） | 写入报告与规格，实现侧遇到即换 A 路线 |
