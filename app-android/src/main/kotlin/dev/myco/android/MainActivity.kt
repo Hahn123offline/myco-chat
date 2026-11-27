@@ -1116,7 +1116,8 @@ private fun ChatScreen(
                     }
                 }
             }
-            val listModifier = Modifier.weight(1f).fillMaxWidth()
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+            val listModifier = Modifier.fillMaxSize()
                 .swipeRightToOpenDrawer(
                     enabled = onSwipeOpenDrawer != null,
                     onOpen = { onSwipeOpenDrawer?.invoke() },
@@ -1176,18 +1177,29 @@ private fun ChatScreen(
                     InlineError(error!!)
                 }
             }
-            if (!followBottom && (display.messages.isNotEmpty() || streaming != null)) {
-                if (m5Ui) {
-                    dev.myco.android.ui.m5.M5BackToLatest {
-                        followBottom = true
-                        scope.launch { scrollToLatest() }
-                    }
-                } else {
-                    Box(Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m)) {
-                        TextButton(onClick = {
-                            followBottom = true
-                            scope.launch { scrollToLatest() }
-                        }) { Text("↓ 回到最新") }
+                if (!followBottom && (display.messages.isNotEmpty() || streaming != null)) {
+                    if (m5Ui) {
+                        Box(
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 16.dp, bottom = 12.dp),
+                        ) {
+                            dev.myco.android.ui.m5.M5BackToLatest {
+                                followBottom = true
+                                scope.launch { scrollToLatest() }
+                            }
+                        }
+                    } else {
+                        Box(
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 8.dp, bottom = 8.dp),
+                        ) {
+                            TextButton(onClick = {
+                                followBottom = true
+                                scope.launch { scrollToLatest() }
+                            }) { Text("↓ 回到最新") }
+                        }
                     }
                 }
             }

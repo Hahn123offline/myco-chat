@@ -572,20 +572,15 @@ fun M5BackToLatest(onClick: () -> Unit) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     M5Theme(dark) {
         val p = LocalM5.current.palette
-        // 只占右下角一个小圆钮，不铺整行条带
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.End,
+        // 悬浮在正文上的小圆钮（调用方负责叠在列表右下角，不占布局高度）
+        NeoSurface(
+            modifier = Modifier.size(36.dp),
+            radius = 18.dp,
+            material = NeoMaterial.Raised,
+            onClick = onClick,
         ) {
-            NeoSurface(
-                modifier = Modifier.size(36.dp),
-                radius = 18.dp,
-                material = NeoMaterial.Raised,
-                onClick = onClick,
-            ) {
-                Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    M5Icon(M5Icons.chevronDown, Modifier.size(16.dp), p.textSecondary)
-                }
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                M5Icon(M5Icons.chevronDown, Modifier.size(16.dp), p.textSecondary)
             }
         }
     }
