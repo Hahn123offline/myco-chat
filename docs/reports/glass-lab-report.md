@@ -234,7 +234,9 @@ G-19（`docs/spec/00-global-rules.md`，用户 2026-11-27 定死）：
 
 > 模拟器基线本身 ~25ms，两种路径的差异**被模拟器合成开销掩盖**（差 0–1ms，在噪声内）。结构上 capture 随玻璃块数增长是 N 次 blur、repaint 是 N 次全背景重绘 → **块数越多 capture 越有优势**；但"真机能否 60fps"仍需真机验证。
 
-### 11.3 target 复刻（`glass_scene=target`）
+### 11.3 target 复刻（`glass_scene=target`）—— ⚠️ **作废（G-21）**
+
+> **G-21 判定（2026-11-27）**：产品负责人否定的是**做法**不是参数。下面 22–25 四张图属于"装饰近似版"（程序化背景 + 月牙图标 + 外圈光晕 + 径向渐变镜头），**不作为决策依据**，仅保留为历史记录。新做法见 §12（干净玻璃测试体，只保留几何/物理可算项）。
 
 目标图：`docs/reports/assets/reference/glass-target-focus-pill.jpg`（450×213）。实现：程序化"蓝天 + 红棕枝叶簇 + 散景"背景（若 `adb push` 干净照片到 `/sdcard/Android/data/dev.myco.android/files/target.jpg` 则用真图）→ 胶囊（r=h/2）内挂 **捕获背景 + blur + AGSL 液体折射**（SDF 法线位移 3dp、色散 1.2px、边缘镜面高光、内阴影）→ 左侧圆形镜头 + 白月牙、右侧文字 + `›`、胶囊外两圈淡光晕；右上角内嵌**参考图缩略图**便于并排比较。6 个滑杆可调。
 
@@ -293,4 +295,98 @@ G-19（`docs/spec/00-global-rules.md`，用户 2026-11-27 定死）：
 | `26-refraction-capture.png` / `27-refraction-repaint.png` | 折射：API33+ shader vs API31–32 vs 纯 blur；capture 与 repaint 一致 |
 | `28`~`33-dynamic-*` | 动态：13%/5%/8%/100% 面积 + 隔帧 + repaint 对照（含页内帧读数） |
 | `34`~`37-perf-*` | capture/repaint、有无 shader 的帧时间现场 |
-| `38`/`39-winblur-dyn-*.png` | 窗口级 blurBehind 动态：背后内容糊且跟随滚动 |
+| `38`/`39-winblur-dyn-*.png` | 窗口级 blurBehind 动态：背后内容糊且跟随滚动 |---
+
+## 12. G-21 合规版：干净玻璃测试体（物理折射）
+
+### 12.1 原则与实现
+
+G-21：**要么真效果，要么明确说"结构不允许"并换路径；禁止任何"看起来像"的近似。** 参考图只传达质感方向，不是几何复刻目标。
+
+`glass_scene=physics`（别名 `target` 已指向它）删除了第一版的全部非物理装饰：外圈光晕、径向渐变"镜头"、月牙、文字图标、任何渐变/光斑。玻璃体是**无装饰的圆角矩形**，只保留能从公式算出来的东西：
+
+| 项 | 计算方式 |
+|---|---|
+| 真背景模糊 | 捕获层（`record(IntSize){}` 扩展）+ `RenderEffect.createBlurEffect` |
+| 真像素位移折射 | `uv += sdfNormal(p) * f(distToEdge) * refractPx`，`f = smoothstep(bandPx, 0, distToEdge)` → **只在边缘带非零** |
+| 边缘法线 | 圆角矩形 SDF 的数值梯度（±0.75px 差分） |
+| 色散 | R/B 采样点沿法线反向偏移 `±dispPx * f`，G 不偏 |
+| 镜面高光 | `pow(max(dot(N, L), 0), 4) * thin(distToEdge) * rim`，L = 固定光照方向 (-0.75,-0.66) |
+| 内阴影 | `smoothstep(14,0,distToEdge) * (0.35+0.65*back) * shadow`，back = 背光侧权重 |
+| tint | 唯一的产品参数（均匀白 alpha），不做任何渐变 |
+
+参数滑杆（截图用 `glass_ui=false` 隐藏）：**refract 强度(dp) / 边缘带宽 band(dp) / 色散 disp(px) / 高光强度 / 模糊半径 / tint**。
+
+### 12.2 验证：`refract=0` vs `refract=3dp` 的像素级 diff
+
+命令（除 refract 外参数完全一致、背景静态）：
+
+```bash
+# A
+adb shell am start ... --es glass_scene physics --ez glass_capture true --ez glass_ui false \
+  --ef glass_refract 0 --ef glass_band 6 --ef glass_disp 1 --ef glass_blur 24 --ef glass_tint 0.04
+# B 同上，--ef glass_refract 3
+```
+
+- 图：`40-physics-refract0.png` / `41-physics-refract3dp.png` / `42-physics-refract3dp-disp2.png`（色散加大）
+- **像素 diff 图**：`43-diff-refract0-vs-refract3dp.png`（洋红 = 变化像素，放大 8 倍；压暗原图为底）
+- diff 统计（脚本：`_ws/out/glassdiff.ps1`，输出 `_ws/out/glassdiff-result.txt`）：
+
+**实测结果（host GPU / API 35，`_ws/out/glassdiff.ps1` 逐像素计算）**：
+
+| 指标 | 数值 |
+|---|---|
+| 变化像素 / 全图 | **16,546 / 2,419,200 = 0.68%** |
+| 变化外接框 | **x=103..976, y=903..1296（874×394）** —— 恰好是玻璃体本身（一个薄环） |
+| **内缩 60px 内区变化像素** | **0 / 206,596，maxDiff = 0**（逐位相同） |
+| 最大单通道差 | 47（边缘位移处） |
+| 色散档（disp 1px→2px，只比较玻璃体区域） | 变化 2,121 / 1,620,000 = **0.13%**，外接框仍贴边；**内区变化 0 / 239,120，maxDiff=0** |
+
+**结论**：**达到"真折射"标准，不是滤镜。**
+- 位移只作用在由 `sdfNormal * f(distToEdge)` 决定的边缘带内；内部 206,596 个像素逐位相同 → 不是全局偏移/提亮；
+- 变化环的最大通道差 47，出现在边缘（"背景被弯折"），整块没有整体变亮/发光（若是滤镜/加亮，变化会铺满整块）；
+- 色散（disp 1→2px）同样只在边缘带内变化（0.13%），内部零变化；
+- 观感差异是"边缘被弯折 + 极薄几何高光/内阴影"，玻璃体干净（无光晕、无径向渐变、无图标装饰）。
+
+### 12.3 结构不允许（明确不做，不用近似凑）
+
+- ❌ **「镜头内背景放大」这类局部透镜效果** —— **结构不允许**：
+  - 屏幕空间里我们只有**一张 2D 背景图**，没有任何深度/入射光线信息；真正的折射需要"玻璃另一边被弯折的光线在哪里"这个 3D 信息（需要 3D 场景/光线追踪，或从另一个视角做环境捕获）。
+  - 在 2D 采样里做"以某个点为中心放大"本质是**参数化的采样 warp（缩放映射）**，不是从数据算出来的物理量 → 按 G-21 属于"看起来像"的近似，**不做**。
+  - 能做到的边界就是本节的**边缘带位移**：法线方向、`distanceToEdge` 决定强度，这是从 SDF 数据直接算出来的几何量。
+- ❌ **外发光/光晕**：参考图没有（上一轮判读错误已撤回）；即使有，也需要真正的 blur 外发光，不能用描边近似 → 不做。
+- ❌ **镜头/图标/文字装饰**：属于 UI 内容，不属于玻璃材质；需要时作为上层普通内容绘制，不参与玻璃计算。
+
+### 12.4 API 门槛（物理版）
+
+| 能力 | 最低 API | 备注 |
+|---|---|---|
+| 真背景模糊（捕获 + BlurEffect） | 31 | 需要硬件加速 |
+| 边缘位移折射 / 色散 / 法线高光 / 内阴影 | **33**（AGSL RuntimeShader） | API 31–32 **只能做模糊 + tint**（无折射、无几何高光/内阴影），差异见 §11.4 |
+| 捕获层 `record(IntSize){}` | 29（Compose 1.7.5 实现） | 本机验证可用 |
+
+### 12.5 本轮截图清单（G-21 编号 40 起）
+
+| 文件 | 看什么 |
+|---|---|
+| `40-physics-refract0.png` | refract=0：只有真模糊（+tint），无边缘位移 |
+| `41-physics-refract3dp.png` | refract=3dp：**只有边缘**出现弯折/位移，内部与 40 完全一致 |
+| `42-physics-refract3dp-disp2.png` | 色散加大到 2px：边缘轻微彩色分离 |
+| `43-diff-refract0-vs-refract3dp.png` | **核心证据**：洋红=变化像素（放大 8 倍），可见**只有玻璃体边缘一圈**变化，内部全黑（未变） |
+| `45-crop-edge-refract3dp.png` / `46-crop-edge-disp2.png` | 左边缘 3× 放大：看边缘弯折与色散差异 |
+| `44-physics-api31-32-blur-tint-only.png` | API 31–32 路径：**只有模糊 + tint**（无折射、无几何高光/内阴影） |
+| `48-diff-bodyonly-disp1-vs-disp2.png` | 色散 1px vs 2px 的 diff（只比较玻璃体区域）：变化只在贴边范围 |
+### 12.6 推荐固化参数（从 physics 场景推出，供 M5 材质 token）
+
+| token | 值 | 理由（可判断） |
+|---|---|---|
+| `blur` | **24dp**（浮层）；modal 32–40dp | 24dp 下背景只剩色块/明暗但仍能辨位置；再大用于强隔离的 modal。本机半径 24/40/48 帧时间无差异（§8） |
+| `tint` | **4% 白** | 2% 太"生"（背景色过冲），8–10% 明显发白；4% 保留透明感且文字可读（`41`/`44` 可直接对比） |
+| `refract` | **3dp** | `43` 证明 3dp 时变化只落边缘环、内部零变化；1dp 几乎看不出，6dp（`24` 时代）边缘过冲 |
+| `band` | **6dp** | 6dp 时折射带宽度与 3dp 位移匹配；band 过大会把"内部"也拖进变化区（违反 G-21 判据） |
+| `dispersion` | **1px** | `42`/`48`：2px 在 1080p 已偏"花"；1px 只留极轻彩边 |
+| `rim（几何高光）` | **35%** | `41` 的薄边高光来自 `dot(N,L)`，35% 有"玻璃边"但不发白；>60% 开始像塑料 |
+| `innerShadow` | **25%** | 由 `distToEdge` 推出的边缘暗化，25% 给出厚度感又不压暗内容 |
+| `corner` | 26dp（卡片）/ 胶囊 r=h/2 | 形状参数，与折射无关 |
+
+**API 31–32 结论（`44`）**：只有 blur + tint 时**"还能看"，但缺少玻璃标识**——边缘是软过渡、没有薄高光/内阴影，视觉上更像"磨砂面板"而不是玻璃。且按 G-21 不能用描边/渐变去补这个边缘（不属于几何/物理可算项）。**建议：API31–32 的浮层直接走 A 路线（不透明 neumorphism），不要在 31–32 上启用"裸 blur+tint"玻璃。**
