@@ -135,6 +135,7 @@ class MainActivity : ComponentActivity() {
             val chatSampleMode = remember { intent?.getBooleanExtra("m5_chat", false) == true }
               val shellMode = remember { intent?.getBooleanExtra("m5_shell", false) == true }
               val chatDemoMode = remember { intent?.getBooleanExtra("m5_chat_demo", false) == true }
+              val glassMode = remember { intent?.getBooleanExtra("m5_glass", false) == true }
             MycoTheme(mode) {
                 if (galleryMode) {
                     val dark = when (mode) {
@@ -149,6 +150,8 @@ class MainActivity : ComponentActivity() {
                     )
                 } else if (chatDemoMode) {
                       dev.myco.android.ui.m5.M5ChatDemo()
+                  } else if (glassMode) {
+                      dev.myco.android.ui.m5.M5GlassLab()
                   } else if (shellMode) {
                       dev.myco.android.ui.m5.M5ShellDemo()
                   } else if (chatSampleMode) {
@@ -710,6 +713,8 @@ private fun ChatScreen(
     // 流式结束后再多跟几帧，用于内容落盘/底部 footer 出现时收尾；之后不再自动滚动
     var settleFrames by remember { mutableStateOf(0) }
     val listState = scroll.list
+      // 是否使用新的 ChatListM5（含自带回底钮）；false 时回退旧列表 + 旧 M5BackToLatest
+      val useChatListM5 = true
 
     suspend fun scrollToLatest() {
         val total = listState.layoutInfo.totalItemsCount
@@ -1130,7 +1135,7 @@ private fun ChatScreen(
                     onOpen = { onSwipeOpenDrawer?.invoke() },
                 )
             if (m5Ui) {
-                  val useNewChatList = true // 新列表（ChatListM5）；回滚只需改 false，旧实现保留在 else
+                  val useNewChatList = useChatListM5
                   if (useNewChatList) {
                       dev.myco.android.ui.m5.chat.ui.ChatListM5(
                           state = dev.myco.android.ui.m5.chat.model.ChatTimelineInput(
@@ -1224,7 +1229,7 @@ private fun ChatScreen(
                     }
                 }
             }
-                if (!followBottom && (display.messages.isNotEmpty() || streaming != null)) {
+                if (!useChatListM5 && !followBottom && (display.messages.isNotEmpty() || streaming != null)) {
                     if (m5Ui) {
                         Box(
                             Modifier
@@ -2351,7 +2356,6 @@ private fun JsonArray?.orEmpty(): List<kotlinx.serialization.json.JsonElement> =
 
 private fun formatTime(epochMs: Long): String =
     DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(epochMs))
-
 
 
 
