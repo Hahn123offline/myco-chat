@@ -30,15 +30,19 @@ adb shell am start -n dev.myco.android/.MainActivity --ez m5_glass true \
 
 ## 1. 一句话结论
 
-1. **`rememberGraphicsLayer` + `record` + `drawLayer` 这条"捕获背景再画到别处"的路径在本机不可用**（Compose UI 1.7.5 + 模拟器，host GPU / swiftshader 都一样）——层里拿不到内容，详见 §2 与 `06-capture-path-unavailable.png`。
-2. **可用的"真 backdrop 模糊"替代路径：玻璃面板内重绘一份背景 + `RenderEffect.createBlurEffect`**。视觉上就是真模糊、真采样；代价是**每块玻璃每帧多画一遍背景**。
+1. **`record + drawLayer` 的捕获路径已修复并验证可用**（见 §2 与 §11）：之前失败是用了 `GraphicsLayer.record(density, layoutDirection, size, block)` **成员函数**；换成 `GraphicsLayer.record(IntSize) { … }` 扩展后层里就有内容了 → **真 backdrop 捕获 + 多块玻璃共享一次捕获** 是本机的主路径。
+2. **重绘路径（面板内重绘背景 + `RenderEffect.createBlurEffect`）作为对照/降级保留**：视觉与捕获路径一致，代价是每块玻璃每帧多画一遍背景。
 3. 模糊半径 8→32dp 的可读性衰减非常快（§4）；**32-48dp 这类大半径在正常 UI 文本上"看不出模糊"，只会把细节平均掉**——这正好解释了 DSH 浮层"弱到截图看不出来"的观感（§6）。
 4. 玻璃叠玻璃：**每层都采样原始背景**可以叠 2~3 层；**后层采样已合成结果**会累积去饱和/发暗，2 层可接受、3 层开始明显"脏"（§5）。
 5. 帧时间：模拟器基线本身就是 P50 ≈ 25ms；加 1 层玻璃 → P50 ≈ 31ms，2/3 层 ≈ 32ms（不随层数线性增长，本机瓶颈在模拟器合成/呈现）。**真机数据未知，本机不能证明 60Hz 能撑住**（§8）。
 
 ---
 
-## 2. 为什么 `record + drawLayer` 在本机不可用（证据）
+## 2. `record + drawLayer`：第一版失败 → RCA 修正（已被 §11 取代）
+
+> **2026-11-27 修正**：第一版结论"本机捕获路径不可用"**是错的**，根因是调错了重载：用了 `GraphicsLayer.record(density, layoutDirection, size, block)` **成员函数**（它不会把外层 `ContentDrawScope` 的 canvas 重定向到层里，于是 `drawContent()` 画到了窗口 canvas、层的 display list 一直为空）。正确写法是 `GraphicsLayer.record(IntSize) { … }` 扩展——源码证据 `compose-ui 1.7.5 DrawScope.kt:938-956`。修正后捕获路径工作正常，见 §11 的 `20/21-rca-capture-verify*.png`。
+>
+> 下面保留当时的三组交叉实验记录，作为"成员函数 vs 扩展"对照的历史证据。
 
 `06-capture-path-unavailable.png` 是诊断场景 `glass_scene=capture-diag`，三组交叉实验：
 
@@ -196,10 +200,97 @@ G-19（`docs/spec/00-global-rules.md`，用户 2026-11-27 定死）：
 3. **输入区/顶栏先落 A（不透明 neumorphism）**，等 `dynamic` 场景实测（每帧/隔帧/降分辨率）出来再决定是否升级 B。
 ## 10. 已知不可行 / 未验证
 
-- ❌ **本机 `record + drawLayer` 捕获背景不可用**（§2）→ 无法做"一次捕获、多块玻璃复用"的高效实现；当前只能用重绘路径，代价是每块玻璃每帧多画一遍背景。
+- ✅ ~~本机 `record + drawLayer` 捕获背景不可用~~ → **已修正**（§11）：`record(IntSize){}` 扩展可用，捕获路径成为主路径（一次捕获、N 块玻璃共享）。
 - ❌ **AGSL 不能采样背景**：`RuntimeShaderEffect` 的输入是所在 RenderNode 的内容；只能在"已经重绘出来的背景"上做位移，作用是"伪折射"，不是真的折射背景。
 - ❌ **`Modifier.blur()` 只能糊自身内容**，不能糊背景；API<31 静默无效（内容按原样渲染）。
 - ⏸ **窗口级模糊未验证真伪**（已移交另一路）：`isCrossWindowBlurEnabled=true` 不代表画面糊；OEM/省电/视频播放都会让它静默失效。
 - ⚠️ **API 31 "陈旧模糊"** 本机（API 35）未复现；`07/08` 两张图显示本机是跟手更新的，但**不能代表 API 31**。
 - ⚠️ **真机性能未知**：本机是 host GPU 模拟器，P50 25ms 基线本身就超 16.6ms 预算；本报告不能证明真机 60Hz 能撑住"每帧多画一遍背景"。
 - ⚠️ 重绘路径的适用边界：当前实验背景是"单 Canvas 程序化绘制"，重绘成本低；**换成真实列表/图片（LazyColumn + 网络图）后重绘成本会明显上升**，需在真机上用真实页面再测一轮。
+
+---
+
+## 11. 第二阶段结果（RCA 修正后的捕获路径 + target 复刻 + 动态 + 窗口模糊）
+
+### 11.1 RCA 成立：捕获路径可用（证据）
+
+- 根因：之前用 `GraphicsLayer.record(density, layoutDirection, size, block)` **成员函数**——它不重定向外层 canvas；改成 **`layer.record(IntSize(w,h)) { this@drawWithContent.drawContent() }` 扩展**（compose-ui 1.7.5 `DrawScope.kt:938-956`）后，内容真正进了层。
+- 证据图：`20-rca-capture-verify.png`（t0）与 `21-rca-capture-verify-t3s.png`（背景滚动 3 秒后）：
+  - 玻璃里是**模糊后的真实背景**（24dp 见到糊开的环/黄块色团；48dp 只剩色块）；
+  - 背景滚动后玻璃内模糊内容**同步变化**（两图 hash 不同）→ 不是冻结帧；
+  - 同屏 `repaint` 对照面板（强制重绘）与 capture 面板**同参数观感一致**；
+  - logcat：`AGS​L 可用（液体折射着色器生效）`、无 AndroidRuntime 异常。
+- 开关：`--ez glass_capture true` → 所有场景切成"源层录一次 / N 块玻璃共享一次捕获"；默认仍重绘，便于 A/B。
+
+### 11.2 capture vs repaint（同场景同参数）
+
+| 项 | capture（捕获） | repaint（重绘） |
+|---|---|---|
+| 质量 | 一致（20/21 与 33/27 对比） | 一致 |
+| 每帧成本结构 | **1 次背景录制 + N 次 blur pass** | **N 次背景重绘** |
+| 实测 P50（模拟器）1 块玻璃 | 28ms（`34`） | 28ms（`37`） |
+| 实测 P50，13% 屏 2 块 | 28ms（`28`） | 29ms（`33`） |
+| 实测 P50，整屏 1 块 | 29ms（`31`） | — |
+
+> 模拟器基线本身 ~25ms，两种路径的差异**被模拟器合成开销掩盖**（差 0–1ms，在噪声内）。结构上 capture 随玻璃块数增长是 N 次 blur、repaint 是 N 次全背景重绘 → **块数越多 capture 越有优势**；但"真机能否 60fps"仍需真机验证。
+
+### 11.3 target 复刻（`glass_scene=target`）
+
+目标图：`docs/reports/assets/reference/glass-target-focus-pill.jpg`（450×213）。实现：程序化"蓝天 + 红棕枝叶簇 + 散景"背景（若 `adb push` 干净照片到 `/sdcard/Android/data/dev.myco.android/files/target.jpg` 则用真图）→ 胶囊（r=h/2）内挂 **捕获背景 + blur + AGSL 液体折射**（SDF 法线位移 3dp、色散 1.2px、边缘镜面高光、内阴影）→ 左侧圆形镜头 + 白月牙、右侧文字 + `›`、胶囊外两圈淡光晕；右上角内嵌**参考图缩略图**便于并排比较。6 个滑杆可调。
+
+| 截图 | 预设 | blur | tint | sat | refract | rim | edge | 看什么 |
+|---|---|---|---|---|---|---|---|---|
+| `22-target-conservative.png` | 保守（更像磨砂） | 24dp | 10% | 1.15 | 1.5dp | 32% | 0.16 | 偏乳白、边缘折射很弱，像磨砂面板 |
+| `23-target-close.png` | 接近目标 | 40dp | 2% | 1.60 | 3.0dp | 45% | 0.22 | 颜色渗出强、边缘有明显"被弯折"的亮带 + 色散；文字清晰 |
+| `24-target-overdone.png` | 过冲（夸张） | 64dp | 2% | 2.20 | 6.0dp | 90% | 0.45 | 边缘过度发白/虹彩、细节全无，用来定上限 |
+| `25-target-noshader.png` | API31–32 无 shader | 40dp | 2% | 1.60 | 0 | 45% | 0.22 | 同一参数但没有边缘折射：边缘是直线亮边，**差在"弯折感"** |
+
+**复刻这张图需要的参数（本机实测）**：`blur 40–48dp · tint 2–4% · saturation 1.5–1.7 · refract 2.5–3.5dp · dispersion 1–1.5px · rim 40–50% · edge 0.20–0.25 · innerShadow 10–16%`；**API 门槛**：blur 31+、折射 33+、其余 26+。
+
+**本机复刻不到位的部分（如实）**：
+1. 参考图的背景是真实照片（天空/枝叶的光斑与色相过渡）；我们只能用相近的程序化背景或用户自备照片（`target.jpg`）；
+2. **镜头内"背景被放大/弯折"那种凸透镜感**没有做——当前镜头只用径向渐变 + 月牙近似（要做需要单独的 shader 作用在圆形区域）；
+3. 参考图的外扩光晕是柔和渐隐的，我们只用 2 圈描边近似（无真正的外发光 blur）；
+4. 色散在 450×213 小图上更明显；本机 1080p 下 1.2px 色散偏弱，可加大到 2px 但会"过冲"。
+
+### 11.4 边缘折射对照（`glass_scene=refraction`）
+
+- `26-refraction-capture.png`（捕获路径，棋盘背景）：三块同背景面板——API33+ 液体 shader（边缘有明显位移/弯折 + 轻微彩边 + 镜面高光）、API31–32 无 shader（只有直亮边）、纯 blur（无高光）。折射贡献主要体现在**边缘 1–3dp 内的像素弯折**，中景几乎无差别。
+- `27-refraction-repaint.png`：同参数重绘路径 → 与 `26` 观感一致（验证两条路径都能承载 shader）。
+- shader 帧成本（perf 场景，1 层 @24dp，固定半径）：无 shader **P50 28ms / P90 32ms**；液体 shader **P50 30ms / P90 34ms**；2 层 shader **P50 32ms / P90 36ms** → **单层 shader ≈ +2ms P50（本机）**；层数增加主要叠加 blur pass。
+
+### 11.5 动态（`glass_scene=dynamic`：顶栏 60dp + 输入区 100dp 玻璃，背景每帧滚动）
+
+| 场景（capture 路径） | 玻璃面积 | 更新策略 | P50 | P90 | P95 | P99 | Janky |
+|---|---|---|---|---|---|---|---|
+| 基线（无玻璃） | 0 | — | 25ms | 34ms | 34ms | 48ms | 0.94% |
+| `28` 顶栏+输入区 | ≈13% | 每帧 | 28ms | 44ms | 48ms | 81ms | 5.5% |
+| `29` 仅顶栏 | ≈5% | 每帧 | 27ms | 32ms | 34ms | 48ms | 1.1% |
+| `30` 仅输入区 | ≈8% | 每帧 | 27ms | 34ms | 34ms | 48ms | 1.4% |
+| `31` 整屏玻璃 | ≈100% | 每帧 | 29ms | 34ms | 34ms | 48ms | 1.4% |
+| `32` 顶栏+输入区 | ≈13% | 隔帧（层每 2 帧录一次） | 28ms | 34ms | 34ms | 48ms | 1.1% |
+| `33` repaint 对照 | ≈13% | 每帧 | 29ms | 34ms | 34ms | 48ms | 1.4% |
+
+读法：
+- 本机所有组合都在 **P50 27–29ms**，差异在噪声内（模拟器基线 25ms）→ **在模拟器上无法区分"面积/策略"的收益**；只能说"没有额外劣化"。
+- 13% 面积 + 每帧的组合 P90 偶尔到 44ms（janky 5.5%），是采样噪声而非稳定规律。
+- **能否 60fps：本机不能回答**（模拟器基线已 >16.6ms）。结构上，capture 路径下每帧成本 = 1 次背景录制 + N 次 blur；**玻璃面积越大、blur 填充率越高**；隔帧更新（`recordEvery=2`）能省掉一半录制，但会让玻璃里的背景"跳帧"（观感可见轻微拖影）。
+- 结论建议：**浮层（sheet/modal/菜单）用 capture + 每帧更新**；**常驻的顶栏/输入区若升级 B 路线，建议"滚动停止后启用、滚动中用不透明 neumorphism"**（既满足 G-19，又避免滚动时每帧重绘/录制）。
+
+### 11.6 窗口级 blurBehind 动态测试
+
+- `38-winblur-dyn-t0.png` / `39-winblur-dyn-t3s.png`：全屏**透明 overlay Dialog** + `FLAG_BLUR_BEHIND` + `setBackgroundBlurRadius(40dp)`，背后彩色列表每帧滚动。
+- 结果：**整窗背后内容被系统合成器实时模糊，且随滚动更新**（两张图 hash 不同；overlay 上的文字保持锐利）。
+- 判据/边界：`isCrossWindowBlurEnabled=true`（本机）+ API 35；这是**窗口级、整窗**模糊（不能只糊某个区域/某个元素），OEM/省电/视频播放会让它静默失效；**真机必须逐个验证**。
+- 用途建议：**toast/浮层遮罩类**可以用它做到"免费动态真模糊"；但玻璃面板的圆角/边缘折射仍要自绘，且不能与 in-app 捕获叠加成"部分区域模糊"。
+
+### 11.7 第二阶段截图清单
+
+| 文件 | 看什么 |
+|---|---|
+| `20-rca-capture-verify.png` / `21-...-t3s.png` | RCA 验证：捕获路径玻璃里有模糊背景，且随滚动更新 |
+| `22`~`25-target-*.png` | target 四档（保守/接近/过冲/无 shader），右上角有参考图缩略图 |
+| `26-refraction-capture.png` / `27-refraction-repaint.png` | 折射：API33+ shader vs API31–32 vs 纯 blur；capture 与 repaint 一致 |
+| `28`~`33-dynamic-*` | 动态：13%/5%/8%/100% 面积 + 隔帧 + repaint 对照（含页内帧读数） |
+| `34`~`37-perf-*` | capture/repaint、有无 shader 的帧时间现场 |
+| `38`/`39-winblur-dyn-*.png` | 窗口级 blurBehind 动态：背后内容糊且跟随滚动 |
