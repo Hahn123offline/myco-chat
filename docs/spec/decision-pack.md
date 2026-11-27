@@ -494,3 +494,14 @@ D-01…D-20 全部有结论，P3 可以开工。其中三条带连带影响：
 | **D-63** | **推翻此前"本机不可用"的结论**：`rememberGraphicsLayer` + **`DrawScope.record {}` 扩展** + 兄弟节点 `drawLayer` + `RenderEffect` **在本栈（Compose 1.7.5 / Kotlin 2.0.21）可用** | RCA：我们用了 4 参数**成员函数** `layer.record(density, layoutDirection, size, block)`，它不重定向 canvas → 层为空；改成 2 参数**扩展** `layer.record(IntSize) { drawContent() }` 即可。源码：`compose-ui 1.7.5 DrawScope.kt:938-956,317-354`；Haze 1.1.1 同版本组合（E0） |
 | **D-64** | **主路径 = 捕获（capture）而非重绘（repaint）**：静态浮层源层只录一次，N 块玻璃共享一次捕获；动态场景每帧录一次源层 | 调研：降采样收益很小（Haze inputScale=0.5 只降 5%），真正有效的是"共享一次捕获 + 缓存层/effect + 静止背景只录一次" |
 | **D-65** | 保留 **repaint 作为对照组/兜底**（用于验证与极端降级），但产品默认走 capture | 需要一组同场景同参数对照（质量、帧时间）来确认 |
+
+### 6.17 RCA 已实机验证（D-66，推翻此前"不可用"结论）
+
+| 项 | 结论 |
+|---|---|
+| 验证场景 | `glass_scene=capture`，host GPU（AMD 890M / GLES 3.1）API 35 |
+| 证据 | `docs/reports/assets/glass/20-rca-capture-verify.png`（t0）、`21-rca-capture-verify-t3s.png`（3 秒后滚动） |
+| 判据 | ① 玻璃内是**模糊后的真实背景**（非 tint 错觉，48dp 档只剩色块）；② **滚动时跟随更新**（t0→t3s 内容变化）；③ 同参数 **capture 与 repaint 观感一致** |
+| 结论 | **真背景模糊在本栈（Compose 1.7.5 / Kotlin 2.0.21）完全可用**，修复只是 `DrawScope.record` 扩展 vs 成员函数一行之差 |
+| 主路径 | **capture**：源层录一次 → N 块玻璃共享 → 各自 blur pass；静态层只录一次，动态层每帧录一次 |
+| 成本预期 | 静态浮层远低于 repaint（不再每块重绘背景）；动态场景 N 块共享一次捕获 |
