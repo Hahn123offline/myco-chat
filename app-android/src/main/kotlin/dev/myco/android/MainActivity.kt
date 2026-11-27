@@ -746,6 +746,7 @@ private fun ChatScreen(
     var selReasoningLevel by remember { mutableStateOf<String?>(null) }
     var activeLeaf by remember { mutableStateOf<String?>(null) }
     var showModelPicker by remember { mutableStateOf(false) }
+    var showM5Model by remember { mutableStateOf(false) }
     var modelPickerError by remember { mutableStateOf<String?>(null) }
     val initialVersions = remember {
         chatPrefs.all.mapNotNull { (k, v) ->
@@ -1219,6 +1220,8 @@ private fun ChatScreen(
                     onStop = { scope.launch { bridge.send(Command.ChatStop(sessionId)) } },
                     thinking = thinking,
                     webSearch = webSearch,
+                    reasoningLabel = selReasoningLevel,
+                    onOpenModel = { showM5Model = true },
                     onAttach = { showAttachSheet = true },
                     onToggleThinking = {
                         thinking = !thinking
@@ -1405,6 +1408,56 @@ private fun ChatScreen(
                 }
             },
             confirmButton = { TextButton(onClick = { showModelPicker = false }) { Text("关闭") } },
+        )
+    }
+    if (showM5Model) {
+        val options = providersUi.filter { it.enabled }.flatMap { prov ->
+            prov.models.map { m ->
+                dev.myco.android.ui.m5.M5ModelOption(
+                    providerId = prov.id,
+                    providerName = prov.displayName.ifBlank { prov.id },
+                    modelId = m.id,
+                    modelName = m.name ?: m.id,
+                    reasoningDefault = m.reasoningDefault,
+                    levels = m.reasoningEfforts.keys.toList(),
+                    selected = prov.id == selProviderId && m.id == selModelId,
+                )
+            }
+        }
+        dev.myco.android.ui.m5.M5ModelSheet(
+            models = options,
+            currentReasoning = selReasoningLevel,
+            thinking = thinking,
+            error = modelPickerError,
+            onToggleThinking = {
+                thinking = !thinking
+                chatPrefs.edit().putBoolean("thinking", thinking).apply()
+            },
+            onPickModel = { opt ->
+                scope.launch {
+                    val r = bridge.send(Command.SessionSetModel(sessionId, opt.providerId, opt.modelId, opt.reasoningDefault))
+                    if (r is CommandResult.Err) {
+                        modelPickerError = "${r.code}: ${r.message}"
+                    } else {
+                        selProviderId = opt.providerId
+                        selModelId = opt.modelId
+                        selReasoningLevel = opt.reasoningDefault
+                        showM5Model = false
+                    }
+                }
+            },
+            onPickReasoning = { level ->
+                scope.launch {
+                    val r = bridge.send(Command.SessionSetModel(sessionId, selProviderId, selModelId, level))
+                    if (r is CommandResult.Err) {
+                        modelPickerError = "${r.code}: ${r.message}"
+                    } else {
+                        selReasoningLevel = level
+                        showM5Model = false
+                    }
+                }
+            },
+            onDismiss = { showM5Model = false },
         )
     }
 }

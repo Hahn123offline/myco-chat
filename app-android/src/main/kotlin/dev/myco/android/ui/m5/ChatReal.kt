@@ -418,3 +418,35 @@ private fun StreamingTextM5(text: String) {
         )
     }
 }
+
+/** 输入区上方的「模型 · 思考强度」胶囊：设置配好，这里一键调整。 */
+@Composable
+fun M5ModelBar(modelLabel: String, reasoningLabel: String?, onClick: () -> Unit) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    M5Theme(dark) {
+        val p = LocalM5.current.palette
+        Row(
+            Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            NeoSurface(
+                radius = 15.dp,
+                material = NeoMaterial.Raised,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                onClick = onClick,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    M5Icon(M5Icons.spark, Modifier.size(12.dp), p.textTertiary)
+                    Spacer(Modifier.width(6.dp))
+                    Text(modelLabel, style = M5Type.caption, color = p.textSecondary)
+                    if (!reasoningLabel.isNullOrBlank()) {
+                        Text(" · ", style = M5Type.caption, color = p.textTertiary)
+                        Text(reasoningLabel, style = M5Type.caption, color = p.textTertiary)
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    M5Icon(M5Icons.chevronDown, Modifier.size(11.dp), p.textTertiary)
+                }
+            }
+        }
+    }
+}

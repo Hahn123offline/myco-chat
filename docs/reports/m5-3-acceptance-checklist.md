@@ -18,3 +18,10 @@
 | G1 | 附件预览/发送区仍旧控件 | AssistChip → M5 chip | 待做 |
 | G2 | 错误条 InlineError 仍 M1 配色 | 改 M5 danger 表面 | 待做 |
 | H1 | m5Ui 尚未默认 | 上述验收通过后切默认并在设置留回退开关 | 待做 |
+
+## 验收方式（改为由用户真机点验）
+
+- 无线调试可用：`adb -s 192.168.137.94:37257 ...`；
+- 进入 M5 聊天页：`adb shell am start -n dev.myco.android/.MainActivity --ez m5_chat_ui true`；
+- 验收 I1：点输入区「深度思考 ⌄」→ 面板应含「深度思考」开关 / 模型列表 / 思考强度；选 High 后按钮应显示「深度思考 · High」；
+- 本轮不再由 agent 猜点击坐标，逐条截图/操作交由用户完成。

@@ -39,8 +39,10 @@ fun M5Composer(
     onSend: () -> Unit,
     thinking: Boolean = true,
     webSearch: Boolean = false,
+    reasoningLabel: String? = null,
     onAttach: (() -> Unit)? = null,
     onToggleThinking: (() -> Unit)? = null,
+    onOpenModel: (() -> Unit)? = null,
     onToggleWebSearch: (() -> Unit)? = null,
     streaming: Boolean = false,
     onStop: (() -> Unit)? = null,
@@ -54,8 +56,10 @@ fun M5Composer(
             onSend = onSend,
             thinking = thinking,
             webSearch = webSearch,
+            reasoningLabel = reasoningLabel,
             onAttach = onAttach,
             onToggleThinking = onToggleThinking,
+            onOpenModel = onOpenModel,
             onToggleWebSearch = onToggleWebSearch,
             streaming = streaming,
             onStop = onStop,
@@ -71,8 +75,10 @@ private fun M5ComposerInner(
     onSend: () -> Unit,
     thinking: Boolean = true,
     webSearch: Boolean = false,
+    reasoningLabel: String? = null,
     onAttach: (() -> Unit)? = null,
     onToggleThinking: (() -> Unit)? = null,
+    onOpenModel: (() -> Unit)? = null,
     onToggleWebSearch: (() -> Unit)? = null,
     streaming: Boolean = false,
     onStop: (() -> Unit)? = null,
@@ -121,12 +127,17 @@ private fun M5ComposerInner(
                     fill = if (thinking) p.mossTint else p.surface,
                     contentPadding = PaddingValues(horizontal = 10.dp),
                     contentAlignment = Alignment.Center,
-                    onClick = onToggleThinking ?: {},
+                    onClick = onOpenModel ?: (onToggleThinking ?: {}),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         M5Icon(M5Icons.clock, Modifier.size(13.dp), if (thinking) p.moss else p.textSecondary)
                         Spacer(Modifier.width(4.dp))
                         Text("深度思考", style = M5Type.caption, color = if (thinking) p.text else p.textSecondary)
+                        if (!reasoningLabel.isNullOrBlank()) {
+                            Text(" · $reasoningLabel", style = M5Type.caption, color = p.textTertiary)
+                        }
+                        Spacer(Modifier.width(2.dp))
+                        M5Icon(M5Icons.chevronDown, Modifier.size(10.dp), p.textTertiary)
                     }
                 }
                 NeoSurface(
