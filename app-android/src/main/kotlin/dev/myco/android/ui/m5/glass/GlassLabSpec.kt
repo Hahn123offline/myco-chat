@@ -48,6 +48,14 @@ data class GlassSpec(
     val refractEdge: Float = 0.30f,
     /** true = 折射作用到整块（含文字），用于展示"错用"的样子 */
     val refractWholePanel: Boolean = false,
+    /** true = 用「液体玻璃」AGSL：SDF 边缘法线位移 + 色散 + 镜面高光 + 内阴影 */
+    val liquidShader: Boolean = false,
+    /** 色散强度（像素，R/B 相对 G 的偏移） */
+    val dispersion: Float = 1.2f,
+    /** 重绘分辨率倍率：1=全分辨率，0.5=半分辨率（低分辨率渲染再放大，省填充率） */
+    val renderScale: Float = 1f,
+    /** true = 强制走"重绘背景"而不是捕获层（用于 capture vs repaint 同参数对照） */
+    val forceRepaint: Boolean = false,
 )
 
 /**

@@ -6,7 +6,9 @@ import android.graphics.Color as AndroidColor
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.util.Log
+import android.view.Gravity
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
@@ -18,11 +20,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,25 +44,51 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
 /* ------------------------------------------------------------------------------------------------
- * 场景分发：每个场景 = 一次可截图的对照实验
+ * 场景框架：一块背景（场景帧）+ 若干玻璃面板
+ * --------------------------------------------------------------------------------------------- */
+
+/**
+ * 场景容器：铺满一块"场景帧"，并提供 [BackdropPainter]。
+ *
+ * [BackdropPainter] 的约定：`painter(modifier, rootCoord)` 在该 modifier 的左上角显示
+ * **root 坐标 rootCoord 处的背景内容** —— 玻璃面板靠它拿到"自己背后那块像素"。
+ */
+@Composable
+fun GlassSceneFrame(
+    scrollPx: Float,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.(origin: Offset, backdrop: BackdropPainter) -> Unit,
+) {
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    val backdrop: BackdropPainter = { m, o, s -> GlassBackdrop(scrollPx = scrollPx, shift = o - origin, renderScale = s, modifier = m) }
+    CaptureHost(
+        modifier = modifier,
+        background = { m ->
+            val withPos = m.onGloballyPositioned { origin = it.positionInRoot() }
+            backdrop(withPos, origin, 1f)
+        },
+    ) {
+        content(origin, backdrop)
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * 场景分发
  * --------------------------------------------------------------------------------------------- */
 
 @Composable
@@ -73,82 +100,102 @@ fun GlassLabScenes(
 ) {
     Box(modifier.fillMaxSize()) {
         when (args.scene) {
-            "raw" -> RawScene(scrollPx)
-            "blur" -> CompareScene(
+            "raw" -> GlassSceneFrame(scrollPx) { _, _ ->
+                Text(
+                    "原始背景（无任何玻璃层）",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(Color(0xCC000000))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+
+            // ① 对照三连：原始背景（顶部参考条）/ 只有 tint / 重绘背景+真模糊
+            "compare" -> CompareScene(
                 scrollPx = scrollPx,
-                panelHeight = 148.dp,
-                stripHeight = 132.dp,
+                panelHeight = 150.dp,
+                stripHeight = 150.dp,
+                stripCaption = "① 原始背景（无玻璃，参考）——下面两块玻璃都采样这一条的同一块像素",
                 specs = listOf(
                     demoSpec(
-                        label = "1 · 单层真实模糊 ON",
-                        sub = "capture→drawLayer→BlurEffect(${fmt(args.blurDp)}dp)→超椭圆裁剪",
-                        api = "API31+",
-                        blurDp = args.blurDp,
-                    ),
-                    demoSpec(
-                        label = "1 · 对照 OFF（只有 tint，没有模糊）",
-                        sub = "同一块背景像素，无 backdrop 模糊 / 无 RenderEffect",
+                        label = "② 只有 tint（无模糊）",
+                        sub = "同一块背景 + 10% 白色 tint + 1.2dp 边缘高光",
                         api = "API26+",
                         blurDp = 0f,
-                        tintAlpha = 0.16f,
-                        rim = 0.18f,
+                        tintAlpha = 0.10f,
+                        rim = 0.28f,
+                    ),
+                    demoSpec(
+                        label = "③ 重绘背景 + RenderEffect.blur(24dp)",
+                        sub = "背景内容重绘 → BlurEffect → 超椭圆裁剪（本机可用的真模糊路径）",
+                        api = "API31+",
+                        blurDp = args.blurDp,
                     ),
                 ),
             )
 
+            // ② 可读性梯度 8/16/24/32
             "radius" -> CompareScene(
                 scrollPx = scrollPx,
-                panelHeight = 76.dp,
-                stripHeight = 96.dp,
-                stripCaption = "↑ 原始背景（参考）：下面 6 块玻璃采样同一块像素，只改模糊半径",
-                specs = listOf(4f, 8f, 16f, 24f, 32f, 48f).map { r ->
+                panelHeight = 96.dp,
+                stripHeight = 150.dp,
+                stripCaption = "② 原始背景：14sp/11sp 文字 + 棋盘（下面 4 块玻璃采样同一块像素，只改半径）",
+                specs = listOf(8f, 16f, 24f, 32f).map { r ->
                     demoSpec(
                         label = "半径 ${fmt(r)}dp",
-                        sub = if (r <= 8f) "小半径：噪点/文字轮廓仍在" else if (r <= 16f) "中半径：只剩色块" else "大半径：纯色雾",
+                        sub = when {
+                            r <= 8f -> "小：文字轮廓仍在，但已发虚"
+                            r <= 16f -> "中：14sp 可读，11sp 开始糊"
+                            r <= 24f -> "大：正文勉强，小字不可读"
+                            else -> "很大：只剩色块/明暗"
+                        },
                         api = "API31+",
                         blurDp = r,
                     )
                 },
             )
 
+            // 饱和度/亮度补偿
             "sat" -> CompareScene(
                 scrollPx = scrollPx,
-                panelHeight = 92.dp,
-                stripHeight = 104.dp,
-                stripCaption = "↑ 原始背景：下面同样 24dp 模糊，只改饱和度/亮度补偿",
-                specs = listOf(1.0f, 1.2f, 1.5f, 1.8f).map { s ->
-                    demoSpec(
-                        label = "saturation ${fmt(s, 1)} · bright ${if (s >= 1.5f) "+0.06" else "0"}",
-                        sub = if (s == 1f) "不补偿：模糊后整体发灰" else "ColorMatrix 补偿（挂在 blur 之后）",
-                        api = "API31+",
-                        blurDp = 24f,
-                        sat = s,
-                        bright = if (s >= 1.5f) 0.06f else 0f,
-                    )
-                },
-            )
-
-            "rim" -> CompareScene(
-                scrollPx = scrollPx,
                 panelHeight = 104.dp,
-                stripHeight = 104.dp,
-                stripCaption = "↑ 原始背景：下面 blur 24dp，只改边缘高光 / 内阴影",
+                stripHeight = 120.dp,
+                stripCaption = "原始背景：下面同样 24dp 模糊，只改 ColorMatrix 饱和度/亮度补偿",
                 specs = listOf(
-                    demoSpec("无高光 · 无内阴影", "只有模糊+tint，像贴纸", "无", rim = 0f, innerShadow = 0f),
-                    demoSpec("高光 0.35 · 内阴影 0.10", "1.2dp 线性渐变白边 + 内沿明暗", "无", rim = 0.35f, innerShadow = 0.10f),
-                    demoSpec("高光 1.0 · 内阴影 0.22", "过强：边缘开始发白/发灰", "无", rim = 1f, innerShadow = 0.22f),
+                    demoSpec("saturation 1.0（不补偿）", "模糊后整体发灰", "API31+", blurDp = 24f),
+                    demoSpec("saturation 1.2", "轻度补色", "API31+", blurDp = 24f, sat = 1.2f),
+                    demoSpec("saturation 1.5 + bright +0.04", "接近原始饱和感", "API31+", blurDp = 24f, sat = 1.5f, bright = 0.04f),
+                    demoSpec("saturation 1.8 + bright +0.06", "过冲：高饱和区变色", "API31+", blurDp = 24f, sat = 1.8f, bright = 0.06f),
                 ),
             )
 
+            // 边缘高光 / 内阴影
+            "rim" -> CompareScene(
+                scrollPx = scrollPx,
+                panelHeight = 116.dp,
+                stripHeight = 120.dp,
+                stripCaption = "原始背景：下面 blur 24dp，只改边缘高光 / 内阴影",
+                specs = listOf(
+                    demoSpec("无高光 · 无内阴影", "只有模糊 + tint，像贴纸", "无", blurDp = 24f, rim = 0f, innerShadow = 0f),
+                    demoSpec("高光 35% · 内阴影 10%", "1.2dp 白边 + 内沿明暗 → 玻璃厚度感", "无", blurDp = 24f, rim = 0.35f, innerShadow = 0.10f),
+                    demoSpec("高光 100% · 内阴影 22%", "过强：边缘发白、像塑料", "无", blurDp = 24f, rim = 1f, innerShadow = 0.22f),
+                ),
+            )
+
+            // AGSL 折射
             "agsl" -> CompareScene(
                 scrollPx = scrollPx,
-                panelHeight = 96.dp,
-                stripHeight = 104.dp,
-                stripCaption = "↑ 原始背景：下面 blur 24dp + AGSL 伪折射（只作用于自身已渲染内容）",
+                panelHeight = 100.dp,
+                stripHeight = 120.dp,
+                stripCaption = "原始背景：下面 blur 24dp + AGSL RuntimeShader 伪折射（只能吃自己已渲染的内容）",
                 specs = listOf(
                     demoSpec("无折射（对照）", "只 blur", "API31+", blurDp = 24f),
-                    demoSpec("AGSL 折射 6dp", "边缘位移小：像薄玻璃", "API33+", blurDp = 24f, refractDp = 6f),
-                    demoSpec("AGSL 折射 16dp", "边缘明显放大/位移：像厚玻璃", "API33+", blurDp = 24f, refractDp = 16f),
+                    demoSpec("折射 6dp", "边缘轻微位移 → 薄玻璃", "API33+", blurDp = 24f, refractDp = 6f),
+                    demoSpec("折射 16dp", "边缘明显放大/位移 → 厚玻璃", "API33+", blurDp = 24f, refractDp = 16f),
                     demoSpec(
                         "反例：折射作用到整块（含文字）",
                         "文字一起被拉弯 → 只能对 backdrop 层用",
@@ -160,15 +207,16 @@ fun GlassLabScenes(
                 ),
             )
 
+            // 磨砂噪声
             "noise" -> CompareScene(
                 scrollPx = scrollPx,
-                panelHeight = 104.dp,
-                stripHeight = 104.dp,
-                stripCaption = "↑ 原始背景：下面 blur 24dp + 程序生成磨砂噪声",
+                panelHeight = 116.dp,
+                stripHeight = 120.dp,
+                stripCaption = "原始背景：下面 blur 24dp + 程序生成磨砂噪声",
                 specs = listOf(0f, 0.012f, 0.028f).map { n ->
                     demoSpec(
                         label = "噪声 ${fmt(n * 100f, 1)}%",
-                        sub = if (n == 0f) "纯 blur：塑料感/过于干净" else "128×128 黑白颗粒 tile，双向压 alpha",
+                        sub = if (n == 0f) "纯 blur：过于干净/塑料感" else "128×128 黑白颗粒，双向压 alpha",
                         api = "无（CPU 位图）",
                         blurDp = 24f,
                         noise = n,
@@ -176,20 +224,22 @@ fun GlassLabScenes(
                 },
             )
 
+            // ⑥ 降级外观：真模糊 vs API<31 假玻璃
             "legacy" -> CompareScene(
                 scrollPx = scrollPx,
-                panelHeight = 148.dp,
-                stripHeight = 128.dp,
+                panelHeight = 150.dp,
+                stripHeight = 140.dp,
+                stripCaption = "原始背景：下面左/上为真模糊，右/下为 API<31 降级假玻璃",
                 specs = listOf(
                     demoSpec(
                         label = "真 backdrop 模糊（API31+）",
-                        sub = "采样背景 + BlurEffect + tint + 噪声 + 高光",
+                        sub = "重绘背景 + BlurEffect(24dp) + tint + 噪声 + 高光",
                         api = "API31+",
                         blurDp = 24f,
                     ),
                     demoSpec(
                         label = "降级假玻璃（API<31 实际路径）",
-                        sub = "不采样背景：半透明 + 渐变 + 噪声 + 高光；保证不崩、不空",
+                        sub = "不采样背景：半透明 + 渐变 + 噪声 + 高光；不会崩、但看不见背景内容",
                         api = "API26+",
                         legacy = true,
                         noise = 0.012f,
@@ -197,103 +247,111 @@ fun GlassLabScenes(
                 ),
             )
 
-            "stack" -> StackScene(scrollPx = scrollPx, layers = 2, blurDp = args.blurDp)
-            "stack3" -> StackScene(scrollPx = scrollPx, layers = 3, blurDp = args.blurDp)
-            "debug" -> DebugScene(scrollPx = scrollPx)
-            "window" -> WindowScene(scrollPx = scrollPx, radiusDp = args.blurDp, autoDialog = args.autoDialog)
-            "perf" -> PerfScene(scrollPx = scrollPx, meter = meter, blurDp = args.blurDp)
+            "subtle" -> CompareScene(
+                scrollPx = scrollPx,
+                panelHeight = 118.dp,
+                stripHeight = 150.dp,
+                stripCaption = "浮层位置对照：下面三块玻璃都采样这条「文字 + 细线」背景（DSH 浮层效果取向）",
+                specs = listOf(
+                    demoSpec("a · blur 32dp + tint 4%", "低 tint：最接近 DSH「看不清但加分」", "API31+", blurDp = 32f, tintAlpha = 0.04f, rim = 0.22f),
+                    demoSpec("b · blur 40dp + tint 8% + sat 1.5", "更「磨砂」一点，细节柔化更明显", "API31+", blurDp = 40f, tintAlpha = 0.08f, sat = 1.5f, rim = 0.26f),
+                    demoSpec("c · blur 48dp + tint 2%", "最「清晰透明」：强烈糊化但几乎不着色", "API31+", blurDp = 48f, tintAlpha = 0.02f, rim = 0.20f),
+                ),
+            )
+
+            "clarity" -> CompareScene(
+                scrollPx = scrollPx,
+                panelHeight = 150.dp,
+                stripHeight = 140.dp,
+                stripCaption = "同一位置两种气质：左/上「清晰透明」，右/下「磨砂面板」",
+                specs = listOf(
+                    demoSpec("清晰透明：blur 40dp + tint 2%", "细节被柔化但结构仍可辨认，几乎无色偏", "API31+", blurDp = 40f, tintAlpha = 0.02f, rim = 0.22f),
+                    demoSpec("磨砂面板：blur 20dp + tint 16%", "可见度高、更「面板」，但背景细节被压掉", "API31+", blurDp = 20f, tintAlpha = 0.16f, rim = 0.34f, noise = 0.012f),
+                ),
+            )
+
+            "capture" -> CaptureScene(scrollPx)
+
+            "physics" -> PhysicsScene(args, scrollPx)
+            "target" -> PhysicsScene(args, scrollPx)   // G-21：target 旧装饰版已删除，别名指向干净测试体
+
+            "refraction" -> CompareScene(
+                scrollPx = scrollPx,
+                panelHeight = 128.dp,
+                stripHeight = 132.dp,
+                stripCaption = "边缘折射：同一块背景，比较「API33+ 液体 shader」/「API31-32 只有高光+内阴影」/「纯 blur」",
+                specs = listOf(
+                    demoSpec(
+                        label = "API 33+ · 液体折射（AGSL）",
+                        sub = "SDF 法线位移 3dp + 色散 1.2px + 边缘高光 + 内阴影",
+                        api = "API33+",
+                        blurDp = 24f,
+                        refractDp = 3f,
+                        liquidShader = true,
+                        dispersion = 1.2f,
+                        rim = 0.55f,
+                        innerShadow = 0.16f,
+                    ),
+                    demoSpec(
+                        label = "API 31–32 · 无 shader",
+                        sub = "同一背景：只有 1.2dp 边缘高光 + 内阴影（折射缺失）",
+                        api = "API31-32",
+                        blurDp = 24f,
+                        rim = 0.55f,
+                        innerShadow = 0.16f,
+                    ),
+                    demoSpec(
+                        label = "对照 · 纯 blur（无高光/折射）",
+                        sub = "看高光/折射贡献了多少「玻璃感」",
+                        api = "API31+",
+                        blurDp = 24f,
+                        rim = 0f,
+                        innerShadow = 0f,
+                    ),
+                ),
+            )
+
+            "dynamic" -> DynamicScene(args, scrollPx, meter)
+            "winblur-dyn" -> WindowBlurDynamicScene(scrollPx)
+
+            "stack" -> StackScene(scrollPx, layers = 2, blurDp = args.blurDp)
+            "stack3" -> StackScene(scrollPx, layers = 3, blurDp = args.blurDp)
+            "scroll" -> ScrollScene(scrollPx)
+            "window" -> WindowScene(scrollPx, args.blurDp, args.autoDialog)
+            "perf" -> PerfScene(scrollPx, meter, args.blurDp, args.layers, args.fixedRadius, args.liquid)
             else -> CompareScene(
                 scrollPx = scrollPx,
-                panelHeight = 148.dp,
-                stripHeight = 132.dp,
+                panelHeight = 150.dp,
+                stripHeight = 150.dp,
                 specs = listOf(
-                    demoSpec("单层真实模糊", "24dp backdrop blur", "API31+", blurDp = 24f),
-                    demoSpec("对照 OFF", "只有 tint", "API26+", blurDp = 0f, tintAlpha = 0.16f),
+                    demoSpec("重绘背景 + blur ${fmt(args.blurDp)}dp", "真 backdrop 模糊", "API31+", blurDp = args.blurDp),
+                    demoSpec("对照：只有 tint", "无模糊", "API26+", blurDp = 0f, tintAlpha = 0.10f),
                 ),
             )
         }
     }
 }
 
-internal fun demoSpec(
-    label: String,
-    sub: String,
-    api: String,
-    blurDp: Float = 24f,
-    sat: Float = 1f,
-    bright: Float = 0f,
-    noise: Float = 0f,
-    rim: Float = 0.35f,
-    innerShadow: Float = 0.10f,
-    tintAlpha: Float = 0.10f,
-    legacy: Boolean = false,
-    refractDp: Float = 0f,
-    refractWholePanel: Boolean = false,
-): GlassSpec = GlassSpec(
-    label = label,
-    sub = sub,
-    api = api,
-    blurDp = blurDp,
-    sat = sat,
-    bright = bright,
-    noise = noise,
-    rim = rim,
-    innerShadow = innerShadow,
-    tintAlpha = tintAlpha,
-    legacy = legacy,
-    refractDp = refractDp,
-    refractWholePanel = refractWholePanel,
-)
-
-internal fun fmt(v: Float, digits: Int = 0): String =
-    if (digits <= 0) v.roundToInt().toString() else String.format(java.util.Locale.US, "%.${digits}f", v)
-
 /* ------------------------------------------------------------------------------------------------
- * 场景 0：纯背景（没有任何玻璃）—— 报告里的"参考帧"
- * --------------------------------------------------------------------------------------------- */
-
-@Composable
-private fun RawScene(scrollPx: Float) {
-    Box(Modifier.fillMaxSize()) {
-        GlassBackdrop(scrollPx, Modifier.fillMaxSize())
-        Text(
-            "原始背景（无任何玻璃层）",
-            color = Color.White,
-            fontSize = 11.sp,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(10.dp)
-                .clip(RoundedCornerShape(5.dp))
-                .background(Color(0xCC000000))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-        )
-    }
-}
-
-/* ------------------------------------------------------------------------------------------------
- * 通用对照场景：顶部一条"原始背景参考条"，下面每块玻璃都采样那条里的**同一块像素**
+ * 通用对照场景：顶部一条"原始背景参考条"，下面每块玻璃都采样那条里的同一块像素
  * --------------------------------------------------------------------------------------------- */
 
 @Composable
 fun CompareScene(
     scrollPx: Float,
     specs: List<GlassSpec>,
-    panelHeight: Dp = 84.dp,
-    stripHeight: Dp = 96.dp,
+    panelHeight: Dp = 96.dp,
+    stripHeight: Dp = 120.dp,
     stripCaption: String = "",
 ) {
-    val bg = rememberLayerCapture()
-    Box(Modifier.fillMaxSize()) {
-        RecordInto(bg, Modifier.fillMaxSize()) {
-            GlassBackdrop(scrollPx, Modifier.fillMaxSize())
-        }
+    GlassSceneFrame(scrollPx) { origin, backdrop ->
         Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            var stripLocal by remember { mutableStateOf<Offset?>(null) }
+            var stripInRoot by remember { mutableStateOf<Offset?>(null) }
             Box(
                 Modifier
                     .fillMaxWidth()
                     .height(stripHeight)
-                    .onGloballyPositioned { stripLocal = it.positionInRoot() - bg.originInRoot },
+                    .onGloballyPositioned { stripInRoot = it.positionInRoot() },
             ) {
                 Text(
                     text = stripCaption.ifEmpty { "↑ 原始背景参考条（未加玻璃）" },
@@ -302,17 +360,17 @@ fun CompareScene(
                     style = TextStyle(shadow = Shadow(Color(0xCC000000), Offset(1f, 1f), 3f)),
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .background(Color(0x99000000), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .background(Color(0xCC000000), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 3.dp),
                 )
             }
             Spacer(Modifier.height(6.dp))
             specs.forEach { spec ->
                 GlassPanel(
                     spec = spec,
-                    capture = bg,
+                    backdrop = backdrop,
                     modifier = Modifier.fillMaxWidth().height(panelHeight),
-                    sampleLocalTopLeft = stripLocal,
+                    sampleAtScene = stripInRoot,
                 )
                 Spacer(Modifier.height(6.dp))
             }
@@ -321,119 +379,116 @@ fun CompareScene(
 }
 
 /* ------------------------------------------------------------------------------------------------
- * 场景 2：分层遮挡 —— 左列"每层都采样原始背景"，右列"后层采样已合成结果"
+ * ③ 多层叠加：
+ *   左列 = 每层都采样原始背景（叠而不浑浊）
+ *   右列 = 后一层采样"已合成结果"（模糊会累积）
  * --------------------------------------------------------------------------------------------- */
 
 private enum class StackMode { SAMPLES_BG, COMPOUND }
 
 @Composable
 fun StackScene(scrollPx: Float, layers: Int, blurDp: Float) {
-    val bg = rememberLayerCapture()
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val colW = (maxWidth - 36.dp) / 2
-        val panelH = if (layers >= 3) 128.dp else 168.dp
-        val step = if (layers >= 3) 86.dp else 108.dp
-        val colTop = 40.dp
+    GlassSceneFrame(scrollPx) { origin, backdrop ->
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val colW = (maxWidth - 36.dp) / 2
+            val panelH = if (layers >= 3) 128.dp else 168.dp
+            val step = if (layers >= 3) 86.dp else 108.dp
+            val top = 42.dp
 
-        RecordInto(bg, Modifier.fillMaxSize()) {
-            GlassBackdrop(scrollPx, Modifier.fillMaxSize())
+            StackLabel("A 每层都采样原始背景（叠而不浑浊）", 12.dp, colW)
+            StackLabel("B 后层采样已合成结果（模糊累积）", 24.dp + colW, colW)
+
+            val specs = listOf(
+                demoSpec("底层 B", "blur ${fmt(blurDp)}dp", "API31+", blurDp = blurDp),
+                demoSpec("中层 A", "blur ${fmt(blurDp)}dp", "API31+", blurDp = blurDp),
+                demoSpec("顶层 C", "blur ${fmt(blurDp)}dp", "API31+", blurDp = blurDp),
+            )
+            StackColumn(origin, backdrop, 12.dp, top, colW, StackMode.SAMPLES_BG, specs.take(layers), panelH, step)
+            StackColumn(origin, backdrop, 24.dp + colW, top, colW, StackMode.COMPOUND, specs.take(layers), panelH, step)
         }
-
-        ColumnLabel("A · 每层都只采样原始背景（叠而不浑浊）", 12.dp, colW)
-        ColumnLabel("B · 后一层采样已合成结果（模糊会累积）", 24.dp + colW, colW)
-
-        val specs = listOf(
-            demoSpec("底层 B", "blur ${fmt(blurDp)}dp", "API31+", blurDp = blurDp),
-            demoSpec("中层 A", "blur ${fmt(blurDp)}dp", "API31+", blurDp = blurDp),
-            demoSpec("顶层 C", "blur ${fmt(blurDp)}dp", "API31+", blurDp = blurDp),
-        )
-        StackColumn(bg, 12.dp, colTop, colW, StackMode.SAMPLES_BG, specs.take(layers), panelH, step)
-        StackColumn(bg, 24.dp + colW, colTop, colW, StackMode.COMPOUND, specs.take(layers), panelH, step)
     }
 }
 
 @Composable
-private fun ColumnLabel(text: String, x: Dp, width: Dp) {
+private fun StackLabel(text: String, x: Dp, width: Dp) {
     Text(
         text = text,
         color = Color(0xFFD9F6FF),
-        fontSize = 9.5.sp,
-        lineHeight = 12.sp,
+        fontSize = 9.sp,
+        lineHeight = 11.sp,
         style = TextStyle(shadow = Shadow(Color(0xCC000000), Offset(1f, 1f), 3f)),
         modifier = Modifier
             .offset(x = x, y = 6.dp)
             .width(width)
-            .background(Color(0x99000000), RoundedCornerShape(4.dp))
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+            .background(Color(0xCC000000), RoundedCornerShape(4.dp))
+            .padding(horizontal = 5.dp, vertical = 3.dp),
     )
 }
 
 @Composable
 private fun StackColumn(
-    bg: LayerCapture,
-    x: Dp,
-    y: Dp,
-    width: Dp,
+    origin: Offset,
+    backdrop: BackdropPainter,
+    colX: Dp,
+    colY: Dp,
+    colW: Dp,
     mode: StackMode,
     specs: List<GlassSpec>,
     panelH: Dp,
     step: Dp,
 ) {
-    val c1 = rememberLayerCapture()
-    val c2 = rememberLayerCapture()
-    val totalH = panelH + step * (specs.size - 1)
-    Box(Modifier.offset(x = x, y = y).width(width).height(totalH)) {
-        when {
-            specs.size == 1 -> GlassPanel(
-                spec = specs[0],
-                capture = bg,
-                modifier = Modifier.offset(0.dp, 0.dp).fillMaxWidth().height(panelH),
-            )
+    val d = LocalDensity.current
+    val colXpx = with(d) { colX.toPx() }
+    val colYpx = with(d) { colY.toPx() }
+    val stepPx = with(d) { step.toPx() }
+    fun panelRoot(i: Int) = Offset(origin.x + colXpx, origin.y + colYpx + stepPx * i)
 
+    Box(Modifier.offset(x = colX, y = colY).width(colW).height(panelH + step * (specs.size - 1))) {
+        when {
             mode == StackMode.SAMPLES_BG -> specs.forEachIndexed { i, spec ->
                 GlassPanel(
                     spec = spec,
-                    capture = bg,
+                    backdrop = backdrop,
                     modifier = Modifier.offset(0.dp, step * i).fillMaxWidth().height(panelH),
                 )
             }
 
             specs.size == 2 -> {
-                RecordInto(c1, Modifier.fillMaxSize()) {
-                    DrawCaptureAt(bg, x, y)
-                    GlassPanel(
-                        spec = specs[0],
-                        capture = bg,
-                        modifier = Modifier.offset(0.dp, 0.dp).fillMaxWidth().height(panelH),
-                    )
+                GlassPanel(
+                    spec = specs[0],
+                    backdrop = backdrop,
+                    modifier = Modifier.offset(0.dp, 0.dp).fillMaxWidth().height(panelH),
+                )
+                val composite: BackdropPainter = { m, o, s ->
+                    CompositeBackdrop(m, o, backdrop, specs[0], panelRoot(0), colW, panelH)
                 }
                 GlassPanel(
                     spec = specs[1],
-                    capture = c1,
+                    backdrop = composite,
                     modifier = Modifier.offset(0.dp, step).fillMaxWidth().height(panelH),
                 )
             }
 
             else -> {
-                RecordInto(c1, Modifier.fillMaxSize()) {
-                    DrawCaptureAt(bg, x, y)
-                    GlassPanel(
-                        spec = specs[0],
-                        capture = bg,
-                        modifier = Modifier.offset(0.dp, 0.dp).fillMaxWidth().height(panelH),
-                    )
+                GlassPanel(
+                    spec = specs[0],
+                    backdrop = backdrop,
+                    modifier = Modifier.offset(0.dp, 0.dp).fillMaxWidth().height(panelH),
+                )
+                val composite1: BackdropPainter = { m, o, s ->
+                    CompositeBackdrop(m, o, backdrop, specs[0], panelRoot(0), colW, panelH)
                 }
-                RecordInto(c2, Modifier.fillMaxSize()) {
-                    DrawCaptureAt(c1, 0.dp, 0.dp)
-                    GlassPanel(
-                        spec = specs[1],
-                        capture = c1,
-                        modifier = Modifier.offset(0.dp, step).fillMaxWidth().height(panelH),
-                    )
+                GlassPanel(
+                    spec = specs[1],
+                    backdrop = composite1,
+                    modifier = Modifier.offset(0.dp, step).fillMaxWidth().height(panelH),
+                )
+                val composite2: BackdropPainter = { m, o, s ->
+                    CompositeBackdrop(m, o, composite1, specs[1], panelRoot(1), colW, panelH)
                 }
                 GlassPanel(
                     spec = specs[2],
-                    capture = c2,
+                    backdrop = composite2,
                     modifier = Modifier.offset(0.dp, step * 2).fillMaxWidth().height(panelH),
                 )
             }
@@ -442,36 +497,156 @@ private fun StackColumn(
 }
 
 /**
- * 把 capture 层按 root 对齐画进当前节点：
- * 当前节点在 root 的 (offsetX, offsetY)，捕获层内容按 root 坐标记录，所以要反向平移。
+ * "已合成结果"的重绘器：先把下层背景画一遍，再把(root 坐标 [lowerRoot]) 处的下层玻璃画一遍。
+ * 这样上层玻璃采样到的就是"内容 + 下层玻璃"的合成结果（等价于真 backdrop 的累积）。
  */
 @Composable
-fun DrawCaptureAt(capture: LayerCapture, offsetX: Dp, offsetY: Dp) {
-    val d = LocalDensity.current
-    val ox = with(d) { offsetX.toPx() }
-    val oy = with(d) { offsetY.toPx() }
-    Box(
-        Modifier.fillMaxSize().drawBehind {
-            translate(-ox, -oy) { drawLayer(capture.layer) }
-        }
-    )
+private fun CompositeBackdrop(
+    modifier: Modifier,
+    atRoot: Offset,
+    lowerBackdrop: BackdropPainter,
+    lowerSpec: GlassSpec,
+    lowerRoot: Offset,
+    lowerWidth: Dp,
+    lowerHeight: Dp,
+) {
+    Box(modifier) {
+        lowerBackdrop(Modifier.fillMaxSize(), atRoot, 1f)
+        GlassPanel(
+            spec = lowerSpec,
+            backdrop = lowerBackdrop,
+            modifier = Modifier
+                .offset {
+                    IntOffset(
+                        (lowerRoot.x - atRoot.x).roundToInt(),
+                        (lowerRoot.y - atRoot.y).roundToInt(),
+                    )
+                }
+                .width(lowerWidth)
+                .height(lowerHeight),
+        )
+    }
 }
 
 /* ------------------------------------------------------------------------------------------------
- * 场景 8：窗口级模糊（Dialog + FLAG_BLUR_BEHIND + setBackgroundBlurRadius）
+ * ④ 滚动列表上方的玻璃：背景自动滚动，玻璃固定，看模糊是否"跟手更新"
+ * --------------------------------------------------------------------------------------------- */
+
+@Composable
+fun ScrollScene(scrollPx: Float) {
+    GlassSceneFrame(scrollPx) { origin, backdrop ->
+        Column(Modifier.fillMaxSize().padding(10.dp)) {
+            Text(
+                "④ 滚动列表 + 固定玻璃：背景每帧在滚，玻璃里的模糊应随之更新（冻结=陈旧模糊）",
+                color = Color.White,
+                fontSize = 10.sp,
+                modifier = Modifier
+                    .background(Color(0xCC000000), RoundedCornerShape(4.dp))
+                    .padding(6.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            // 固定位置的玻璃（不随背景滚动）：看它里面的内容是否跟着背景变
+            GlassPanel(
+                spec = demoSpec("固定玻璃 A（背景在滚）", "若内容不动 = 模糊冻结/陈旧", "API31+", blurDp = 24f),
+                backdrop = backdrop,
+                modifier = Modifier.fillMaxWidth().height(130.dp),
+            )
+            Spacer(Modifier.height(10.dp))
+            GlassPanel(
+                spec = demoSpec("固定玻璃 B", "同一帧内两块玻璃采样各自位置", "API31+", blurDp = 32f),
+                backdrop = backdrop,
+                modifier = Modifier.fillMaxWidth().height(130.dp),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "对比方法：间隔 3 秒截两张图，玻璃内二维码/文字位置应发生位移。",
+                color = Color(0xFFB7F7FF),
+                fontSize = 9.sp,
+                modifier = Modifier
+                    .background(Color(0xCC000000), RoundedCornerShape(4.dp))
+                    .padding(6.dp),
+            )
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * ⑤ 性能：1/2/3 层玻璃 + 动画模糊半径
+ * --------------------------------------------------------------------------------------------- */
+
+@Composable
+fun PerfScene(scrollPx: Float, meter: FrameMeter, blurDp: Float, layers: Int, fixedRadius: Boolean, liquid: Boolean = false) {
+    val transition = rememberInfiniteTransition(label = "perf")
+    val animRadius by transition.animateFloat(
+        initialValue = 6f,
+        targetValue = 40f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "r",
+    )
+    LaunchedEffect(Unit) {
+        meter.start()
+        Log.i(GLASSLAB_TAG, "PERF start layers=$layers")
+    }
+    DisposableEffect(Unit) {
+        onDispose { meter.stop() }
+    }
+    GlassSceneFrame(scrollPx) { origin, backdrop ->
+        Column(Modifier.fillMaxSize().padding(10.dp)) {
+            Spacer(Modifier.height(2.dp))
+            repeat(layers.coerceIn(1, 3)) { i ->
+                GlassPanel(
+                    spec = demoSpec(
+                        label = "第 ${i + 1} 层：blur ${if (fixedRadius) fmt(blurDp) else "动画 " + fmt(animRadius)}dp" +
+                            (if (liquid) " + 液体 shader" else ""),
+                        sub = "共 $layers 层玻璃 + 背景每帧滚动",
+                        api = if (liquid) "API33+" else "API31+",
+                        blurDp = if (fixedRadius) blurDp else animRadius.coerceAtLeast(4f),
+                        refractDp = if (liquid) 3f else 0f,
+                        liquidShader = liquid,
+                        rim = if (liquid) 0.55f else 0.30f,
+                    ),
+                    backdrop = backdrop,
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+            Spacer(Modifier.height(4.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xE6000000))
+                    .padding(10.dp),
+            ) {
+                Text(
+                    text = "帧时间（UI 线程 Choreographer，host GPU 模拟器）：\n" + meter.snapshotNow() +
+                        "\n\n层数=$layers · 每块玻璃每帧重绘一遍背景",
+                    color = Color(0xFFD8F8FF),
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                )
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * 窗口级模糊（Dialog + FLAG_BLUR_BEHIND + setBackgroundBlurRadius）
  * --------------------------------------------------------------------------------------------- */
 
 @Composable
 fun WindowScene(scrollPx: Float, radiusDp: Float, autoDialog: Boolean) {
-    val bg = rememberLayerCapture()
     val context = LocalContext.current
     var dialog by remember { mutableStateOf<Dialog?>(null) }
     var open by remember { mutableStateOf(autoDialog) }
+    var blurEnabled by remember { mutableStateOf(true) }
 
-    LaunchedEffect(open) {
+    LaunchedEffect(open, blurEnabled) {
         if (open && dialog == null) {
-            Log.i(GLASSLAB_TAG, "WINDOW blur: crossWindowBlur=" + tryCrossWindowBlur(context))
-            dialog = showBlurDialog(context, radiusDp)
+            dialog = showBlurDialog(context, radiusDp, blurEnabled)
         }
         if (!open && dialog != null) {
             dialog?.dismiss()
@@ -485,77 +660,82 @@ fun WindowScene(scrollPx: Float, radiusDp: Float, autoDialog: Boolean) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        RecordInto(bg, Modifier.fillMaxSize()) {
-            GlassBackdrop(scrollPx, Modifier.fillMaxSize())
-        }
-        // 一个 in-app 玻璃面板：用来对比"窗口级模糊"和"in-app 层叠"
-        GlassPanel(
-            spec = demoSpec(
-                label = "in-app 玻璃（对照）",
-                sub = "同一屏内的 backdrop 模糊；窗口级模糊应该是「整窗」效果，两者会叠加",
-                api = "API31+",
-                blurDp = 24f,
-            ),
-            capture = bg,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(12.dp)
-                .height(150.dp),
-        )
-        Column(
-            Modifier.align(Alignment.TopEnd).padding(10.dp),
-            horizontalAlignment = Alignment.End,
-        ) {
-            TextButton(onClick = { open = true }) {
-                Text(if (open) "窗口模糊 Dialog 已打开" else "打开窗口级模糊 Dialog", color = Color.White, fontSize = 11.sp)
+    GlassSceneFrame(scrollPx) { origin, backdrop ->
+        Box(Modifier.fillMaxSize()) {
+            GlassPanel(
+                spec = demoSpec(
+                    label = "in-app 玻璃（对照）",
+                    sub = "同屏内的 backdrop 模糊（重绘路径）；窗口级模糊若生效，Dialog 后面会整体糊掉",
+                    api = "API31+",
+                    blurDp = 24f,
+                ),
+                backdrop = backdrop,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(12.dp)
+                    .height(150.dp),
+            )
+            Column(
+                Modifier.align(Alignment.TopEnd).padding(8.dp),
+                horizontalAlignment = Alignment.End,
+            ) {
+                TextButton(onClick = {
+                    blurEnabled = true
+                    open = true
+                }) {
+                    Text("打开窗口模糊 Dialog", color = Color.White, fontSize = 11.sp)
+                }
+                TextButton(onClick = {
+                    blurEnabled = false
+                    open = true
+                }) {
+                    Text("打开无模糊对照 Dialog", color = Color(0xFFFFC777), fontSize = 11.sp)
+                }
+                Text(
+                    "结果：" + GlassLabDiag.windowBlurRadiusResult,
+                    color = Color(0xFFB7F7FF),
+                    fontSize = 9.sp,
+                    style = TextStyle(shadow = Shadow(Color(0xCC000000), Offset(1f, 1f), 3f)),
+                )
+                Text(
+                    "crossWindowBlur=" + GlassLabDiag.crossWindowBlurResult,
+                    color = Color(0xFFB7F7FF),
+                    fontSize = 9.sp,
+                    style = TextStyle(shadow = Shadow(Color(0xCC000000), Offset(1f, 1f), 3f)),
+                )
             }
-            Text(
-                "结果：" + GlassLabDiag.windowBlurRadiusResult,
-                color = Color(0xFFB7F7FF),
-                fontSize = 9.sp,
-                style = TextStyle(shadow = Shadow(Color(0xCC000000), Offset(1f, 1f), 3f)),
-            )
-            Text(
-                "crossWindowBlur=" + GlassLabDiag.crossWindowBlurResult,
-                color = Color(0xFFB7F7FF),
-                fontSize = 9.sp,
-                style = TextStyle(shadow = Shadow(Color(0xCC000000), Offset(1f, 1f), 3f)),
-            )
         }
-    }
-}
-
-private fun tryCrossWindowBlur(context: Context): Boolean {
-    if (Build.VERSION.SDK_INT < 31) return false
-    return try {
-        (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).isCrossWindowBlurEnabled
-    } catch (t: Throwable) {
-        false
     }
 }
 
 /**
- * 用纯 Android View 搭的 Dialog（不依赖 Compose Dialog 内部实现，才能可靠拿到 window）。
- * 先设置 FLAG_BLUR_BEHIND + setBackgroundBlurRadius，再 show。
+ * 纯 Android View 的 Dialog（不依赖 Compose Dialog 内部实现，才能可靠拿到 window）。
+ * applyBlur=false 时是"无模糊对照"。
  */
-internal fun showBlurDialog(context: Context, radiusDp: Float): Dialog {
+internal fun showBlurDialog(context: Context, radiusDp: Float, applyBlur: Boolean): Dialog {
     val dialog = Dialog(context, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
     val density = context.resources.displayMetrics.density
     val radiusPx = (radiusDp * density).toInt()
 
     val title = TextView(context).apply {
-        text = "窗口级模糊（Window blur）"
+        text = if (applyBlur) "窗口级模糊（Window blur）" else "对照：无模糊 Dialog"
         setTextColor(AndroidColor.WHITE)
         textSize = 17f
         setPadding(0, 0, 0, 8)
     }
     val body = TextView(context).apply {
-        text = "FLAG_BLUR_BEHIND + setBackgroundBlurRadius($radiusDp dp)\n" +
-            "API ${Build.VERSION.SDK_INT}\n\n" +
-            "若系统跨窗口模糊开启：Dialog 后面的整窗内容应该被糊掉。\n" +
-            "若没糊：这台设备的跨窗口模糊不可用（模拟器常见）。"
+        text = if (applyBlur) {
+            "FLAG_BLUR_BEHIND + setBackgroundBlurRadius($radiusDp dp)\n" +
+                "API ${Build.VERSION.SDK_INT} · crossWindowBlur=${if (Build.VERSION.SDK_INT >= 31) runCatching {
+                    (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).isCrossWindowBlurEnabled
+                }.getOrDefault(false) else "API<31"}\n\n" +
+                "若系统跨窗口模糊真的生效：Dialog 后面的整窗内容应该糊掉。\n" +
+                "若没糊：本机跨窗口模糊不可用（或本外观对照见另一张图）。"
+        } else {
+            "同一个 Dialog，但**不加** FLAG_BLUR_BEHIND / blurRadius。\n" +
+                "用来对照「窗口模糊到底有没有生效」。"
+        }
         setTextColor(AndroidColor.argb(235, 220, 240, 255))
         textSize = 12f
     }
@@ -598,12 +778,18 @@ internal fun showBlurDialog(context: Context, radiusDp: Float): Dialog {
             if (w == null) {
                 "window=null"
             } else {
-                val attrs = w.attributes
-                attrs.flags = attrs.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                w.attributes = attrs
-                w.setBackgroundBlurRadius(radiusPx)
+                if (applyBlur) {
+                    val attrs = w.attributes
+                    attrs.flags = attrs.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                    w.attributes = attrs
+                    w.setBackgroundBlurRadius(radiusPx)
+                }
                 w.setDimAmount(0f)
-                "已请求 blurRadius=${radiusPx}px（是否生效看跨窗口模糊开关与截图）"
+                if (applyBlur) {
+                    "已请求 blurRadius=${radiusPx}px（是否真生效看截图）"
+                } else {
+                    "对照：未请求模糊"
+                }
             }
         }
     } catch (t: Throwable) {
@@ -614,79 +800,231 @@ internal fun showBlurDialog(context: Context, radiusDp: Float): Dialog {
     GlassLabDiag.crossWindowBlurTried = true
     GlassLabDiag.crossWindowBlurResult = try {
         if (Build.VERSION.SDK_INT >= 31) {
-            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).isCrossWindowBlurEnabled
-                .toString()
+            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).isCrossWindowBlurEnabled.toString()
         } else {
             "API<31"
         }
     } catch (t: Throwable) {
         "查询异常"
     }
-    Log.i(GLASSLAB_TAG, "WINDOW result=$result crossWindowBlur=${GlassLabDiag.crossWindowBlurResult}")
+    Log.i(GLASSLAB_TAG, "WINDOW applyBlur=$applyBlur result=$result crossWindowBlur=${GlassLabDiag.crossWindowBlurResult}")
     dialog.show()
-    GlassLabDiag.windowBlurRadiusResult = result + " · shown"
     return dialog
 }
 
 /* ------------------------------------------------------------------------------------------------
- * 场景：性能（帧时间）—— 动画模糊半径 + 自动滚动背景，持续出帧后统计
+ * 规格 & 小工具
+ * --------------------------------------------------------------------------------------------- */
+
+internal fun demoSpec(
+    label: String,
+    sub: String,
+    api: String,
+    blurDp: Float = 24f,
+    sat: Float = 1f,
+    bright: Float = 0f,
+    noise: Float = 0f,
+    rim: Float = 0.30f,
+    innerShadow: Float = 0.10f,
+    tintAlpha: Float = 0.06f,
+    legacy: Boolean = false,
+    refractDp: Float = 0f,
+    refractWholePanel: Boolean = false,
+    liquidShader: Boolean = false,
+    forceRepaint: Boolean = false,
+    dispersion: Float = 1.2f,
+    renderScale: Float = 1f,
+): GlassSpec = GlassSpec(
+    label = label,
+    sub = sub,
+    api = api,
+    blurDp = blurDp,
+    sat = sat,
+    bright = bright,
+    noise = noise,
+    rim = rim,
+    innerShadow = innerShadow,
+    tintAlpha = tintAlpha,
+    legacy = legacy,
+    refractDp = refractDp,
+    refractWholePanel = refractWholePanel,
+    liquidShader = liquidShader,
+    dispersion = dispersion,
+    renderScale = renderScale,
+    forceRepaint = forceRepaint,
+)
+
+internal fun fmt(v: Float, digits: Int = 0): String =
+    if (digits <= 0) v.roundToInt().toString() else String.format(java.util.Locale.US, "%.${digits}f", v)
+
+/* ------------------------------------------------------------------------------------------------
+ * 动态验证：玻璃下方滚动列表，比较「每帧 / 隔帧 / 降分辨率」三种更新策略
+ *   - glass_throttle=N：玻璃里的背景每 N 帧才更新一次（N=1 每帧；N=2 隔帧）
+ *   - glass_render_scale=1|0.5|0.25：玻璃内背景以低分辨率渲染再放大
+ * 组合方式：adb ... --es glass_scene dynamic --ei glass_throttle 2 --ef glass_render_scale 0.5
  * --------------------------------------------------------------------------------------------- */
 
 @Composable
-fun PerfScene(scrollPx: Float, meter: FrameMeter, blurDp: Float) {
-    val bg = rememberLayerCapture()
-    val transition = rememberInfiniteTransition(label = "perf")
-    val animRadius by transition.animateFloat(
-        initialValue = 6f,
-        targetValue = 48f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "radius",
-    )
+fun DynamicScene(args: GlassLabArgs, scrollPx: Float, meter: FrameMeter) {
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    var frame by remember { mutableStateOf(0) }
+    var glassScroll by remember { mutableStateOf(scrollPx) }
+
+    LaunchedEffect(scrollPx) {
+        frame += 1
+        if (args.throttleFrames <= 1 || frame % args.throttleFrames == 0) glassScroll = scrollPx
+    }
+    LaunchedEffect(Unit) { meter.start() }
+    DisposableEffect(Unit) { onDispose { meter.stop() } }
+
+    val scale = args.renderScale.coerceIn(0.2f, 1f)
+    val strategy = (if (args.throttleFrames <= 1) "每帧更新" else "隔 ${args.throttleFrames} 帧更新") +
+        " · 分辨率 " + (scale * 100f).roundToInt() + "%"
+
+    CaptureHost(recordEvery = args.throttleFrames.coerceAtLeast(1), background = { m -> GlassBackdrop(scrollPx, Offset.Zero, 1f, m) }) {
+    Box(Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInRoot() }) {
+        // 玻璃里的背景：用可能被节流/降采样的 scroll 重绘
+        val glassBackdrop: BackdropPainter = { m, o, s -> GlassBackdrop(glassScroll, o - origin, s, m) }
+
+        when (args.area) {
+            "top" -> GlassPanel(
+                spec = demoSpec("顶栏 60dp（≈5% 屏）", strategy, "API31+", blurDp = 24f).copy(renderScale = scale),
+                backdrop = glassBackdrop,
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(60.dp),
+            )
+            "input" -> GlassPanel(
+                spec = demoSpec("输入区 100dp（≈8% 屏）", strategy, "API31+", blurDp = 24f).copy(renderScale = scale),
+                backdrop = glassBackdrop,
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(100.dp),
+            )
+            "full" -> GlassPanel(
+                spec = demoSpec("整屏玻璃（≈100% 屏）", strategy, "API31+", blurDp = 24f).copy(renderScale = scale),
+                backdrop = glassBackdrop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            else -> {
+                GlassPanel(
+                    spec = demoSpec("顶栏 60dp（≈5% 屏）", strategy, "API31+", blurDp = 24f).copy(renderScale = scale),
+                    backdrop = glassBackdrop,
+                    modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(60.dp),
+                )
+                GlassPanel(
+                    spec = demoSpec("输入区 100dp（≈8% 屏）", strategy, "API31+", blurDp = 24f).copy(renderScale = scale),
+                    backdrop = glassBackdrop,
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(100.dp),
+                )
+            }
+        }
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color(0xE6000000))
+                .padding(10.dp),
+        ) {
+            Text(
+                "动态策略：$strategy\n" + meter.snapshotNow() +
+                    "\n玻璃面积占比：顶栏≈5% + 输入区≈8% ≈ 13% 屏幕面积" +
+                    "\n（模拟器基线本身 >16.6ms，只作相对比较）",
+                color = Color(0xFFD8F8FF),
+                fontSize = 10.sp,
+                lineHeight = 14.sp,
+            )
+        }
+    }
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * 窗口级 blurBehind 动态测试：全屏透明 overlay window，背后列表在滚
+ * --------------------------------------------------------------------------------------------- */
+
+@Composable
+fun WindowBlurDynamicScene(scrollPx: Float) {
+    val context = LocalContext.current
+    var dialog by remember { mutableStateOf<Dialog?>(null) }
     LaunchedEffect(Unit) {
-        meter.start()
-        Log.i(GLASSLAB_TAG, "PERF start: blur animation + auto scroll")
+        runCatching { dialog = showDynamicBlurOverlay(context) }
+            .onFailure { GlassLabDiag.windowBlurRadiusResult = "失败：" + it.message }
     }
     DisposableEffect(Unit) {
-        onDispose { meter.stop() }
+        onDispose {
+            dialog?.dismiss()
+            dialog = null
+        }
     }
-
     Box(Modifier.fillMaxSize()) {
-        RecordInto(bg, Modifier.fillMaxSize()) {
-            GlassBackdrop(scrollPx, Modifier.fillMaxSize())
-        }
-        Column(Modifier.fillMaxSize().padding(12.dp)) {
-            Spacer(Modifier.height(2.dp))
-            repeat(3) { i ->
-                GlassPanel(
-                    spec = demoSpec(
-                        label = "动画模糊半径 ${fmt(animRadius)}dp",
-                        sub = "第 ${i + 1} 块：持续重绘，用于测帧时间",
-                        api = "API31+",
-                        blurDp = animRadius.coerceAtLeast(4f),
-                    ),
-                    capture = bg,
-                    modifier = Modifier.fillMaxWidth().height(150.dp).padding(vertical = 4.dp),
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xE6000000))
-                    .padding(12.dp),
-            ) {
-                Text(
-                    text = "帧时间（UI 线程 Choreographer，软件 GPU）：\n" + meter.snapshotNow() +
-                        "\n\n注：swiftshader 只代表「能渲染」，不代表真机流畅。",
-                    color = Color(0xFFD8F8FF),
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp,
-                )
-            }
-        }
+        GlassBackdrop(scrollPx, Offset.Zero, 1f, Modifier.fillMaxSize())
+        Text(
+            "窗口级 blurBehind 动态测试：背后列表在滚。\n" +
+                "overlay 后面的内容若「在动 + 是糊的」= 实时跟随（免费方案）；\n" +
+                "若锐利或冻结 = 该设备/ROM 不支持跨窗口模糊。",
+            color = Color.White,
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(16.dp)
+                .background(Color(0xDD000000), RoundedCornerShape(6.dp))
+                .padding(10.dp),
+        )
     }
+}
+
+private fun showDynamicBlurOverlay(context: Context): Dialog {
+    val dialog = Dialog(context, android.R.style.Theme_Translucent_NoTitleBar_Fullscreen)
+    val density = context.resources.displayMetrics.density
+    val label = TextView(context).apply {
+        text = "窗口级 blurBehind（全屏透明 overlay）\nAPI ${Build.VERSION.SDK_INT} · crossWindowBlur=" +
+            (if (Build.VERSION.SDK_INT >= 31) runCatching {
+                (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).isCrossWindowBlurEnabled
+            }.getOrDefault(false) else "API<31") +
+            "\n背后的列表在滚动：若这里是糊的且在变 = 实时跟随"
+        setTextColor(AndroidColor.WHITE)
+        textSize = 12f
+        setBackgroundColor(AndroidColor.argb(0x66, 0, 0, 0))
+        setPadding(24, 16, 24, 16)
+    }
+    val root = FrameLayout(context).apply {
+        addView(
+            label,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                gravity = Gravity.BOTTOM
+                bottomMargin = (260 * density).toInt()
+            },
+        )
+    }
+    dialog.setContentView(root)
+    val result = try {
+        if (Build.VERSION.SDK_INT < 31) {
+            "API<31：无窗口模糊"
+        } else {
+            val w = dialog.window
+            if (w == null) {
+                "window=null"
+            } else {
+                val attrs = w.attributes
+                attrs.flags = attrs.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                w.attributes = attrs
+                w.setBackgroundBlurRadius((40 * density).toInt())
+                w.setDimAmount(0f)
+                w.setLayout(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                )
+                "overlay 已请求 blurBehind(40dp)"
+            }
+        }
+    } catch (t: Throwable) {
+        "异常：" + (t.message ?: t::class.simpleName)
+    }
+    GlassLabDiag.windowBlurRadiusResult = result
+    Log.i(GLASSLAB_TAG, "WINDOW dynamic overlay: $result")
+    dialog.show()
+    return dialog
 }

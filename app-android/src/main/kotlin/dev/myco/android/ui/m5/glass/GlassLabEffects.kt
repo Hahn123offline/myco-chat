@@ -75,7 +75,7 @@ fun buildBlurPlusColorEffect(blurPx: Float, sat: Float, bright: Float): ComposeR
 internal const val AGSL_REFRACT = """
 uniform shader content;
 uniform float2 size;
-uniform float2 refract;
+uniform float2 refr;
 uniform float edge;
 uniform float n;
 half4 main(float2 coord) {
@@ -87,7 +87,7 @@ half4 main(float2 coord) {
     float r = pow(max(d, 0.0001), 1.0 / n);
     float k = smoothstep(1.0 - edge, 1.0, r);
     float2 dir = p / max(length(p), 0.0001);
-    float2 off = -dir * k * refract;
+    float2 off = -dir * k * refr;
     return content.eval(clamp(coord + off, float2(0.0, 0.0), size));
 }
 """
@@ -113,7 +113,7 @@ fun buildRefractEffect(
     return try {
         val shader = RuntimeShader(AGSL_REFRACT)
         shader.setFloatUniform("size", width, height)
-        shader.setFloatUniform("refract", refractPx, refractPx)
+        shader.setFloatUniform("refr", refractPx, refractPx)
         shader.setFloatUniform("edge", edge)
         shader.setFloatUniform("n", exponent)
         val e = RenderEffect.createRuntimeShaderEffect(shader, "content")
@@ -149,5 +149,79 @@ internal object GlassLabNoise {
             isFilterBitmap = false
             shader = BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
         }
+    }
+}
+
+/**
+ * 「液体玻璃」AGSL 着色器（API 33+）：
+ *  ① 超椭圆 SDF 梯度 → 边缘法线
+ *  ② 越靠边采样偏移越大（1–3px 级）→ 边缘凸起/放大感
+ *  ③ 色散：R / B 相对 G 反向偏移 → 清水玻璃边缘的彩边
+ *  ④ 镜面高光：沿边缘、随法线朝向变化（上边缘更亮）
+ *  ⑤ 内阴影：边缘内侧轻微压暗
+ *
+ * ⚠️ 输入是"本节点已渲染的内容"（这里就是重绘出来的背景），**不能采样窗口背景**。
+ */
+internal const val AGSL_LIQUID = """
+uniform shader content;
+uniform float2 size;
+uniform float2 refr;
+uniform float disp;
+uniform float edge;
+uniform float n;
+uniform float rim;
+uniform float shadow;
+half4 main(float2 coord) {
+    float2 c = size * 0.5;
+    float2 p = (coord - c) / max(c, float2(1.0, 1.0));
+    float ax = abs(p.x);
+    float ay = abs(p.y);
+    float f = pow(ax, n) + pow(ay, n);
+    float r = pow(max(f, 0.0001), 1.0 / n);
+    float2 g = float2(sign(p.x) * pow(ax, max(n - 1.0, 0.0)),
+                      sign(p.y) * pow(ay, max(n - 1.0, 0.0)));
+    float2 dir = g / max(length(g), 0.0001);
+    float e = smoothstep(1.0 - edge, 1.0, r);
+    float2 base = coord - dir * e * refr;
+    float2 dispOff = dir * e * disp;
+    half4 sr = content.eval(clamp(base - dispOff, float2(0.0, 0.0), size));
+    half4 sg = content.eval(clamp(base, float2(0.0, 0.0), size));
+    half4 sb = content.eval(clamp(base + dispOff, float2(0.0, 0.0), size));
+    float hl = pow(e, 2.0) * (0.35 + 0.65 * clamp(-dir.y, 0.0, 1.0));
+    float3 col = float3(sr.r, sg.g, sb.b) + float3(1.0) * (hl * rim);
+    col *= 1.0 - e * shadow * clamp(-dir.y * 0.5 + 0.5, 0.0, 1.0);
+    return half4(col.r, col.g, col.b, 1.0);
+}
+"""
+
+fun buildLiquidEffect(
+    width: Float,
+    height: Float,
+    refractPx: Float,
+    dispersionPx: Float,
+    edge: Float,
+    exponent: Float,
+    rim: Float,
+    shadow: Float,
+): RefractBuild {
+    if (Build.VERSION.SDK_INT < 33) {
+        return RefractBuild(null, "不可用：API ${Build.VERSION.SDK_INT} < 33（AGSL 需要 API 33）")
+    }
+    if (width <= 1f || height <= 1f) return RefractBuild(null, "尺寸未就绪")
+    return try {
+        val shader = RuntimeShader(AGSL_LIQUID)
+        shader.setFloatUniform("size", width, height)
+        shader.setFloatUniform("refr", refractPx, refractPx)
+        shader.setFloatUniform("disp", dispersionPx)
+        shader.setFloatUniform("edge", edge)
+        shader.setFloatUniform("n", exponent)
+        shader.setFloatUniform("rim", rim)
+        shader.setFloatUniform("shadow", shadow)
+        RefractBuild(
+            RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect(),
+            "可用（液体折射着色器生效）",
+        )
+    } catch (t: Throwable) {
+        RefractBuild(null, "失败", t.message ?: t::class.simpleName)
     }
 }

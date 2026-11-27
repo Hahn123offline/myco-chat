@@ -17,6 +17,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,12 +62,14 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,6 +96,21 @@ import dev.myco.android.ui.swipeRightToExit
 import dev.myco.android.ui.ThemeMode
 import dev.myco.android.ui.ThemePrefs
 import dev.myco.android.ui.swipeRightToOpenDrawer
+// ===== B2 接线：composer / attachment =====
+import dev.myco.android.ui.m5.attachment.AttachmentLimits
+import dev.myco.android.ui.m5.attachment.AttachmentSheetCallbacks
+import dev.myco.android.ui.m5.attachment.AttachmentSheetM5
+import dev.myco.android.ui.m5.attachment.IncomingAttachment
+import dev.myco.android.ui.m5.attachment.IntakeResult
+import dev.myco.android.ui.m5.attachment.rememberAttachmentSheetState
+import dev.myco.android.ui.m5.composer.ComposerCommandId
+import dev.myco.android.ui.m5.composer.ComposerController
+import dev.myco.android.ui.m5.composer.ComposerM5
+import dev.myco.android.ui.m5.composer.ComposerMetrics
+import dev.myco.android.ui.m5.composer.ComposerSendSnapshot
+import dev.myco.android.ui.m5.composer.QueuedMessage
+import dev.myco.android.ui.m5.primitives.M5ToastHost
+import dev.myco.android.ui.m5.primitives.rememberM5ToastState
 import dev.myco.core.bridge.Command
 import dev.myco.core.bridge.BridgeEvent
 import dev.myco.core.bridge.CommandResult
@@ -771,6 +789,24 @@ private fun ChatScreen(
     var showAttachSheet by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
+    // ===== B2 接线：新 composer / 新附件 sheet（回滚开关：改成 false → 旧 M5Composer + 旧附件 sheet/M5AttachmentRow 全回来） =====
+    val useNewComposer = true
+    // 草稿/队列/附件轨的本地状态机（纯逻辑在 ComposerState.kt；这里只持有状态）。切会话即重建（草稿不跨会话）
+    val composerController = remember(sessionId) { ComposerController() }
+    val composerMetrics = remember { mutableStateOf(ComposerMetrics()) }
+    val composerToastState = rememberM5ToastState()
+    // 提交在飞：防重入守卫（BUG-004）；发送点击瞬间置 true，ChatSend 结算置回
+    var submitting by remember { mutableStateOf(false) }
+    // 本轮正常结束后要自动出队的 1 条（在事件回调里置位、由 send() 声明之后的 LaunchedEffect 消费，
+    // 避免"本地函数互相前向引用"）
+    var queuedAutoSend by remember { mutableStateOf<QueuedMessage?>(null) }
+    val attachSheetState = rememberAttachmentSheetState()
+    // D-48：附件面板关闭回焦草稿区
+    val composerDraftFocus = remember { FocusRequester() }
+    val composerAttachFocus = remember { FocusRequester() }
+    // localId → 已落盘的 AttachmentRef（发送时必须用真实 ref；状态机里只有 remoteId）
+    val savedAttachmentRefs = remember { mutableStateMapOf<String, dev.myco.core.spec.AttachmentRef>() }
+
     suspend fun reload(clearLive: Boolean = false) {
         val res = bridge.query(Query.SessionEvents(sessionId, 0))
         val sel = bridge.query(Query.SessionModel(sessionId))
@@ -888,6 +924,8 @@ private fun ChatScreen(
     }
 
     LaunchedEffect(sessionId) {
+        // 切会话：已保存附件映射随旧会话作废（草稿/队列/轨由 remember(sessionId) 的 controller 一起重建）
+        savedAttachmentRefs.clear()
         loadModelInfo()
         reload()
         bridge.events.collect { e ->
@@ -910,11 +948,19 @@ private fun ChatScreen(
                     streamingTurn = e.turnId
                     settleFrames = 12
                     reload(clearLive = true)
+                    // B2：本轮**正常结束** → 客户端队列只出队 1 条（停止/失败轮不会走到这里，见 Failed/onStop）
+                    queuedAutoSend = composerController.onAssistantTurnDone()
+                    // 生成结束：释放前台服务（与 send() 的 begin 成对；本文件内唯一的 end 点之一）
+                    MycoForegroundService.end(context)
                 }
                 is BridgeEvent.Failed -> if (streaming != null || error == null) {
                     streamTextBuffer.setLength(0)
                     streamReasoningBuffer.setLength(0)
                     error = "${e.code}: ${e.message}"; streaming = null; streamingReasoning = null; liveEntries = emptyList()
+                    // B2：本轮失败 → 队列保留并暂停，不自动连发（CMP-80）
+                    composerController.pauseQueue()
+                    // 生成结束（失败）：释放前台服务
+                    MycoForegroundService.end(context)
                 }
                 is BridgeEvent.SessionUpdated -> Unit
                 is BridgeEvent.ToolStarted -> if (e.sessionId == sessionId) {
@@ -950,9 +996,13 @@ private fun ChatScreen(
         }
     }
 
-    fun send() {
+    fun send(onResult: ((Boolean) -> Unit)? = null) {
         val text = input.trim()
-        if ((text.isEmpty() && pending.isEmpty()) || streaming != null) return
+        if ((text.isEmpty() && pending.isEmpty()) || streaming != null) {
+            // B2：不吞调用方——composer 的 submitting 守卫 / 队列自动发送失败都必须能复位
+            onResult?.invoke(false)
+            return
+        }
         val outgoing = pending
         input = ""; pending = emptyList(); error = null
         optimisticUser = text.ifBlank { outgoing.joinToString(" ") { it.name } }
@@ -969,6 +1019,7 @@ private fun ChatScreen(
         }
         MycoForegroundService.begin(context)
         scope.launch {
+            var ok = false
             try {
                 val r = bridge.send(
                     Command.ChatSend(
@@ -977,7 +1028,8 @@ private fun ChatScreen(
                         providerId = selProviderId, modelId = selModelId, reasoningLevel = selReasoningLevel,
                     )
                 )
-                if (r is CommandResult.Ok) {
+                ok = r is CommandResult.Ok
+                if (ok) {
                     // 首轮结束后用模型生成短标题（额外小请求；失败不影响回答）
                     bridge.send(Command.SessionGenerateTitle(sessionId))
                 }
@@ -986,9 +1038,145 @@ private fun ChatScreen(
                     optimisticUser = null
                 }
                 reload()
+            } catch (t: Throwable) {
+                error = "发送失败：${t.message ?: t::class.simpleName}"
+                optimisticUser = null
             } finally {
-                MycoForegroundService.end(context)
+                // 前台服务在“生成期间”持有（见 MycoForegroundService 注释），不能在这里就 end：
+                // 提交刚开始就 stopService 会撞上 startForeground 的 5s 窗口（既有的
+                // ForegroundServiceDidNotStartInTimeException / 模拟器实测必现崩溃）。
+                // 正常/失败轮的结束点分别在 AssistantDone / Failed 事件里；提交本身失败（没有轮次）
+                // 才在这里延后收尾，避免服务还没 startForeground 就被停。
+                if (!ok) {
+                    scope.launch {
+                        kotlinx.coroutines.delay(1_500)
+                        MycoForegroundService.end(context)
+                    }
+                }
+                // 幂等结算：成功/失败/异常/取消都恰好回调一次
+                onResult?.invoke(ok)
             }
+        }
+    }
+
+    // ===== B2：附件保存（首版沿用现有 AttachmentSave 链路；串行、失败可重试） =====
+    // 限制值：后端投影当前未下发（attachment.md gap #6）→ 不前置拦截，超限由后端错误回执呈现；
+    // **数量不校验**（D-24 / P-ATT-04）。不写任何客户端上限常量。
+    suspend fun saveComposerAttachment(source: IncomingAttachment) {
+        val localId = source.localId
+        val uri = source.uri?.let { android.net.Uri.parse(it) }
+        if (uri == null) {
+            composerController.markAttachmentFailed(localId, "附件缺少本地路径", retryable = false)
+            return
+        }
+        runCatching {
+            val resolver = context.contentResolver
+            val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("读取附件失败")
+            // 相机临时文件：读进内存后立刻删，成功/失败都不留 cache 残留（ATT-09）
+            if (source.temporary) runCatching { java.io.File(uri.path ?: "").delete() }
+            val r = bridge.send(
+                Command.AttachmentSave(
+                    sessionId = sessionId,
+                    name = source.name,
+                    mime = source.mime,
+                    base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP),
+                )
+            )
+            if (r is CommandResult.Err) error("${r.code}: ${r.message}")
+            val o = (r as CommandResult.Ok).data as JsonObject
+            dev.myco.core.spec.AttachmentRef(
+                id = o["id"]!!.jsonPrimitive.content,
+                name = o["name"]!!.jsonPrimitive.content,
+                mime = o["mime"]!!.jsonPrimitive.content,
+                size = o["size"]!!.jsonPrimitive.content.toLong(),
+                kind = o["kind"]!!.jsonPrimitive.content,
+            )
+        }.onSuccess { ref ->
+            savedAttachmentRefs[localId] = ref
+            val transition = composerController.markAttachmentReady(
+                localId, remoteId = ref.id, processedSizeBytes = ref.size,
+            )
+            // 保存期间该项被用户移除（discard）→ 只清本地映射；后端无删除命令（attachment.md gap #2，已知缺口）
+            if (transition.orphanToDelete != null) savedAttachmentRefs.remove(transition.orphanToDelete)
+        }.onFailure { t ->
+            composerController.markAttachmentFailed(
+                localId,
+                "添加失败：${t.message ?: "未知错误"}",
+                retryable = true,
+            )
+            error = "附件失败：${t.message ?: "未知错误"}"
+        }
+    }
+
+    fun processComposerAttachments(sources: List<IncomingAttachment>) {
+        if (sources.isEmpty()) return
+        val result = composerController.addAttachments(sources, AttachmentLimits())
+        when (val intake = result.intake) {
+            is IntakeResult.Rejected -> error = intake.reason
+            is IntakeResult.Accepted -> {
+                val acceptedIds = intake.items.map { it.id }.toSet()
+                val accepted = sources.filter { it.localId in acceptedIds }
+                // 首版处理通道串行（attachment.channel.process）：一项一项落盘；
+                // 排队中被用户移除（discard）的项跳过保存，避免无谓落盘
+                scope.launch {
+                    accepted.forEach { source ->
+                        if (composerController.attachments.items.any { it.id == source.localId }) {
+                            saveComposerAttachment(source)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun retryComposerAttachment(id: String) {
+        val item = composerController.attachments.items.firstOrNull { it.id == id } ?: return
+        val source = IncomingAttachment(
+            localId = item.id,
+            name = item.name,
+            mime = item.mime,
+            sizeBytes = item.sizeBytes,
+            kind = item.kind,
+            uri = item.uri,
+            temporary = item.temporary,
+        )
+        scope.launch { saveComposerAttachment(source) }
+    }
+
+    /** 主键发送：snapshot → 现有 send() 同一条提交路径；成功清草稿/轨，失败回填（BUG-004）。 */
+    fun sendFromComposer(snapshot: ComposerSendSnapshot) {
+        attachSheetState.visible = false
+        val refs = snapshot.attachmentIds.mapNotNull { savedAttachmentRefs[it] }
+        // 提交瞬间乐观清草稿/轨（与旧版 send() 同步清 input/pending 的用户心智一致；
+        // 不 reset 提交守卫——它要挡到结算）。注意：InProcessBridge.chatSend 会挂起到整轮结束，
+        // 因此 UI 侧把 submitting 与 streaming 拆开看（见 ComposerM5 的 submitting 参数）。
+        composerController.clearDraftAndAttachments()
+        submitting = true
+        input = snapshot.text
+        pending = refs
+        send { ok ->
+            submitting = false
+            if (!ok) {
+                // 失败：回填文本（附件轨状态暂不回填——AttachmentRef 仍在，已知缺口）
+                composerController.setDraftText(snapshot.text)
+                composerController.onSendFailed()
+            }
+        }
+    }
+
+    // B2：客户端队列自动出队——只在本轮正常结束（AssistantDone）后触发，每次 1 条。
+    // 放在 send() 之后，避免本地函数前向引用；queuedAutoSend 由事件回调置位。
+    LaunchedEffect(queuedAutoSend) {
+        val next = queuedAutoSend ?: return@LaunchedEffect
+        queuedAutoSend = null
+        val refs = next.attachmentIds.mapNotNull { savedAttachmentRefs[it] }
+        submitting = true
+        input = next.text
+        pending = refs
+        send { ok ->
+            submitting = false
+            if (ok) composerController.onAutoSendSettled()
+            else composerController.onAutoSendFailed(next) // 放回队首 + 暂停，不丢消息
         }
     }
 
@@ -1044,7 +1232,14 @@ private fun ChatScreen(
             }
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
+        Column(
+            Modifier.fillMaxSize()
+                .padding(padding)
+                // E-02：insets 只垫一次——Scaffold 的 padding 已含导航栏，
+                // consume 掉后再 imePadding，否则键盘弹出时卡片底与键盘之间多一条 ~24dp 空隙。
+                .consumeWindowInsets(padding)
+                .imePadding(),
+        ) {
             val currentProvider = providersUi.firstOrNull { it.id == selProviderId }
             val currentModel = currentProvider?.models?.firstOrNull { it.id == selModelId }
             val modelLabel = currentModel?.name?.takeIf { it.isNotBlank() } ?: currentModel?.id ?: "默认"
@@ -1158,9 +1353,25 @@ private fun ChatScreen(
                           // TODO(lead): 用真实可视高（屏高−insets−顶栏−composer）替换估算值
                           aStableViewportHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.62f,
                           modifier = listModifier,
-                          bottomContentPadding = 0.dp, // Scaffold bottomBar 已让出输入区高度
+                          // B2 实测结论：本壳的列表是 in-flow（列在 composer 上方，列表视口已让出输入区），
+                          // 再传 composer 高会在最后一条消息与输入卡之间多出 ~H+24 的空白（03 截图可见）；
+                          // 因此这里保持 0.dp，回底钮同理贴列表底。ChatListM5 的 E-02 公式留给"列表被输入区
+                          // 覆盖"的壳（若将来 shell 改成 overlay 再传 composerMetrics.value.seatHeightDp）。
+                          bottomContentPadding = 0.dp,
                           expansionResetKey = sessionId,
-                          emptyContent = { dev.myco.android.ui.m5.M5EmptyState(onSuggestion = { input = it }) },
+                          // B2：空态建议卡只在「无消息 + 无草稿 + 未生成」时出现；
+                          // 有字/生成中不渲染（否则草稿卡片与建议卡同屏，+ 挤在一起）
+                          emptyContent = if (useNewComposer &&
+                              (composerController.draft.isNotBlank() || streaming != null)
+                          ) {
+                              null
+                          } else {
+                              {
+                                  dev.myco.android.ui.m5.M5EmptyState(onSuggestion = { suggestion ->
+                                      if (useNewComposer) composerController.setDraftText(suggestion) else input = suggestion
+                                  })
+                              }
+                          },
                           callbacks = dev.myco.android.ui.m5.chat.ui.ChatListCallbacks(
                               onRegenerate = { regenerate(it) },
                               onUserLongPress = { userMenuTarget = it },
@@ -1255,7 +1466,8 @@ private fun ChatScreen(
                     }
                 }
             }
-            if (pending.isNotEmpty()) {
+            if (pending.isNotEmpty() && !(m5Ui && useNewComposer)) {
+                // 旧附件行：仅回滚路径（useNewComposer=false）或非 M5 分支渲染；新 composer 的轨在输入卡内
                 if (m5Ui) {
                     dev.myco.android.ui.m5.M5AttachmentRow(
                         attachments = pending,
@@ -1283,7 +1495,54 @@ private fun ChatScreen(
                 }
             }
             if (m5Ui) {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                if (useNewComposer) {
+                    // ===== B2 新输入区：单键 / 客户端队列 / `/` 命令 / 草稿附件轨（回滚改 useNewComposer=false）=====
+                    ComposerM5(
+                        controller = composerController,
+                        modifier = Modifier.fillMaxWidth(),
+                        running = streaming != null,
+                        // 关键：chatSend 挂起直到整轮结束，不能把"等整轮"当"提交中"——否则生成中主键
+                        // 永远显示 busy，单键"空=停止"不可达。流式一旦开始即交给 running 分支。
+                        submitting = submitting && streaming == null,
+                        // 现有 ChatScreen 状态层没有只读/断线/初始化标志 → 分别传 false/true/false（不伪造）
+                        locked = false,
+                        connected = true,
+                        initializing = false,
+                        modelLabel = modelLabel,
+                        reasoningLabel = selReasoningLevel,
+                        onOpenModel = { showM5Model = true },
+                        onOpenAttachmentPanel = { attachSheetState.visible = true },
+                        attachTriggerFocusRequester = composerAttachFocus,
+                        draftFocusRequester = composerDraftFocus,
+                        onSend = { snapshot -> sendFromComposer(snapshot) },
+                        onStop = {
+                            // 停止 → 队列保留并暂停，不自动连发（CMP-80）
+                            composerController.pauseQueue()
+                            scope.launch { bridge.send(Command.ChatStop(sessionId)) }
+                        },
+                        onRemoveAttachment = { removal ->
+                            // TODO(lead)：core 无 DeleteAttachment（attachment.md gap #2）→ 仅移除 UI/映射，后端文件暂不删
+                            removal.removed?.let { savedAttachmentRefs.remove(it.id) }
+                        },
+                        onRetryAttachment = { id -> retryComposerAttachment(id) },
+                        onPreviewAttachment = { },
+                        onConvertLongTextToAttachment = { text ->
+                            composerToastState.show("转附件通道未接线（${text.length} 字符，待 attachment.addTextAttachment）")
+                        },
+                        onCommand = { command ->
+                            when (command.id) {
+                                ComposerCommandId.MODEL -> showM5Model = true
+                                else -> composerToastState.show(
+                                    "${command.slashName}：导航回调尚未接入（需 ChatScreen 暴露 onNewSession / onOpenSettings）",
+                                )
+                            }
+                        },
+                        onToast = { message, actionLabel, action ->
+                            composerToastState.show(message, actionLabel, action)
+                        },
+                        onMetricsChanged = { composerMetrics.value = it },
+                    )
+                } else {
                 dev.myco.android.ui.m5.M5Composer(
                     modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth()
                         .padding(horizontal = 16.dp).padding(bottom = 8.dp),
@@ -1334,7 +1593,8 @@ private fun ChatScreen(
         }
     }
 
-    if (showAttachSheet) {        val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
+    // 旧附件 sheet：仅回滚路径（useNewComposer=false）渲染
+    if (showAttachSheet && !(m5Ui && useNewComposer)) {        val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
         androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = { showAttachSheet = false },
             sheetState = sheetState,
@@ -1358,6 +1618,20 @@ private fun ChatScreen(
                 }) { Text("文件") }
             }
         }
+    }
+
+    // ===== B2 新附件面板（BottomSheet 三入口 → 系统 picker，D-48 关闭回焦草稿区）=====
+    if (m5Ui && useNewComposer) {
+        AttachmentSheetM5(
+            state = attachSheetState,
+            returnFocus = composerDraftFocus,
+            callbacks = AttachmentSheetCallbacks(
+                onSourcesPicked = { sources -> processComposerAttachments(sources) },
+                onError = { message -> error = message },
+                // 相机临时文件由 saveComposerAttachment 读完即删，这里不再重复删
+                onCameraTempFile = { },
+            ),
+        )
     }
 
     userMenuTarget?.let { msg ->
@@ -1534,6 +1808,11 @@ private fun ChatScreen(
             },
             onDismiss = { showM5Model = false },
         )
+    }
+
+    // B2：Toast 宿主（队列删除撤销 / `/clear` 撤销 / 附件门禁提示 / 命令未接线提示）
+    if (m5Ui && useNewComposer) {
+        M5ToastHost(state = composerToastState)
     }
 }
 

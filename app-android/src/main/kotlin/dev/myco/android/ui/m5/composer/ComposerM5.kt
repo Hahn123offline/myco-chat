@@ -338,10 +338,18 @@ class ComposerController(initialDraft: String = "") {
 
     /** 发送成功 → 清空草稿与轨（附件随消息提交，CMP-19）；失败**保留**（CMP-16）。 */
     fun onSendSucceeded() {
+        clearDraftAndAttachments()
+        submitGuard.reset()
+    }
+
+    /**
+     * 只清草稿/轨、**不动提交守卫**（提交瞬间乐观清空用；守卫保持到结算，
+     * 防止"清空后同一帧连点两次"绕过防重入）。
+     */
+    fun clearDraftAndAttachments() {
         setDraftText("")
         attachments = AttachmentDraft()
         pasteHint = null
-        submitGuard.reset()
     }
 
     /** 发送失败 → 只复位提交守卫，草稿/附件原样保留（BUG-004）。 */
@@ -1054,18 +1062,20 @@ private fun ModelCapsule(
     }
 }
 
-/** 主键（48×48 = 布局盒 = 命中盒；图标切换 160ms 淡变，不改 H）。 */
+/** 主键（48×48 = 布局盒 = 命中盒；图标直切，不做 alpha 离屏层/子组合）。 */
 @Composable
 private fun PrimaryKey(
     ui: ComposerPrimaryUi,
     onClick: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    val reduced = reducedMotion()
+    // 禁用/拦发：用**色值 alpha**表达 38%，不用 Modifier.alpha 离屏层 —— 模拟器实测
+    // "键盘弹出后工具行重排" 时离屏层不重绘，主键语义节点在、画面却空白（B2 实测 bug）。
+    val dim = if (ui.dimmed) 0.38f else 1f
     val background = when (ui.icon) {
-        PrimaryIcon.SEND -> if (ui.interactive) colors.primary else colors.surfaceVariant
-        PrimaryIcon.STOP -> colors.errorContainer
-        PrimaryIcon.BUSY -> colors.surfaceVariant
+        PrimaryIcon.SEND -> if (ui.interactive) colors.primary.copy(alpha = dim) else colors.surfaceVariant.copy(alpha = dim)
+        PrimaryIcon.STOP -> colors.errorContainer.copy(alpha = dim)
+        PrimaryIcon.BUSY -> colors.surfaceVariant.copy(alpha = dim)
     }
     val tint = when (ui.icon) {
         PrimaryIcon.SEND -> if (ui.interactive) colors.onPrimary else colors.onSurfaceVariant
@@ -1077,7 +1087,6 @@ private fun PrimaryKey(
             .size(ComposerLayout.PRIMARY_SIZE_DP.dp)
             .clip(CircleShape)
             .background(background)
-            .alpha(if (ui.dimmed) 0.38f else 1f)
             .clickable(
                 enabled = ui.interactive,
                 role = Role.Button,
@@ -1093,26 +1102,14 @@ private fun PrimaryKey(
             },
         contentAlignment = Alignment.Center,
     ) {
-        AnimatedContent(
-            targetState = ui.icon,
-            transitionSpec = {
-                if (reduced) {
-                    fadeIn(tween(0)) togetherWith fadeOut(tween(0))
-                } else {
-                    fadeIn(tween(160)) togetherWith fadeOut(tween(160))
-                }
-            },
-            label = "composer-primary-icon",
-        ) { icon ->
-            when (icon) {
-                PrimaryIcon.SEND -> M5Icon(M5Icons.send, Modifier.size(24.dp), tint)
-                PrimaryIcon.STOP -> M5Icon(M5Icons.stop, Modifier.size(24.dp), tint)
-                PrimaryIcon.BUSY -> CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = tint,
-                    strokeWidth = 2.dp,
-                )
-            }
+        when (ui.icon) {
+            PrimaryIcon.SEND -> M5Icon(M5Icons.send, Modifier.size(24.dp), tint)
+            PrimaryIcon.STOP -> M5Icon(M5Icons.stop, Modifier.size(24.dp), tint)
+            PrimaryIcon.BUSY -> CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = tint,
+                strokeWidth = 2.dp,
+            )
         }
     }
 }

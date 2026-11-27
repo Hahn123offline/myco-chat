@@ -11,7 +11,7 @@ import android.content.Intent
  */
 data class GlassLabArgs(
     val scene: String = "overview",
-    val scrollPx: Float = 760f,
+    val scrollPx: Float = 420f,
     val blurDp: Float = 24f,
     val sat: Float = 1f,
     val noise: Float = 0f,
@@ -19,13 +19,25 @@ data class GlassLabArgs(
     val layers: Int = 2,
     val autoScroll: Boolean = false,
     val autoDialog: Boolean = false,
+    val fixedRadius: Boolean = false,
+    val renderScale: Float = 1f,
+    val throttleFrames: Int = 1,
+    val targetPreset: String = "target",
+    val showUi: Boolean = true,
+    val area: String = "both",
+    val capture: Boolean = false,
+    val liquid: Boolean = false,
+    val refract: Float = 3f,
+    val band: Float = 6f,
+    val disp: Float = 1f,
+    val tintAlpha: Float = 0.04f,
 ) {
     companion object {
         fun from(intent: Intent?): GlassLabArgs {
             if (intent == null) return GlassLabArgs()
             return GlassLabArgs(
                 scene = intent.getStringExtra("glass_scene") ?: "overview",
-                scrollPx = intent.getFloatExtra("glass_scroll", 760f),
+                scrollPx = intent.getFloatExtra("glass_scroll", 420f),
                 blurDp = intent.getFloatExtra("glass_blur", 24f),
                 sat = intent.getFloatExtra("glass_sat", 1f),
                 noise = intent.getFloatExtra("glass_noise", 0f),
@@ -33,6 +45,18 @@ data class GlassLabArgs(
                 layers = intent.getIntExtra("glass_layers", 2),
                 autoScroll = intent.getBooleanExtra("glass_autoscroll", false),
                 autoDialog = intent.getBooleanExtra("glass_dialog", false),
+                fixedRadius = intent.getBooleanExtra("glass_fixed", false),
+                renderScale = intent.getFloatExtra("glass_render_scale", 1f),
+                throttleFrames = intent.getIntExtra("glass_throttle", 1),
+                targetPreset = intent.getStringExtra("glass_target") ?: "target",
+                showUi = intent.getBooleanExtra("glass_ui", true),
+                area = intent.getStringExtra("glass_area") ?: "both",
+                capture = intent.getBooleanExtra("glass_capture", false),
+                liquid = intent.getBooleanExtra("glass_liquid", false),
+                refract = intent.getFloatExtra("glass_refract", 3f),
+                band = intent.getFloatExtra("glass_band", 6f),
+                disp = intent.getFloatExtra("glass_disp", 1f),
+                tintAlpha = intent.getFloatExtra("glass_tint", 0.04f),
             )
         }
     }

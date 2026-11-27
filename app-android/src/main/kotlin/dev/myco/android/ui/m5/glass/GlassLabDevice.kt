@@ -15,6 +15,8 @@ import android.view.WindowManager
 data class GlassLabDevice(
     val api: Int,
     val model: String,
+    val avdName: String,
+    val hardwareEgl: String,
     val fingerprint: String,
     val glRenderer: String,
     val glVendor: String,
@@ -23,6 +25,8 @@ data class GlassLabDevice(
     val crossWindowBlur: Boolean,
     val isProbablySoftwareGpu: Boolean,
 ) {
+    val gpuMode: String get() = if (isProbablySoftwareGpu) "swiftshader(软件)" else "host(硬件)"
+
     val supportsRenderEffect: Boolean get() = api >= 31
     val supportsAgs: Boolean get() = api >= 33
 
@@ -106,6 +110,8 @@ fun queryGlassLabDevice(context: Context): GlassLabDevice {
     return GlassLabDevice(
         api = Build.VERSION.SDK_INT,
         model = Build.MODEL + " / " + Build.DEVICE,
+        avdName = readProp("ro.boot.qemu.avd_name").ifBlank { "?" },
+        hardwareEgl = readProp("ro.hardware.egl").ifBlank { "?" },
         fingerprint = Build.FINGERPRINT,
         glRenderer = renderer,
         glVendor = vendor,
@@ -114,6 +120,13 @@ fun queryGlassLabDevice(context: Context): GlassLabDevice {
         crossWindowBlur = crossBlur,
         isProbablySoftwareGpu = isSw,
     )
+}
+
+fun readProp(name: String): String = try {
+    ProcessBuilder("getprop", name).redirectErrorStream(true).start().inputStream
+        .bufferedReader().readText().trim()
+} catch (t: Throwable) {
+    ""
 }
 
 internal const val GLASSLAB_TAG = "GLASSLAB"

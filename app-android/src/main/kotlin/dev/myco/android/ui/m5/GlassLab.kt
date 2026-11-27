@@ -94,10 +94,14 @@ fun M5GlassLab() {
     ) {
         GlassLabHeader(device = device, args = args, meter = meter)
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (args.scene == "overview") {
-                GlassLabOverview(scrollPx = scroll, device = device, meter = meter)
-            } else {
-                GlassLabScenes(args = args, scrollPx = scroll, meter = meter, modifier = Modifier.fillMaxSize())
+            androidx.compose.runtime.CompositionLocalProvider(
+                dev.myco.android.ui.m5.glass.LocalGlassCaptureEnabled provides args.capture
+            ) {
+                if (args.scene == "overview") {
+                    GlassLabOverview(scrollPx = scroll, device = device, meter = meter)
+                } else {
+                    GlassLabScenes(args = args, scrollPx = scroll, meter = meter, modifier = Modifier.fillMaxSize())
+                }
             }
         }
     }
@@ -149,8 +153,14 @@ private fun GlassLabHeader(device: GlassLabDevice, args: GlassLabArgs, meter: Fr
         )
         Text(
             "渲染器：" + device.glRenderer + " · GLES " + device.glEsVersion +
+                " · GPU 模式=" + device.gpuMode +
                 (if (device.isProbablySoftwareGpu) " · ⚠ 软件 GPU（能渲染≠真机流畅）" else ""),
             color = if (device.isProbablySoftwareGpu) Color(0xFFFFC777) else Color(0xFFAFC0D8),
+            fontSize = 9.sp,
+        )
+        Text(
+            "AVD=" + device.avdName + " · ro.hardware.egl=" + device.hardwareEgl + " · 1080x2400",
+            color = Color(0xFFAFC0D8),
             fontSize = 9.sp,
         )
         Text(
