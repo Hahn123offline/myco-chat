@@ -61,3 +61,24 @@
 2. B1 聊天面板实现（依赖 B0 的 primitives）。
 3. B2 composer + attachment；B3 model/settings/sidebar；B4 旧功能对账 + bug 修复。
 4. 每批：构建 → 模拟器截图入库 → 验收项打状态 → 提交。
+
+---
+
+## 更新 2026-11-27 15:30（P4 进行中 + 玻璃并行线）
+
+**已落地**：B0（面板壳+基座，16 文件/126 测试）、B1（聊天列表 UI，9 文件/186 测试全绿）、
+`ChatListM5` 已接入真实数据路径（旧列表保留 `useNewChatList` 开关可回滚）。
+
+**玻璃并行线**：
+- 能力调研完成：`docs/spec/ref/android-blur-glass.md`（13 项矩阵，官方证据）
+- 原型实验室进行中：`docs/reports/glass-lab-report.md` + `docs/reports/assets/glass/`
+- 模拟器已从 SwiftShader 切到 **host GPU（AMD Radeon 890M / GLES 3.1）**，模糊截图才可信
+
+**玻璃关键结论（来自调研，待实验室验证）**：
+1. 唯一可行的真背景模糊 = 自绘 `GraphicsLayer.record` + `drawLayer` + `RenderEffect.createBlurEffect`（API 31+，需硬件加速）= Haze 的机制
+2. AGSL 着色器**采样不到背景**，只能作用于自己重绘的层
+3. `Modifier.blur()` 只糊自己内容；API < 31 没有任何平台真模糊 → 只能纯绘制假玻璃
+4. 多层玻璃 = 每帧多次全屏重绘，实测同屏 9 块超帧预算 → 同屏 ≤3、滚动列表上方 ≤1
+5. 窗口级 blurBehind 会静默失效（OEM/省电/视频），必须监听 `crossWindowBlurEnabled` 并有降级外观
+
+**测试基线**：186 条单测全绿。**推送仍暂停**（本地提交至 `553ed16` 之后）。
