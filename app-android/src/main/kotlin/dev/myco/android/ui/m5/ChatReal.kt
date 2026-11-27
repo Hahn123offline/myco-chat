@@ -25,6 +25,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -176,8 +178,14 @@ fun ChatMessagesM5(
                     item(key = "tb-$index-$turn") {
                         androidx.compose.animation.AnimatedVisibility(
                             visible = expandedProcess[turn] == true,
-                            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
-                            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+                            enter = androidx.compose.animation.expandVertically(
+                                animationSpec = androidx.compose.animation.core.tween(durationMillis = 200),
+                                clip = true,
+                            ),
+                            exit = androidx.compose.animation.shrinkVertically(
+                                animationSpec = androidx.compose.animation.core.tween(durationMillis = 160),
+                                clip = true,
+                            ),
                         ) {
                             Column(
                                 Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
@@ -324,13 +332,11 @@ private fun ThinkingLineM5(entry: TimelineEntry, expanded: Boolean, onToggle: ()
     val icon: M5IconSpec
     val title: String
     val detail: String
-    val full: String
     when (entry.kind) {
         "reasoning" -> {
             icon = M5Icons.spark
             title = "思考"
             detail = entry.text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
-            full = entry.text.trim()
         }
         "tool" -> {
             icon = M5Icons.chevronRight
@@ -340,16 +346,11 @@ private fun ThinkingLineM5(entry: TimelineEntry, expanded: Boolean, onToggle: ()
                 else -> "运行命令"
             }
             detail = entry.name + if (entry.args.isNotBlank() && entry.args != "{}") " · ${entry.args.take(80)}" else ""
-            full = buildString {
-                if (entry.args.isNotBlank() && entry.args != "{}") append("参数：").append(entry.args).append("\n")
-                if (entry.text.isNotBlank()) append(entry.text)
-            }.trim()
         }
         else -> {
             icon = M5Icons.copy
             title = "写入"
             detail = entry.text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
-            full = entry.text.trim()
         }
     }
     Column(Modifier.fillMaxWidth()) {
@@ -379,21 +380,97 @@ private fun ThinkingLineM5(entry: TimelineEntry, expanded: Boolean, onToggle: ()
                 p.textTertiary,
             )
         }
-        androidx.compose.animation.AnimatedVisibility(visible = expanded) {
-            val scroll = rememberScrollState()
-            Text(
-                full.ifBlank { "（无内容）" },
-                style = M5Type.caption,
-                color = p.textTertiary,
-                modifier = Modifier
-                    .padding(start = 20.dp, top = 2.dp, bottom = 2.dp)
-                    .heightIn(max = 220.dp)
-                    .verticalScroll(scroll),
-            )
+        androidx.compose.animation.AnimatedVisibility(
+            visible = expanded,
+            enter = androidx.compose.animation.expandVertically(
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 180),
+                clip = true,
+            ),
+            exit = androidx.compose.animation.shrinkVertically(
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 140),
+                clip = true,
+            ),
+        ) {
+            Column(
+                Modifier.fillMaxWidth().padding(start = 20.dp, top = 4.dp, bottom = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (entry.kind == "tool") {
+                    val prettyArgs = prettyJson(entry.args)
+                    if (prettyArgs.isNotBlank()) {
+                        DetailBlock("参数") { DetailText(prettyArgs) }
+                    }
+                    if (entry.sources.isNotEmpty()) {
+                        DetailBlock("来源") {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                entry.sources.take(6).forEachIndexed { i, s ->
+                                    Text(
+                                        "${i + 1}. ${s.title ?: s.url}",
+                                        style = M5Type.caption,
+                                        color = p.textSecondary,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        s.site ?: s.url,
+                                        style = M5Type.caption,
+                                        color = p.textTertiary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (entry.text.isNotBlank()) {
+                        DetailBlock("结果") { DetailText(entry.text) }
+                    }
+                } else {
+                    DetailBlock(null) { DetailText(entry.text.trim().ifBlank { "（无内容）" }) }
+                }
+            }
         }
     }
 }
 
+/** 工具详情用凹陷内部组块包起来，不再是一坨裸 JSON。 */
+@Composable
+private fun DetailBlock(label: String?, content: @Composable () -> Unit) {
+    val p = LocalM5.current.palette
+    NeoSurface(
+        modifier = Modifier.fillMaxWidth(),
+        radius = M5Radius.inset,
+        material = NeoMaterial.Inset,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (label != null) {
+                Text(label, style = M5Type.caption, color = p.textTertiary)
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun DetailText(text: String) {
+    val p = LocalM5.current.palette
+    val scroll = rememberScrollState()
+    Text(
+        text.take(4000),
+        style = M5Type.caption.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+        color = p.textSecondary,
+        modifier = Modifier.heightIn(max = 220.dp).verticalScroll(scroll),
+    )
+}
+
+private fun prettyJson(raw: String): String {
+    if (raw.isBlank() || raw == "{}" || raw == "null") return ""
+    return runCatching {
+        val el = Json.parseToJsonElement(raw)
+        Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), el)
+    }.getOrElse { raw }
+}
 @Composable
 private fun MetaLineM5(meta: TurnMetaUi) {
     val p = LocalM5.current.palette
@@ -424,7 +501,17 @@ private fun StreamingTurnM5(liveEntries: List<TimelineEntry>, text: String?) {
                 live = true,
                 onToggle = { liveExpanded = !liveExpanded },
             )
-            androidx.compose.animation.AnimatedVisibility(visible = liveExpanded) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = liveExpanded,
+                enter = androidx.compose.animation.expandVertically(
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 200),
+                    clip = true,
+                ),
+                exit = androidx.compose.animation.shrinkVertically(
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 160),
+                    clip = true,
+                ),
+            ) {
                 Column(
                     Modifier.fillMaxWidth().padding(start = 20.dp, top = 2.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
