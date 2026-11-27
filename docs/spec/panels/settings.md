@@ -4,6 +4,7 @@
 > 输入：`_p3-brief.md`、`schema-node.md`、`00-global-rules.md`、`decision-pack.md` §1/§2/§6、`p2/settings.md`。
 > 拍板前提（不重开）：**D-01=A 覆盖栈**（设置 = 栈内一层 route）、**D-02=A 分层 F / G-16**（设置行整行 44dp、行内主操作 48、密集图标 40、行内次级 ≥36）、**D-03=B + G-13**（确认/危险 = 居中 Modal 且无下滑关；轻选择 = BottomSheet）、**D-04=A**（600/840 + 高<480 强制单栏）、**D-09=A 触摸-only**（不给 `Role.Tab`；子页导航 = `Role.Button` + selected）、**D-10=A / G-12**（显式保存页 + 离开 dirty 二次确认；即时写页；同页不混用；脏检查覆盖三出口）、**D-20=B**（做设置搜索：结果列表 + 定位跳转；每条设置项稳定 `anchorId`）、**E-03=A**（不做 plugins / subagent / agent-loop / web-search / agent-preset 子页）、**E-08=A**（配置继承 + 恢复默认，后端前提见 §5 P3-SET-02）、**E-09=A**（密钥 write-only、单密钥、仅正在输入的新值可显隐）、**E-10=A**（provider 编辑 = 独立全屏浮层 + 底部固定动作栏）、**E-11=A**（外观整行单选）、**E-12=A**（语言整行单选 ≤4）、**E-13=A**（唯一字号轴 = 内容字号 10–22 滑杆、松手落盘、设置界面字号固定）、**E-14=A**（危险操作一次确认 + 默认焦点取消；删除全部 = 二次确认 + 显示数量 + 不可撤销）。
 > 本文件只写 `docs/spec/panels/settings.md`；未改 `p2/**`、`ref/**`、规则、决策包、其它 `panels/*.md`；未改 app；未 commit。
+> **规模（与正文一致）**：节点 **36 节**（35 个实现节点 + 1 个「不建节点」决议 `settings.general.switch-row`；`settings.page` 一个节点含 5 个实例 ID）／ 验收 **71 条**（`SET-01`…`SET-71`，连续无缺号、无重号）／ 待确认 **4 条**（`P3-SET-01`…`P3-SET-04`；**0 条阻塞 P4 整体开工**，其中 1 条只阻塞宽屏验收 `SET-04`，1 条待后端确认，2 条为文档勘误）。
 
 ## 0. 一句话 + 范围
 
@@ -542,12 +543,10 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 
 ## 3. 节点规格（13 字段，照 `schema-node.md` 格式）
 
-> 本面板 = **壳 + 5 页**：39 个节点里 4 个是纯行为/契约节点（`dirty-guard`/`first-run-guard`/`deep-link`/`switch-row` 决议），字段 3 写「无命中区 + 原因」；其余均有明确命中盒。
+> 本面板 = **壳 + 5 页**：**36 个节点节**（35 个实现节点 + 1 个「不建节点」决议 `switch-row`；`settings.page` 一个节点含 5 个实例 ID），其中 4 个是纯行为/契约节点（`dirty-guard`/`first-run-guard`/`deep-link`/`switch-row` 决议），字段 3 写「无命中区 + 原因」；其余均有明确命中盒。
 > 数值依据集中在 §1.2；每节字段 12 给 `E0/E1` + 文件行或拍板编号；字段 13 至少 1 条 `SET-` 验收。
 
-### 3.1 壳（`settings.shell.*`）
-
-#### `settings.shell.panel` — 设置层根（route；全屏 / 宽屏三列）
+### 3.1 `settings.shell.panel` — 设置层根（route；全屏 / 宽屏三列）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -565,7 +564,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-01=A**（`decision-pack.md:328`）；**D-04=A**（`decision-pack.md:331`）；**D-05=A**（`decision-pack.md:332`）；`E0` `ref/dsh-mobile.md:288-304`（窄屏全屏、去遮罩、圆角 0、内容区 overscroll contain）；`E0` `ref/dsh-settings.md:91-103`（高度取视口）；`E0` `base.layout.md:179,257`（ROUTE_FULL / 全屏面板）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 高度随内容 → 切子页外框跳动、遮罩边缘位移；② 窄屏保留居中模态/遮罩 → 390 屏两侧只剩窄条、内容不能滚（mobile-adapt 反向证据）；③ 子页用 route → 返回语义不可预测（NS-01 解 A 的反证）；④ 横滑切子页 → 与导航横滚抢手势。**验收**：`SET-01`（全屏覆盖）、`SET-02`（外框恒定）、`SET-03`（insets）、`SET-04`（宽屏三列）、`SET-05`（跨断点不重建）、`SET-06`（返回语义）、`SET-63`（到边不外传）。 |
 
-#### `settings.shell.header` — 顶栏（标题 + 搜索 + 关闭；固定不滚）
+### 3.2 `settings.shell.header` — 顶栏（标题 + 搜索 + 关闭；固定不滚）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -583,7 +582,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:126-127,132-133`（header 54、`flex:none`、不随内容滚、关闭钮在 header 内）；`E0` `ref/dsh-mobile.md:293-294`（窄屏 header min 52+padding、关闭 44）；`E0` `p2/settings.md:103`（关闭固定在头部）；G-16（主操作 48）；56 = **我方取值（P4 校准）**（48 钮 + 上下 4）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 关闭钮放进滚动区 → 长设置页滚到底找不到关闭（DSH 为此把 header 设 `flex:none`）；② 搜索入口放页内 → 滚下去找不到；③ 大标题随滚动折叠 → 关闭/返回被挤进小顶栏且需 nestedScroll 固定顺序（太墟，成本高于收益，`p2/settings.md:272`）。**验收**：`SET-08`（滚动时顶栏固定）、`SET-56`（深色）、`SET-57`（大字号不裁切）。 |
 
-#### `settings.shell.close` — 关闭 / 返回（整层退出；dirty 出口③）
+### 3.3 `settings.shell.close` — 关闭 / 返回（整层退出；dirty 出口③）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -601,7 +600,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:122-138`（关闭按钮：视觉隐藏本地化 label、固定在 header）；`E0` `ref/dsh-mobile.md:294`（关闭钮 44→本文件取 48，与 `base.layout` 的返回入口 48 对齐）；`E0` `p2/settings.md:103`（措辞用「关闭」= 整层退出）；G-16 主操作 48；`base.layout.md:782`（BL-45 返回入口 48×48）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 只有图标没有名字 → 读屏只报「按钮」；② 关闭放在滚动区 → 长页找不到；③ 关闭只关子页不关整层 → 与「子页不是 route」矛盾，返回入口语义分裂。**验收**：`SET-07`（关闭后回焦 + 状态保留）、`SET-30`（dirty 出口③）、`SET-56`（深色）。 |
 
-#### `settings.shell.nav` — 子页导航（手机横滑条 / 宽屏 188 列）
+### 3.4 `settings.shell.nav` — 子页导航（手机横滑条 / 宽屏 188 列）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -619,7 +618,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-09=A**（`decision-pack.md:363`：只做触摸、不给 `Role.Tab`、不做方向键）；`E0` `ref/dsh-mobile.md:306-322`（横滑条：44 cell、gap4、snap、隐藏滚动条、overscroll-x contain）；`E0` `ref/dsh-settings.md:104-120`（宽屏 188 列、行 40 → 本文件抬到 44）；G-16（行级 44）；G-04；`base.primitives.md:643-659`（segmented 同族：不给 Role.Tab）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 给 `Role.Tab` 却不做方向键 → 读屏报「选项卡，共 5 个」而方向键无反应，比不加语义更糟（DSH 注释原话）；② 竖排导航 → 全屏面板里吃掉首屏约 1/3（mobile-adapt 反证）；③ 隐藏滚动条不做 → 多一条灰线破坏顶栏（`MOB-17`）；④ 横滑切子页 → 与导航横滚抢手势，用户想滚导航却切了页。**验收**：`SET-09`（横滑全达）、`SET-10`（语义无 Tab）、`SET-11`（命中 44 不相交）、`SET-12`（到边不带走内容 + 无滚动条）。 |
 
-#### `settings.shell.search` — 搜索入口 + 设置搜索浮层（D-20）
+### 3.5 `settings.shell.search` — 搜索入口 + 设置搜索浮层（D-20）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -637,7 +636,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-20=B**（`decision-pack.md:383`：结果列表 + 定位跳转；每条设置项稳定 `anchorId`）；`p2/settings.md:281-287`（搜索写法 6 条）；`E0` `ref/taixu.md:621-637`（注册表 + 热门标签 + 结果跳转 + 命中高亮 + 空态）；反证 D10 `E0` `ref/legacy-myco.md:1249`（旧过滤式无匹配无提示）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 旧式过滤隐藏卡片 → 未命中卡片消失 + 无匹配无提示（D10 实测缺陷）；② 搜索做成子页/route → 多一层栈、返回要退两次；③ 结果直接改页面不入浮层 → 返回上下文丢失（太墟反证）；④ 不做热门词 → 空查询是一张白纸。**验收**：`SET-13`（不入栈、回原位置）、`SET-14`（空查询热门词）、`SET-17`（无匹配提示）、`SET-20`（IME 不遮结果）。 |
 
-#### `settings.shell.search-result` — 搜索结果行
+### 3.6 `settings.shell.search-result` — 搜索结果行
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -655,7 +654,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-20=B**；`p2/settings.md:284-285`（结果行格式 + 切页 + `scrollTo(anchorId)` + 高亮 2s）；`E0` `ref/taixu.md:626,629,637`（命中高亮、结果跳转、注册表）；`base.primitives.md:280`（回焦/焦点顺序总则）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 只写条目名 → 同名条目（如「高级」「配置」）分不清在哪个子页；② 跳转只切页不滚动 → 用户还得自己找；③ 高亮常驻/不做 → 用户不知道跳到了哪（或以为被选中）；④ 结果行不可整行点 → 命中只有文字行高，点不中。**验收**：`SET-15`（行格式 + 高亮）、`SET-16`（定位配方 5 步）、`SET-18`（注册表完整性）、`SET-19`（匹配范围）、`SET-62`（anchorId 稳定）。 |
 
-#### `settings.shell.dirty-guard` — 脏检查拦截（G-12 三出口；`dialog-dismiss` 的 settings 实例化）
+### 3.7 `settings.shell.dirty-guard` — 脏检查拦截（G-12 三出口；`dialog-dismiss` 的 settings 实例化）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -673,7 +672,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-10=A + G-12**（`00-global-rules.md:272-279`；`decision-pack.md:364`）；`E0` `base.primitives.md:481-497`（`dialog-dismiss`：dirty 拦截/clean 直接关/三出口/busy 禁用）；`E0` dsh-Go `DiscardGuard`（P2 §2 采纳）；`E0` `ref/dsh-settings.md:222,230`（离开即丢弃且无确认 = DSH 桌面风险口径）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 静默丢弃 → 改一半的密钥/URL 消失、用户以为已保存（旧 myco `MA:2012` 实测）；② 无条件确认 → 无改动也多点一次；③ 默认焦点在「放弃」→ 连按 Enter 误丢草稿；④ 只拦返回键、不拦关闭钮/取消 → 最常用的出口反而绕过保护。**验收**：`SET-28`（出口①）、`SET-29`（出口②）、`SET-30`（出口③ + 第④类不可达）、`SET-31`（clean 不弹 + 默认焦点）。 |
 
-#### `settings.shell.confirm` — 确认弹层族（危险操作 / 动作确认）
+### 3.8 `settings.shell.confirm` — 确认弹层族（危险操作 / 动作确认）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -691,7 +690,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-03=B + G-13**（`00-global-rules.md:280-289`）、**D-08=B/G-18**、**E-14=A**（`decision-pack.md:348,362`）；`E0` `base.primitives.md:463-479`（modal 全套）；`E0` `ref/dsh-settings.md:295-307`（删除：默认焦点取消、先删凭据再 unset、失败保留可重试、不可撤销）；`E0` `p2/settings.md:212-218`（危险层级表）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 默认焦点在确认 → 连按 Enter 误删（`SET-27` 反证原文）；② 点遮罩即关 → 框内拖选文字拖到遮罩松手就关掉；③ 给下滑关 → 不可逆操作一个下滑就没了「慎重感」；④ 失败自动关 → 用户不知道没成功、以为删了；⑤ 先删配置再删凭据 → 凭据删失败时 provider 已不可见但密钥还在。**验收**：`SET-44`（默认焦点/连按 Enter）、`SET-45`（清空二层 + 数量）、`SET-46`（导入预览/回滚）、`SET-47`（关闭判据）、`SET-67`（执行中禁用）。 |
 
-#### `settings.shell.first-run-guard` — 首跑引导（无可用 provider）
+### 3.9 `settings.shell.first-run-guard` — 首跑引导（无可用 provider）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -709,7 +708,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:108`（采纳 chat-demo「无 API Key 自动开设置」，`App.tsx:70-74`）；`E0` `p2/settings.md:300`（不做 onboarding 槽位，能力由此节点承担）；`user` E-03（不引入额外子页）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 另造 onboarding 模态 → 「配 provider」出现两套入口；② 不做 → 首跑用户进聊天无法发消息、也不知道去哪配（chat-demo 同款反证）；③ 每次进设置都推 → 用户已配好后被打断；④ 删光后自动再弹 → 打断删除流程。**验收**：`SET-49`（自动进入 + 焦点）、`SET-60`（空态矩阵）。 |
 
-#### `settings.shell.deep-link` — 打开参数与「记上次子页」
+### 3.10 `settings.shell.deep-link` — 打开参数与「记上次子页」
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -727,9 +726,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:105`（带参打开 + 记上次子页；chat-demo/太墟 E0）；`E0` `ref/dsh-settings.md:76`（DSH 只记 activeId）；`E1` 太墟 `openSettingsPath`（`MainPageNavigation.kt:34-38`）；`base.layout.md:236`（`params` 字段）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 无带参打开 → 「去设置改字号/配 Key」必须先进设置再找，首跑引导与外部跳转无法直达；② 设置内两级栈 → 「一次返回退到哪层」不可预测（NS-01）。**验收**：`SET-50`（直达/回落/复用）、`SET-64`（配置继承与恢复默认的跳转目标仍有效）。 |
 
-### 3.2 子页容器
-
-#### `settings.page` — 子页滚动容器（5 实例契约）
+### 3.11 `settings.page` — 子页滚动容器（5 实例契约）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -747,9 +744,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `base.layout.md:191-194`（insets 在内容根）；`E0` `base.primitives.md:113`（内容水平 16）；`E0` `ref/dsh-mobile.md:299`（内容区 `overscroll-behavior:contain`）；`E0` `ref/taixu.md:616`（宽屏内容 max 840 居中 → 本文件取 720，与 DSH models section 一致），720 的取值见 §1.2。 |
 | 13 | 反证 + 验收 ID | **反证**：① 5 页共用同一滚动状态 → 切回上一页停在别页位置（用户以为回到顶部）；② 外层也滚 → 双重滚动打架（G-04）；③ 每页重建 → 切回来滚动位置丢失、搜索输入丢失。**验收**：`SET-05`（跨断点/切页不重建）、`SET-57`（大字号）、`SET-58`（长内容流畅）、`SET-63`（到边不外传）、`SET-66`（跨页一致性）。 |
 
-### 3.3 通用（`settings.general.*`）
-
-#### `settings.general.appearance` — 外观（主题）整行单选
+### 3.12 `settings.general.appearance` — 外观（主题）整行单选
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -767,7 +762,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-11=A**（`decision-pack.md:343`：整行单选、选中态跟偏好不跟解析值）；`E0` `ref/taixu.md:644,647,655`（title+description 整行单选、`setThemeMode` 即时、反证"要保存才生效"）；`E0` `p2/settings.md:111`（NS-07）。 |
 | 13 | 反证 + 验收 ID | **反证**：① tile/cube 预览在 390dp 折成 2 行、吃掉约 1/3 首屏；② chip 只有文字、没有「跟随系统」的说明；③ 选中态跟解析后主题 → 选「跟随系统」永远不高亮（BASE-58）。**验收**：`SET-21`（即时生效 + 持久 + 无保存按钮）、`SET-56`（深色 token）、`SET-61`（设置页字号固定）。 |
 
-#### `settings.general.font-size` — 内容字号（10–22 滑杆；松手落盘）
+### 3.13 `settings.general.font-size` — 内容字号（10–22 滑杆；松手落盘）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -785,7 +780,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-13=A**（`decision-pack.md:345`：唯一内容字号轴 10–22 + 松手落盘 + 设置界面字号固定）；`E0` `ref/taixu.md:647`（拖动预览、`setAppFontScale` 松手落盘）；`E0` `ref/dsh-settings.md:113`（DSH 字号 10–22 语义，但控件 stepper 不采用）；`E0` `ref/dsh-mobile.md:324-340`（stepper 17×12 中心距 14 = 命中重灾区，必须重排/改控件）；G-16（滑杆触摸槽 44）；**行高 64 为我方取值（P4 校准）**。 |
 | 13 | 反证 + 验收 ID | **反证**：① stepper 10→22 要点 12 次，且 17×12 箭头是全审计最小命中目标（mobile 反证原文）；② 每帧落盘 → 拖动卡顿、全树重组（太墟反证 TX-APPEAR-02）；③ 两套缩放轴并存 → 用户不知道哪套生效、布局乘两层缩放（E-13）；④ 设置界面跟随内容字号 → 布局全变、G-02 定高规则失效。**验收**：`SET-22`（松手落盘计数 + 值标签实时）、`SET-61`（设置界面字号固定）、`SET-71`（边界不循环）。 |
 
-#### `settings.general.language` — 语言整行单选（≤4 项）
+### 3.14 `settings.general.language` — 语言整行单选（≤4 项）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -803,7 +798,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-12=A**（`decision-pack.md:344`：整行单选 ≤4 项、选中即写；规则 >4 或领域枚举改下拉）；`E0` `ref/taixu.md:644,647`（语言 3 单选、`setApplicationLocales` 即时）；`E0` `p2/settings.md:112`（NS-08）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 菜单/原生 select → 多一步（点开→选）且与统一控件断裂；② 只出中文仍渲染单选项 → 点了没变化的死行；③ 语言切换要重启 → 用户以为没生效。**验收**：`SET-21`（即时写）、`SET-70`（切换即时 + 偏好优先；locale=1 时不渲染）。 |
 
-#### `settings.general.switch-row` — **不建节点（决议记录）**
+### 3.15 `settings.general.switch-row` — **不建节点（决议记录）**
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -821,9 +816,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-02=A/G-16**（设置行整行 44）；`E0` `base.primitives.md:589-605`（switch 整行接管命中，取代 DSH「仅开关可点」`ref/dsh-settings.md:184`）；**首版无实例的证据**：myco 三个候选开关都缺后端支撑——① provider 启停无 Command（`E0` `ref/legacy-myco.md:1187` 缺口 6，有 `enabled` 字段但无命令、旧 UI 也无开关）；② 账户/同步开关（账户体系不做，`p2/settings.md:298`）；③ 终端/上传类开关（无对应运行时，E-03）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 为凑类型族造一个死开关 → 点了没效果，比没有更伤信任；② 照 DSH 的「仅开关可点」 → 行尾大片空白点不动（dsh-Go 字段 13 反证）；③ 硬扩边到 44 → 相邻行命中盒重叠 24px（mobile-adapt 实测缺陷，`ref/dsh-mobile.md:355`）。**验收**：`SET-27`（源码断言 General 无 switch 行、无保存按钮）、`SET-59`（若未来加，禁用态读屏报不可用）。 |
 
-### 3.4 模型（`settings.models.*`）
-
-#### `settings.models.row` — Provider 行（身份 + 状态点 + 编辑/删除）
+### 3.16 `settings.models.row` — Provider 行（身份 + 状态点 + 编辑/删除）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -841,7 +834,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-10=A**（独立编辑浮层）；`E0` `ref/dsh-settings.md:255-271`（行卡 12×14 / 卡片描边 / 动作独立按钮 / 行不可点 / 名字 14/22 500 / 状态点 role=img）；`E0` `p2/settings.md:131`（采用「行不可点 + 两个动作」，删「设置密钥」独立按钮）；G-16（密集图标 40）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 整行可点 → 用户想选中文字/滚动时误触打开编辑器；② 删除无确认 → 一次误点删掉 provider 配置与密钥（不可撤销）；③ 保留「设置密钥 / 编辑 / 删除」三动作 → 密钥出现两个写入点（NS-05 双真源）。**验收**：`SET-32`（增/改后列表更新）、`SET-33`（删除确认与取消）、`SET-42`（列表级即时写、无保存按钮）、`SET-43`（与 model 面板边界）、`SET-55`（加载/失败保留旧快照）。 |
 
-#### `settings.models.add-flow` — 添加 Provider（入口 + 模式 + 模板目录）
+### 3.17 `settings.models.add-flow` — 添加 Provider（入口 + 模式 + 模板目录）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -859,7 +852,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-10=A**（进入编辑浮层）；`E0` `ref/dsh-settings.md:273-289`（44px 虚线添加按钮、模式两面板 keep-alive、写/探活中锁定模式、无可添加项 disabled）；`E0` `p2/settings.md:132,168`（模板并入目录模式、单一添加入口）；`base.primitives.md:643-659`（segmented：不给 Role.Tab）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 切换模式卸载另一面板 → 切回去草稿没了；② 独立「模板对话框 + 目录模式」→ 同一件事两个入口（旧 myco 3 个添加按钮）；③ 添加即写库 → 半成品 provider 直接出现在列表（列表级即时写只用于可见结果的删除/添加完成）。**验收**：`SET-32`（两模式草稿互不丢 + 保存后出现）、`SET-41`（编辑层是浮层）、`SET-42`（入口即时）、`SET-49`（首跑默认模板 + 焦点）、`SET-59`（禁用原因）。 |
 
-#### `settings.models.delete-dialog` — 删除 Provider 确认（confirm 族用途①）
+### 3.18 `settings.models.delete-dialog` — 删除 Provider 确认（confirm 族用途①）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -877,7 +870,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-14=A**（一次确认 + 默认焦点取消；`decision-pack.md:348`）；**D-03=B + G-13**；`E0` `ref/dsh-settings.md:291-307`（min(480,100%) → 本文件统一用 modal 原子的 `min(380,W−48)`；取消在左、删除在右；默认焦点取消；先删凭据再 unset；失败保留可重试；不可撤销）；`E0` `p2/settings.md:214`；`base.primitives.md:463-479`（modal 宽度/按钮高为唯一真源）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 默认焦点在确认 → 连按 Enter 误删；② 先 unset 配置再删凭据 → 凭据删失败时 provider 已不可见但密钥还留着；③ 失败自动关 → 用户以为删了；④ 给下滑关 → 不可逆操作太轻（D-03）。**验收**：`SET-44`（默认焦点 / 连按 Enter）、`SET-33`（取消不变、确认后删）、`SET-67`（执行中禁用）、`SET-48`（撤销边界）。 |
 
-#### `settings.models.editor` — Provider 编辑浮层（全屏 float；显式保存页）
+### 3.19 `settings.models.editor` — Provider 编辑浮层（全屏 float；显式保存页）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -895,7 +888,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-10=A**（`decision-pack.md:347`：独立全屏编辑浮层 + 底部固定动作栏；busy 时连取消也禁用）；`E0` `ref/dsh-settings.md:313-330,367-383`（草稿 + Apply、busy 禁用取消）；`E0` `p2/settings.md:137`（NS-06：用浮层不用设置内第二级导航层）；`E0` `base.primitives.md:152`（浮层不是 route、独立 window、下层保活）；`base.layout.md:560-585`（浮层优先于 route 的返回顺序）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 行内展开 → 手机全屏页上 10+ 字段把列表推成几屏、用户失去「在编辑哪个 provider」的上下文（p2 NS-06）；② 做成 route → 设置内出现第二层栈，返回语义不可预测（NS-01）；③ busy 时允许取消 → 表单卸载后写入响应无处落地（孤儿）；④ 草稿持久化 → 下次打开看到上次脏值却不知道（`E0` DSH 反证）。**验收**：`SET-41`（浮层不 push 栈 + 全屏 + 底栏固定）、`SET-23`（不保存退出无写入）、`SET-25`（失败留页）、`SET-26`（成功才回退 + 无放弃按钮）、`SET-43`（边界）。 |
 
-#### `settings.models.editor.footer` — 编辑层底部动作栏（唯一写入点）
+### 3.20 `settings.models.editor.footer` — 编辑层底部动作栏（唯一写入点）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -913,7 +906,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-10=A / G-12**；`E0` `base.primitives.md:751-767`（`form-save`：`dirty && !invalid && !saving`、唯一写入点、无放弃按钮、失败保留草稿、钉底）；`E0` `ref/dsh-settings.md:367-383`（busy 时取消禁用、成功才回退）；**D-07** spring；G-16 按钮 48；E-10 底部固定动作栏。 |
 | 13 | 反证 + 验收 ID | **反证**：① 省略 disabled 条件 → 密钥没填完就保存、弱网半成品写进去；② 给「放弃」按钮 → 与 dirty 确认形成两条互斥路径；③ 失败清草稿 → 用户重填一遍；④ 底栏不钉底 → 长表单滚到底才看到保存（DSH footer 不吸附的风险记录，p2 建议 mobile 固定动作栏）。**验收**：`SET-24`（三态门禁）、`SET-25`（失败留页）、`SET-26`（成功才回退 + 源码无放弃按钮）、`SET-27`（同页不混用）、`SET-41`（busy 锁出口）。 |
 
-#### `settings.models.editor.key` — API Key 字段（write-only）
+### 3.21 `settings.models.editor.key` — API Key 字段（write-only）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -931,7 +924,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-09=A**（write-only + 单密钥 + 仅正在输入的新值可显隐；`decision-pack.md:346`）；`E0` `ref/dsh-settings.md:313-329`（初值空/空=不改/占位三态/`autoComplete=new-password`/无显隐钮 → 我方只对新值加显隐）；`E0` `ref/legacy-myco.md:790-802`（旧密钥对话框只写不读，`BR:76-77`）；G-16（输入 48）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 空输入当「清空 key」→ 用户只改 BaseURL 却删了密钥；② 回显已存密钥 → 密钥进入 DOM/截图，安全退化（chat-demo 掩码还泄露长度）；③ 显隐作用到已存值 → 同上；④ 保存时同步探活 → 保存卡在网络、失败≠密钥错。**验收**：`SET-34`（DOM 无明文 + 留空不改 + 占位三态）、`SET-35`（校验与门禁）、`SET-63`（滚动到边）。 |
 
-#### `settings.models.editor.fields` — 身份与端点字段（显示名 / id / 类型 / BaseURL / 默认上下文与输出）
+### 3.22 `settings.models.editor.fields` — 身份与端点字段（显示名 / id / 类型 / BaseURL / 默认上下文与输出）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -949,7 +942,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:349-366`（显示名回落 id / BaseURL 空=回继承 / 协议 / route id 正则+重名）；`E0` `ref/dsh-settings.md:196-213`（`settings-field`：label+hint+错误替换 hint+恢复默认仅 overridden）；`E0` `ref/legacy-myco.md:1132`（myco 实有字段：provider id/名称/BaseURL）；`user` **E-08=A**（继承/恢复默认）；`user` E-12 规则（>4 或领域枚举 → 下拉）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 清空即写 unset → 改一半落盘（`SET-18` 反证）；② 数值输入自动改写 → 吃掉正在输入的字符；③ 非法不就地提示 → 用户只看到保存灰着却不知道哪错；④ 恢复默认立即写 → 点错后除保存外无法恢复原值。**验收**：`SET-35`（就地校验 + 错误替换 hint）、`SET-36`（折叠/帮助无高度动画）、`SET-64`（继承与恢复默认）、`SET-65`（失败反馈位置）。 |
 
-#### `settings.models.editor.customized` — 高级设置折叠区
+### 3.23 `settings.models.editor.customized` — 高级设置折叠区
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -967,7 +960,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:331-348`（`<details>` 默认收起/折叠不持久化/展开 inline 推下/箭头 120ms）；`user` **G-10**（设置项帮助区展开一律不做高度动画）；`E0` `p2/settings.md:135`（高级字段默认收起、不持久化）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 高级字段直接铺开 → 每张表单长到两屏，常规编辑（填 key）要滚很久；② 持久化折叠状态 → 下次打开一堆展开的高级字段淹没主任务；③ 做高度动画 → 设置页连点掉帧（G-10）；④ 折叠区内错误不可见 → 用户只看到保存灰着。**验收**：`SET-36`（默认收起 + 展开无动画 + 自动展开定位）、`SET-64`（高级字段的继承/恢复默认）。 |
 
-#### `settings.models.model-list` — 模型目录区（继承 / 拉取 / 添加）
+### 3.24 `settings.models.model-list` — 模型目录区（继承 / 拉取 / 添加）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -985,7 +978,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:385-401`（继承标记、恢复继承不复制默认值、空态虚线框、拉取需 askable）；`user` **E-08=A**；`E0` `p2/settings.md:138`（NS-04）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 恢复继承复制默认值 → 之后默认值更新页面不再跟随（继承语义被破坏）；② 空列表不显示虚框 → 用户以为加载失败；③ 拉取失败弹空 sheet → 用户以为端点上没有模型；④ 允许目录为空 → provider 无模型可用。**验收**：`SET-37`（继承/恢复继承 + 空态）、`SET-40`（拉取候选）、`SET-55`（加载/失败）、`SET-60`（空态矩阵）。 |
 
-#### `settings.models.model-row` — 单个模型行（草稿态；删除无确认）
+### 3.25 `settings.models.model-row` — 单个模型行（草稿态；删除无确认）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1003,7 +996,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:403-419`（行布局、删除无确认、错误汇总在卡底、展开态按模型身份/缓冲区重排）；`base.primitives.md:625-641`（input 契约）；`E0` `p2/settings.md:139`（model-row 删除无确认）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 删除模型也加确认 → 草稿态确认套确认（provider 删除才需要确认）；② 行内红框 → 逐字输入时闪；③ 展开态按行号记忆 → 删除中间行后展开错位到别的模型（DSH 代码专门重排缓冲区）。**验收**：`SET-38`（删除无确认 + 展开态跟随身份 + 错误汇总）、`SET-39`（容量/输入类型）、`SET-58`（100 模型流畅）。 |
 
-#### `settings.models.model-advanced` — 模型高级字段（容量 / 输入类型）
+### 3.26 `settings.models.model-advanced` — 模型高级字段（容量 / 输入类型）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1021,7 +1014,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:421-437`（K/M 文本缓冲、不静默改号、输入类型至少一项、最后一项 disabled）；`E0` `p2/settings.md:140`（model-advanced）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 每次击键从数字重拼 → 输入 `1000` 被改写成 `1K`，吃掉正在敲的字符；② 允许取消唯一输入类型 → 模型无输入类型、adapter 拒绝；③ 每次击键结算容量 → 输入 `2` 时被当成 2 tokens 覆盖显示。**验收**：`SET-39`（K/M 原样 + 至少一项）、`SET-35`（非法 + 提交禁用）。 |
 
-#### `settings.models.fetch-dialog` — 拉取模型候选（BottomSheet）
+### 3.27 `settings.models.fetch-dialog` — 拉取模型候选（BottomSheet）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1039,7 +1032,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **D-03=B + G-13**（轻选择 = BottomSheet；下滑关仅内滚在顶）；`E0` `ref/dsh-settings.md:439-456`（默认只勾未在列表、按 id 合并、空候选不打开、搜索 + 全选）；`E0` `p2/settings.md:141`（修旧 myco D16：结果必须可「采用」）；`E0` `base.primitives.md:499-515`（sheet 契约）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 默认全选 → 覆盖用户手工调好的容量；② 「采用」整表替换 → 删掉未勾选的已有行；③ 用居中 Modal → 手机上单手关不掉、列表可视区更小（D-03 反证）；④ 结果只显示字符串不回填 → 旧 myco D16 半成品。**验收**：`SET-40`（默认勾选/按 id 合并/空候选不打开）、`SET-47`（sheet 关闭判据）。 |
 
-#### `settings.models.export-import` — 配置导入 / 导出（不含密钥值）
+### 3.28 `settings.models.export-import` — 配置导入 / 导出（不含密钥值）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1057,7 +1050,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:166`（保留：导出不导密钥值、导入先预览再确认、整份替换改「先预览」）；`E0` `ref/legacy-myco.md:642-676`（旧导出不含密钥 `IB:882-893`；旧导入整份替换 `MA:1650`、`IB:282-291` = 风险）；`E1` 太墟 JSON 导入预览；**D-03/G-13**（预览 = sheet、确认 = modal）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 不预览直接整份替换 → 选错文件即覆盖全部配置且不可撤销（旧 myco E0 风险）；② 导出含密钥 → 明文密钥进文件/分享；③ 无导出 → 换机/分享只能手抄；④ 导入非原子 → 失败留下半替换库。**验收**：`SET-42`（入口与即时写语义）、`SET-46`（预览 + 二次确认 + 回滚）、`SET-68`（文件不含密钥）、`SET-51`（串行互斥 + 进度）。 |
 
-#### `settings.models.page-retry` — 模型页加载失败重试
+### 3.29 `settings.models.page-retry` — 模型页加载失败重试
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1075,9 +1068,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `ref/dsh-settings.md:237-253`（首载不显示重试、有快照保留旧内容、整页错误 + 重试）；`E0` `p2/settings.md:130`（采纳 DSH：首载失败显示重试 + 有旧快照保留旧内容）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 首载失败立刻显示红色整页 → 用户还不知道这页有什么；② 刷新失败整页替换 → 打断正在进行的操作；③ 失败无重试 → 只能杀进程。**验收**：`SET-55`（首载失败重试 + 保留快照）、`SET-58`（长内容/流畅）。 |
 
-### 3.5 会话数据（`settings.data.*`）
-
-#### `settings.data.history` — 导入 / 导出会话数据
+### 3.30 `settings.data.history` — 导入 / 导出会话数据
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1095,7 +1086,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:165`（做：导入先暂存再原子替换 / 导出 ZIP / 删除全部；串行互斥）；`E0` chat-demo staging（`db.ts:26-32`）；`E1` 太墟「本地备份」；**E-14**（确认强度）；**D-03/G-13**（预览 = sheet、确认 = modal）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 导入不原子替换 → 选错文件立刻清空历史且无法回滚（chat-demo 为此用 staging）；② 并发读写同库 → 导出半替换数据（串行互斥）；③ 导入即执行无预览 → 用户不知道覆盖多少；④ 取消导入 → 半替换库。**验收**：`SET-51`（串行互斥 + 进度）、`SET-46`（预览 + 回滚）、`SET-65`（失败反馈）、`SET-67`（执行中禁用）。 |
 
-#### `settings.data.clear` — 清空全部会话与数据（危险；二次确认）
+### 3.31 `settings.data.clear` — 清空全部会话与数据（危险；二次确认）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1113,14 +1104,14 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `user` **E-14=A**（一次确认 + 默认焦点取消；「删除全部」= 二次确认 + 显示影响数量 + 不可撤销）；Q-settings-07 解 A（回收站也清空）；`E0` `p2/settings.md:216,334`；`E0` `base.primitives.md:463-479`（modal）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 只做一次确认 → 误删不可逆；② 不显示数量 → 用户不知道影响面；③ 做输入名确认 → 参考无先例、每次多一步（E-14）；④ 清空后回收站仍有数据 → 用户以为彻底清空。**验收**：`SET-45`（二层 + 数量 + 取消不变）、`SET-48`（撤销边界）、`SET-67`（执行中禁用）。 |
 
-#### `settings.data.bin-rows` — 归档会话 / 回收站入口
+### 3.32 `settings.data.bin-rows` — 归档会话 / 回收站入口
 
 | # | 字段 | 内容 |
 |---|---|---|
 | 1 | 身份与出现条件 | `settings.data.bin-rows`。所属：会话数据页第 3 组。出现条件：始终；2 行（归档会话 / 回收站）。 |
 | 2 | 网格与定位 | 行 56；右侧 chevron 16；整行可点。 |
 | 3 | 命中区 | 整行 56 命中；与相邻行不相交。 |
-| 4 | 手势 | 单击 = push `bin` route（携带 `{tab:'archived'|'trash'}`）；无长按。 |
+| 4 | 手势 | 单击 = push `bin` route（携带 `tab` 参数：`archived` / `trash`）；无长按。 |
 | 5 | 行为 | push bin（内置图边 `settings RIGHT→bin`）；pop 回本页**原滚动位置**（KEEP）；bin 列表本体、单条恢复、清空回收站归 `sidebar`；本页不展示 bin 数量（避免与 sidebar 双真源）。 |
 | 6 | 视觉状态 | default/pressed；chevron 指向右。 |
 | 7 | 布局占位与展开形态 | inline 行。 |
@@ -1131,9 +1122,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:167`（保留入口移到会话数据页；列表本体属 sidebar）；`E0` `base.layout.md:290`（内置图 `settings→bin`）；`E0` `ref/legacy-myco.md:1017`（旧 myco 反证：归档/软删无入口 = 永久丢失）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 删掉入口 → 归档/软删会话无法找回（旧 myco 反证 LEG-27）；② 把回收站列表做进本面板 → 与 sidebar 双写、两套列表。**验收**：`SET-52`（入口、参数、返回位置）。 |
 
-### 3.6 关于（`settings.about.page`）
-
-#### `settings.about.page` — 关于页（只读 + 可展开的长文本）
+### 3.33 `settings.about.page` — 关于页（只读 + 可展开的长文本）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1151,9 +1140,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:118`（做极简关于页：应用名/版本/构建号/开源许可/致谢）；`E0` `p2/settings.md:116`（版本进关于页而不是 General 行内）；`E0` `ref/taixu.md:608`（太墟设置首页「应用」组 → 关于）；G-03/G-10。 |
 | 13 | 反证 + 验收 ID | **反证**：① 版本号无触达路径 → 用户报障说不清版本；② 把版本 + 许可塞进 General → 撑长 General 页；③ 为只读长文开独立 route → 多一层返回、无收益。**验收**：`SET-53`（只读 + 展开无动画）、`SET-66`（跨页一致性）。 |
 
-### 3.7 诊断（`settings.diagnose.*`）
-
-#### `settings.diagnose.page` — 诊断页（只读摘要 + 动作）
+### 3.34 `settings.diagnose.page` — 诊断页（只读摘要 + 动作）
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1171,7 +1158,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:120`（保留极简诊断：连通性 / 日志导出 / 版本与环境摘要；删旧 myco 的 `revision=` 与 A7 代号）；`E0` `ref/legacy-myco.md:38`（旧 myco 自检 7 项）；`E1` 太墟诊断页。 |
 | 13 | 反证 + 验收 ID | **反证**：① 删掉诊断 → 弱网问题只能靠猜（旧 myco 用户已在用）；② 把 revision/A7 代号放进诊断 → 内部信息暴露。**验收**：`SET-54`（只读摘要 + 两个动作）、`SET-56`（深色）、`SET-66`（跨页一致性）。 |
 
-#### `settings.diagnose.connection-test` — 连通性测试动作
+### 3.35 `settings.diagnose.connection-test` — 连通性测试动作
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1189,7 +1176,7 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:120`（诊断页含连通性测试）；`E0` `ref/legacy-myco.md:732-748`（旧「测试连通性」只拼字符串、不回填 = 缺陷，本节点只做诊断用途不承担配置）；`E0` `ref/dsh-settings.md:178-194`（行内 alert / 持久 Toast 的分工）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 结果只显示字符串 → 用户不知道下一步（旧 myco）；② 结果持久化 → 用户看到过期结论；③ 测试写配置 → 诊断有副作用；④ 无取消/超时 → 永远转圈。**验收**：`SET-54`（三态 + 不持久化）、`SET-69`（失败重试）、`SET-59`（禁用原因）。 |
 
-#### `settings.diagnose.export-log` — 诊断日志导出动作
+### 3.36 `settings.diagnose.export-log` — 诊断日志导出动作
 
 | # | 字段 | 内容 |
 |---|---|---|
@@ -1207,4 +1194,188 @@ fontScale 2.0：行高随文字撑高，命中盒只增不减，无裁切；卡�
 | 12 | 依据 | `E0` `p2/settings.md:120`（诊断页含日志导出）；`E0` `ref/dsh-settings.md:178-194`（行内 alert / 持久 Toast 分工）；§0.2（脱敏规则归后端，本文件只要求 UI 不展示/不打包密钥与正文）。 |
 | 13 | 反证 + 验收 ID | **反证**：① 导出含密钥/正文 → 用户分享日志即泄露；② 失败静默 → 用户以为导出成功；③ 不提供 → 弱网问题无法给开发者定位。**验收**：`SET-54`（动作三态）、`SET-65`（失败反馈）、`SET-68`（导出内容不含密钥）。 |
 
-<!-- SPLIT-PASS4 -->
+---
+
+## 4. 验收清单
+
+> ID 前缀 `SET`，全局唯一，一旦分配不复用、不改号。本表覆盖 **`SET-01`…`SET-71` 共 71 条，连续无缺号、无重号**（脚本校验，排除 `P3-SET-xx` 待确认编号）。
+> 方式三选（可组合）：**真机** = 需真机手势/录屏/量测/TalkBack；**截图** = 静态比对/取色；**单测** = UI/core 层断言、Mock、或源码静态断言（grep/AST）。
+> 判定列全部写成可执行判据（数字、阈值、断言对象、失败条件）；"点开正常/显示正常"这类写法本表不出现。
+> 依赖列 = 判定所需的最小上下文（§3 节点 ID 或 §1/§2 小节）。
+
+| ID | 判定 | 方式 | 依赖 |
+|---|---|---|---|
+| SET-01 | COMPACT/MEDIUM（`w<840` 或 `h<480`）打开设置：设置层覆盖整屏、圆角 0、不透明；设置层外**不存在暗化遮罩**（截图像素采样无压暗）；系统栏区域无白边 | 真机 + 截图 | `settings.shell.panel`／§1.3.1 |
+| SET-02 | 依次切 5 个子页：设置层外框（左/右/上边界与层高）像素位置不变（±0dp）；层高不随子页内容变化；内容长短只影响内容区滚动 | 真机录屏 + 截图比对 | `settings.shell.panel`／§1.2 |
+| SET-03 | 三键导航/手势导航各测一次 + 横屏挖孔机：顶栏标题不被状态栏/挖孔遮挡；页面内容与编辑层底栏不被手势条遮挡；底部只出现**一次** inset（无「双垫」空隙，底部留白 = `navigationBars` 高 ±1dp） | 真机 + 截图 | `settings.shell.panel`／§1.3.3 |
+| SET-04 | 1280×800（EXPANDED）：侧栏列 280 可见不变 + 设置导航列 188 + 内容列宽 = `clamp(360, W−468, 720)` 且居中（量测偏差 ≤1dp）；右栏空槽不占宽；返回键不关侧栏列（⚠ 宽屏形态口径待 §5 `P3-SET-01` 裁定） | 真机量测截图 + 单测（宽度公式） | `settings.shell.panel`／§1.3.1 |
+| SET-05 | ① 切 5 个子页再逐个切回：各页滚动位置保留（±1dp）、搜索输入未丢；② 竖屏→横屏→分屏→宽屏：当前 section 与滚动位置不丢、无重建闪白（逐帧无空白帧） | 真机录屏 + 单测（状态保持） | `settings.page`／§1.3.2 |
+| SET-06 | 子页切换**不改变栈深**（连点 5 个导航项后栈深仍 = 1）；此时按返回：直接关整层（栈深 1→0）回来源面板，**不**先回上一子页；「切页→返回」重复 5 次只关 1 次设置层 | 真机 + 单测（栈深断言） | `settings.shell.panel`／§1.3.2 |
+| SET-07 | 关闭设置后 TalkBack 焦点回到侧栏底部「设置」入口（读屏报该按钮）；重开设置：落上次子页 + 原滚动位置（±1dp） | 真机 TalkBack + 单测 | `settings.shell.close`／§1.3.5 |
+| SET-08 | models 页滚动 3 屏：顶栏与导航条 y 坐标不变（±1dp）、始终可见且可点；只有内容区在滚 | 真机录屏逐帧 | `settings.shell.header`／§1.2 |
+| SET-09 | 320dp 宽 + fontScale 2.0：横滑导航可滚到最后一项「诊断」并选中；无滚动条可见（截图像素无灰线）；选中项自动滚入视口 | 真机手势 + 截图 | `settings.shell.nav`／§1.2 |
+| SET-10 | 源码断言：导航容器无 `tablist`/`Role.Tab`/roving tabindex/方向键处理；TalkBack 逐项报「<名称>，[已选中]，按钮」 | 单测（源码静态断言）+ 真机 TalkBack | `settings.shell.nav`（D-09） |
+| SET-11 | 每个 nav cell 布局盒高 ≥44dp、宽 ≥文字宽+24dp；注入相邻命中矩形断言两两**不相交**（重叠像素 = 0）；320dp/fontScale 2.0 下仍成立 | 单测（hit rect）+ 真机量测 | `settings.shell.nav`／G-16 |
+| SET-12 | 导航滚到最左/最右后继续横滑：内容区纵向位置不动（±0dp）、无整页横移；源码存在 `overscroll-behavior-x: contain`；滚动条隐藏 | 真机录屏 + 源码断言 | `settings.shell.nav`／G-04 |
+| SET-13 | 打开搜索再取消：栈深不变（仍 1）、回到原 section 原滚动位置（±1dp）；开关无转场动画（≤1 帧直切） | 真机录屏 + 单测 | `settings.shell.search`／§1.9.5 |
+| SET-14 | 点搜索、查询为空：显示「热门搜索」+ 可换行 chips（至少含 字号/密钥/主题/语言/清空/诊断）；点任一 chip → 填入查询并立即出结果 | 真机 + 截图 | `settings.shell.search`／§1.9.1 |
+| SET-15 | 结果行 = 「子页名 12/18 secondary · 条目名 14/22 primary」，命中片段加粗 + 高亮底色；行高 44、整行可点；跳转后目标行整行底色高亮出现 | 截图 + 单测（文本拼接） | `settings.shell.search-result`／§1.9.3 |
+| SET-16 | 点一条结果：① 浮层同帧关闭 ② 切到目标 section ③ 目标行完整可见则不滚、否则 `rowTop = viewportTop+8`（量测 ≤1dp） ④ 高亮 2000ms（±100ms）后消失 ⑤ TalkBack 播「已定位到 <条目名>」且焦点在目标行容器 | 真机录屏（计时）+ TalkBack | `settings.shell.search-result`／§1.9.4 |
+| SET-17 | 输入无命中词：显示「没有找到「<查询>」相关的设置」+ 3 个建议词 chips，不出现空白页；`role=status` 播报一次 | 真机 + 截图 | `settings.shell.search`／§1.9.1 |
+| SET-18 | 注册表 17 条断言：每条 `sectionId` ∈ 5 子页、`anchorId` 在目标节点存在、可滚到（不在折叠隐藏区）、全局唯一、P4 期不改名；17 条别名各搜一次均命中对应结果行 | 单测（注册表结构断言）+ 真机抽查 | §1.5.2 |
+| SET-19 | 只出现在长说明/帮助正文里的词搜索 = 0 命中；条目名/别名/子页名匹配大小写不敏感、`trim` 后生效；「API KEY」与「api key」结果一致 | 单测（匹配函数） | §1.9.2 |
+| SET-20 | 搜索框聚焦弹 IME：结果列表可视高 = 窗口高 − IME 高（±1dp），可滚到最后一条且末条不被键盘遮；取消钮可达 | 真机（Gboard 中文） | `settings.shell.search`／§1.9.1 |
+| SET-21 | 外观点「深色」→ 同帧全 App 变深色、页面**无保存按钮**，退出再进仍深色；切语言 → 文案即时切换（不重启）；两次操作后无「保存/取消」出现 | 真机 + 单测（写命令次数 = 1） | `settings.general.appearance`／`settings.general.language`／§1.6.1 |
+| SET-22 | 拖动字号滑杆 16→22 全程：值标签跟手实时变化、设置写命令次数 = 0；松手后写命令次数 = 1；同值再松手 = 0 | 单测（fake store）+ 真机 | `settings.general.font-size`／§1.6.1 |
+| SET-23 | 编辑显示名/BaseURL/密钥后点关闭并「放弃」：写命令次数 = 0；重开编辑层字段为原值（密钥仍显示「已配置，留空则不修改」） | 单测（Mock）+ 真机 | `settings.models.editor`／`settings.shell.dirty-guard` |
+| SET-24 | 保存按钮 disabled 三种情况各断言一次：clean / 非法（id 空、URL 非法、模型目录为空）/ saving；仅 `dirty && !invalid && !saving` 时可点；disabled 时点击命令调用 = 0 | 单测（状态矩阵） | `settings.models.editor.footer` |
+| SET-25 | Mock 保存返回 500/409：编辑层不关、草稿保留、底栏显示错误文案、保存按钮恢复可点且可重试 | 单测（Mock） | `settings.models.editor.footer`／§2 S4 |
+| SET-26 | 保存成功 → 编辑层关闭 + 列表出现新行/新值 + Toast；源码断言编辑层顶栏与底栏**无**「放弃」按钮文案 | 真机 + 单测（源码静态断言） | `settings.models.editor.footer` |
+| SET-27 | 源码断言：General 页无文本/URL/密钥/数值输入框、无「保存」按钮；编辑层内无任何「按下即写」控件（无 switch、无即时单选/滑杆），写命令唯一来自底栏保存；models 列表页无保存按钮 | 单测（源码静态断言：grep/AST） | §1.6.2 |
+| SET-28 | 编辑层改一个字符 → 按**系统返回键**：弹「放弃未保存的修改？」；不点按钮 → 页面不关、草稿仍在 | 真机（3 键导航） | `settings.shell.dirty-guard`／§1.6.3 |
+| SET-29 | 同上改一个字符 → 用**系统侧滑返回手势**：出现同一确认弹窗；点「放弃」→ 关层丢草稿；点「继续编辑」→ 留页且草稿完整 | 真机（手势导航） | `settings.shell.dirty-guard`／§1.6.3 |
+| SET-30 | ① 点顶栏关闭、② 点底栏取消：均触发同一确认弹窗（dirty 时）；③ **设置层拖出关闭手势**（从屏幕边缘拖出 200dp）：编辑浮层吞指针，设置 route 不跟手、不关闭、草稿不丢（第 4 类出口不可达） | 真机录屏 | `settings.shell.dirty-guard`／§1.6.3 |
+| SET-31 | 未改动直接关闭/返回：**无**确认弹窗、直接关层；dirty 时弹窗默认焦点在「继续编辑」（连按 2 次 Enter 后弹窗仍在、草稿未丢） | 单测（焦点断言）+ 真机 | `settings.shell.dirty-guard` |
+| SET-32 | 目录/自定义两模式各建一个 provider 保存成功：返回列表出现该行（名称/模型数正确）；编辑改显示名保存后行文案更新；两模式来回切换草稿均不丢 | 真机 + 单测 | `settings.models.row`／`.add-flow` |
+| SET-33 | 点删除 → Modal 标题「删除 Provider？」；取消 → 行仍在、配置与密钥不变（Mock：删除命令 0 次）；确认 → 行消失、provider 与密钥均删、无撤销入口 | 真机 + 单测 | `settings.models.delete-dialog` |
+| SET-34 | 已配置 key 的 provider：编辑页密码框初值空、抓取 DOM/语义树**无**已存密钥明文；只改 BaseURL 且 key 留空保存 → 原 key 不变（Mock 断言）；占位三态文案各出现一次 | 单测（DOM/语义树）+ 真机 | `settings.models.editor.key` |
+| SET-35 | 输入 `256K`/`1000` 原样保留不被改写；id 数字开头/重名、BaseURL 非 `http(s)` 或 `http` 指向非 `127.0.0.1`/`localhost` → 就地错误文案 + `aria-invalid` + 保存禁用；错误替换 hint 时行高不变（±1dp） | 单测 + 真机截图 | `settings.models.editor.fields`／`.model-advanced` |
+| SET-36 | 高级设置默认收起；点开内容直切出现（录屏逐帧无高度 tween 中间态）；折叠状态不持久化（重开编辑层仍收起）；保存被折叠区字段阻塞 → 自动展开并滚到该字段一次 | 真机录屏 + 单测 | `settings.models.editor.customized`（G-10） |
+| SET-37 | 模型目录继承态显示「继承」标记；点「恢复继承」→ 用户层被删（Mock 断言 unset，**不是**写入默认值）；目录为空 → 88dp 虚线空态框 + 添加行 | 单测（Mock）+ 真机截图 | `settings.models.model-list`（E-08） |
+| SET-38 | 点模型行删除 → 无确认、行即时消失；删除中间行后，另一原本展开的行仍在原模型上展开（不按行号错位）；非法行错误只在底栏汇总「第 N 行：原因」，行本身无红框 | 单测 + 真机 | `settings.models.model-row` |
+| SET-39 | 上下文窗口输入 `2` 时不被立即结算成 2 tokens、非法文本不被静默改写；输入类型取消最后一项 → 该项 disabled（无法取消） | 单测（输入序列）+ 真机 | `settings.models.model-advanced` |
+| SET-40 | 拉取成功：sheet 候选默认只勾选目录中不存在的 id（已有行不勾）；「采用」按 id 合并（已有行用户值保留、新增追加）；候选为空 → 不打开 sheet、行内提示 | 单测（Mock 端点）+ 真机 | `settings.models.fetch-dialog` |
+| SET-41 | 点编辑：打开全屏浮层且**栈深不变**（仍 1）；浮层顶栏 56 + 底栏 64 固定、内容区独立滚；saving 时返回键/取消/关闭均被吞、浮层不关 | 单测（栈深/状态）+ 真机 | `settings.models.editor`／§1.3.4 |
+| SET-42 | 删除 provider 确认后列表立即更新（无页面级保存动作）；源码断言 models 列表页无「保存」按钮；点添加入口不写库（只打开编辑层，写命令 0 次） | 单测 + 源码断言 | `settings.models.row`／`.add-flow`／§1.6.1 |
+| SET-43 | 源码断言：settings 内无「当前会话模型」控件；model 面板内无 provider 配置/密钥/编辑模型容量入口；同一字段写点全仓库唯一 | 单测（源码静态断言） | §1.4.2 |
+| SET-44 | 删除确认 Modal 打开瞬间焦点在「取消」；连按 2 次 Enter 后 provider 仍在（删除命令 0 次）；TalkBack 播报标题 + 危险描述 | 单测（焦点断言）+ 真机 | `settings.models.delete-dialog`／`settings.shell.confirm`（E-14） |
+| SET-45 | 点「清空全部」→ 第 1 层说明；继续 → 第 2 层显示「将永久删除 N 个会话（含回收站 M 条）」；取消任一层 → 数据不变（删除命令 0 次）；确认后会话与回收站均清空 | 真机 + 单测 | `settings.data.clear` |
+| SET-46 | 导入 → 预览 sheet 显示覆盖数量（X provider / Y 模型 / N 会话）→ 确认 Modal；Mock 导入中途失败 → 原数据保留（staging 回滚断言，无半替换）；成功后才刷新列表 | 单测（staging 回滚）+ 真机 | `settings.models.export-import`／`settings.data.history` |
+| SET-47 | ① Modal：框内按下拖到遮罩松手 → 不关；遮罩按下+松手 → 关；向下滑 → **不关**（无下滑关）；② sheet：仅内滚在顶时下滑才关；内滚中部下滑 → 只滚不关 | 真机手势 | `settings.shell.confirm`／`settings.models.fetch-dialog`（G-13/G-18） |
+| SET-48 | 删除 provider / 清空全部完成后 3s 内无 Undo/撤销入口（源码断言无 Snackbar undo 绑定）；本面板 data 页无单条会话撤销（该能力只在 sidebar） | 单测（源码）+ 真机 | §1.8 |
+| SET-49 | 可用 provider = 0 首启：自动打开设置并落「模型」页、焦点到「添加 Provider」；点添加 → 目录模式默认选中首个可用模板、编辑层焦点落密钥字段；进程内再开设置不重复引导；删光 provider 后不自动再弹 | 真机 + 单测 | `settings.shell.first-run-guard` |
+| SET-50 | `openSettings('diagnose','settings.diagnose.export-log')` 直达并高亮；非法 section → 落「通用」并记录；不带 section → 上次子页（冷启回落「通用」）；设置已开时再 `openSettings('models')` → 只切页不叠层（栈深不变）；非法 anchorId → 只切页不高亮 | 单测（参数矩阵）+ 真机 | `settings.shell.deep-link` |
+| SET-51 | 导入执行中：导出/清空/导入全部 disabled（点击 0 行为）；进度 `role=progressbar` 百分比递增；执行中无取消入口；完成后恢复 | 真机 + 单测 | `settings.data.history`／`.data.clear` |
+| SET-52 | 点「归档会话」→ 进入 bin 页并对齐 `archived` tab；返回 → 回会话数据页原滚动位置（±1dp）；本页不显示 bin 计数（与 sidebar 无双真源） | 真机录屏 + 单测（参数） | `settings.data.bin-rows` |
+| SET-53 | 版本/构建号只读：点击/长按无响应、不可聚焦为控件；点「开源许可」展开长文本（直切无高度动画）；展开不新增 route（栈深不变） | 真机 + 单测 | `settings.about.page` |
+| SET-54 | 诊断页显示 6 项摘要（不可用显示「—」）；连通性测试 idle→running→success/fail；日志导出 idle→running→成功 Toast / fail；离开诊断页再回：测试结果已丢弃（回 idle，不持久化） | 真机 + 单测 | `settings.diagnose.page`／`.connection-test`／`.export-log` |
+| SET-55 | Mock 首载失败：整页错误 + 「重试」44；点重试成功恢复列表。有旧快照时后台刷新失败：保留旧内容 + 页顶错误条，不出现整页红屏 | 单测（Mock）+ 真机 | `settings.models.page-retry`／§2 S4 |
+| SET-56 | 系统深色：设置全部 token 切换（截图取色无浅色残留）、遮罩仍 0.32、打开设置瞬间无白闪（逐帧无白帧） | 截图取色 + 真机逐帧 | §2 S6 |
+| SET-57 | fontScale 2.0：5 个子页逐页截图——文案换行不裁切、标题不挤压关闭/搜索钮、按钮命中 ≥44/48、nav cell ≥44、卡片不横向溢出 | 真机截图矩阵 | §2 S7 |
+| SET-58 | 按 §2 S3 长内容阈值（provider >6 / 模型 >20）与 100 模型行极端值：滚动 10 屏无掉帧（>2 帧抖动 = 失败）、无 ANR；顶栏/导航固定；内存无线性增长 | 真机录屏（帧率采样）+ 单测 | `settings.models.*`／§2 S3 |
+| SET-59 | disabled 状态各测一次（添加按钮无可添加项 / 拉取需 id+BaseURL / 连通性无 provider / 保存非法）：点击零行为、`stateDescription` 报原因、视觉 40% 不隐藏 | 真机 TalkBack + 单测 | §2 S5／§1.7 |
+| SET-60 | 四种空态各截图：① 无 provider（首跑引导）② 模型目录空（虚线框）③ 会话数据 0 条 ④ 搜索无匹配；文案各自正确、空态主操作可点 | 截图矩阵 + 真机 | §2 S0 |
+| SET-61 | 把内容字号从 10 拉到 22：设置页所有文字字号不变（截图字号量测）、行高不变；聊天正文按 22 生效 | 真机截图量测 | `settings.general.font-size`（E-13） |
+| SET-62 | 源码断言注册表 `anchorId` 全部来自 §1.5.2 且等于节点 ID；P4 期内不改名（CI 快照对比）；每个 anchor 都能在目标页滚到并命中高亮矩形 | 单测（快照）+ 真机 | §1.5.1 |
+| SET-63 | ① 设置页滚到底继续上滑：无整页位移、残余速度不外传；② 搜索列表滚到顶继续下滑：浮层不关、不滚外层；③ 编辑层内容到边：底栏不动、不带动下层 | 真机录屏逐帧 | `settings.shell.panel`／`settings.page`／`settings.models.editor.key`（G-04） |
+| SET-64 | 字段被覆盖后显示「已覆盖」Tag + 「恢复默认」键；点恢复默认 → 回继承默认（Mock：保存前不写、保存时才写 unset）；保存后默认值更新时该字段跟随（断言）；后端前提见 §5 `P3-SET-02` | 单测（Mock）+ 真机 | `settings.models.editor.fields`／`.customized`（E-08） |
+| SET-65 | 字段级错误出现在该字段 hint 位置（行内），不弹 Toast；动作级失败（保存/导入/导出/日志）出持久 Toast `role=alert`；两者不互相替代；错误文案指向具体字段/动作 | 单测 + 真机 | §1.7 |
+| SET-66 | 5 页对比：行高（44/56）、水平 padding 16、顶栏/导航固定、分割 hairline、空态/错误态样式一致（截图 diff 仅内容差异）；切页顶栏 y 不变（±1dp） | 截图比对 + 单测（token） | `settings.page`／§1.2 |
+| SET-67 | 保存中 / 删除执行中 / 导入导出执行中 / 清空执行中：按钮 40% + disabled、返回/取消/关闭被吞；重复点击命令调用 0 次；结束后全部恢复 | 单测 + 真机 | §2 S5／S16 |
+| SET-68 | 导出 provider JSON、导出会话 ZIP、导出诊断日志各取一份文件：全文检索**不含**任何已存密钥明文与消息正文（自动化扫描断言 + 手工抽查）；导入文件带密钥字段时忽略该字段 | 单测（文件内容扫描）+ 真机 | `settings.models.export-import`／`settings.data.history`／`settings.diagnose.export-log` |
+| SET-69 | 连通性测试：Mock 超时/500 → 显示「超时/失败」+ 行尾「重试」44；点重试重新进入 running 并终态正确；失败结果不持久化 | 单测（Mock）+ 真机 | `settings.diagnose.connection-test` |
+| SET-70 | 选 English → 同帧界面切换、不重启；系统语言变化后仍保持用户选择（偏好优先）；locale 资源 = 1 时语言分组不渲染且不进搜索注册表 | 真机 + 单测 | `settings.general.language`（E-12） |
+| SET-71 | 字号拖到 10 再左拖：停住不循环（值仍 10、写入 0 次）；拖到 22 再右拖同；值标签与库值一致；不出现 9/23 | 真机 + 单测 | `settings.general.font-size` |
+
+### 4.1 节点 → 验收覆盖对照（脚本校验用）
+
+> 用途：校验「每个节点 ≥1 条验收」（`_p3-brief.md` 硬规则 3）。36 个节点节全部覆盖；`settings.general.switch-row` 是「不建节点」决议，其验收是对**不存在的行为**做源码断言（`SET-27`/`SET-59`）。
+
+| §3 节点节 | 节点 ID | 验收 ID |
+|---|---|---|
+| 3.1 | `settings.shell.panel` | SET-01、SET-02、SET-03、SET-04、SET-05、SET-06、SET-63 |
+| 3.2 | `settings.shell.header` | SET-08、SET-56、SET-57 |
+| 3.3 | `settings.shell.close` | SET-07、SET-30、SET-56 |
+| 3.4 | `settings.shell.nav` | SET-09、SET-10、SET-11、SET-12 |
+| 3.5 | `settings.shell.search` | SET-13、SET-14、SET-17、SET-20 |
+| 3.6 | `settings.shell.search-result` | SET-15、SET-16、SET-18、SET-19、SET-62 |
+| 3.7 | `settings.shell.dirty-guard` | SET-28、SET-29、SET-30、SET-31 |
+| 3.8 | `settings.shell.confirm` | SET-44、SET-45、SET-46、SET-47、SET-67 |
+| 3.9 | `settings.shell.first-run-guard` | SET-49、SET-60 |
+| 3.10 | `settings.shell.deep-link` | SET-50、SET-64 |
+| 3.11 | `settings.page` | SET-05、SET-57、SET-58、SET-63、SET-66 |
+| 3.12 | `settings.general.appearance` | SET-21、SET-56、SET-61 |
+| 3.13 | `settings.general.font-size` | SET-22、SET-61、SET-71 |
+| 3.14 | `settings.general.language` | SET-21、SET-70 |
+| 3.15 | `settings.general.switch-row`（决议，不建节点） | SET-27、SET-59 |
+| 3.16 | `settings.models.row` | SET-32、SET-33、SET-42、SET-43、SET-55 |
+| 3.17 | `settings.models.add-flow` | SET-32、SET-41、SET-42、SET-49、SET-59 |
+| 3.18 | `settings.models.delete-dialog` | SET-33、SET-44、SET-48、SET-67 |
+| 3.19 | `settings.models.editor` | SET-23、SET-25、SET-26、SET-41、SET-43 |
+| 3.20 | `settings.models.editor.footer` | SET-24、SET-25、SET-26、SET-27、SET-41 |
+| 3.21 | `settings.models.editor.key` | SET-34、SET-35、SET-63 |
+| 3.22 | `settings.models.editor.fields` | SET-35、SET-36、SET-64、SET-65 |
+| 3.23 | `settings.models.editor.customized` | SET-36、SET-64 |
+| 3.24 | `settings.models.model-list` | SET-37、SET-40、SET-55、SET-60 |
+| 3.25 | `settings.models.model-row` | SET-38、SET-39、SET-58 |
+| 3.26 | `settings.models.model-advanced` | SET-35、SET-39 |
+| 3.27 | `settings.models.fetch-dialog` | SET-40、SET-47 |
+| 3.28 | `settings.models.export-import` | SET-42、SET-46、SET-51、SET-68 |
+| 3.29 | `settings.models.page-retry` | SET-55、SET-58 |
+| 3.30 | `settings.data.history` | SET-46、SET-51、SET-65、SET-67 |
+| 3.31 | `settings.data.clear` | SET-45、SET-48、SET-67 |
+| 3.32 | `settings.data.bin-rows` | SET-52 |
+| 3.33 | `settings.about.page` | SET-53、SET-66 |
+| 3.34 | `settings.diagnose.page` | SET-54、SET-56、SET-66 |
+| 3.35 | `settings.diagnose.connection-test` | SET-54、SET-59、SET-69 |
+| 3.36 | `settings.diagnose.export-log` | SET-54、SET-65、SET-68 |
+
+---
+
+## 5. 待确认
+
+> 只列 P3 阶段发现的 **P2 遗漏 / 证据冲突 / 新决策点**；已拍板项（D-01…D-28、E-01…E-23）一律不重开。
+> **读法**：`P3-SET-xx` 是本文件唯一待确认编号（与验收 ID `SET-xx` 是不同前缀，不是同一序列）。
+> **结论先行**：**0 条阻塞 P4 整体开工**。`P3-SET-01` 只阻塞宽屏验收 `SET-04`（手机形态 SET-01/02/03 可按现状先做）；`P3-SET-02` 待后端确认（有降级路径，不阻塞开工）；`P3-SET-03`/`P3-SET-04` 是文档勘误/编号清理，不阻塞实现。
+
+### 5.1 P2 `NS-01…NS-09` 收敛核对（哪些已被拍板覆盖、哪些残留）
+
+| NS | P2 原问题 | 已由谁覆盖 | 本文件落点 | 残留 |
+|---|---|---|---|---|
+| NS-01 | 设置层形态/层数/返回语义（居中模态 vs 全屏覆盖 vs 分类首页+push） | 窄屏**全屏覆盖** = D-04 + `ref/dsh-mobile.md` E0；**单层、子页不产生栈层、返回=关整层** = D-01 覆盖栈 + `p2/settings.md:101,328` | §1.3.1/§1.3.2、`settings.shell.panel`/`.nav`/`.close`（含返回语义） | **宽屏形态**（列 vs 恒全屏）未被 D-04/D-01 明文覆盖 → `P3-SET-01` |
+| NS-02 | 设置导航 a11y 语义（`button`+`aria-current` vs `role=tablist`+roving） | **D-09=A 只做触摸**（不给 `Role.Tab`、不做方向键） | `settings.shell.nav` 字段 11、§1.7 | 无 |
+| NS-03 | 做不做设置搜索 | **D-20=B 做**（结果列表 + 定位跳转 + 每条设置项稳定 `anchorId`） | §1.5/§1.9、`settings.shell.search`/`.search-result` | 无 |
+| NS-04 | 配置继承模型（组合层/用户层 vs 平铺快照） | **E-08=A**（语义已定：恢复默认=unset、目录恢复继承） | `settings.models.editor.fields`/`.customized`/`.model-list` | 后端能否支持分层 → `P3-SET-02` |
+| NS-05 | 密钥形态与写入点（回显/显隐/多条/写点） | **E-09=A**（write-only、单密钥、只对正在输入的新值显隐、只留编辑层一处写入） | `settings.models.editor.key`、§1.4.2 | 无 |
+| NS-06 | provider 编辑容器（行内展开 vs 独立页 vs 全屏 Dialog） | **E-10=A**（独立全屏浮层 + 底部固定动作栏 + busy 连取消也禁用） | `settings.models.editor`/`.editor.footer` | 无 |
+| NS-07 | 外观（主题）控件形态（tile/chip/整行单选） | **E-11=A**（整行单选；选中态跟偏好不跟解析值） | `settings.general.appearance` | 无 |
+| NS-08 | 语言选择控件形态（菜单/select/整行单选） | **E-12=A**（整行单选 ≤4 项；>4 或领域枚举 → 下拉） | `settings.general.language`、§1.7 | 无 |
+| NS-09 | 字号控件与轴数（stepper/滑杆/缩放%） | **E-13=A**（唯一内容字号轴 10–22 滑杆 + 松手落盘 + 设置界面字号固定） | `settings.general.font-size`、§1.2 | 无 |
+
+> **其余 P2 `Q-settings-xx` 的收敛**（无残留）：Q-settings-01（层数/返回语义）→ 已随 NS-01 收敛；Q-settings-02（宽屏壳）→ 见 `P3-SET-01`；Q-settings-03→E-03；Q-settings-04→D-20；Q-settings-05→`P3-SET-02`；Q-settings-06/Q-settings-07→E-14；Q-settings-08（路径选择）→ 首版本就不暴露路径输入（§1.7 类型族 13）；Q-settings-09→D-10；Q-settings-10→D-02/G-16；Q-settings-11→E-13；Q-settings-12（配置导入导出保留）→ `decision-pack.md` §3「账户体系/配置导出导入」已定。
+
+### 5.2 待确认项（逐条「两解 + 各自后果 + 阻塞判定」）
+
+| ID | 问题 | 两解与各自后果 | 阻塞判定 / 建议 |
+|---|---|---|---|
+| `P3-SET-01` | **宽屏（EXPANDED）设置形态与 `base.layout` 现稿冲突**：本文件 §1.3.1/§1.2 写「≥840 改常驻列（`PUSH_COLUMN`，主列内 = 导航列 188 + 内容列，侧栏 280 保持可见）」；而 `panels/base.layout.md` §1.3.1 写 `FULL = settings / chat / bin`（settings 恒全屏覆盖）。两份 P3 规格对同一面板的 presentation 不一致。 | **A（本文件现状）**：宽屏改限宽列。后果 = 大屏可用性最好、与 D-04 的宽屏三列一致；但需 `base.layout` 给 settings 在 EXPANDED 提供 `PUSH_COLUMN`/`DOCKED_COLUMN` 分支（现稿没有），并需验「返回不关列」（对齐全 `BL-39`）。<br>**B（按 base.layout 现稿）**：settings 恒 `ROUTE_FULL` 全屏覆盖。后果 = 实现最省、与容器一致；但宽屏整屏被设置占满、侧栏被盖住，且 p2 Q-settings-02「宽屏等 M2」的结论被单方面覆盖，§1.1 S-c 线框/§1.2 宽屏列宽/§1.3.1 EXPANDED 行/`SET-04` 全部作废。 | **阻塞 `SET-04`（宽屏验收）**；不阻塞手机形态（SET-01/02/03 按现状可做）。**建议 A**（p2 Q-settings-02 方向 + C-19 已澄清 G-01 不约束布局列）；请 Lead 在 `base.layout` 定稿时二选一并回填。 |
+| `P3-SET-02` | **E-08=A 的分层配置后端能否支持**（本文件 §1.4.3 字段 6/7、`model-list` 的「已覆盖/恢复默认/恢复继承」都依赖它）。`decision-pack.md` E-08 原文即「A，但需确认后端能否支持；不能则降级」。 | **A（后端支持组合层/用户层）**：恢复默认 = 写 unset、默认值更新用户自动跟随、模型目录恢复继承不复制默认值（本文件现写法全部成立，`SET-37`/`SET-64` 按现判定）。后果 = 语义正确；代价 = 后端 settings 需改成分层，改动量最大。<br>**B（后端只能平铺快照）**：按 `decision-pack` 的降级口径改为「按内置默认重置」（reset 时写入内置值）。后果 = 实现省；但「没有覆盖」这一状态无法表达，「已覆盖」Tag/「恢复继承」的判定与文案要整批改写（`SET-37`/`SET-64` 判定同步降级），且跨版本默认值更新后用户看到的是过期快照。 | **待后端确认**（不阻塞 P4 开工：降级路径已写在本文件 §1.4.3 注与 §3.22 字段 5）。**建议 A**（=`decision-pack` E-08 选择）；确认结果决定 `SET-37`/`SET-64` 的最终判定口径。 |
+| `P3-SET-03` | **[文档勘误，非决策] 顶栏关闭/搜索钮命中盒在文件内不一致**：§1.2 网格表写「关闭钮/搜索钮命中盒 **44×44**」；§3.2 顶栏字段 3 与 §3.3 关闭字段 2/3 写 **48×48**，且 §3.3 字段 12 明确「关闭钮 44→本文件取 48，与 `base.layout` 的返回入口 48 对齐」。 | **A = 48**：与 §3 字段、`base.layout` `BL-45`（返回入口 48×48）、G-16「主操作 48」一致；只需把 §1.2 那一格 44 改成 48（顶栏 56 内 48 按钮 + 4×2 内边距，两钮间距 8 仍不相交）。<br>**B = 44**：保留 §1.2 现值（贴合 DSH mobile 的 44 关闭钮）；但要把 §3.2/§3.3 的 48 全部改 44，并与 `base.layout` 的 48 返回入口冲突（同一类入口两个尺寸），且 44 在 G-16 里没有对应档位。 | **不阻塞**（P4 按 **48** 实现，`SET-11` 类命中断言按 48 写；§1.2 的 44 视为笔误、本轮未改字段）。**建议 A**：请 Lead 顺手把 §1.2 该格改 48。 |
+| `P3-SET-04` | **[编号清理，非决策] `SET-18` 命名空间冲突**：本文件面板层 `SET-18` = 搜索注册表完整性（§0.5 行 9、§3.6 字段 13）；但 §1.6.1 行 3 与 §3.22 字段 13 里的「`SET-18` 反证」引用的是 `ref/dsh-settings.md:230` 的 **ref 层验收代号**（P1 层 `SET-18` = 编辑后不保存再开为原值），同名不同义。 | **A（保留面板层 `SET-18`）**：把 §1.6.1/§3.22 两处 ref 引用注明「ref 层 `SET-18`」（或改写成 `ref/dsh-settings.md:230` 的行号引用，不带 ID）。后果 = 零内容改动、本文件 §4 的 `SET-18` 语义唯一；代价 = 评审需注意前缀来源。<br>**B（改号）**：给面板层注册表完整性分配新号（顺延到 71 之后），同步改 §0.5、§3.6 字段 13、§4。后果 = 编号全局唯一；代价 = 改动已写字段 13 的引用（本轮遵守「不重写已写内容」未做）。 | **不阻塞**；P4 以本文件 §4 的 `SET-18`（注册表完整性）为准。**建议 A**。 |
+
+### 5.3 体检记录（本轮发现与处置；不构成待确认）
+
+| # | 发现 | 处置 |
+|---|---|---|
+| 1 | 上轮写入在文件末尾的分片标记处中断：§4/§5 缺失（文件末尾只剩一个 HTML 注释标记） | 本轮补 §4（71 条）+ §5（4 条）；该分片标记已删除 |
+| 2 | **最后一个节点未被截断**：`settings.diagnose.export-log` 字段 1–13 完整（字段 13 有反证 + `SET-54/65/68`） | 无需补写；只在其后补 §4/§5 |
+| 3 | 旧 §3 结构 = 7 个 `###` 分组 + 36 个 `####` 节点；每个节点**已有**独立 13 字段表，无节点共表 | 按任务书拆为 36 个 `### 3.N <节点ID>` 节（仅标题层级归一并重新编号；13 字段内容零改动） |
+| 4 | §3 前言原节点数（比实际多 3 个）与实际 36 节不符 | 已改为「36 个节点节（35 实现 + 1 决议）」 |
+| 5 | 36 个节点节全部覆盖字段 1–13 的 13 行表、连续齐全（脚本校验） | 无需修 |
+| 6 | `SET-01…SET-71` 引用连续、无缺号、无越界（脚本校验，排除 `P3-SET-xx`） | 无需修；§4 按 71 条建表 |
+| 7 | §1.2「44×44」与 §3.2/§3.3「48×48」冲突 | 登记 `P3-SET-03`（P4 按 48） |
+| 8 | `SET-18` 面板层与 ref 层同名不同义 | 登记 `P3-SET-04`（P4 按 §4） |
+| 9 | 全文无推测级依据条目、无 `TODO`/`FIXME`/占位标记；无未闭合代码围栏 | 无需修 |
+
+---
+
+**自检（对照 `_p3-brief.md` 硬规则）**
+
+1. 未重开任何拍板项：全文以 D-01/02/03/04/05/06/07/08/09/10/20、E-02/03/08/09/10/11/12/13/14 为公理；发现与 `base.layout` 现稿冲突 → 只登记 §5 `P3-SET-01`，未自行改决策。
+2. 数值来源：全部给 `base.primitives`/`ref:line`、G 规则，或标「我方取值（P4 校准）」（新增/复核项：顶栏 56、底栏 64、双行行高 56、滑杆几何、进度条 4、搜索高亮 2000ms、连通性超时 10s）。
+3. 证据级别只用 `E0`/`E1`，无推测级条目。
+4. 36 个节点节各自 13 字段、唯一 ID、证据、反证、≥1 条 `SET-` 验收；`SET-01…SET-71` 连续无缺号。
+5. §2 状态矩阵覆盖 空/加载/正常/长内容/失败/禁用/深色/大字号/横屏·宽屏，另加 11 个本面板特有态。
+6. §4 共 71 条，全部写「判定 + 方式 + 依赖」，无"正常"式空话；G-12 三出口（`SET-28/29/30`）、搜索定位（`SET-16/62`）、即时写/显式保存不混用（`SET-27`）均覆盖。
+7. 明确不做已在 §0.4 一行摘要，未逐条展开。
+8. 只写本文件；未改 `p2/**`、`ref/**`、规则、决策包、其它 `panels/*.md`；未改 app；未 commit。

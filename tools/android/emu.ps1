@@ -12,13 +12,13 @@
 #
 # 产物：_ws\out\shots\<时间戳>\*.png
 param(
-  [Parameter(Mandatory=$true)][ValidateSet('status','boot','stop','build','install','launch','shot','suite','input','rotate')]
+  [Parameter(Mandatory=$true)][ValidateSet('status','boot','stop','build','install','launch','shot','suite','input','rotate','theme','font','reset-ui')]
   [string]$Action,
   [string]$Entry = 'chat',            # gallery | sample | chat | settings
   [string]$Name  = 'shot',
   [string]$Text  = '',
   [string]$Keys  = '',                # 例：'KEYCODE_BACK' 或 'KEYCODE_ENTER'
-  [int]$WaitMs   = 1200,
+  [int]$WaitMs   = 3000,
   [switch]$Dark
 )
 
@@ -136,6 +136,30 @@ switch ($Action) {
     'input sent'
   }
 
+  'theme' {
+    $s = Get-Serial; if (-not $s) { 'no device'; exit 1 }
+    if ($Dark) { & $adb -s $s shell cmd uimode night yes 2>&1 | Out-Null; 'theme -> dark' }
+    else { & $adb -s $s shell cmd uimode night no 2>&1 | Out-Null; 'theme -> light' }
+    Start-Sleep -Milliseconds 800
+  }
+
+  'font' {
+    $s = Get-Serial; if (-not $s) { 'no device'; exit 1 }
+    $scale = if ($Text) { $Text } else { '1.3' }
+    & $adb -s $s shell settings put system font_scale $scale 2>&1 | Out-Null
+    & $adb -s $s shell am force-stop $pkg 2>&1 | Out-Null
+    Start-Sleep -Milliseconds 500
+    "font_scale -> $scale (app force-stopped; relaunch to apply)"
+  }
+
+  'reset-ui' {
+    $s = Get-Serial; if (-not $s) { 'no device'; exit 1 }
+    & $adb -s $s shell cmd uimode night no 2>&1 | Out-Null
+    & $adb -s $s shell settings put system font_scale 1.0 2>&1 | Out-Null
+    & $adb -s $s shell settings put system accelerometer_rotation 0 2>&1 | Out-Null
+    & $adb -s $s shell settings put system user_rotation 0 2>&1 | Out-Null
+    'reset: light + font 1.0 + portrait'
+  }
   'rotate' {
     $s = Get-Serial; if (-not $s) { 'no device'; exit 1 }
     & $adb -s $s shell settings put system accelerometer_rotation 0 2>&1 | Out-Null
