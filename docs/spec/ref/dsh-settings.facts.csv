@@ -1,0 +1,484 @@
+kind,path,line,status,node_id,note
+a11y.expanded,ui-settings-subagent/tests/card.client.spec.tsx,206,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-subagent/tests/card.client.spec.tsx,211,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.cursor,ui-settings-subagent/src/client/SubagentModelSelectionFields.module.css,60,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-subagent/src/client/SubagentModelSelectionFields.module.css,70,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-subagent/src/client/SubagentModelSelectionFields.module.css,107,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-subagent/src/client/SubagentModelSelectionFields.module.css,117,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+native.input,ui-settings-subagent/src/client/SubagentModelSelectionFields.tsx,46,E0,settings.subagent.model-selection,允许的模型 checkbox（不可用项禁用并标注）
+jsx.onclick,ui-settings-subagent/src/client/SubagentModelSelectionFields.tsx,87,E0,settings.subagent.model-selection,目录加载失败「重试」
+native.button,ui-settings-subagent/src/client/SubagentModelSelectionFields.tsx,87,E0,settings.subagent.model-selection,目录加载失败「重试」
+aria.role,ui-settings-plugins/tests/section.client.spec.tsx,48,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+aria.role,ui-settings-plugins/tests/section.client.spec.tsx,52,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.cursor,ui-settings-plugins/src/client/PluginsSettingsSection.module.css,40,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-plugins/src/client/PluginsSettingsSection.module.css,49,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-plugins/src/client/PluginsSettingsSection.module.css,60,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+aria.role,ui-settings-plugins/src/client/PluginsSettingsSection.tsx,61,E0,settings.plugins.tab,tablist 容器（roving tabindex）
+native.button,ui-settings-plugins/src/client/PluginsSettingsSection.tsx,65,E0,settings.plugins.tab,页签按钮（role=tab，tabIndex 仅选中为 0）
+aria.role,ui-settings-plugins/src/client/PluginsSettingsSection.tsx,70,E0,settings.plugins.tab,role=tab + aria-controls/aria-selected
+jsx.onclick,ui-settings-plugins/src/client/PluginsSettingsSection.tsx,76,E0,settings.plugins.tab,单击切换页签
+jsx.onkeydown,ui-settings-plugins/src/client/PluginsSettingsSection.tsx,77,E0,settings.plugins.tab,键盘：←→ 循环、Home/End 跳首尾并聚焦
+aria.role,ui-settings-plugins/src/client/PluginsSettingsSection.tsx,107,E0,settings.plugins.tab,tabpanel（隐藏时仍挂载以保留草稿）
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,328,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,340,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,408,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,410,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,421,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,448,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,475,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,501,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,505,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,510,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,514,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,516,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,597,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-settings-plugin-inventory/tests/components.client.spec.tsx,600,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.cursor,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,44,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,84,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,105,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,139,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,147,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,162,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,178,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,269,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,272,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.cursor,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,330,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,337,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,348,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,390,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.module.css,480,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+disclosure,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,125,excluded,-,props 类型声明（onToggle 形参），非交互代码
+disclosure,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,137,excluded,-,props 类型声明（onToggle 类型），非交互代码
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,151,E0,settings.plugin-inventory.card,插件卡主体按钮（aria-expanded/aria-controls）
+a11y.expanded,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,154,E0,settings.plugin-inventory.card,aria-expanded=卡片展开
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,158,E0,settings.plugin-inventory.card,单击展开/收起（一次只开一张）
+disclosure,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,158,E0,settings.plugin-inventory.card,单击展开/收起（一次只开一张）
+disclosure,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,349,E0,settings.plugin-inventory.card,预设行卡片 onToggle 透传
+disclosure,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,398,E0,settings.plugin-inventory.card,全局面卡片 onToggle 透传
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,419,E0,settings.plugin-inventory.jump-link,「在预设中查看」跳转按钮
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,422,E0,settings.plugin-inventory.jump-link,单击切换到该预设
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,451,E0,settings.plugin-inventory.retry,client sync 失败重试按钮
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,451,E0,settings.plugin-inventory.retry,client sync 失败重试按钮
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,470,E0,settings.plugin-inventory.retry,清单加载失败「重试」
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,470,E0,settings.plugin-inventory.retry,清单加载失败「重试」
+native.input,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,478,E0,settings.plugin-inventory.search,清单搜索框（匹配 moduleName/entryId/title/description）
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,492,E0,settings.plugin-inventory.group-toggle,预设分组折叠按钮
+a11y.expanded,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,495,E0,settings.plugin-inventory.group-toggle,aria-expanded=预设组开合
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,497,E0,settings.plugin-inventory.group-toggle,单击折叠/展开（搜索时强制展开）
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,515,E0,settings.plugin-inventory.preset-switcher,预设切换器（Menu 锚点，36px 高）
+a11y.expanded,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,519,E0,settings.plugin-inventory.preset-switcher,aria-expanded=切换菜单开合
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,521,E0,settings.plugin-inventory.preset-switcher,单击开合预设菜单
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,550,E0,settings.plugin-inventory.jump-link,「其它预设中命中」跳转按钮
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,554,E0,settings.plugin-inventory.jump-link,单击切换 chosenPreset
+native.button,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,569,E0,settings.plugin-inventory.group-toggle,全局面分组折叠按钮
+a11y.expanded,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,572,E0,settings.plugin-inventory.group-toggle,aria-expanded=全局组开合
+jsx.onclick,ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx,574,E0,settings.plugin-inventory.group-toggle,单击折叠/展开
+jsx.onclick,ui-settings-models/tests/onboarding-dialog.client.spec.tsx,289,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.button,ui-settings-models/tests/onboarding-dialog.client.spec.tsx,289,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.input,ui-settings-models/tests/styles.client.spec.ts,65,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.input,ui-settings-models/tests/styles.client.spec.ts,74,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.input,ui-settings-models/src/client/CustomProviderCard.tsx,214,E0,settings.models.editor.fields,自定义 route id 输入（正则/占用校验）
+native.input,ui-settings-models/src/client/CustomProviderCard.tsx,231,E0,settings.models.editor.fields,显示名输入（空则回落 route id）
+native.input,ui-settings-models/src/client/CustomProviderCard.tsx,243,E0,settings.models.editor.fields,baseURL 输入（http/https 校验）
+native.input,ui-settings-models/src/client/CustomProviderCard.tsx,259,E0,settings.models.editor.fields,协议 select
+native.input,ui-settings-models/src/client/CustomProviderCard.tsx,271,E0,settings.models.editor.key,API Key 密码输入（可留空=provider 原生认证）
+jsx.onfocus,ui-settings-models/src/client/DeepSeekModelsEditor.tsx,244,E0,settings.models.model-advanced,容量输入 blur 时结算（非法文本保留待改）
+native.button,ui-settings-models/src/client/DeepSeekModelsEditor.tsx,258,E0,settings.models.model-list,「恢复继承」按钮（仅 overridden 时出现）
+jsx.onclick,ui-settings-models/src/client/DeepSeekModelsEditor.tsx,262,E0,settings.models.model-list,单击 reset：清空用户层 models
+disclosure,ui-settings-models/src/client/DeepSeekModelsEditor.tsx,290,E0,settings.models.model-row,行展开/收起 onToggle（disclosure）
+native.button,ui-settings-models/src/client/DeepSeekModelsEditor.tsx,296,E0,settings.models.model-list,「添加模型」按钮
+jsx.onclick,ui-settings-models/src/client/DeepSeekModelsEditor.tsx,300,E0,settings.models.model-list,单击追加空行 {id:''}
+native.button,ui-settings-models/src/client/EditorFooter.tsx,49,E0,settings.models.editor-footer,取消按钮（busy 时禁用；禁写部署也可关闭）
+jsx.onclick,ui-settings-models/src/client/EditorFooter.tsx,53,E0,settings.models.editor-footer,单击 onCancel（不提交）
+native.button,ui-settings-models/src/client/EditorFooter.tsx,57,E0,settings.models.editor-footer,提交按钮（label 由所属卡决定）
+jsx.onclick,ui-settings-models/src/client/EditorFooter.tsx,61,E0,settings.models.editor-footer,单击 onSubmit（Apply/Create）
+native.button,ui-settings-models/src/client/ModelListEditor.tsx,333,E0,settings.models.model-list,「恢复继承」按钮（overridden 时）
+jsx.onclick,ui-settings-models/src/client/ModelListEditor.tsx,337,E0,settings.models.model-list,单击 onReset 清用户层 models
+native.button,ui-settings-models/src/client/ModelListEditor.tsx,343,E0,settings.models.model-list,「拉取模型」按钮（需 endpoint/provider，probeBlocked 时禁用）
+jsx.onclick,ui-settings-models/src/client/ModelListEditor.tsx,350,E0,settings.models.model-list,单击 fetchModels：探活 provider 并拉候选
+disclosure,ui-settings-models/src/client/ModelListEditor.tsx,380,E0,settings.models.model-row,行展开/收起（容量与输入类型）
+native.button,ui-settings-models/src/client/ModelListEditor.tsx,396,E0,settings.models.model-list,「添加模型」按钮
+jsx.onclick,ui-settings-models/src/client/ModelListEditor.tsx,400,E0,settings.models.model-list,单击追加空行
+jsx.onclick,ui-settings-models/src/client/ModelListEditor.tsx,415,E0,settings.models.fetch-dialog,拉取结果弹窗「取消」
+jsx.onclick,ui-settings-models/src/client/ModelListEditor.tsx,416,E0,settings.models.fetch-dialog,「采用所选」：把勾选候选并入 models
+native.input,ui-settings-models/src/client/ModelListEditor.tsx,421,E0,settings.models.fetch-dialog,候选搜索框（按 id/name 本地过滤）
+jsx.onclick,ui-settings-models/src/client/ModelListEditor.tsx,433,E0,settings.models.fetch-dialog,全选/取消全选可见候选
+native.input,ui-settings-models/src/client/ModelListEditor.tsx,445,E0,settings.models.fetch-dialog,候选 checkbox（已配置默认不勾选）
+jsx.onfocus,ui-settings-models/src/client/ModelRow.tsx,17,excluded,-,props 类型声明（onBlur?），非交互代码
+disclosure,ui-settings-models/src/client/ModelRow.tsx,35,excluded,-,props 类型声明（onToggle），非交互代码
+native.input,ui-settings-models/src/client/ModelRow.tsx,50,E0,settings.models.model-row,模型 id/name 输入（两枚，aria-label 带序号）
+jsx.onfocus,ui-settings-models/src/client/ModelRow.tsx,62,E0,settings.models.model-row,id 输入 blur 时 trim
+native.button,ui-settings-models/src/client/ModelRow.tsx,65,E0,settings.models.model-row,展开/收起按钮（aria-expanded）
+a11y.expanded,ui-settings-models/src/client/ModelRow.tsx,69,E0,settings.models.model-row,交互点（a11y.expanded），见节点 settings.models.model-row
+jsx.onclick,ui-settings-models/src/client/ModelRow.tsx,71,E0,settings.models.model-row,单击 onToggle
+disclosure,ui-settings-models/src/client/ModelRow.tsx,71,E0,settings.models.model-row,单击 onToggle
+native.button,ui-settings-models/src/client/ModelRow.tsx,75,E0,settings.models.model-row,删除该模型行按钮（危险色）
+jsx.onclick,ui-settings-models/src/client/ModelRow.tsx,81,E0,settings.models.model-row,单击 onRemove
+native.input,ui-settings-models/src/client/ModelRow.tsx,92,E0,settings.models.model-advanced,contextWindow/maxTokens 输入（K/M 文本）
+jsx.onfocus,ui-settings-models/src/client/ModelRow.tsx,101,E0,settings.models.model-advanced,容量输入 blur 结算
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,141,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,183,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,210,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,211,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,212,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,213,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,214,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,215,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,216,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,217,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,281,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,381,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,486,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,568,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,593,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-models/src/client/ModelsSection.module.css,596,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-settings-models/src/client/ModelsSection.module.css,650,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-settings-models/src/client/ModelsSection.module.css,691,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-models/src/client/ModelsSection.module.css,705,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-models/src/client/ModelsSection.module.css,713,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+jsx.onclick,ui-settings-models/src/client/ModelsSection.tsx,324,E0,settings.models.page-retry,加载失败页「重试」
+native.button,ui-settings-models/src/client/ModelsSection.tsx,324,E0,settings.models.page-retry,加载失败页「重试」
+native.button,ui-settings-models/src/client/ModelsSection.tsx,478,E0,settings.models.row,行「编辑」按钮
+jsx.onclick,ui-settings-models/src/client/ModelsSection.tsx,483,E0,settings.models.row,单击编辑：一次只开一个卡，关闭 add 卡
+native.button,ui-settings-models/src/client/ModelsSection.tsx,497,E0,settings.models.row,行「移除」按钮（危险色，仅 removable 行）
+jsx.onclick,ui-settings-models/src/client/ModelsSection.tsx,502,E0,settings.models.row,单击移除：打开删除确认弹窗
+native.input,ui-settings-models/src/client/ModelsSection.tsx,589,E0,settings.models.add-flow,目录模式 provider 选择 select
+native.button,ui-settings-models/src/client/ModelsSection.tsx,661,E0,settings.models.add-flow,「添加提供商」按钮（虚线 44px，整行宽）
+jsx.onclick,ui-settings-models/src/client/ModelsSection.tsx,665,E0,settings.models.add-flow,单击打开 add 卡并重置模式/草稿
+jsx.onclick,ui-settings-models/src/client/ModelsSection.tsx,700,E0,settings.models.delete-dialog,删除确认弹窗「取消」
+jsx.onclick,ui-settings-models/src/client/ModelsSection.tsx,707,E0,settings.models.delete-dialog,删除确认弹窗「删除」（先删凭证再 unset 配置）
+css.overflow,ui-settings-models/src/client/OnboardingModal.module.css,13,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+native.input,ui-settings-models/src/client/ProviderEditor.tsx,383,E0,settings.models.editor.key,API Key 密码输入（write-only，configured 只读提示）
+native.details,ui-settings-models/src/client/ProviderEditor.tsx,398,E0,settings.models.editor-customized,「自定义设置」折叠区（原生 details）
+native.details,ui-settings-models/src/client/ProviderEditor.tsx,399,E0,settings.models.editor-customized,details summary（旋转箭头，hint 说明）
+native.input,ui-settings-models/src/client/ProviderEditor.tsx,408,E0,settings.models.editor.fields,显示名输入（仅 hand-declared route）
+native.input,ui-settings-models/src/client/ProviderEditor.tsx,430,E0,settings.models.editor.fields,baseURL 输入（占位=继承值）
+native.input,ui-settings-models/src/client/ProviderEditor.tsx,452,E0,settings.models.editor.fields,协议 select（仅 hand-declared route）
+jsx.onclick,ui-settings-models/src/client/WelcomeNotice.tsx,70,E0,settings.models.onboarding-welcome,版本欢迎弹窗「继续」=确认该版本文案
+a11y.expanded,ui-settings-general/tests/settings-root.client.spec.tsx,195,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.button,ui-settings-general/tests/settings-root.client.spec.tsx,346,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.overflow,ui-settings-general/src/client/chrome.module.css,5,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-general/src/client/DesktopUpdateIndicator.module.css,20,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+native.button,ui-settings-general/src/client/DesktopUpdateIndicator.tsx,71,E0,settings.shell.update-indicator,桌面更新状态按钮（28px 高，品牌色描边）
+jsx.onclick,ui-settings-general/src/client/DesktopUpdateIndicator.tsx,72,E0,settings.shell.update-indicator,单击=openDesktopUpdate（busy 时 aria-disabled 且不动作）
+css.overflow,ui-settings-general/src/client/SettingsDocumentAction.module.css,10,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+jsx.onclick,ui-settings-general/src/client/SettingsDocumentAction.tsx,45,E0,settings.shell.action-open-document,标题栏动作：打开本地 settings 文档（opening 时禁用）
+css.cursor,ui-settings-general/src/client/SettingsRoot.module.css,30,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-general/src/client/SettingsRoot.module.css,31,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-settings-general/src/client/SettingsRoot.module.css,55,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-settings-general/src/client/SettingsRoot.module.css,93,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.focus,ui-settings-general/src/client/SettingsRoot.module.css,105,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-settings-general/src/client/SettingsRoot.module.css,135,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-general/src/client/SettingsRoot.module.css,150,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-general/src/client/SettingsRoot.module.css,174,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-general/src/client/SettingsRoot.module.css,219,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-general/src/client/SettingsRoot.module.css,232,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-settings-general/src/client/SettingsRoot.module.css,240,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+jsx.onclick,ui-settings-general/src/client/SettingsRoot.tsx,69,E0,settings.shell.panel,遮罩层点击=关闭设置面板
+native.button,ui-settings-general/src/client/SettingsRoot.tsx,76,E0,settings.shell.nav-row,导航行按钮（role 无，aria-current=active）
+jsx.onclick,ui-settings-general/src/client/SettingsRoot.tsx,82,E0,settings.shell.nav-row,单击切换 active section
+jsx.onclick,ui-settings-general/src/client/SettingsRoot.tsx,93,E0,settings.shell.panel,关闭按钮（图标 14px + 视觉隐藏 label）
+native.button,ui-settings-general/src/client/SettingsRoot.tsx,93,E0,settings.shell.panel,关闭按钮（图标 14px + 视觉隐藏 label）
+native.button,ui-settings-general/src/client/SettingsRoot.tsx,222,E0,settings.shell.trigger,侧栏底部设置触发按钮（42px 行/36px rail）
+a11y.expanded,ui-settings-general/src/client/SettingsRoot.tsx,228,E0,settings.shell.trigger,aria-expanded=设置面板开合
+jsx.onclick,ui-settings-general/src/client/SettingsRoot.tsx,229,E0,settings.shell.trigger,单击=actions.open()
+css.cursor,ui-settings-account/src/client/AccountMenu.module.css,3,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-account/src/client/AccountMenu.module.css,8,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+native.button,ui-settings-account/src/client/AccountMenu.tsx,64,E0,settings.account.menu,侧栏账户启动器（44px，collapse 时 36×36）
+jsx.onclick,ui-settings-account/src/client/AccountMenu.tsx,65,E0,settings.account.menu,aria-expanded 反映菜单开合
+a11y.expanded,ui-settings-account/src/client/AccountMenu.tsx,65,E0,settings.account.menu,aria-expanded 反映菜单开合
+css.cursor,ui-settings-account/src/client/AccountNotice.module.css,8,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-account/src/client/AccountNotice.module.css,9,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+jsx.onclick,ui-settings-account/src/client/AccountNotice.tsx,116,E0,settings.account.notices,bonus 通知卡关闭按钮（关闭=已读）
+native.button,ui-settings-account/src/client/AccountNotice.tsx,116,E0,settings.account.notices,bonus 通知卡关闭按钮（关闭=已读）
+jsx.onclick,ui-settings-account/src/client/AccountQuotaNotice.tsx,72,E0,settings.account.notices,配额通知 Modal 取消=dismiss
+jsx.onclick,ui-settings-account/src/client/AccountQuotaNotice.tsx,73,E0,settings.account.notices,配额通知「去充值」：保留通知并打开 Platform top-up 页
+css.focus,ui-settings-account/src/client/AccountSection.module.css,116,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-account/src/client/AccountSection.module.css,133,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+native.anchor,ui-settings-account/src/client/AccountSection.tsx,133,E0,settings.account.card,Platform 链接（balance 读取失败时仍可达 usageUrl）
+jsx.onclick,ui-settings-account/src/client/AccountSection.tsx,134,E0,settings.account.card,单击=openUsage：桌面端改为内嵌页，其它端新标签
+jsx.onclick,ui-settings-account/src/client/AccountSection.tsx,150,E0,settings.account.signed-out,未登录态主按钮「登录」=start()
+native.anchor,ui-settings-account/src/client/AccountSection.tsx,164,E0,settings.account.card,账户信息外链（usageUrl 根）
+native.anchor,ui-settings-account/src/client/AccountSection.tsx,169,E0,settings.account.card,登录进行中：authorizeUrl 外链「打开」
+jsx.onclick,ui-settings-account/src/client/AccountSection.tsx,174,E0,settings.account.card,登录进行中「取消」=cancel(attempt.id)
+native.anchor,ui-settings-account/src/client/AccountSection.tsx,207,E0,settings.account.card,充值外链 topUpUrl（桌面端替换为内嵌页）
+jsx.onclick,ui-settings-account/src/client/AccountSection.tsx,209,E0,settings.account.card,充值链接单击拦截并走 showPage(top-up)
+css.overflow,ui-settings-account/src/client/DesktopOnboarding.module.css,8,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-settings-account/src/client/DesktopOnboarding.module.css,162,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-account/src/client/DesktopOnboarding.module.css,201,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-settings-account/src/client/DesktopOnboarding.module.css,205,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.cursor,ui-settings-account/src/client/DesktopOnboarding.module.css,206,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-settings-account/src/client/DesktopOnboarding.module.css,238,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-settings-account/src/client/DesktopOnboarding.module.css,239,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.cursor,ui-settings-account/src/client/DesktopOnboarding.module.css,246,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-settings-account/src/client/DesktopOnboarding.module.css,280,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.focus,ui-settings-account/src/client/DesktopOnboarding.module.css,298,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+jsx.onclick,ui-settings-account/src/client/DesktopOnboarding.tsx,114,E0,settings.account.onboarding.nav,保存失败条上的重试按钮
+jsx.onclick,ui-settings-account/src/client/DesktopOnboarding.tsx,116,E0,settings.account.onboarding.nav,底部「返回」按钮（按当前步映射上一步）
+native.button,ui-settings-account/src/client/DesktopOnboarding.tsx,116,E0,settings.account.onboarding.nav,底部「返回」按钮（按当前步映射上一步）
+jsx.onclick,ui-settings-account/src/client/DesktopOnboarding.tsx,117,E0,settings.account.onboarding.nav,底部「跳过」按钮：按步打开对应确认弹窗
+native.button,ui-settings-account/src/client/DesktopOnboarding.tsx,117,E0,settings.account.onboarding.nav,底部「跳过」按钮：按步打开对应确认弹窗
+jsx.onclick,ui-settings-account/src/client/OnboardingConfirmation.tsx,26,E0,settings.account.onboarding.confirmation,确认弹窗关闭按钮
+native.button,ui-settings-account/src/client/OnboardingConfirmation.tsx,26,E0,settings.account.onboarding.confirmation,确认弹窗关闭按钮
+jsx.onclick,ui-settings-account/src/client/OnboardingConfirmation.tsx,30,E0,settings.account.onboarding.confirmation,确认弹窗左按钮（按 kind 分支）
+jsx.onclick,ui-settings-account/src/client/OnboardingConfirmation.tsx,31,E0,settings.account.onboarding.confirmation,确认弹窗右按钮（去充值/直接进入）
+jsx.onclick,ui-settings-account/src/client/OnboardingCreditStep.tsx,29,E0,settings.account.onboarding.step,credit 步主按钮（已充值→继续；未充值→充值）
+jsx.onclick,ui-settings-account/src/client/OnboardingCreditStep.tsx,30,E0,settings.account.onboarding.step,credit 步次按钮（已充值→充值；未充值→稍后）
+jsx.onkeydown,ui-settings-account/src/client/OnboardingProcessStep.tsx,25,E0,settings.account.onboarding.step,process 单选组方向键导航（→↓ +1，←↑ -1）
+native.button,ui-settings-account/src/client/OnboardingProcessStep.tsx,42,E0,settings.account.onboarding.step,process 选项按钮 role=radio
+jsx.onclick,ui-settings-account/src/client/OnboardingProcessStep.tsx,46,E0,settings.account.onboarding.step,单击选中该 process 选项
+jsx.onkeydown,ui-settings-account/src/client/OnboardingProcessStep.tsx,47,E0,settings.account.onboarding.step,绑定方向键处理
+jsx.onclick,ui-settings-account/src/client/OnboardingProcessStep.tsx,53,E0,settings.account.onboarding.step,process 步「进入」主按钮
+disclosure,ui-settings-account/src/client/OnboardingPurposeStep.tsx,32,excluded,-,JSX 渲染 map（无手势），非交互代码
+jsx.onclick,ui-settings-account/src/client/OnboardingPurposeStep.tsx,34,E0,settings.account.onboarding.step,purpose 步「继续」按钮（purpose!==null 才出现）
+disclosure,ui-settings-account/src/client/OnboardingPurposeStep.tsx,38,excluded,-,组件函数声明，非交互代码
+disclosure,ui-settings-account/src/client/OnboardingPurposeStep.tsx,42,excluded,-,props 类型声明（onToggle），非交互代码
+native.input,ui-settings-account/src/client/OnboardingPurposeStep.tsx,58,E0,settings.account.onboarding.step,用途复选卡内 checkbox（office/development 可组合成 both）
+disclosure,ui-settings-account/src/client/OnboardingPurposeStep.tsx,58,E0,settings.account.onboarding.step,用途复选卡内 checkbox（office/development 可组合成 both）
+css.overflow,ui-settings-account/src/client/OnboardingSurface.module.css,45,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+jsx.onclick,ui-settings-account/src/client/OnboardingWelcomeStep.tsx,22,E0,settings.account.onboarding.step,welcome 步「开始」按钮（必须显式开始）
+css.cursor,ui-settings-account/src/client/PlatformOverlay.module.css,63,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+jsx.onclick,ui-settings-account/src/client/PlatformOverlay.tsx,73,E0,settings.account.platform-overlay,内嵌 Platform 页「返回」按钮（关闭原生页）
+native.button,ui-settings-account/src/client/PlatformOverlay.tsx,73,E0,settings.account.platform-overlay,内嵌 Platform 页「返回」按钮（关闭原生页）
+jsx.onclick,ui-settings-account/src/client/PlatformOverlay.tsx,82,E0,settings.account.platform-overlay,加载失败重试按钮（attempt+1 重新 open）
+css.cursor,ui-settings-account/src/client/SignInDialog.module.css,5,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-settings-account/src/client/SignInDialog.module.css,12,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+jsx.onclick,ui-settings-account/src/client/SignInDialog.tsx,67,E0,settings.account.sign-in-dialog,登录弹窗关闭（进行中则先取消 attempt）
+native.button,ui-settings-account/src/client/SignInDialog.tsx,67,E0,settings.account.sign-in-dialog,登录弹窗关闭（进行中则先取消 attempt）
+native.button,ui-settings-account/src/client/SignInDialog.tsx,72,E0,settings.account.sign-in-dialog,复制授权链接按钮（无 authorizeUrl 时禁用）
+jsx.onclick,ui-settings-account/src/client/SignInDialog.tsx,73,E0,settings.account.sign-in-dialog,单击 copyLink：写剪贴板并 2s 反馈
+jsx.onclick,ui-settings-account/src/client/SignInDialog.tsx,82,E0,settings.account.sign-in-dialog,次按钮：进行中=取消，否则=改用 API Key（进 onboarding）
+jsx.onclick,ui-settings-account/src/client/SignInDialog.tsx,84,E0,settings.account.sign-in-dialog,主按钮：登录/重试（等待中显示 spinner）
+jsx.onclick,ui-settings-account/src/client/SignOutDialog.tsx,28,E0,settings.account.sign-out-dialog,退出弹窗关闭按钮（busy 时禁用）
+native.button,ui-settings-account/src/client/SignOutDialog.tsx,28,E0,settings.account.sign-out-dialog,退出弹窗关闭按钮（busy 时禁用）
+jsx.onclick,ui-settings-account/src/client/SignOutDialog.tsx,36,E0,settings.account.sign-out-dialog,退出弹窗「取消」
+jsx.onclick,ui-settings-account/src/client/SignOutDialog.tsx,38,E0,settings.account.sign-out-dialog,退出弹窗「退出登录」确认
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,66,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,68,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,69,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,70,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,72,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,73,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.button,ui-model-selection/tests/model-select.client.spec.tsx,733,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,780,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-model-selection/tests/model-select.client.spec.tsx,781,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.cursor,ui-model-selection/src/client/ModelSelect.module.css,29,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-model-selection/src/client/ModelSelect.module.css,36,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-model-selection/src/client/ModelSelect.module.css,47,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-model-selection/src/client/ModelSelect.module.css,59,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-model-selection/src/client/ModelSelect.module.css,102,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-model-selection/src/client/ModelSelect.module.css,155,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.cursor,ui-model-selection/src/client/ModelSelect.module.css,193,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-model-selection/src/client/ModelSelect.module.css,197,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-model-selection/src/client/ModelSelect.module.css,202,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-model-selection/src/client/ModelSelect.module.css,218,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-model-selection/src/client/ModelSelect.module.css,236,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-model-selection/src/client/ModelSelect.module.css,240,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-model-selection/src/client/ModelSelect.module.css,264,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-model-selection/src/client/ModelSelect.module.css,301,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-model-selection/src/client/ModelSelect.module.css,307,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-model-selection/src/client/ModelSelect.module.css,319,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+aria.role,ui-model-selection/src/client/ModelSelect.tsx,185,E0,model.menu.model-row,返回 root pane 时把焦点交回 aria-checked 当前行
+container.scroll,ui-model-selection/src/client/ModelSelect.tsx,204,E0,model.menu.model-row,高亮模型行 scrollIntoView(nearest)
+aria.role,ui-model-selection/src/client/ModelSelect.tsx,352,E0,model.menu.root,Tab 进入菜单时定位 aria-checked 行
+jsx.onfocus,ui-model-selection/src/client/ModelSelect.tsx,362,E0,model.trigger,根节点 onBlur：焦点离开 trigger+menu 才关闭
+jsx.onkeydown,ui-model-selection/src/client/ModelSelect.tsx,441,E0,model.menu.root,根节点 onKeyDown：Escape/↑↓/Tab/Enter 仲裁
+jsx.onfocus,ui-model-selection/src/client/ModelSelect.tsx,442,E0,model.menu.root,交互点（jsx.onfocus），见节点 model.menu.root
+native.button,ui-model-selection/src/client/ModelSelect.tsx,448,E0,model.trigger,trigger 按钮（aria-haspopup=menu）
+a11y.expanded,ui-model-selection/src/client/ModelSelect.tsx,454,E0,model.trigger,aria-expanded 反映菜单开合
+jsx.onfocus,ui-model-selection/src/client/ModelSelect.tsx,459,E0,model.trigger,trigger onBlur 清除「选择后无焦点环」标记
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,461,E0,model.trigger,单击开/关菜单，open 时 close(true) 回焦
+jsx.onkeydown,ui-model-selection/src/client/ModelSelect.tsx,479,excluded,-,注释行提及 onKeyDown/onBlur，非交互代码
+jsx.onfocus,ui-model-selection/src/client/ModelSelect.tsx,479,excluded,-,注释行提及 onKeyDown/onBlur，非交互代码
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,492,E0,model.menu.root,root 首行「模型」单元格：单击钻入模型列表
+native.button,ui-model-selection/src/client/ModelSelect.tsx,492,E0,model.menu.root,root 首行「模型」单元格：单击钻入模型列表
+aria.role,ui-model-selection/src/client/ModelSelect.tsx,492,E0,model.menu.root,root 首行「模型」单元格：单击钻入模型列表
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,498,E0,model.menu.root,root 第二行「推理等级」单元格（仅模型有 reasoning 时出现）
+native.button,ui-model-selection/src/client/ModelSelect.tsx,498,E0,model.menu.root,root 第二行「推理等级」单元格（仅模型有 reasoning 时出现）
+aria.role,ui-model-selection/src/client/ModelSelect.tsx,498,E0,model.menu.root,root 第二行「推理等级」单元格（仅模型有 reasoning 时出现）
+native.button,ui-model-selection/src/client/ModelSelect.tsx,524,E0,model.menu.search-clear,搜索清除按钮（仅 query 非空时）
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,529,E0,model.menu.search-clear,单击清空 query 并把焦点还给搜索框
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,544,E0,model.menu.retry,目录加载失败的 retry（重跑 load）
+native.button,ui-model-selection/src/client/ModelSelect.tsx,544,E0,model.menu.retry,目录加载失败的 retry（重跑 load）
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,550,E0,model.menu.retry,单个 provider 组加载失败的 retry
+native.button,ui-model-selection/src/client/ModelSelect.tsx,550,E0,model.menu.retry,单个 provider 组加载失败的 retry
+native.button,ui-model-selection/src/client/ModelSelect.tsx,568,E0,model.menu.model-row,模型行按钮（role=menuitemradio）
+aria.role,ui-model-selection/src/client/ModelSelect.tsx,571,E0,model.menu.model-row,role=menuitemradio + aria-checked=当前选用
+jsx.onfocus,ui-model-selection/src/client/ModelSelect.tsx,575,E0,model.menu.model-row,onFocus 同步 highlightedIndex
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,587,E0,model.menu.model-row,"单击=choose(provider,model)：同值仅关面板，异值提交"
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,615,E0,model.menu.effort-row,effort 面板的目录错误 retry
+native.button,ui-model-selection/src/client/ModelSelect.tsx,615,E0,model.menu.effort-row,effort 面板的目录错误 retry
+native.button,ui-model-selection/src/client/ModelSelect.tsx,621,E0,model.menu.effort-row,effort 行按钮（role=menuitemradio）
+aria.role,ui-model-selection/src/client/ModelSelect.tsx,624,E0,model.menu.effort-row,aria-checked=effectiveEffort
+jsx.onclick,ui-model-selection/src/client/ModelSelect.tsx,629,E0,model.menu.effort-row,单击=chooseEffort(id)：同值仅关面板，异值提交
+container.scroll,ui-input-trigger/tests/menu-view.client.spec.tsx,45,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-input-trigger/tests/menu-view.client.spec.tsx,46,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-input-trigger/tests/menu-view.client.spec.tsx,48,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-input-trigger/tests/menu-view.client.spec.tsx,49,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-input-trigger/tests/menu-view.client.spec.tsx,231,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-input-trigger/tests/menu-view.client.spec.tsx,234,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-input-trigger/tests/menu-view.client.spec.tsx,235,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.button,ui-input-trigger/tests/menu-view.client.spec.tsx,301,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.overflow,ui-input-trigger/src/client/MenuView.module.css,13,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-input-trigger/src/client/MenuView.module.css,48,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-input-trigger/src/client/MenuView.module.css,61,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-input-trigger/src/client/MenuView.module.css,106,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-input-trigger/src/client/MenuView.module.css,116,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-input-trigger/src/client/MenuView.module.css,129,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-input-trigger/src/client/MenuView.module.css,246,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-input-trigger/src/client/MenuView.module.css,252,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+container.scroll,ui-input-trigger/src/client/MenuView.tsx,77,E0,composer.slash.menu,高亮项 scrollIntoView(nearest)（焦点留在输入框）
+jsx.onpointer,ui-input-trigger/src/client/MenuView.tsx,83,E0,composer.slash.menu,捕获阶段 pointerdown：菜单与 composer 卡外点击关闭
+jsx.onpointer,ui-input-trigger/src/client/MenuView.tsx,90,E0,composer.slash.menu,注册 pointerdown 关闭监听
+jsx.onpointer,ui-input-trigger/src/client/MenuView.tsx,91,E0,composer.slash.menu,卸载 pointerdown 监听
+native.button,ui-input-trigger/src/client/MenuView.tsx,111,E0,composer.slash.crumb,breadcrumb 按钮（mousedown 保焦点，disabled=current）
+jsx.onscroll,ui-input-trigger/src/client/MenuView.tsx,135,E0,composer.slash.menu,列表 onScroll 更新「下方还有内容」渐隐提示
+native.button,ui-input-trigger/src/client/MenuView.tsx,161,E0,composer.slash.row,候选行 button（mousedown 选中，保持 combobox 焦点）
+aria.role,ui-input-trigger/src/client/MenuView.tsx,164,E0,composer.slash.row,候选行 role=option + aria-selected
+aria.role,ui-input-trigger/src/client/MenuView.tsx,198,E0,composer.slash.drill,钻取箭头 role=button（mousedown 停止冒泡后 drill）
+container.scroll,ui-commands/tests/popup-view.client.spec.tsx,25,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-commands/tests/popup-view.client.spec.tsx,26,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-commands/tests/popup-view.client.spec.tsx,28,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-commands/tests/popup-view.client.spec.tsx,29,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-commands/tests/popup-view.client.spec.tsx,223,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-commands/tests/popup-view.client.spec.tsx,226,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-commands/tests/popup-view.client.spec.tsx,227,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.overflow,ui-commands/src/client/PopupSelectView.module.css,22,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-commands/src/client/PopupSelectView.module.css,37,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-commands/src/client/PopupSelectView.module.css,46,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-commands/src/client/PopupSelectView.module.css,66,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-commands/src/client/PopupSelectView.module.css,87,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-commands/src/client/PopupSelectView.module.css,131,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-commands/src/client/PopupSelectView.module.css,142,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+container.scroll,ui-commands/src/client/PopupSelectView.tsx,67,E0,composer.command.row,高亮行 scrollIntoView(nearest)（搜索框持有焦点）
+jsx.onpointer,ui-commands/src/client/PopupSelectView.tsx,77,E0,composer.command.popup,捕获阶段 pointerdown：卡片外任意点击关闭
+jsx.onpointer,ui-commands/src/client/PopupSelectView.tsx,81,E0,composer.command.popup,注册 pointerdown 关闭监听
+jsx.onpointer,ui-commands/src/client/PopupSelectView.tsx,82,E0,composer.command.popup,卸载 pointerdown 监听
+jsx.onkeydown,ui-commands/src/client/PopupSelectView.tsx,97,E0,composer.command.popup,键位：↑↓ 移高亮、Enter 选中、Tab 选中、Shift+Tab/Escape 关闭
+aria.role,ui-commands/src/client/PopupSelectView.tsx,137,E0,composer.command.row,选项行 role=option + aria-selected
+jsx.onclick,ui-commands/src/client/PopupSelectView.tsx,141,E0,composer.command.row,单击行=popup.select(index)
+jsx.onkeydown,ui-commands/src/client/PopupSelectView.tsx,161,E0,composer.command.popup,MenuSurface 绑 onKeyDown
+native.input,ui-commands/src/client/PopupSelectView.tsx,163,E0,composer.command.popup,搜索输入框（本地过滤已加载选项）
+jsx.onclick,ui-commands/src/client/PopupSelectView.tsx,177,E0,composer.command.retry,失败条 retry 按钮：重跑 options 拉取
+native.button,ui-commands/src/client/PopupSelectView.tsx,177,E0,composer.command.retry,失败条 retry 按钮：重跑 options 拉取
+css.overflow,ui-attachment/src/AttachmentRail.module.css,11,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-attachment/src/AttachmentRail.module.css,34,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-attachment/src/AttachmentRail.module.css,63,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-attachment/src/AttachmentRail.module.css,69,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.cursor,ui-attachment/src/AttachmentRail.module.css,101,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+jsx.onwheel,ui-attachment/src/AttachmentRail.tsx,109,E0,composer.attach.rail,滚轮非被动监听：竖直滚轮转为横向滚动并 consume
+container.scroll,ui-attachment/src/AttachmentRail.tsx,115,E0,composer.attach.rail,scrollBy 消费滚轮 delta（含 LINE/PAGE 归一）
+jsx.onwheel,ui-attachment/src/AttachmentRail.tsx,122,E0,composer.attach.rail,wheel 监听 passive:false 注册
+jsx.onwheel,ui-attachment/src/AttachmentRail.tsx,125,E0,composer.attach.rail,wheel 监听解绑
+container.scroll,ui-attachment/src/AttachmentRail.tsx,134,E0,composer.attach.rail-arrow,翻页箭头 scrollBy（一屏减 64px，最小 200px）
+native.button,ui-attachment/src/AttachmentRail.tsx,139,E0,composer.attach.rail-arrow,左翻页箭头（仅 scrollLeft>1 时出现）
+jsx.onclick,ui-attachment/src/AttachmentRail.tsx,143,E0,composer.attach.rail-arrow,单击左箭头 page(-1)
+jsx.onscroll,ui-attachment/src/AttachmentRail.tsx,153,E0,composer.attach.rail,rail 的 onScroll 重算左右边缘状态
+native.button,ui-attachment/src/AttachmentRail.tsx,160,E0,composer.attach.rail-arrow,右翻页箭头（仅未到右端时出现）
+jsx.onclick,ui-attachment/src/AttachmentRail.tsx,164,E0,composer.attach.rail-arrow,单击右箭头 page(1)
+css.cursor,ui-attachment/src/FileCard.module.css,58,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-attachment/src/FileCard.module.css,62,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-attachment/src/FileCard.module.css,72,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-attachment/src/FileCard.module.css,100,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-attachment/src/FileCard.module.css,105,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-attachment/src/FileCard.module.css,122,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-attachment/src/FileCard.module.css,137,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+jsx.onclick,ui-attachment/src/FileCard.tsx,52,E0,composer.attach.file-retry,失败卡的正文即重试按钮（aria-label=retry）
+native.button,ui-attachment/src/FileCard.tsx,52,E0,composer.attach.file-retry,失败卡的正文即重试按钮（aria-label=retry）
+native.button,ui-attachment/src/FileCard.tsx,63,E0,composer.attach.remove,移除按钮（18×18，失败态常显）
+jsx.onclick,ui-attachment/src/FileCard.tsx,67,E0,composer.attach.remove,单击移除该附件
+css.overflow,ui-attachment/src/MessageImage.module.css,25,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-attachment/src/MessageImage.module.css,59,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-attachment/src/MessageImage.module.css,67,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-attachment/src/MessageImage.module.css,81,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.focus,ui-attachment/src/MessageImage.module.css,103,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-attachment/src/MessageImage.module.css,104,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+native.button,ui-attachment/src/MessageImage.tsx,129,E0,chat.msg.image,加载失败态整块变重试按钮（thumbnail 只显示刷新图标）
+jsx.onclick,ui-attachment/src/MessageImage.tsx,135,E0,chat.msg.image,单击重试（attempt+1 重跑同一加载 effect）
+native.button,ui-attachment/src/MessageImage.tsx,144,E0,chat.msg.image,缩略图/单图按钮本体（data-variant single|tile|thumbnail）
+jsx.onclick,ui-attachment/src/MessageImage.tsx,152,E0,chat.msg.image,src 就绪后单击打开 ImageLightbox 原图预览
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,49,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,52,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,53,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,69,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,79,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,84,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,119,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,122,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,124,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,126,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,129,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,131,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,135,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,139,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,149,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+container.scroll,ui-attachment/tests/attachment-rail.client.spec.tsx,152,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.overflow,ui-attachment/src/client/ComposerAttachments.module.css,19,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-attachment/src/client/ComposerAttachments.module.css,48,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-attachment/src/client/ComposerAttachments.module.css,54,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+native.button,ui-attachment/src/client/ComposerAttachments.tsx,76,E0,composer.attach.image-thumb,草稿图片缩略图（64×64，cursor zoom-in）
+jsx.onclick,ui-attachment/src/client/ComposerAttachments.tsx,80,E0,composer.attach.image-thumb,单击打开原图 ImageLightbox
+native.button,ui-attachment/src/client/ComposerAttachments.tsx,84,E0,composer.attach.remove,图片右上角移除按钮（18×18）
+jsx.onclick,ui-attachment/src/client/ComposerAttachments.tsx,88,E0,composer.attach.remove,单击移除该图片附件
+jsx.ondrag,ui-attachment/src/client/drop-events.ts,51,E0,composer.attach.drop-target,dragover：preventDefault 并按 canAcceptDrop 设 copy/none
+jsx.ondrag,ui-attachment/src/client/drop-events.ts,65,E0,composer.attach.drop-target,document 级 drop：取 files + 目录集合交给 onAddFiles
+jsx.ondrag,ui-attachment/src/client/drop-events.ts,76,E0,composer.attach.drop-target,注册 dragover 文档监听
+jsx.ondrag,ui-attachment/src/client/drop-events.ts,78,E0,composer.attach.drop-target,注册 drop 文档监听
+jsx.ondrag,ui-attachment/src/client/drop-events.ts,82,E0,composer.attach.drop-target,卸载 dragover 监听
+jsx.ondrag,ui-attachment/src/client/drop-events.ts,84,E0,composer.attach.drop-target,卸载 drop 监听
+a11y.expanded,ui-agent-preset/tests/components.client.spec.tsx,129,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-agent-preset/tests/components.client.spec.tsx,142,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-agent-preset/tests/components.client.spec.tsx,146,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-agent-preset/tests/components.client.spec.tsx,189,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-agent-preset/tests/components.client.spec.tsx,193,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-agent-preset/tests/components.client.spec.tsx,216,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+a11y.expanded,ui-agent-preset/tests/components.client.spec.tsx,247,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+native.button,ui-agent-preset/tests/create-plugin-menu-item.client.spec.tsx,37,excluded,-,测试文件（非产品 UI）：断言/桩代码，不是产品交互点
+css.overflow,ui-agent-preset/src/client/AgentPresetLabel.module.css,16,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-agent-preset/src/client/AgentPresetSeat.module.css,34,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.overflow,ui-agent-preset/src/client/AgentPresetSeat.module.css,54,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+native.button,ui-agent-preset/src/client/AgentPresetSeat.tsx,190,E0,agent-preset.hero-chip,chip 按钮本体（aria-haspopup=menu）；点开预设菜单
+a11y.expanded,ui-agent-preset/src/client/AgentPresetSeat.tsx,194,E0,agent-preset.hero-chip,aria-expanded 反映菜单开合
+jsx.onclick,ui-agent-preset/src/client/AgentPresetSeat.tsx,197,E0,agent-preset.hero-chip,单击开/关菜单（toggle）
+css.focus,ui-agent-preset/src/client/AgentPresetSection.module.css,131,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-agent-preset/src/client/AgentPresetSection.module.css,139,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-agent-preset/src/client/AgentPresetSection.module.css,153,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-agent-preset/src/client/AgentPresetSection.module.css,167,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-agent-preset/src/client/AgentPresetSection.module.css,179,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-agent-preset/src/client/AgentPresetSection.module.css,208,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-agent-preset/src/client/AgentPresetSection.module.css,228,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-agent-preset/src/client/AgentPresetSection.module.css,240,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.focus,ui-agent-preset/src/client/AgentPresetSection.module.css,271,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.cursor,ui-agent-preset/src/client/AgentPresetSection.module.css,285,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+css.focus,ui-agent-preset/src/client/AgentPresetSection.module.css,295,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.focus,ui-agent-preset/src/client/AgentPresetSection.module.css,319,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+css.overflow,ui-agent-preset/src/client/AgentPresetSection.module.css,332,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.cursor,ui-agent-preset/src/client/AgentPresetSection.module.css,370,excluded,-,CSS 光标语义（结构属性），无独立交互语义；悬停/可点视觉归各节点第 6 字段
+native.button,ui-agent-preset/src/client/AgentPresetSection.tsx,91,E0,settings.agent-preset.creator,Creator 入口按钮：启动会话并关闭设置
+jsx.onclick,ui-agent-preset/src/client/AgentPresetSection.tsx,95,E0,settings.agent-preset.creator,单击=startCreatorDraft()+closeSettings()
+native.button,ui-agent-preset/src/client/AgentPresetSection.tsx,122,E0,settings.agent-preset.card,预设卡片主体（aria-pressed=isDefault）
+jsx.onclick,ui-agent-preset/src/client/AgentPresetSection.tsx,125,E0,settings.agent-preset.card,单击=设为默认 makeDefault(id)，已默认/broken 时禁用
+jsx.onclick,ui-agent-preset/src/client/AgentPresetSection.tsx,144,E0,settings.agent-preset.help,帮助按钮：打开「模式说明」guide 页
+jsx.onclick,ui-agent-preset/src/client/AgentPresetSection.tsx,146,E0,settings.agent-preset.help,帮助按钮：打开「如何使用」guide 页
+native.button,ui-agent-preset/src/client/AgentPresetSection.tsx,151,E0,settings.agent-preset.view,查看按钮：打开只读 composition 查看器
+jsx.onclick,ui-agent-preset/src/client/AgentPresetSection.tsx,152,E0,settings.agent-preset.view,单击=view(id)，记住触发按钮以便关闭回焦
+jsx.onclick,ui-agent-preset/src/client/AgentPresetSection.tsx,172,E0,settings.agent-preset.view,查看器 Modal 的关闭按钮（autoFocus）
+css.overflow,ui-agent-preset/src/client/CreatePluginMenuItem.module.css,12,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.overflow,ui-agent-preset/src/client/PresetGuideDialog.module.css,62,excluded,-,CSS 溢出/滚动容器声明（结构属性），归各节点第 7/8 字段
+css.focus,ui-agent-preset/src/client/PresetGuideDialog.module.css,71,excluded,-,CSS 焦点样式（结构属性），归各节点第 6/11 字段（focus-visible）
+aria.role,ui-agent-preset/src/client/PresetGuideDialog.tsx,98,E0,settings.agent-preset.guide-dialog,打开后聚焦当前页签 [role=tab][aria-selected=true]
+jsx.onkeydown,ui-agent-preset/src/client/PresetGuideDialog.tsx,103,E0,settings.agent-preset.guide-dialog,Escape 关闭本层；Tab 焦点陷阱
+jsx.onkeydown,ui-agent-preset/src/client/PresetGuideDialog.tsx,113,E0,settings.agent-preset.guide-dialog,捕获阶段 onKeyDownCapture 处理 Escape/Tab
+jsx.onclick,ui-agent-preset/src/client/PresetGuideDialog.tsx,117,E0,settings.agent-preset.guide-dialog,guide 关闭按钮
+aria.role,ui-agent-preset/src/client/PresetGuideDialog.tsx,137,E0,settings.agent-preset.guide-dialog,页签面板 role=tabpanel，独立滚动
+aria.role,ui-settings-general/src/client/SettingsRoot.tsx,70,E0,settings.shell.panel,设置面板 role=dialog + aria-modal + aria-labelledby（第 11 字段已述）
+aria.role,ui-settings-account/src/client/OnboardingProcessStep.tsx,41,E0,settings.account.onboarding.step,process 单选组 role=radiogroup + aria-labelledby（第 11 字段已述）
+aria.role,ui-settings-account/src/client/OnboardingProcessStep.tsx,42,E0,settings.account.onboarding.step,process 选项 button role=radio + aria-checked（第 11 字段已述）
+aria.role,ui-settings-account/src/client/PlatformOverlay.tsx,69,E0,settings.account.platform-overlay,内嵌 Platform 页 role=dialog + aria-modal + aria-label（第 11 字段已述）
+aria.role,ui-model-selection/tests/model-select.client.spec.tsx,727,excluded,-,测试文件（非产品 UI）：断言查询 [role=menu]，不是产品交互点
+aria.role,ui-model-selection/tests/model-select.client.spec.tsx,819,excluded,-,测试文件（非产品 UI）：断言查询 [role=menu]，不是产品交互点
+aria.role,ui-model-selection/tests/model-select.client.spec.tsx,831,excluded,-,测试文件（非产品 UI）：断言查询 [role=menu]，不是产品交互点
+aria.role,ui-model-selection/src/client/ModelSelect.tsx,557,E0,model.menu.model-row,模型列表容器 role=menu + aria-label（第 11 字段已述）
+aria.role,ui-input-trigger/src/client/MenuView.tsx,132,E0,composer.slash.menu,候选滚动容器 role=listbox + aria-activedescendant（第 11 字段已述）
+aria.role,ui-commands/src/client/PopupSelectView.tsx,185,E0,composer.command.popup,命令弹窗列表 role=listbox + aria-label（第 11 字段已述）
+css.overscroll,ui-agent-preset/src/client/PresetGuideDialog.module.css,63,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）

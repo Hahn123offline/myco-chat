@@ -69,12 +69,18 @@ python tools\ui-audit\ui_audit.py scan --root app-android\src\main\kotlin   --ou
 
 | 路 | 对象 | 输出文件 | 重点 |
 |---|---|---|---|
-| R1 | DSH `packages/client`（主源，最重） | `ref/dsh-web.md` | 70 包逐个归位；ui-chat 深挖到每个节点 |
-| R2 | `dsh-Go` | `ref/dsh-go.md` | 移动端**手势与命中区**的真实做法（补 Q-03） |
+| R1a | DSH `ui-primitives/ui-layout/ui-dockkit/ui-slots/ui-theme/ui-locale` | `ref/dsh-base.md` | **披露行命中区（Q-03）**、层叠面板栈（无限抽屉壳）、token 体系 |
+| R1b | DSH `ui-chat/ui-renderer/ui-tool/ui-message-feedback` | `ref/dsh-chat.md` | 聊天页全节点、**过程组 cap（Q-05）**、**滚动跟随/轮次导航（Q-07）**、消息操作条、失败重试 |
+| R1c | DSH `ui-sidebar/ui-sidebar-browser/ui-conversation/ui-session` | `ref/dsh-sidebar.md` | 侧栏形态切换、会话行全量交互、分组/搜索、多标签 |
+| R1d | DSH `ui-settings*` + `ui-model-selection/ui-agent-preset/ui-input-trigger/ui-commands/ui-attachment/file-upload` | `ref/dsh-settings.md` | **模型+思考强度维度（用户点名不如 DSH）**、设置壳、**附件导入状态机** |
+| R2 | `dsh-Go` | `ref/dsh-go.md` | 移动端手势与命中区的真实做法（补 Q-03） |
 | R3 | `dsh-mobile-android` + `dsh-client-ui-mobile-adapt` | `ref/dsh-mobile.md` | 手机端如何压缩桌面 UI；键盘/安全区/横屏 |
 | R4 | `taixu` | `ref/taixu.md` | 移动工作区/面板化架构；A2UI 声明式界面 |
 | R5 | `chat-demo` | `ref/chat-demo.md` | 回复五态、贴底滚动、首 token 三段反馈 |
-| R6 | 旧 myco（本仓库 Kotlin） | `ref/legacy-myco.md` | 全量可点元素 + 现命令映射 + 已知缺陷 |
+| R6 | 旧 myco（本仓库 Kotlin） | `ref/legacy-myco.md` | 全量可点元素 + 命令映射 + 旧/M5 差异 + 缺陷 |
+
+> 9 路并行。R1a–R1d、R6 只用本机源码可立即开工；R2–R5 等仓库拉完再启动。
+> 每路的 check 前缀已在各自任务里写明，**facts.csv 的键互不重叠**，可安全并行。
 
 **每路 prompt 必须包含**（自包含，subagent 看不到本会话）：
 1. 铁律：禁止推测；`E0/E1/E2` 分级；`E2` 只许写进"待确认"小节，不许进结论。

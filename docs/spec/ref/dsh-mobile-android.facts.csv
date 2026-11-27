@@ -1,0 +1,83 @@
+kind,path,line,status,node_id,note
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,181,E0,base.layout.host.webview,唯一界面容器：new WebView 铺满窗口，DSH Web UI 原样跑在里面（本仓库不注入任何移动端 CSS）
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,180,E0,base.layout.host.webview,FrameLayout + MATCH_PARENT 根容器：界面占满窗口内容区，不做 inset/安全区换算
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,187,E0,base.layout.host.webview,setUseWideViewPort(true)：按页面自己的 <meta viewport> 定宽（DSH 为 width=device-width）
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,188,E0,base.layout.host.webview,setLoadWithOverviewMode(true)：页面宽度适配视口（不再按 980px 桌面宽度缩小）
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,190,E0,base.layout.host.webview,UA 追加 DshMobile/0.1（壳层标识）
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,195,E0,base.layout.host.webview,setSupportMultipleWindows(true)：允许 target=_blank / window.open（OAuth 授权页依赖）
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,196,E0,base.layout.host.webview,setJavaScriptCanOpenWindowsAutomatically(true)：JS 可自行开窗
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,198,E0,base.layout.host.webview,CookieManager 接受 cookie + 第三方 cookie（OAuth 回跳后状态同步）
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,204,E0,base.layout.host.missing-native,setWebViewClient 但未 setDownloadListener → 下载/附件落盘未见实现
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,217,E0,base.layout.host.webview,onPageFinished：注入外链 hook + 标记页面就绪（每次导航后重注入）
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,226,E0,base.layout.host.web-error,onReceivedError（仅主框架）：转页面失败对话框，避免黑屏
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,233,E0,base.layout.host.web-error,onReceivedHttpError（≥400，仅主框架）：同一失败对话框
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,241,E0,base.layout.host.missing-native,setWebChromeClient 但未 override onShowFileChooser → <input type=file> 文件选择器未见实现
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,242,excluded,-,onConsoleMessage 仅把 JS 日志转 logcat，无 UI 交互点
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,252,E0,base.layout.host.external-link,onCreateWindow：window.open/target=_blank 用一次性隐藏 WebView 捕获目标 URL 后交系统浏览器
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,281,E0,base.layout.host.external-link,addJavascriptInterface(DshMobileBridge)：JS 桥只暴露 openExternal 一个动作
+android.clipboard,android/java/ai/dshmobile/app/MainActivity.java,281,E0,base.layout.host.missing-native,反证：唯一 JS 桥只暴露外链；全文无剪贴板桥/ClipboardManager → DSH 页面内复制粘贴能力未接管（console 页自带 execCommand 兜底，见 console.html:108）
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,206,E0,base.layout.host.external-link,shouldOverrideUrlLoading(String)：非本机回环地址交给系统浏览器
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,211,E0,base.layout.host.external-link,shouldOverrideUrlLoading(WebResourceRequest)：同上（API 24+ 重载）
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,221,E0,base.layout.host.external-link,onPageFinished 时注入 JS 外链拦截（不依赖 WebView 版本对 target=_blank 的处理）
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,319,E0,base.layout.host.external-link,handleUrlLoading：isLocalDshUrl（127.0.0.1/localhost/0.0.0.0）留在 WebView，其余外链
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,332,E0,base.layout.host.external-link,openInBrowser：只放行 http(s)，javascript:/intent:/file: 一律拒绝
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,341,E0,base.layout.host.external-link,deepseek.com 或 /oauth 链接置 refreshOnResume：从浏览器回来自动刷新 DSH 页面同步登录态
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,346,E0,base.layout.host.external-link,"startActivity(Intent.ACTION_VIEW, uri) + FLAG_ACTIVITY_NEW_TASK 交系统浏览器"
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,406,E0,base.layout.host.external-link,injectExternalLinkHook：JS 侧兜底拦截器（click 捕获 + window.open 改写）
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,413,E0,base.layout.host.external-link,document click 捕获阶段拦 <a href>：外链 preventDefault+stopPropagation
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,417,E0,base.layout.host.external-link,window.open 改写：外链返回 null，其余走原实现
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,431,E0,base.layout.host.external-link,ExternalLinkBridge.openExternal 回到主线程 openInBrowser
+android.back,android/java/ai/dshmobile/app/MainActivity.java,437,E0,base.layout.host.back,onBackPressed：唯一手势/按键语义接管点
+android.back,android/java/ai/dshmobile/app/MainActivity.java,440,E0,base.layout.host.back,判据 = WebView.canGoBack()（浏览器历史栈），不是面板栈/抽屉状态
+android.back,android/java/ai/dshmobile/app/MainActivity.java,441,E0,base.layout.host.back,web.goBack()：先退 WebView 历史
+android.back,android/java/ai/dshmobile/app/MainActivity.java,446,E0,base.layout.host.back,无历史则 super.onBackPressed() → 退出 App；未做抽屉/键盘/浮层仲裁
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,287,E0,base.layout.host.console,首屏 loadUrl(file:///android_asset/console.html)：启动诊断日志台
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,382,E0,base.layout.host.navigation,loadDshHome：内核就绪回 DSH URL，否则回 console.html
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,1075,E0,base.layout.host.navigation,switchToDsh：探测到端口后 WebView 切到带 token 的 DSH URL
+android.nav,android/java/ai/dshmobile/app/MainActivity.java,1408,E0,base.layout.host.navigation,回滚失败兜底切回 console.html，避免停在空白页
+android.window,android/java/ai/dshmobile/app/MainActivity.java,145,E0,base.layout.host.window,FLAG_KEEP_SCREEN_ON：解压/更新期间保持屏幕常亮（移动端专属）
+android.window,android/java/ai/dshmobile/app/MainActivity.java,450,E0,base.layout.host.window,onResume：从系统浏览器返回时刷新 DSH 页面（登录态同步）
+android.window,android/java/ai/dshmobile/app/MainActivity.java,283,E0,base.layout.host.window,setContentView 未做 WindowInsets/edge-to-edge 处理：内容区由系统默认窗口决定，未见状态栏/挖孔/手势条显式避让
+android.window,android/AndroidManifest.xml,7,E0,base.layout.host.window,minSdk24/targetSdk28：沿用非 edge-to-edge 时代窗口语义（同时绕开私有目录 exec 限制）
+android.window,android/AndroidManifest.xml,26,E0,base.layout.host.window,Theme.Material.NoActionBar：无 ActionBar；未声明全屏/透明状态栏/沉浸式/挖孔模式
+android.window,android/AndroidManifest.xml,28,E0,base.layout.host.window,activity 声明：无 windowSoftInputMode、无 screenOrientation、无 configChanges 之外的窗口属性（键盘/横屏策略均未显式声明）
+android.window,android/AndroidManifest.xml,32,E0,base.layout.host.window,configChanges=orientation|screenSize|screenLayout|keyboardHidden|uiMode：旋转/键盘不重建 Activity、不重载 WebView
+android.window,android/AndroidManifest.xml,33,E0,base.layout.host.external-link,intent-filter 只有 MAIN/LAUNCHER，无 VIEW/<data> → 无深链（dsh:// 或 https 外链唤不起本 App）
+android.window,android/AndroidManifest.xml,24,E0,base.layout.host.webview,usesCleartextTraffic=true：允许 http://127.0.0.1 的本地 DSH 服务
+android.ime,android/AndroidManifest.xml,28,E0,base.layout.host.ime,activity 未声明 windowSoftInputMode；无 adjustResize/adjustPan 策略、无 visualViewport 桥 → 键盘弹出时输入区/列表避让未见实现
+android.dialog,android/java/ai/dshmobile/app/MainActivity.java,364,E0,base.layout.host.web-error,页面加载失败 AlertDialog：标题「页面打开失败」+ URL + 原因，两按钮，可取消
+android.click,android/java/ai/dshmobile/app/MainActivity.java,369,E0,base.layout.host.web-error,「返回 DSH」positive 按钮 → loadDshHome()
+android.click,android/java/ai/dshmobile/app/MainActivity.java,370,E0,base.layout.host.web-error,「重试」negative 按钮 → web.loadUrl(原 URL)
+android.dialog,android/java/ai/dshmobile/app/MainActivity.java,373,E0,base.layout.host.web-error,setCancelable(true)：返回键/点外部可关
+android.toast,android/java/ai/dshmobile/app/MainActivity.java,351,E0,base.layout.host.toast,无系统浏览器可用时 Toast 显示完整 URL（移动端兜底反馈）
+android.toast,android/java/ai/dshmobile/app/MainActivity.java,395,E0,base.layout.host.toast,toast() 封装 Toast.LENGTH_LONG：壳层的唯一轻量反馈通道
+android.toast,android/java/ai/dshmobile/app/MainActivity.java,1362,E0,base.layout.host.toast,内核更新完成 Toast「DSH 内核已更新」
+android.dialog,android/java/ai/dshmobile/app/MainActivity.java,1222,E0,base.layout.host.update-dialogs,发现新版本 AlertDialog：3 按钮（立即更新/稍后/此版本不再提示），可取消
+android.click,android/java/ai/dshmobile/app/MainActivity.java,1226,E0,base.layout.host.update-dialogs,「立即更新」→ startUpdateFlow()
+android.click,android/java/ai/dshmobile/app/MainActivity.java,1227,E0,base.layout.host.update-dialogs,「稍后」→ 仅记日志，下次启动再提示
+android.click,android/java/ai/dshmobile/app/MainActivity.java,1228,E0,base.layout.host.update-dialogs,「此版本不再提示」→ persist ignored_version
+android.dialog,android/java/ai/dshmobile/app/MainActivity.java,1424,E0,base.layout.host.update-dialogs,更新进度 AlertDialog：不可取消，out-of-flow 覆盖在 DSH 之上
+android.dialog,android/java/ai/dshmobile/app/MainActivity.java,1429,E0,base.layout.host.update-dialogs,setCanceledOnTouchOutside(false)：点外部不消失
+android.dialog,android/java/ai/dshmobile/app/MainActivity.java,1464,E0,base.layout.host.update-dialogs,更新失败 AlertDialog：单按钮「知道了」+ 回滚结果文案
+android.click,android/java/ai/dshmobile/app/MainActivity.java,1467,E0,base.layout.host.update-dialogs,「知道了」关闭失败框
+android.notification,android/java/ai/dshmobile/app/MainActivity.java,1080,E0,base.layout.host.notification,内核就绪后 startForegroundService(DshService)：后台保活
+android.notification,android/java/ai/dshmobile/app/DshService.java,22,E0,base.layout.host.notification,NotificationChannel IMPORTANCE_LOW「DSH Mobile」：静默常驻通知渠道
+android.notification,android/java/ai/dshmobile/app/DshService.java,34,E0,base.layout.host.notification,startForeground(1001)：常驻通知「DSH Mobile 运行中」
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,508,excluded,-,onConsolePageReady：日志/状态重放通道，非用户交互点
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,523,excluded,-,日志分批 evaluateJavascript 重放，属性能实现，非交互点
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,295,excluded,-,8s 兜底放行日志（页面就绪兜底），非交互点
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,638,excluded,-,abortLlm：由 MCP 工具路径触发、程序化点击 DSH「停止生成」，不是用户直接操作
+android.webview,android/java/ai/dshmobile/app/MainActivity.java,671,excluded,-,llmBusyState：同上，只查询「停止生成」按钮是否存在
+android.click,android/java/ai/dshmobile/app/MainActivity.java,621,excluded,-,ShizukuShell.requestPermission：系统授权弹窗（系统 UI，不属本 App 界面）
+html.view,android/assets/console.html,5,E0,base.layout.host.console,viewport-fit=cover：日志台自身可吃 env(safe-area-inset-*)（DSH 页面没有此 meta，对比见 §2）
+html.view,android/assets/console.html,15,E0,base.layout.host.console,body height:100vh + overflow:hidden：页面不整体滚动（横屏/键盘靠 flex 分配）
+html.scroll,android/assets/console.html,27,E0,base.layout.host.console,#log 独立滚动容器：overflow-y:auto + -webkit-overflow-scrolling:touch
+html.view,android/assets/console.html,33,E0,base.layout.host.console,footer padding-bottom: calc(8px + env(safe-area-inset-bottom))：底部三按钮避让手势条
+html.click,android/assets/console.html,54,E0,base.layout.host.console,「滚到底部」按钮：log.scrollTop=1e9
+html.click,android/assets/console.html,55,E0,base.layout.host.console,「复制日志」按钮：copyLog()
+html.click,android/assets/console.html,56,E0,base.layout.host.console,「重新加载」按钮：location.reload()（日志历史由 Java 侧重放，不丢）
+html.view,android/assets/console.html,58,E0,base.layout.host.console,#hint 启动遮罩：全屏覆盖直到首次进度/状态回调，阻塞所有输入
+html.view,android/assets/console.html,91,E0,base.layout.host.console,__dshProgress：进度条宽度 + 状态文案（UNPACK 阶段）
+html.view,android/assets/console.html,100,E0,base.layout.host.console,__dshStatus：状态灯三色（run/err/wait）+ 详情省略号
+html.scroll,android/assets/console.html,86,E0,base.layout.host.console,日志自动跟随：距底 <120px 才滚到底（用户上翻即停止跟随，不抢滚动）
+html.view,android/assets/console.html,108,E0,base.layout.host.console,copyLog：textarea + document.execCommand('copy') 旧剪贴板 API（WebView 内 navigator.clipboard 未验证，见 §6）

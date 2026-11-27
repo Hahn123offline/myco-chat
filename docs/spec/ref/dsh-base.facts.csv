@@ -1,0 +1,558 @@
+kind,path,line,status,node_id,note
+css.cursor,locale/src/client/LanguageRow.module.css,42,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，LanguageRow.module.css）
+native.button,locale/src/client/LanguageRow.tsx,53,E0,base.theme.language-row,语言选择：36px 选择器 button 打开 Menu，aria-haspopup=menu + aria-expanded
+a11y.expanded,locale/src/client/LanguageRow.tsx,57,E0,base.theme.language-row,语言选择：36px 选择器 button 打开 Menu，aria-haspopup=menu + aria-expanded
+jsx.onclick,locale/src/client/LanguageRow.tsx,58,E0,base.theme.language-row,语言选择：36px 选择器 button 打开 Menu，aria-haspopup=menu + aria-expanded
+a11y.expanded,locale/tests/language-row.client.spec.tsx,61,excluded,-,测试代码（a11y.expanded）：语言行单测：断言选择器 aria-expanded 翻转
+a11y.expanded,locale/tests/language-row.client.spec.tsx,68,excluded,-,测试代码（a11y.expanded）：语言行单测：断言选择器 aria-expanded 翻转
+a11y.expanded,locale/tests/language-row.client.spec.tsx,71,excluded,-,测试代码（a11y.expanded）：语言行单测：断言选择器 aria-expanded 翻转
+jsx.onpointer,ui-dockkit/src/components/FloatLayer.tsx,127,E0,base.layout.float-panel,浮动面板：按头部按下即抬起并进入移动手势；面板任意处按下抬升
+native.button,ui-dockkit/src/components/FloatLayer.tsx,133,E0,base.layout.float-panel,浮动面板「停靠回面板」按钮
+jsx.onpointer,ui-dockkit/src/components/FloatLayer.tsx,134,E0,base.layout.float-panel,浮动面板「停靠回面板」按钮
+jsx.onclick,ui-dockkit/src/components/FloatLayer.tsx,135,E0,base.layout.float-panel,浮动面板「停靠回面板」按钮
+native.button,ui-dockkit/src/components/FloatLayer.tsx,141,E0,base.layout.float-panel,浮动面板关闭按钮（可关闭时）
+jsx.onpointer,ui-dockkit/src/components/FloatLayer.tsx,142,E0,base.layout.float-panel,浮动面板关闭按钮（可关闭时）
+jsx.onclick,ui-dockkit/src/components/FloatLayer.tsx,143,E0,base.layout.float-panel,浮动面板关闭按钮（可关闭时）
+jsx.onpointer,ui-dockkit/src/components/FloatLayer.tsx,179,E0,base.layout.float-panel,浮动面板：按头部按下即抬起并进入移动手势；面板任意处按下抬升
+jsx.onpointer,ui-dockkit/src/components/FloatLayer.tsx,186,E0,base.layout.float-panel,右下角 20×20 缩放角
+jsx.onpointer,ui-dockkit/src/components/PaneTree.tsx,46,E0,base.layout.dock-divider,分栏分隔条按下 → 进入 resize 手势
+jsx.onpointer,ui-dockkit/src/components/TabLayout.tsx,93,E0,base.layout.float-panel,浮动宿主的 pointerdown 抬升
+jsx.onclick,ui-dockkit/src/components/TabLayout.tsx,94,E0,base.layout.dock-pane,停靠面板点击聚焦 / 分隔条按下（TabLayout 版）
+jsx.onpointer,ui-dockkit/src/components/TabLayout.tsx,106,E0,base.layout.float-panel,浮动面板缩放角（TabLayout 版）
+jsx.onpointer,ui-dockkit/src/components/TabLayout.tsx,154,E0,base.layout.dock-pane,停靠面板点击聚焦 / 分隔条按下（TabLayout 版）
+jsx.onkeydown,ui-dockkit/src/components/TabMenu.tsx,71,E0,base.layout.dock-menu,标签页右键菜单：捕获期 Escape/Tab 关闭、外部 pointerdown 关闭
+jsx.onkeydown,ui-dockkit/src/components/TabMenu.tsx,82,E0,base.layout.dock-menu,标签页右键菜单：捕获期 Escape/Tab 关闭、外部 pointerdown 关闭
+jsx.onpointer,ui-dockkit/src/components/TabMenu.tsx,85,E0,base.layout.dock-menu,标签页右键菜单：捕获期 Escape/Tab 关闭、外部 pointerdown 关闭
+jsx.onpointer,ui-dockkit/src/components/TabMenu.tsx,91,E0,base.layout.dock-menu,标签页右键菜单：捕获期 Escape/Tab 关闭、外部 pointerdown 关闭
+jsx.onkeydown,ui-dockkit/src/components/TabMenu.tsx,94,E0,base.layout.dock-menu,标签页右键菜单：捕获期 Escape/Tab 关闭、外部 pointerdown 关闭
+jsx.onpointer,ui-dockkit/src/components/TabMenu.tsx,95,E0,base.layout.dock-menu,标签页右键菜单：捕获期 Escape/Tab 关闭、外部 pointerdown 关闭
+aria.role,ui-dockkit/src/components/TabMenu.tsx,104,E0,base.layout.dock-menu,"补扫：标签右键菜单容器 role=""menu""（MenuSurface 由 dockkit 独立实现）"
+jsx.onpointer,ui-dockkit/src/components/TabMenu.tsx,113,E0,base.layout.dock-menu,菜单面 stopPropagation + role=menuitem「关闭」项
+jsx.onclick,ui-dockkit/src/components/TabMenu.tsx,114,E0,base.layout.dock-menu,菜单面 stopPropagation + role=menuitem「关闭」项
+aria.role,ui-dockkit/src/components/TabMenu.tsx,117,E0,base.layout.dock-menu,菜单面 stopPropagation + role=menuitem「关闭」项
+jsx.onclick,ui-dockkit/src/components/TabMenu.tsx,117,E0,base.layout.dock-menu,菜单面 stopPropagation + role=menuitem「关闭」项
+native.button,ui-dockkit/src/components/TabMenu.tsx,117,E0,base.layout.dock-menu,菜单面 stopPropagation + role=menuitem「关闭」项
+aria.role,ui-dockkit/src/components/TabPanel.tsx,245,E0,base.layout.dock-tab,tab strip 容器 role=tablist
+aria.role,ui-dockkit/src/components/TabPanel.tsx,264,E0,base.layout.dock-tab,标签芯片：role=tab/aria-selected/漫游 tabindex；pointerdown 起拖、click 激活、方向键走位、右键开菜单
+jsx.onpointer,ui-dockkit/src/components/TabPanel.tsx,284,E0,base.layout.dock-tab,标签芯片：role=tab/aria-selected/漫游 tabindex；pointerdown 起拖、click 激活、方向键走位、右键开菜单
+jsx.onclick,ui-dockkit/src/components/TabPanel.tsx,289,E0,base.layout.dock-tab,标签芯片：role=tab/aria-selected/漫游 tabindex；pointerdown 起拖、click 激活、方向键走位、右键开菜单
+jsx.onkeydown,ui-dockkit/src/components/TabPanel.tsx,293,E0,base.layout.dock-tab,标签芯片：role=tab/aria-selected/漫游 tabindex；pointerdown 起拖、click 激活、方向键走位、右键开菜单
+jsx.oncontextmenu,ui-dockkit/src/components/TabPanel.tsx,308,E0,base.layout.dock-tab,标签芯片：role=tab/aria-selected/漫游 tabindex；pointerdown 起拖、click 激活、方向键走位、右键开菜单
+native.button,ui-dockkit/src/components/TabPanel.tsx,317,E0,base.layout.dock-tab-close,芯片内 20×20 关闭按钮（覆盖在标题尾部，未显示时 pointer-events:none）
+jsx.onpointer,ui-dockkit/src/components/TabPanel.tsx,325,E0,base.layout.dock-tab-close,芯片内 20×20 关闭按钮（覆盖在标题尾部，未显示时 pointer-events:none）
+jsx.onclick,ui-dockkit/src/components/TabPanel.tsx,326,E0,base.layout.dock-tab-close,芯片内 20×20 关闭按钮（覆盖在标题尾部，未显示时 pointer-events:none）
+native.button,ui-dockkit/src/components/TabPanel.tsx,352,E0,base.layout.dock-tab-strip-controls,新增标签 28×28 按钮
+jsx.onclick,ui-dockkit/src/components/TabPanel.tsx,357,E0,base.layout.dock-tab-strip-controls,新增标签 28×28 按钮
+native.button,ui-dockkit/src/components/TabPanel.tsx,373,E0,base.layout.dock-tab-strip-controls,分栏按钮：28×28，被禁用时仍渲染并用 aria-label 说明原因
+jsx.onclick,ui-dockkit/src/components/TabPanel.tsx,381,E0,base.layout.dock-tab-strip-controls,分栏按钮：28×28，被禁用时仍渲染并用 aria-label 说明原因
+jsx.onclick,ui-dockkit/src/components/TabPanel.tsx,399,E0,base.layout.dock-tab-strip-controls,宿主 chrome 槽位 stopPropagation，避免点控件时聚焦面板
+jsx.onclick,ui-dockkit/src/components/TabPanel.tsx,433,E0,base.layout.dock-pane,停靠面板点击聚焦（section onClick）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,215,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+css.focus,ui-dockkit/src/components/dockkit.module.css,218,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，dockkit.module.css）
+css.focus,ui-dockkit/src/components/dockkit.module.css,219,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，dockkit.module.css）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,263,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+css.cursor,ui-dockkit/src/components/dockkit.module.css,375,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，dockkit.module.css）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,395,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+css.focus,ui-dockkit/src/components/dockkit.module.css,410,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，dockkit.module.css）
+css.cursor,ui-dockkit/src/components/dockkit.module.css,432,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，dockkit.module.css）
+css.focus,ui-dockkit/src/components/dockkit.module.css,442,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，dockkit.module.css）
+css.cursor,ui-dockkit/src/components/dockkit.module.css,462,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，dockkit.module.css）
+css.focus,ui-dockkit/src/components/dockkit.module.css,497,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，dockkit.module.css）
+css.cursor,ui-dockkit/src/components/dockkit.module.css,524,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，dockkit.module.css）
+css.cursor,ui-dockkit/src/components/dockkit.module.css,569,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，dockkit.module.css）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,584,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,670,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,696,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,756,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+css.overflow,ui-dockkit/src/components/dockkit.module.css,798,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，dockkit.module.css）
+aria.role,ui-dockkit/src/contract/adapter.ts,59,excluded,-,"TypeScript 契约文件里的 JSDoc 注释，描述调用方应提供的 role=""menuitem""；非可执行交互实现"
+native.button,ui-dockkit/tests/components.client.spec.tsx,637,excluded,-,测试代码（native.button）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+aria.role,ui-dockkit/tests/components.client.spec.tsx,662,excluded,-,测试代码（aria.role）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+jsx.onclick,ui-dockkit/tests/components.client.spec.tsx,662,excluded,-,测试代码（jsx.onclick）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+native.button,ui-dockkit/tests/components.client.spec.tsx,662,excluded,-,测试代码（native.button）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+native.button,ui-dockkit/tests/components.client.spec.tsx,929,excluded,-,测试代码（native.button）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+aria.role,ui-dockkit/tests/components.client.spec.tsx,931,excluded,-,测试代码（aria.role）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+jsx.onclick,ui-dockkit/tests/components.client.spec.tsx,933,excluded,-,测试代码（jsx.onclick）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+native.button,ui-dockkit/tests/components.client.spec.tsx,1549,excluded,-,测试代码（native.button）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+native.button,ui-dockkit/tests/components.client.spec.tsx,1573,excluded,-,测试代码（native.button）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+native.button,ui-dockkit/tests/components.client.spec.tsx,1600,excluded,-,测试代码（native.button）：dockkit 组件单测：chrome/menuitem/按钮为测试夹具
+native.input,ui-dockkit/tests/tab-layout.client.spec.tsx,22,excluded,-,测试代码（native.input）：dockkit tab 布局单测：input 为 renderTab 夹具
+css.overflow,ui-layout/src/client/AppFrame.module.css,6,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，AppFrame.module.css）
+css.overflow,ui-layout/src/client/AppFrame.module.css,60,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，AppFrame.module.css）
+css.overflow,ui-layout/src/client/AppFrame.module.css,69,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，AppFrame.module.css）
+css.overflow,ui-layout/src/client/AppFrame.module.css,277,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，AppFrame.module.css）
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,78,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,88,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,96,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,101,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,111,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,112,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,113,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,114,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.onpointer,ui-layout/src/client/AppFrame.tsx,115,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.ondrag,ui-layout/src/client/AppFrame.tsx,224,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.ondrag,ui-layout/src/client/AppFrame.tsx,301,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+jsx.ondrag,ui-layout/src/client/AppFrame.tsx,303,E0,base.layout.column-resize,列宽拖拽手柄：pointerdown 捕获 + rAF 节流的 dx，pointerup/cancel/lostcapture 收尾
+css.cursor,ui-primitives/src/Button.module.css,10,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Button.module.css）
+css.cursor,ui-primitives/src/Button.module.css,19,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Button.module.css）
+native.button,ui-primitives/src/Button.tsx,31,E0,base.primitives.button,token-styled 原生 button，md=36px / sm=28px
+css.cursor,ui-primitives/src/Checkbox.module.css,8,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Checkbox.module.css）
+css.focus,ui-primitives/src/Checkbox.module.css,20,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，Checkbox.module.css）
+native.input,ui-primitives/src/Checkbox.tsx,26,E0,base.primitives.checkbox,原生 input[type=checkbox]，label 包裹整行文字
+css.overflow,ui-primitives/src/CodeCard.module.css,38,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，CodeCard.module.css）
+css.cursor,ui-primitives/src/CodeCard.module.css,67,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，CodeCard.module.css）
+css.focus,ui-primitives/src/CodeCard.module.css,74,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，CodeCard.module.css）
+jsx.onclick,ui-primitives/src/CodeToolbar.tsx,50,E0,base.primitives.icon-action,代码卡图标动作条：24×24 图标按钮（换行切换 aria-pressed / 复制）
+native.button,ui-primitives/src/CodeToolbar.tsx,50,E0,base.primitives.icon-action,代码卡图标动作条：24×24 图标按钮（换行切换 aria-pressed / 复制）
+jsx.onclick,ui-primitives/src/CodeToolbar.tsx,55,E0,base.primitives.icon-action,代码卡图标动作条：24×24 图标按钮（换行切换 aria-pressed / 复制）
+native.button,ui-primitives/src/CodeToolbar.tsx,55,E0,base.primitives.icon-action,代码卡图标动作条：24×24 图标按钮（换行切换 aria-pressed / 复制）
+css.focus,ui-primitives/src/CommandText.module.css,9,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，CommandText.module.css）
+css.cursor,ui-primitives/src/ConfigField.module.css,5,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，ConfigField.module.css）
+jsx.onclick,ui-primitives/src/ConfigField.tsx,38,E0,base.primitives.settings-field,设置字段：重置按钮 + select/password input/textarea
+native.button,ui-primitives/src/ConfigField.tsx,38,E0,base.primitives.settings-field,设置字段：重置按钮 + select/password input/textarea
+native.input,ui-primitives/src/ConfigField.tsx,41,E0,base.primitives.settings-field,设置字段：重置按钮 + select/password input/textarea
+native.input,ui-primitives/src/ConfigField.tsx,47,E0,base.primitives.settings-field,设置字段：重置按钮 + select/password input/textarea
+native.input,ui-primitives/src/ConfigField.tsx,49,E0,base.primitives.settings-field,设置字段：重置按钮 + select/password input/textarea
+css.cursor,ui-primitives/src/ConnectionIndicator.module.css,39,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，ConnectionIndicator.module.css）
+css.focus,ui-primitives/src/ConnectionIndicator.module.css,58,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，ConnectionIndicator.module.css）
+native.button,ui-primitives/src/ConnectionIndicator.tsx,75,E0,base.primitives.connection-indicator,断线/连接中指示器本身是重连按钮（role 由 aria-label 描述动作）
+jsx.onclick,ui-primitives/src/ConnectionIndicator.tsx,80,E0,base.primitives.connection-indicator,断线/连接中指示器本身是重连按钮（role 由 aria-label 描述动作）
+css.overflow,ui-primitives/src/DiffBlock.module.css,2,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，DiffBlock.module.css）
+css.cursor,ui-primitives/src/DiffBlock.module.css,73,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，DiffBlock.module.css）
+disclosure,ui-primitives/src/DiffBlock.tsx,185,E0,base.primitives.content-fold,diff 头尾截断，复用 FoldToggle
+disclosure,ui-primitives/src/DiffBlock.tsx,212,E0,base.primitives.content-fold,diff 头尾截断，复用 FoldToggle
+css.overflow,ui-primitives/src/DisclosureRow.module.css,33,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，DisclosureRow.module.css）
+css.cursor,ui-primitives/src/DisclosureRow.module.css,43,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，DisclosureRow.module.css）
+css.cursor,ui-primitives/src/DisclosureRow.module.css,75,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，DisclosureRow.module.css）
+disclosure,ui-primitives/src/DisclosureRow.tsx,13,E0,base.primitives.disclosure.row,整行即披露开关：expandOnRowClick 时 rowExpands=true，row 变成 role=button
+disclosure,ui-primitives/src/DisclosureRow.tsx,17,E0,base.primitives.disclosure.row,整行即披露开关：expandOnRowClick 时 rowExpands=true，row 变成 role=button
+disclosure,ui-primitives/src/DisclosureRow.tsx,48,E0,base.primitives.disclosure.row,整行即披露开关：expandOnRowClick 时 rowExpands=true，row 变成 role=button
+disclosure,ui-primitives/src/DisclosureRow.tsx,50,E0,base.primitives.disclosure.row,整行即披露开关：expandOnRowClick 时 rowExpands=true，row 变成 role=button
+disclosure,ui-primitives/src/DisclosureRow.tsx,64,E0,base.primitives.disclosure.row,整行即披露开关：expandOnRowClick 时 rowExpands=true，row 变成 role=button
+disclosure,ui-primitives/src/DisclosureRow.tsx,67,E0,base.primitives.disclosure.row,整行即披露开关：expandOnRowClick 时 rowExpands=true，row 变成 role=button
+disclosure,ui-primitives/src/DisclosureRow.tsx,72,E0,base.primitives.disclosure.row,整行即披露开关：expandOnRowClick 时 rowExpands=true，row 变成 role=button
+a11y.expanded,ui-primitives/src/DisclosureRow.tsx,95,E0,base.primitives.disclosure.row,整行模式下的 aria-expanded / onClick / Enter+Space onKeyDown
+disclosure,ui-primitives/src/DisclosureRow.tsx,96,E0,base.primitives.disclosure.row,整行模式下的 aria-expanded / onClick / Enter+Space onKeyDown
+jsx.onclick,ui-primitives/src/DisclosureRow.tsx,96,E0,base.primitives.disclosure.row,整行模式下的 aria-expanded / onClick / Enter+Space onKeyDown
+jsx.onkeydown,ui-primitives/src/DisclosureRow.tsx,97,E0,base.primitives.disclosure.row,整行模式下的 aria-expanded / onClick / Enter+Space onKeyDown
+native.button,ui-primitives/src/DisclosureRow.tsx,100,E0,base.primitives.disclosure.leading,非整行模式下唯一的披露命中区：16px leading <button>，padding 0、border none
+a11y.expanded,ui-primitives/src/DisclosureRow.tsx,104,E0,base.primitives.disclosure.leading,非整行模式下唯一的披露命中区：16px leading <button>，padding 0、border none
+jsx.onclick,ui-primitives/src/DisclosureRow.tsx,105,E0,base.primitives.disclosure.leading,非整行模式下唯一的披露命中区：16px leading <button>，padding 0、border none
+disclosure,ui-primitives/src/FoldToggle.tsx,11,E0,base.primitives.disclosure.fold-toggle,头尾折叠按钮：原生 button + aria-expanded + aria-label(展开 N 行/收起)
+disclosure,ui-primitives/src/FoldToggle.tsx,20,E0,base.primitives.disclosure.fold-toggle,头尾折叠按钮：原生 button + aria-expanded + aria-label(展开 N 行/收起)
+native.button,ui-primitives/src/FoldToggle.tsx,23,E0,base.primitives.disclosure.fold-toggle,头尾折叠按钮：原生 button + aria-expanded + aria-label(展开 N 行/收起)
+a11y.expanded,ui-primitives/src/FoldToggle.tsx,26,E0,base.primitives.disclosure.fold-toggle,头尾折叠按钮：原生 button + aria-expanded + aria-label(展开 N 行/收起)
+disclosure,ui-primitives/src/FoldToggle.tsx,28,E0,base.primitives.disclosure.fold-toggle,头尾折叠按钮：原生 button + aria-expanded + aria-label(展开 N 行/收起)
+jsx.onclick,ui-primitives/src/FoldToggle.tsx,28,E0,base.primitives.disclosure.fold-toggle,头尾折叠按钮：原生 button + aria-expanded + aria-label(展开 N 行/收起)
+css.cursor,ui-primitives/src/HoverCard.module.css,22,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，HoverCard.module.css）
+css.focus,ui-primitives/src/HoverCard.module.css,25,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，HoverCard.module.css）
+css.overflow,ui-primitives/src/HoverCard.module.css,47,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，HoverCard.module.css）
+css.overflow,ui-primitives/src/HoverCard.module.css,56,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，HoverCard.module.css）
+css.overflow,ui-primitives/src/HoverCard.module.css,83,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，HoverCard.module.css）
+jsx.onclick,ui-primitives/src/HoverCard.tsx,238,E0,base.primitives.hover-card,copyable 卡面整体可点/可回车复制；选中文本时不触发
+jsx.onkeydown,ui-primitives/src/HoverCard.tsx,249,E0,base.primitives.hover-card,copyable 卡面整体可点/可回车复制；选中文本时不触发
+jsx.onfocus,ui-primitives/src/HoverCard.tsx,265,E0,base.primitives.hover-card,inline 变体：focus-visible 打开、失焦关闭
+jsx.onfocus,ui-primitives/src/HoverCard.tsx,268,E0,base.primitives.hover-card,inline 变体：focus-visible 打开、失焦关闭
+css.cursor,ui-primitives/src/ImageLightbox.module.css,51,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，ImageLightbox.module.css）
+css.focus,ui-primitives/src/ImageLightbox.module.css,54,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，ImageLightbox.module.css）
+jsx.onkeydown,ui-primitives/src/ImageLightbox.tsx,39,E0,base.primitives.image-lightbox,Esc 关闭 + Tab 焦点锁在关闭按钮；关闭恢复原焦点
+jsx.onkeydown,ui-primitives/src/ImageLightbox.tsx,43,E0,base.primitives.image-lightbox,Esc 关闭 + Tab 焦点锁在关闭按钮；关闭恢复原焦点
+jsx.onkeydown,ui-primitives/src/ImageLightbox.tsx,45,E0,base.primitives.image-lightbox,Esc 关闭 + Tab 焦点锁在关闭按钮；关闭恢复原焦点
+aria.role,ui-primitives/src/ImageLightbox.tsx,53,E0,base.primitives.image-lightbox,"补扫：灯箱容器 role=""dialog"" + aria-modal=""true""，与节点字段 11 一致"
+jsx.onclick,ui-primitives/src/ImageLightbox.tsx,60,E0,base.primitives.image-lightbox,36×36 圆形关闭按钮
+native.button,ui-primitives/src/ImageLightbox.tsx,60,E0,base.primitives.image-lightbox,36×36 圆形关闭按钮
+css.overflow,ui-primitives/src/ImagePreview.module.css,7,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，ImagePreview.module.css）
+css.overflow,ui-primitives/src/InlineEditor.module.css,17,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，InlineEditor.module.css）
+css.focus,ui-primitives/src/InlineEditor.module.css,21,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，InlineEditor.module.css）
+jsx.onkeydown,ui-primitives/src/InlineEditor.tsx,45,E0,base.primitives.input,input 的行内编辑变体：textarea、Enter 提交 / Esc 取消、随内容长高
+native.input,ui-primitives/src/InlineEditor.tsx,58,E0,base.primitives.input,input 的行内编辑变体：textarea、Enter 提交 / Esc 取消、随内容长高
+jsx.onkeydown,ui-primitives/src/InlineEditor.tsx,66,E0,base.primitives.input,input 的行内编辑变体：textarea、Enter 提交 / Esc 取消、随内容长高
+css.focus,ui-primitives/src/Input.module.css,12,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，Input.module.css）
+native.input,ui-primitives/src/Input.tsx,21,E0,base.primitives.input,受控原生 input，容器高 32px
+css.overflow,ui-primitives/src/JsonTree.module.css,11,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，JsonTree.module.css）
+css.focus,ui-primitives/src/JsonTree.module.css,80,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，JsonTree.module.css）
+css.cursor,ui-primitives/src/JsonTree.module.css,104,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，JsonTree.module.css）
+css.overflow,ui-primitives/src/JsonTree.module.css,121,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，JsonTree.module.css）
+css.overflow,ui-primitives/src/JsonTree.module.css,128,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，JsonTree.module.css）
+css.cursor,ui-primitives/src/JsonTree.module.css,181,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，JsonTree.module.css）
+css.focus,ui-primitives/src/JsonTree.module.css,189,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，JsonTree.module.css）
+css.overflow,ui-primitives/src/JsonTree.module.css,200,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，JsonTree.module.css）
+css.focus,ui-primitives/src/JsonTree.module.css,259,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，JsonTree.module.css）
+css.cursor,ui-primitives/src/JsonTree.module.css,277,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，JsonTree.module.css）
+css.focus,ui-primitives/src/JsonTree.module.css,288,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，JsonTree.module.css）
+css.cursor,ui-primitives/src/JsonTree.module.css,310,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，JsonTree.module.css）
+css.focus,ui-primitives/src/JsonTree.module.css,333,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，JsonTree.module.css）
+css.cursor,ui-primitives/src/JsonTree.module.css,340,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，JsonTree.module.css）
+native.button,ui-primitives/src/JsonTree.tsx,135,E0,base.primitives.json-tree,每行 copy 按钮：单击复制、右键打开复制方式菜单（路径/JSON/值）
+jsx.onclick,ui-primitives/src/JsonTree.tsx,143,E0,base.primitives.json-tree,每行 copy 按钮：单击复制、右键打开复制方式菜单（路径/JSON/值）
+jsx.oncontextmenu,ui-primitives/src/JsonTree.tsx,144,E0,base.primitives.json-tree,每行 copy 按钮：单击复制、右键打开复制方式菜单（路径/JSON/值）
+disclosure,ui-primitives/src/JsonTree.tsx,302,E0,base.primitives.json-tree,NodeField 展开区整块点击（可展开时）
+disclosure,ui-primitives/src/JsonTree.tsx,306,E0,base.primitives.json-tree,NodeField 展开区整块点击（可展开时）
+disclosure,ui-primitives/src/JsonTree.tsx,312,E0,base.primitives.json-tree,NodeField 展开区整块点击（可展开时）
+jsx.onclick,ui-primitives/src/JsonTree.tsx,312,E0,base.primitives.json-tree,NodeField 展开区整块点击（可展开时）
+container.scroll,ui-primitives/src/JsonTree.tsx,380,E0,base.primitives.json-tree,滚动裁剪探测：取祖先 overflowY 判断是否裁切
+native.button,ui-primitives/src/JsonTree.tsx,426,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+jsx.onclick,ui-primitives/src/JsonTree.tsx,433,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+native.button,ui-primitives/src/JsonTree.tsx,442,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+a11y.expanded,ui-primitives/src/JsonTree.tsx,447,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+jsx.onclick,ui-primitives/src/JsonTree.tsx,449,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+native.button,ui-primitives/src/JsonTree.tsx,475,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+a11y.expanded,ui-primitives/src/JsonTree.tsx,479,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+jsx.onclick,ui-primitives/src/JsonTree.tsx,481,E0,base.primitives.json-tree,长字符串展开/换行/收起三处图标动作与 stringToggle
+aria.role,ui-primitives/src/JsonTree.tsx,541,E0,base.primitives.json-tree,"补扫：每个树节点行容器 role=""treeitem""（展开器本身另为 role=button，见 :595）"
+a11y.expanded,ui-primitives/src/JsonTree.tsx,542,E0,base.primitives.json-tree,树节点 expander：role=button + aria-expanded + 漫游 tabIndex + 键盘展开
+disclosure,ui-primitives/src/JsonTree.tsx,570,E0,base.primitives.json-tree,叶子节点：expandable=false，展开区不可点
+disclosure,ui-primitives/src/JsonTree.tsx,581,E0,base.primitives.json-tree,叶子节点：expandable=false，展开区不可点
+aria.role,ui-primitives/src/JsonTree.tsx,595,E0,base.primitives.json-tree,树节点 expander：role=button + aria-expanded + 漫游 tabIndex + 键盘展开
+a11y.expanded,ui-primitives/src/JsonTree.tsx,597,E0,base.primitives.json-tree,树节点 expander：role=button + aria-expanded + 漫游 tabIndex + 键盘展开
+jsx.onfocus,ui-primitives/src/JsonTree.tsx,600,E0,base.primitives.json-tree,树节点 expander：role=button + aria-expanded + 漫游 tabIndex + 键盘展开
+jsx.onclick,ui-primitives/src/JsonTree.tsx,601,E0,base.primitives.json-tree,树节点 expander：role=button + aria-expanded + 漫游 tabIndex + 键盘展开
+jsx.onkeydown,ui-primitives/src/JsonTree.tsx,602,E0,base.primitives.json-tree,树节点 expander：role=button + aria-expanded + 漫游 tabIndex + 键盘展开
+disclosure,ui-primitives/src/JsonTree.tsx,605,E0,base.primitives.json-tree,展开态子树：NodeField 携带 onToggle 供再次收起
+css.overflow,ui-primitives/src/Menu.module.css,76,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，Menu.module.css）
+css.cursor,ui-primitives/src/Menu.module.css,105,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Menu.module.css）
+css.focus,ui-primitives/src/Menu.module.css,119,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，Menu.module.css）
+css.cursor,ui-primitives/src/Menu.module.css,165,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Menu.module.css）
+css.overflow,ui-primitives/src/Menu.module.css,193,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，Menu.module.css）
+css.focus,ui-primitives/src/Menu.module.css,238,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，Menu.module.css）
+aria.role,ui-primitives/src/Menu.tsx,70,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+native.button,ui-primitives/src/Menu.tsx,90,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,92,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onclick,ui-primitives/src/Menu.tsx,96,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,155,E1,base.primitives.menu,"E1：仅 JSDoc 注释声称列表行是 role=""menuitem"" 的 button；实现见 :456-478"
+jsx.onpointer,ui-primitives/src/Menu.tsx,326,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onkeydown,ui-primitives/src/Menu.tsx,333,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onpointer,ui-primitives/src/Menu.tsx,412,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onkeydown,ui-primitives/src/Menu.tsx,413,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onkeydown,ui-primitives/src/Menu.tsx,414,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onpointer,ui-primitives/src/Menu.tsx,420,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+native.button,ui-primitives/src/Menu.tsx,456,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,458,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+a11y.expanded,ui-primitives/src/Menu.tsx,463,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onfocus,ui-primitives/src/Menu.tsx,464,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onclick,ui-primitives/src/Menu.tsx,465,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,480,E0,base.primitives.menu,"补扫：子菜单卡同样是 role=""menu"" 的 MenuSurface（与主列表同语义）"
+native.button,ui-primitives/src/Menu.tsx,482,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,485,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onclick,ui-primitives/src/Menu.tsx,489,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,507,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,509,E0,base.primitives.menu,"补扫：子菜单互斥用 closest('[role=""menu""]') 判定「顶层行」，DOM 角色参与手势仲裁"
+aria.role,ui-primitives/src/Menu.tsx,522,E0,base.primitives.menu,"补扫：主列表容器 role=""menu""（键盘走位与外部关闭的挂载点）"
+jsx.onclick,ui-primitives/src/Menu.tsx,524,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onclick,ui-primitives/src/Menu.tsx,529,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+aria.role,ui-primitives/src/Menu.tsx,531,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+jsx.onfocus,ui-primitives/src/Menu.tsx,535,E0,base.primitives.menu,portal 菜单：外部 pointerdown 关闭、Escape/Tab/方向键走位、子菜单 hover/focus 打开、锚点行事件拦截
+css.sticky,ui-primitives/src/MenuGroup.module.css,20,excluded,-,结构性 CSS 属性，不构成交互点（css.sticky，MenuGroup.module.css）
+css.overflow,ui-primitives/src/Modal.module.css,42,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，Modal.module.css）
+css.focus,ui-primitives/src/Modal.module.css,59,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，Modal.module.css）
+css.cursor,ui-primitives/src/Modal.module.css,97,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Modal.module.css）
+jsx.onclick,ui-primitives/src/Modal.tsx,59,E0,base.primitives.modal,遮罩点击关闭 + 28×28 关闭按钮
+aria.role,ui-primitives/src/Modal.tsx,65,E0,base.primitives.modal,"补扫：模态卡片 role=""dialog"" + aria-modal=""true""，焦点陷阱容器"
+jsx.onclick,ui-primitives/src/Modal.tsx,76,E0,base.primitives.modal,遮罩点击关闭 + 28×28 关闭按钮
+native.button,ui-primitives/src/Modal.tsx,76,E0,base.primitives.modal,遮罩点击关闭 + 28×28 关闭按钮
+css.overflow,ui-primitives/src/PathLabel.module.css,8,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，PathLabel.module.css）
+css.cursor,ui-primitives/src/Pill.module.css,17,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Pill.module.css）
+jsx.onclick,ui-primitives/src/Pill.tsx,1,E1,base.primitives.pill,E1：仅源码注释声称「给 onClick 时可选中，否则静态 span」；实现另见本文件 :23-31
+jsx.onclick,ui-primitives/src/Pill.tsx,11,E1,base.primitives.pill,E1：仅源码注释声称「给 onClick 时可选中，否则静态 span」；实现另见本文件 :23-31
+jsx.onclick,ui-primitives/src/Pill.tsx,16,E0,base.primitives.pill,onClick 存在性决定渲染 button 还是 span；胶囊高 24px
+jsx.onclick,ui-primitives/src/Pill.tsx,23,E0,base.primitives.pill,onClick 存在性决定渲染 button 还是 span；胶囊高 24px
+native.button,ui-primitives/src/Pill.tsx,27,E0,base.primitives.pill,onClick 存在性决定渲染 button 还是 span；胶囊高 24px
+jsx.onclick,ui-primitives/src/Pill.tsx,30,E0,base.primitives.pill,onClick 存在性决定渲染 button 还是 span；胶囊高 24px
+css.cursor,ui-primitives/src/ReadBlock.module.css,36,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，ReadBlock.module.css）
+disclosure,ui-primitives/src/ReadBlock.tsx,104,E0,base.primitives.content-fold,read 结果头尾截断，复用 FoldToggle
+disclosure,ui-primitives/src/ReadBlock.tsx,144,E0,base.primitives.content-fold,read 结果头尾截断，复用 FoldToggle
+css.overflow,ui-primitives/src/RiskConfirmation.module.css,4,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，RiskConfirmation.module.css）
+css.overflow,ui-primitives/src/RiskConfirmation.module.css,9,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，RiskConfirmation.module.css）
+css.cursor,ui-primitives/src/RiskConfirmation.module.css,46,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，RiskConfirmation.module.css）
+css.cursor,ui-primitives/src/RiskConfirmation.module.css,55,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，RiskConfirmation.module.css）
+css.focus,ui-primitives/src/RiskConfirmation.module.css,58,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，RiskConfirmation.module.css）
+jsx.onclick,ui-primitives/src/RiskConfirmation.tsx,53,E0,base.primitives.modal,风险确认弹层 = Modal + 取消/确认按钮 + 必须勾选的 acknowledge 复选框
+jsx.onclick,ui-primitives/src/RiskConfirmation.tsx,60,E0,base.primitives.modal,风险确认弹层 = Modal + 取消/确认按钮 + 必须勾选的 acknowledge 复选框
+native.input,ui-primitives/src/RiskConfirmation.tsx,72,E0,base.primitives.modal,风险确认弹层 = Modal + 取消/确认按钮 + 必须勾选的 acknowledge 复选框
+css.overflow,ui-primitives/src/SearchBlock.module.css,25,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，SearchBlock.module.css）
+css.cursor,ui-primitives/src/SearchBlock.module.css,39,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，SearchBlock.module.css）
+css.overflow,ui-primitives/src/SearchBlock.module.css,47,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，SearchBlock.module.css）
+css.cursor,ui-primitives/src/SearchBlock.module.css,75,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，SearchBlock.module.css）
+css.cursor,ui-primitives/src/SearchBlock.module.css,99,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，SearchBlock.module.css）
+disclosure,ui-primitives/src/SearchBlock.tsx,189,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+native.button,ui-primitives/src/SearchBlock.tsx,231,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+a11y.expanded,ui-primitives/src/SearchBlock.tsx,234,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+jsx.onclick,ui-primitives/src/SearchBlock.tsx,235,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+jsx.onclick,ui-primitives/src/SearchBlock.tsx,248,E0,base.primitives.icon-action,搜索结果复制按钮（文字按钮）
+native.button,ui-primitives/src/SearchBlock.tsx,248,E0,base.primitives.icon-action,搜索结果复制按钮（文字按钮）
+native.button,ui-primitives/src/SearchBlock.tsx,261,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+a11y.expanded,ui-primitives/src/SearchBlock.tsx,264,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+disclosure,ui-primitives/src/SearchBlock.tsx,266,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+jsx.onclick,ui-primitives/src/SearchBlock.tsx,266,E0,base.primitives.content-fold,搜索结果文件头折叠(aria-expanded) + 头尾截断的展开/收起
+css.cursor,ui-primitives/src/SegmentedControl.module.css,52,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，SegmentedControl.module.css）
+css.focus,ui-primitives/src/SegmentedControl.module.css,66,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，SegmentedControl.module.css）
+aria.role,ui-primitives/src/SegmentedControl.tsx,93,E0,base.primitives.segmented-control,tablist/role=tab + 漫游 tabindex + 方向键/Home/End 走位
+jsx.onkeydown,ui-primitives/src/SegmentedControl.tsx,96,E0,base.primitives.segmented-control,tablist/role=tab + 漫游 tabindex + 方向键/Home/End 走位
+aria.role,ui-primitives/src/SegmentedControl.tsx,111,E0,base.primitives.segmented-control,tablist/role=tab + 漫游 tabindex + 方向键/Home/End 走位
+native.button,ui-primitives/src/SegmentedControl.tsx,120,E0,base.primitives.segmented-control,tablist/role=tab + 漫游 tabindex + 方向键/Home/End 走位
+aria.role,ui-primitives/src/SegmentedControl.tsx,124,E0,base.primitives.segmented-control,tablist/role=tab + 漫游 tabindex + 方向键/Home/End 走位
+jsx.onclick,ui-primitives/src/SegmentedControl.tsx,131,E0,base.primitives.segmented-control,tablist/role=tab + 漫游 tabindex + 方向键/Home/End 走位
+jsx.onkeydown,ui-primitives/src/SegmentedControl.tsx,132,E0,base.primitives.segmented-control,tablist/role=tab + 漫游 tabindex + 方向键/Home/End 走位
+css.focus,ui-primitives/src/SegmentedTabs.module.css,43,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，SegmentedTabs.module.css）
+jsx.onkeydown,ui-primitives/src/SegmentedTabs.tsx,33,E0,base.primitives.segmented-control,同族的实现二：SegmentedTabs（非 indicator 版分段）
+aria.role,ui-primitives/src/SegmentedTabs.tsx,48,E0,base.primitives.segmented-control,同族的实现二：SegmentedTabs（非 indicator 版分段）
+aria.role,ui-primitives/src/SegmentedTabs.tsx,54,E0,base.primitives.segmented-control,同族的实现二：SegmentedTabs（非 indicator 版分段）
+aria.role,ui-primitives/src/SegmentedTabs.tsx,68,E0,base.primitives.segmented-control,同族的实现二：SegmentedTabs（非 indicator 版分段）
+jsx.onclick,ui-primitives/src/SegmentedTabs.tsx,73,E0,base.primitives.segmented-control,同族的实现二：SegmentedTabs（非 indicator 版分段）
+jsx.onkeydown,ui-primitives/src/SegmentedTabs.tsx,74,E0,base.primitives.segmented-control,同族的实现二：SegmentedTabs（非 indicator 版分段）
+css.cursor,ui-primitives/src/Switch.module.css,16,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Switch.module.css）
+css.focus,ui-primitives/src/Switch.module.css,28,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，Switch.module.css）
+native.button,ui-primitives/src/Switch.tsx,29,E0,base.primitives.switch,button role=switch + aria-checked，36×20 轨道
+aria.role,ui-primitives/src/Switch.tsx,31,E0,base.primitives.switch,button role=switch + aria-checked，36×20 轨道
+jsx.onclick,ui-primitives/src/Switch.tsx,37,E0,base.primitives.switch,button role=switch + aria-checked，36×20 轨道
+jsx.onclick,ui-primitives/src/Tag.tsx,2,excluded,-,注释明确说明 Tag 不接受 onClick、无 active，即非交互原子；本条本身不是实现
+css.overflow,ui-primitives/src/TerminalBlock.module.css,26,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，TerminalBlock.module.css）
+css.overflow,ui-primitives/src/TerminalBlock.module.css,47,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，TerminalBlock.module.css）
+css.overflow,ui-primitives/src/TerminalBlock.module.css,103,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，TerminalBlock.module.css）
+css.sticky,ui-primitives/src/TerminalBlock.module.css,126,excluded,-,结构性 CSS 属性，不构成交互点（css.sticky，TerminalBlock.module.css）
+css.sticky,ui-primitives/src/TerminalBlock.module.css,134,excluded,-,结构性 CSS 属性，不构成交互点（css.sticky，TerminalBlock.module.css）
+css.cursor,ui-primitives/src/TerminalBlock.module.css,143,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，TerminalBlock.module.css）
+css.overflow,ui-primitives/src/TerminalBlock.module.css,157,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，TerminalBlock.module.css）
+css.cursor,ui-primitives/src/TerminalBlock.module.css,192,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，TerminalBlock.module.css）
+disclosure,ui-primitives/src/TerminalBlock.tsx,202,E0,base.primitives.content-fold,终端输出头尾截断的展开/收起按钮（aria-expanded + aria-label 含隐藏行数）
+jsx.onclick,ui-primitives/src/TerminalBlock.tsx,256,E0,base.primitives.icon-action,终端复制按钮（文字按钮）
+native.button,ui-primitives/src/TerminalBlock.tsx,256,E0,base.primitives.icon-action,终端复制按钮（文字按钮）
+native.button,ui-primitives/src/TerminalBlock.tsx,269,E0,base.primitives.content-fold,终端输出头尾截断的展开/收起按钮（aria-expanded + aria-label 含隐藏行数）
+a11y.expanded,ui-primitives/src/TerminalBlock.tsx,272,E0,base.primitives.content-fold,终端输出头尾截断的展开/收起按钮（aria-expanded + aria-label 含隐藏行数）
+disclosure,ui-primitives/src/TerminalBlock.tsx,274,E0,base.primitives.content-fold,终端输出头尾截断的展开/收起按钮（aria-expanded + aria-label 含隐藏行数）
+jsx.onclick,ui-primitives/src/TerminalBlock.tsx,274,E0,base.primitives.content-fold,终端输出头尾截断的展开/收起按钮（aria-expanded + aria-label 含隐藏行数）
+css.overflow,ui-primitives/src/TextShimmer.module.css,37,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，TextShimmer.module.css）
+css.cursor,ui-primitives/src/Toast.module.css,64,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，Toast.module.css）
+jsx.onclick,ui-primitives/src/Toast.tsx,52,E0,base.primitives.toast,toast 动作按钮（撤销/筛选），banner 本身 pointer-events:none
+jsx.onclick,ui-primitives/src/Toast.tsx,92,E0,base.primitives.toast,toast 动作按钮（撤销/筛选），banner 本身 pointer-events:none
+native.button,ui-primitives/src/Toast.tsx,92,E0,base.primitives.toast,toast 动作按钮（撤销/筛选），banner 本身 pointer-events:none
+jsx.onclick,ui-primitives/src/Tooltip.tsx,28,E0,base.primitives.tooltip,AnchorProps：tooltip 会链式注入 onClick/onFocus/onBlur 到锚点
+jsx.onfocus,ui-primitives/src/Tooltip.tsx,29,E0,base.primitives.tooltip,AnchorProps：tooltip 会链式注入 onClick/onFocus/onBlur 到锚点
+jsx.onfocus,ui-primitives/src/Tooltip.tsx,30,E0,base.primitives.tooltip,AnchorProps：tooltip 会链式注入 onClick/onFocus/onBlur 到锚点
+jsx.onkeydown,ui-primitives/src/Tooltip.tsx,197,E0,base.primitives.tooltip,openOnClick 钉住态：Escape/Tab 捕获期关闭
+jsx.onkeydown,ui-primitives/src/Tooltip.tsx,202,E0,base.primitives.tooltip,openOnClick 钉住态：Escape/Tab 捕获期关闭
+jsx.onkeydown,ui-primitives/src/Tooltip.tsx,203,E0,base.primitives.tooltip,openOnClick 钉住态：Escape/Tab 捕获期关闭
+jsx.onclick,ui-primitives/src/Tooltip.tsx,237,E0,base.primitives.tooltip,锚点事件链：先跑子元素自己的 handler 再跑 tooltip 的
+jsx.onclick,ui-primitives/src/Tooltip.tsx,238,E0,base.primitives.tooltip,锚点事件链：先跑子元素自己的 handler 再跑 tooltip 的
+jsx.onfocus,ui-primitives/src/Tooltip.tsx,244,E0,base.primitives.tooltip,锚点事件链：先跑子元素自己的 handler 再跑 tooltip 的
+jsx.onfocus,ui-primitives/src/Tooltip.tsx,245,E0,base.primitives.tooltip,锚点事件链：先跑子元素自己的 handler 再跑 tooltip 的
+jsx.onfocus,ui-primitives/src/Tooltip.tsx,250,E0,base.primitives.tooltip,锚点事件链：先跑子元素自己的 handler 再跑 tooltip 的
+css.overflow,ui-primitives/src/WebBlock.module.css,47,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，WebBlock.module.css）
+css.focus,ui-primitives/src/WebBlock.module.css,73,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，WebBlock.module.css）
+css.focus,ui-primitives/src/WebBlock.module.css,121,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，WebBlock.module.css）
+native.anchor,ui-primitives/src/WebBlock.tsx,114,E0,base.primitives.markdown-link,内容块来源链接：target=_blank + rel=noopener noreferrer
+css.sticky,ui-primitives/src/markdown/CodeBlock.module.css,25,excluded,-,结构性 CSS 属性，不构成交互点（css.sticky，CodeBlock.module.css）
+css.overflow,ui-primitives/src/markdown/CodeBlock.module.css,51,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，CodeBlock.module.css）
+css.cursor,ui-primitives/src/markdown/CodeBlock.module.css,68,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，CodeBlock.module.css）
+css.overflow,ui-primitives/src/markdown/CodeBlock.module.css,86,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，CodeBlock.module.css）
+jsx.onclick,ui-primitives/src/markdown/CodeBlock.tsx,203,E0,base.primitives.icon-action,代码块复制按钮（24×24 图标动作）
+native.button,ui-primitives/src/markdown/CodeBlock.tsx,203,E0,base.primitives.icon-action,代码块复制按钮（24×24 图标动作）
+css.cursor,ui-primitives/src/markdown/JsonBlock.module.css,12,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，JsonBlock.module.css）
+css.overflow,ui-primitives/src/markdown/JsonBlock.module.css,24,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，JsonBlock.module.css）
+jsx.onclick,ui-primitives/src/markdown/JsonBlock.tsx,30,E0,base.primitives.content-fold,JSON 块折叠开关按钮
+native.button,ui-primitives/src/markdown/JsonBlock.tsx,30,E0,base.primitives.content-fold,JSON 块折叠开关按钮
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,78,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,84,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,85,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.overflow,ui-primitives/src/markdown/MarkdownText.module.css,160,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，MarkdownText.module.css）
+css.overflow,ui-primitives/src/markdown/MarkdownText.module.css,184,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,214,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,221,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.cursor,ui-primitives/src/markdown/MarkdownText.module.css,316,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,325,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,378,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,380,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.overflow,ui-primitives/src/markdown/MarkdownText.module.css,437,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，MarkdownText.module.css）
+css.focus,ui-primitives/src/markdown/MarkdownText.module.css,457,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，MarkdownText.module.css）
+css.overflow,ui-primitives/src/markdown/MarkdownText.module.css,461,excluded,-,结构性 CSS 属性，不构成交互点（css.overflow，MarkdownText.module.css）
+native.button,ui-primitives/src/markdown/render.tsx,318,E0,base.primitives.markdown-link,行内代码被词表识别成文件提及 → button 打开文件
+jsx.onclick,ui-primitives/src/markdown/render.tsx,323,E0,base.primitives.markdown-link,行内代码被词表识别成文件提及 → button 打开文件
+native.input,ui-primitives/src/markdown/render.tsx,446,E0,base.primitives.markdown-link,task list 复选框：disabled 原生 input（只读渲染）
+jsx.onclick,ui-primitives/src/markdown/render.tsx,560,E0,base.primitives.markdown-link,外链锚点：无修饰键时 preventDefault 交给宿主处理
+native.button,ui-primitives/src/markdown/render.tsx,592,E0,base.primitives.markdown-link,本地文件链接渲染成 button，点开文件（图片再包 HoverCard 预览）
+jsx.onclick,ui-primitives/src/markdown/render.tsx,596,E0,base.primitives.markdown-link,本地文件链接渲染成 button，点开文件（图片再包 HoverCard 预览）
+native.button,ui-primitives/src/markdown/render.tsx,658,E0,base.primitives.markdown-link,图片按钮：点开 lightbox
+jsx.onclick,ui-primitives/src/markdown/render.tsx,660,E0,base.primitives.markdown-link,图片按钮：点开 lightbox
+css.cursor,ui-primitives/src/settings-form/SettingsForm.module.css,40,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，SettingsForm.module.css）
+css.focus,ui-primitives/src/settings-form/SettingsForm.module.css,50,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，SettingsForm.module.css）
+native.button,ui-primitives/src/settings-form/SettingsForm.tsx,63,E0,base.primitives.settings-field,表单保存按钮（原生 button + onSave）
+jsx.onclick,ui-primitives/src/settings-form/SettingsForm.tsx,67,E0,base.primitives.settings-field,表单保存按钮（原生 button + onSave）
+css.cursor,ui-primitives/src/settings-form/fields.module.css,53,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，fields.module.css）
+css.focus,ui-primitives/src/settings-form/fields.module.css,62,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，fields.module.css）
+css.cursor,ui-primitives/src/settings-form/fields.module.css,96,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，fields.module.css）
+css.focus,ui-primitives/src/settings-form/fields.module.css,119,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，fields.module.css）
+native.button,ui-primitives/src/settings-form/fields.tsx,71,E0,base.primitives.settings-field,字段帮助按钮：aria-expanded + aria-controls 展开说明区
+a11y.expanded,ui-primitives/src/settings-form/fields.tsx,72,E0,base.primitives.settings-field,字段帮助按钮：aria-expanded + aria-controls 展开说明区
+jsx.onclick,ui-primitives/src/settings-form/fields.tsx,73,E0,base.primitives.settings-field,字段帮助按钮：aria-expanded + aria-controls 展开说明区
+native.button,ui-primitives/src/settings-form/fields.tsx,83,E0,base.primitives.settings-field,重置按钮与文本/密码输入
+jsx.onclick,ui-primitives/src/settings-form/fields.tsx,87,E0,base.primitives.settings-field,重置按钮与文本/密码输入
+native.input,ui-primitives/src/settings-form/fields.tsx,95,E0,base.primitives.settings-field,重置按钮与文本/密码输入
+native.input,ui-primitives/src/settings-form/fields.tsx,139,E0,base.primitives.settings-field,重置按钮与文本/密码输入
+aria.role,ui-primitives/src/useModalLayer.ts,8,E0,base.primitives.modal,补扫：前景所有权选择器 = [role=dialog][aria-modal=true] 与 [role=menu]，决定谁吃 Esc/Tab
+aria.role,ui-primitives/src/useModalLayer.ts,72,E0,base.primitives.modal,补扫：焦点落在 [role=menu] 内时，模态让出 Tab 遍历（菜单优先）
+native.button,ui-primitives/src/user-text.tsx,138,E0,base.primitives.markdown-link,引用 chip 可点打开文件/技能；双击或选中文本时不跳转
+jsx.onclick,ui-primitives/src/user-text.tsx,144,E0,base.primitives.markdown-link,引用 chip 可点打开文件/技能；双击或选中文本时不跳转
+jsx.onkeydown,ui-primitives/tests/SegmentedTabs.client.spec.tsx,35,excluded,-,测试代码（jsx.onkeydown）：spec 测试夹具/断言，非产品 UI 交互点
+jsx.onkeydown,ui-primitives/tests/SegmentedTabs.client.spec.tsx,38,excluded,-,测试代码（jsx.onkeydown）：spec 测试夹具/断言，非产品 UI 交互点
+jsx.onkeydown,ui-primitives/tests/SegmentedTabs.client.spec.tsx,57,excluded,-,测试代码（jsx.onkeydown）：spec 测试夹具/断言，非产品 UI 交互点
+jsx.onkeydown,ui-primitives/tests/SegmentedTabs.client.spec.tsx,59,excluded,-,测试代码（jsx.onkeydown）：spec 测试夹具/断言，非产品 UI 交互点
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,22,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,23,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,27,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,31,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,32,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,34,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,47,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,55,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+native.button,ui-primitives/tests/atoms.client.spec.tsx,107,excluded,-,测试代码（native.button）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+native.button,ui-primitives/tests/atoms.client.spec.tsx,242,excluded,-,测试代码（native.button）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+native.button,ui-primitives/tests/atoms.client.spec.tsx,259,excluded,-,测试代码（native.button）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+native.button,ui-primitives/tests/atoms.client.spec.tsx,281,excluded,-,测试代码（native.button）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+native.button,ui-primitives/tests/atoms.client.spec.tsx,311,excluded,-,测试代码（native.button）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+jsx.onclick,ui-primitives/tests/atoms.client.spec.tsx,418,excluded,-,测试代码（jsx.onclick）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+native.button,ui-primitives/tests/atoms.client.spec.tsx,623,excluded,-,测试代码（native.button）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+native.input,ui-primitives/tests/atoms.client.spec.tsx,624,excluded,-,测试代码（native.input）：Button/Pill/Menu/Modal 原子单测：按钮为夹具，断言回调次数
+a11y.expanded,ui-primitives/tests/diff-block.client.spec.tsx,175,excluded,-,测试代码（a11y.expanded）：DiffBlock 单测：断言 aria-expanded 属性值
+a11y.expanded,ui-primitives/tests/diff-block.client.spec.tsx,180,excluded,-,测试代码（a11y.expanded）：DiffBlock 单测：断言 aria-expanded 属性值
+native.button,ui-primitives/tests/hover-card.client.spec.tsx,61,excluded,-,测试代码（native.button）：HoverCard 单测：锚点按钮为夹具，测键盘/悬停时序
+native.button,ui-primitives/tests/hover-card.client.spec.tsx,83,excluded,-,测试代码（native.button）：HoverCard 单测：锚点按钮为夹具，测键盘/悬停时序
+native.button,ui-primitives/tests/hover-card.client.spec.tsx,612,excluded,-,测试代码（native.button）：HoverCard 单测：锚点按钮为夹具，测键盘/悬停时序
+jsx.onkeydown,ui-primitives/tests/hover-card.client.spec.tsx,634,excluded,-,测试代码（jsx.onkeydown）：HoverCard 单测：锚点按钮为夹具，测键盘/悬停时序
+native.button,ui-primitives/tests/hover-card.client.spec.tsx,635,excluded,-,测试代码（native.button）：HoverCard 单测：锚点按钮为夹具，测键盘/悬停时序
+native.button,ui-primitives/tests/hover-card.client.spec.tsx,636,excluded,-,测试代码（native.button）：HoverCard 单测：锚点按钮为夹具，测键盘/悬停时序
+native.button,ui-primitives/tests/hover-card.client.spec.tsx,661,excluded,-,测试代码（native.button）：HoverCard 单测：锚点按钮为夹具，测键盘/悬停时序
+container.scroll,ui-primitives/tests/json-tree.client.spec.tsx,89,excluded,-,测试代码（container.scroll）：JsonTree 单测：测 aria-expanded 与滚动容器夹具
+a11y.expanded,ui-primitives/tests/json-tree.client.spec.tsx,235,excluded,-,测试代码（a11y.expanded）：JsonTree 单测：测 aria-expanded 与滚动容器夹具
+a11y.expanded,ui-primitives/tests/json-tree.client.spec.tsx,237,excluded,-,测试代码（a11y.expanded）：JsonTree 单测：测 aria-expanded 与滚动容器夹具
+native.button,ui-primitives/tests/menu-group.client.spec.tsx,72,excluded,-,测试代码（native.button）：MenuGroup 单测：菜单子项为夹具
+native.button,ui-primitives/tests/menu-group.client.spec.tsx,73,excluded,-,测试代码（native.button）：MenuGroup 单测：菜单子项为夹具
+native.button,ui-primitives/tests/menu-group.client.spec.tsx,74,excluded,-,测试代码（native.button）：MenuGroup 单测：菜单子项为夹具
+native.button,ui-primitives/tests/menu-group.client.spec.tsx,141,excluded,-,测试代码（native.button）：MenuGroup 单测：菜单子项为夹具
+native.button,ui-primitives/tests/menu-group.client.spec.tsx,324,excluded,-,测试代码（native.button）：MenuGroup 单测：菜单子项为夹具
+aria.role,ui-primitives/tests/menu-surface.client.spec.tsx,13,excluded,-,"测试代码（aria.role）：MenuSurface 单测，role=""menu"" 是测试夹具属性"
+native.button,ui-primitives/tests/menu-surface.client.spec.tsx,13,excluded,-,测试代码（native.button）：MenuSurface 单测：面内子元素为夹具
+aria.role,ui-primitives/tests/menu-surface.client.spec.tsx,25,excluded,-,测试代码（aria.role）：两个 MenuSurface 夹具，用于测同时存在时的行为
+aria.role,ui-primitives/tests/menu-surface.client.spec.tsx,29,excluded,-,测试代码（aria.role）：visibility:hidden 的 MenuSurface 夹具
+jsx.onclick,ui-primitives/tests/modal-layer.client.spec.tsx,15,excluded,-,测试代码（jsx.onclick）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.button,ui-primitives/tests/modal-layer.client.spec.tsx,15,excluded,-,测试代码（native.button）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+jsx.onclick,ui-primitives/tests/modal-layer.client.spec.tsx,17,excluded,-,测试代码（jsx.onclick）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.button,ui-primitives/tests/modal-layer.client.spec.tsx,17,excluded,-,测试代码（native.button）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.input,ui-primitives/tests/modal-layer.client.spec.tsx,20,excluded,-,测试代码（native.input）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+jsx.onclick,ui-primitives/tests/modal-layer.client.spec.tsx,21,excluded,-,测试代码（jsx.onclick）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.button,ui-primitives/tests/modal-layer.client.spec.tsx,21,excluded,-,测试代码（native.button）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.button,ui-primitives/tests/modal-layer.client.spec.tsx,149,excluded,-,测试代码（native.button）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.input,ui-primitives/tests/modal-layer.client.spec.tsx,151,excluded,-,测试代码（native.input）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.button,ui-primitives/tests/modal-layer.client.spec.tsx,174,excluded,-,测试代码（native.button）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+native.input,ui-primitives/tests/modal-layer.client.spec.tsx,177,excluded,-,测试代码（native.input）：Modal 层级单测：开合按钮与输入为夹具，测焦点/快捷键归属
+a11y.expanded,ui-primitives/tests/read-block.client.spec.tsx,147,excluded,-,测试代码（a11y.expanded）：ReadBlock 单测：断言 aria-expanded 属性
+a11y.expanded,ui-primitives/tests/read-block.client.spec.tsx,155,excluded,-,测试代码（a11y.expanded）：ReadBlock 单测：断言 aria-expanded 属性
+a11y.expanded,ui-primitives/tests/read-block.client.spec.tsx,161,excluded,-,测试代码（a11y.expanded）：ReadBlock 单测：断言 aria-expanded 属性
+a11y.expanded,ui-primitives/tests/search-block.client.spec.tsx,69,excluded,-,测试代码（a11y.expanded）：SearchBlock 单测：断言文件头 aria-expanded
+a11y.expanded,ui-primitives/tests/search-block.client.spec.tsx,72,excluded,-,测试代码（a11y.expanded）：SearchBlock 单测：断言文件头 aria-expanded
+aria.role,ui-primitives/tests/segmented-control.client.spec.tsx,45,excluded,-,测试代码（aria.role）：SegmentedControl 单测：断言 role=tab 数量
+native.input,ui-primitives/tests/settings-form.client.spec.tsx,26,excluded,-,测试代码（native.input）：SettingsForm 单测：input 为夹具
+a11y.expanded,ui-primitives/tests/terminal-block.client.spec.tsx,321,excluded,-,测试代码（a11y.expanded）：TerminalBlock 单测：断言 aria-expanded 属性
+a11y.expanded,ui-primitives/tests/terminal-block.client.spec.tsx,327,excluded,-,测试代码（a11y.expanded）：TerminalBlock 单测：断言 aria-expanded 属性
+a11y.expanded,ui-primitives/tests/terminal-block.client.spec.tsx,335,excluded,-,测试代码（a11y.expanded）：TerminalBlock 单测：断言 aria-expanded 属性
+a11y.expanded,ui-primitives/tests/terminal-block.client.spec.tsx,341,excluded,-,测试代码（a11y.expanded）：TerminalBlock 单测：断言 aria-expanded 属性
+jsx.onclick,ui-primitives/tests/text-shimmer.client.spec.tsx,26,excluded,-,测试代码（jsx.onclick）：TextShimmer 单测：外层按钮为夹具
+native.button,ui-primitives/tests/text-shimmer.client.spec.tsx,26,excluded,-,测试代码（native.button）：TextShimmer 单测：外层按钮为夹具
+jsx.onclick,ui-primitives/tests/toast.client.spec.tsx,91,excluded,-,测试代码（jsx.onclick）：Toast 单测：动作项为夹具，指向 mock 回调
+jsx.onclick,ui-primitives/tests/toast.client.spec.tsx,92,excluded,-,测试代码（jsx.onclick）：Toast 单测：动作项为夹具，指向 mock 回调
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,43,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,46,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,48,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,57,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,82,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,102,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,136,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,148,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,155,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,165,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,172,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,184,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,205,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,222,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,246,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,261,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,276,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,296,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,304,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,328,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,352,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,374,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,391,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,407,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,412,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,427,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onclick,ui-primitives/tests/tooltip.client.spec.tsx,442,excluded,-,测试代码（jsx.onclick）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,442,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onkeydown,ui-primitives/tests/tooltip.client.spec.tsx,469,excluded,-,测试代码（jsx.onkeydown）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onkeydown,ui-primitives/tests/tooltip.client.spec.tsx,470,excluded,-,测试代码（jsx.onkeydown）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,471,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onkeydown,ui-primitives/tests/tooltip.client.spec.tsx,483,excluded,-,测试代码（jsx.onkeydown）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onkeydown,ui-primitives/tests/tooltip.client.spec.tsx,485,excluded,-,测试代码（jsx.onkeydown）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onkeydown,ui-primitives/tests/tooltip.client.spec.tsx,488,excluded,-,测试代码（jsx.onkeydown）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,497,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,515,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,518,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,522,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,525,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,528,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,537,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,558,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onclick,ui-primitives/tests/tooltip.client.spec.tsx,577,excluded,-,测试代码（jsx.onclick）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onfocus,ui-primitives/tests/tooltip.client.spec.tsx,578,excluded,-,测试代码（jsx.onfocus）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onfocus,ui-primitives/tests/tooltip.client.spec.tsx,579,excluded,-,测试代码（jsx.onfocus）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onclick,ui-primitives/tests/tooltip.client.spec.tsx,582,excluded,-,测试代码（jsx.onclick）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onfocus,ui-primitives/tests/tooltip.client.spec.tsx,582,excluded,-,测试代码（jsx.onfocus）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,582,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onclick,ui-primitives/tests/tooltip.client.spec.tsx,593,excluded,-,测试代码（jsx.onclick）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onfocus,ui-primitives/tests/tooltip.client.spec.tsx,594,excluded,-,测试代码（jsx.onfocus）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+jsx.onfocus,ui-primitives/tests/tooltip.client.spec.tsx,595,excluded,-,测试代码（jsx.onfocus）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,601,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,609,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,621,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,643,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,652,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,661,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,669,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,678,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,708,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,720,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/tooltip.client.spec.tsx,730,excluded,-,测试代码（native.button）：Tooltip 行为单测：anchor 按钮为测试夹具，断言提示出现/消失
+native.button,ui-primitives/tests/use-anchored-position.client.spec.tsx,60,excluded,-,测试代码（native.button）：anchored position hook 单测：按钮为定位锚点夹具
+native.button,ui-primitives/tests/use-dismiss-on-outside-pointer.client.spec.tsx,18,excluded,-,测试代码（native.button）：外部点击 hook 单测：按钮为触发器夹具
+a11y.expanded,ui-primitives/tests/web-block.client.spec.tsx,168,excluded,-,测试代码（a11y.expanded）：WebBlock 单测：断言无 aria-expanded
+css.cursor,ui-theme/src/client/AppearanceRow.module.css,45,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，AppearanceRow.module.css）
+native.button,ui-theme/src/client/AppearanceRow.tsx,49,E0,base.theme.appearance-row,外观三选一 cube：原生 button + aria-pressed，选中写 preference
+jsx.onclick,ui-theme/src/client/AppearanceRow.tsx,54,E0,base.theme.appearance-row,外观三选一 cube：原生 button + aria-pressed，选中写 preference
+jsx.onfocus,ui-theme/src/client/FontFamilyRow.tsx,55,E0,base.theme.font-family-row,字体列表输入：blur 归一化提交，Enter 触发 blur（IME 组合期忽略）
+jsx.onkeydown,ui-theme/src/client/FontFamilyRow.tsx,57,E0,base.theme.font-family-row,字体列表输入：blur 归一化提交，Enter 触发 blur（IME 组合期忽略）
+disclosure,ui-theme/src/client/FontSettingsGroup.tsx,45,E0,base.theme.font-size-row,组容器持有 open 状态并传给 FontSizeRow.expander
+css.focus,ui-theme/src/client/FontSizeRow.module.css,83,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，FontSizeRow.module.css）
+css.cursor,ui-theme/src/client/FontSizeRow.module.css,101,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，FontSizeRow.module.css）
+css.cursor,ui-theme/src/client/FontSizeRow.module.css,125,excluded,-,结构性 CSS 属性，不构成交互点（css.cursor，FontSizeRow.module.css）
+disclosure,ui-theme/src/client/FontSizeRow.tsx,41,E0,base.theme.font-size-row,E1：类型声明 onToggle，受控展开由组容器持有
+native.button,ui-theme/src/client/FontSizeRow.tsx,62,E0,base.theme.font-size-row,字号步进器：17×12 上/下箭头，hover/focus-within 才显形（opacity，非 visibility）
+jsx.onclick,ui-theme/src/client/FontSizeRow.tsx,67,E0,base.theme.font-size-row,字号步进器：17×12 上/下箭头，hover/focus-within 才显形（opacity，非 visibility）
+native.button,ui-theme/src/client/FontSizeRow.tsx,71,E0,base.theme.font-size-row,字号步进器：17×12 上/下箭头，hover/focus-within 才显形（opacity，非 visibility）
+jsx.onclick,ui-theme/src/client/FontSizeRow.tsx,76,E0,base.theme.font-size-row,字号步进器：17×12 上/下箭头，hover/focus-within 才显形（opacity，非 visibility）
+native.button,ui-theme/src/client/FontSizeRow.tsx,84,E0,base.theme.font-size-row,24×24 展开按钮：aria-expanded + aria-controls 控制更多字体设置
+a11y.expanded,ui-theme/src/client/FontSizeRow.tsx,89,E0,base.theme.font-size-row,24×24 展开按钮：aria-expanded + aria-controls 控制更多字体设置
+disclosure,ui-theme/src/client/FontSizeRow.tsx,91,E0,base.theme.font-size-row,24×24 展开按钮：aria-expanded + aria-controls 控制更多字体设置
+jsx.onclick,ui-theme/src/client/FontSizeRow.tsx,91,E0,base.theme.font-size-row,24×24 展开按钮：aria-expanded + aria-controls 控制更多字体设置
+css.focus,ui-theme/src/styles/base.css,36,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，base.css）
+css.focus,ui-theme/src/styles/base.css,37,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，base.css）
+css.focus,ui-theme/src/styles/focus.css,10,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，focus.css）
+css.focus,ui-theme/src/styles/focus.css,18,excluded,-,结构性 CSS 属性，不构成交互点（css.focus，focus.css）
+a11y.expanded,ui-theme/tests/font-settings-group.client.spec.tsx,72,excluded,-,测试代码（a11y.expanded）：字体设置组单测：断言 expander 的 aria-expanded
+a11y.expanded,ui-theme/tests/font-settings-group.client.spec.tsx,75,excluded,-,测试代码（a11y.expanded）：字体设置组单测：断言 expander 的 aria-expanded
+aria.role,ui-theme/tests/menu-surfaces.client.spec.ts,59,excluded,-,测试代码（aria.role）：menu-surfaces 规范单测，用 HTML 字符串断言 role 违例，非产品 UI
+aria.role,ui-theme/tests/menu-surfaces.client.spec.ts,60,excluded,-,"测试代码（aria.role）：同上，断言 <div role=""listbox""> 被判定为违例"
+aria.role,ui-theme/tests/menu-surfaces.client.spec.ts,61,excluded,-,"测试代码（aria.role）：同上，断言 <MenuSurface role=""menu""> 通过规范检查"
+aria.role,ui-theme/tests/menu-surfaces.client.spec.ts,62,excluded,-,测试代码（aria.role）：同上，断言 MenuSurface 内嵌 listbox 通过
+css.overscroll,ui-primitives/src/JsonTree.module.css,16,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+css.overscroll,ui-primitives/src/JsonTree.module.css,17,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+css.overscroll,ui-primitives/src/RiskConfirmation.module.css,10,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+css.overscroll,ui-primitives/src/markdown/MarkdownText.module.css,195,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）

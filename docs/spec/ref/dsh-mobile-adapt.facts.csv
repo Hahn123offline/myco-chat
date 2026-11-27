@@ -1,0 +1,42 @@
+kind,path,line,status,node_id,note
+aria.role,lib/client.js,216,E0,base.layout.touch-feedback,button/a/[role=button] 触屏反馈：-webkit-tap-highlight-color:transparent + touch-action:manipulation（消 300ms 双击缩放延迟）；按压反馈由各组件 :active 自绘，无 ripple
+container.scroll,lib/client.js,285,E0,base.layout.mobile-nav.drawer,抽屉 overflow-y:auto + overscroll-behavior:contain + touch-action:pan-y + -webkit-overflow-scrolling:touch：抽屉内滑到底不把滚动链传给页面
+aria.role,lib/client.js,370,E0,base.layout.mobile-nav.hamburger,html:has([role=dialog][aria-modal=true]) 时隐藏汉堡：任何模态/统计面板打开后不再浮在遮罩上
+aria.role,lib/client.js,371,E0,base.layout.mobile-nav.scrim,同上，遮罩一并隐藏（与汉堡同一条规则）
+a11y.expanded,lib/client.js,602,E0,composer.stats.pill,pill[aria-expanded=true]：文字升 primary、边色变业务主色（展开态视觉）
+a11y.expanded,lib/client.js,617,E0,composer.stats.pill,展开时 caret rotate(180deg)，0.18s ease
+container.scroll,lib/client.js,634,E0,composer.stats.panel,"统计面板 max-height:min(52dvh, 100dvh-composer-24px) + overflow-y:auto + overscroll-behavior:contain + touch-action:pan-y"
+container.scroll,lib/client.js,749,E0,settings.shell.nav-rail,设置导航改单行横滑：overflow-x:auto + overflow-y:hidden + overscroll-behavior-x:contain + scrollbar-width:none
+container.scroll,lib/client.js,750,E0,settings.shell.nav-rail,scroll-snap-type:x proximity：横滑按 tab 吸附
+container.scroll,lib/client.js,774,E0,settings.shell.nav-rail,navCell scroll-snap-align:start + min-height:44px + white-space:nowrap
+container.scroll,lib/client.js,794,E0,settings.shell.fullscreen-panel,设置内容区 overflow-y:auto + overscroll-behavior:contain + touch-action:pan-y + padding-bottom:32px（底部留出安全余量）
+aria.role,lib/client.js,895,E0,base.primitives.touch-floor.dialog-controls,[role=dialog] 内 _sm_ 按钮 min-height:44px（上游 28px）
+aria.role,lib/client.js,898,E0,base.primitives.touch-floor.dialog-controls,[role=dialog] 内 iconButton min-width/min-height:44px
+aria.role,lib/client.js,902,E0,base.primitives.touch-floor.dialog-controls,[role=dialog] 内 input/textarea（除 checkbox/radio/range）min-height:44px
+aria.role,lib/client.js,903,E0,base.primitives.touch-floor.dialog-controls,[role=dialog] 内 select min-height:44px
+aria.role,lib/client.js,936,E0,settings.general.switch,[role=switch] position:relative：作为伪元素扩边宿主，视觉尺寸不变
+aria.role,lib/client.js,937,E0,settings.general.switch,[role=checkbox] 同上
+aria.role,lib/client.js,940,E0,settings.general.switch,[role=switch]::after inset:-12px -8px：透明扩边到 ≥44px（上下各 +12、左右各 +8）
+aria.role,lib/client.js,941,E0,settings.general.switch,[role=checkbox]::after 同上
+container.scroll,lib/client.js,1080,E0,trajectory.details.panel,轨迹详情正文 overflow-y:auto + overscroll-behavior:contain + -webkit-overflow-scrolling:touch（浮层内独立滚动）
+disclosure,lib/client.js,1271,E0,base.layout.mobile-nav.drawer,MobileNav 的 onToggle：抽屉开合唯一入口（转调 layout.toggleSidebar）
+disclosure,lib/client.js,1293,E0,base.layout.mobile-nav.drawer,closeDrawer 内实际调用 onToggle；500ms closeGuard 保证多关闭路径（点击/Esc/模态）只 toggle 一次
+aria.role,lib/client.js,1315,E0,base.layout.mobile-nav.auto-close,导航类目标选择器（会话行/新建会话/插件面板/设置入口）：点完 60ms 后自动收起抽屉
+aria.role,lib/client.js,1318,E0,base.layout.mobile-nav.auto-close,例外：行内「更多操作」按钮只展开菜单，不触发自动收起
+aria.role,lib/client.js,1327,E0,base.layout.mobile-nav.auto-close,body 级模态出现（设置/工作区/确认框）时收起抽屉（MutationObserver 只观察 body 直接子节点）
+jsx.onclick,lib/client.js,1345,E0,base.layout.mobile-nav.hamburger,汉堡 onClick: onToggle（toggleSidebar）
+disclosure,lib/client.js,1345,E0,base.layout.mobile-nav.hamburger,同一行的 disclosure 命中（onToggle 即抽屉开关）
+jsx.onclick,lib/client.js,1350,E0,base.layout.mobile-nav.scrim,遮罩 onClick: onToggle：点遮罩关抽屉
+disclosure,lib/client.js,1350,E0,base.layout.mobile-nav.scrim,同一行的 disclosure 命中
+jsx.onwheel,lib/client.js,1417,E0,composer.stats.panel.edge-lock,onWheel：面板到顶且继续上滚 / 到底且继续下滚时 stopPropagation（吸收残余滚动，G-04 的手机端实现）
+jsx.ontouch,lib/client.js,1420,E0,composer.stats.panel.edge-lock,onTouchStart 记录 lastTouchY（touchmove 无 deltaY，必须用触点差判方向）
+jsx.ontouch,lib/client.js,1423,E0,composer.stats.panel.edge-lock,onTouchMove：dy=y-lastTouchY，到顶且 dy>0 / 到底且 dy<0 时 stopPropagation
+jsx.onwheel,lib/client.js,1432,E0,composer.stats.panel.edge-lock,"addEventListener('wheel', …, {passive:true})：被动监听只能 stopPropagation，不能 preventDefault"
+jsx.ontouch,lib/client.js,1433,E0,composer.stats.panel.edge-lock,"addEventListener('touchstart', …, {passive:true})"
+jsx.ontouch,lib/client.js,1434,E0,composer.stats.panel.edge-lock,"addEventListener('touchmove', …, {passive:true})"
+jsx.onwheel,lib/client.js,1436,E0,composer.stats.panel.edge-lock,卸载时移除 wheel 监听
+jsx.ontouch,lib/client.js,1437,E0,composer.stats.panel.edge-lock,卸载时移除 touchstart 监听
+jsx.ontouch,lib/client.js,1438,E0,composer.stats.panel.edge-lock,卸载时移除 touchmove 监听
+a11y.expanded,lib/client.js,1616,E0,composer.stats.pill,React 属性 aria-expanded={open} + aria-controls（展开时才挂 panel id）
+jsx.onclick,lib/client.js,1618,E0,composer.stats.pill,pill onClick: setOpen(v=>!v)，幂等可撤销
+jsx.onclick,lib/client.js,1639,E0,composer.stats.close,面板关闭按钮 onClick: setOpen(false)

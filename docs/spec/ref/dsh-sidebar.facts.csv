@@ -1,0 +1,203 @@
+kind,path,line,status,node_id,note
+a11y.expanded,ui-conversation/src/client/input/editor/DraftEditor.tsx,49,E0,composer.input.draft-surface,草稿表面：workspaceTrigger 态回退为 role=menu 触发器（aria-expanded + Enter/Space）
+jsx.onkeydown,ui-conversation/src/client/input/editor/DraftEditor.tsx,51,E0,composer.input.draft-surface,草稿表面：workspaceTrigger 态回退为 role=menu 触发器（aria-expanded + Enter/Space）
+css.overflow,ui-conversation/src/client/input/editor/ReferenceChip.module.css,23,excluded,-,excluded：CSS 结构性属性，.label overflow:hidden + ellipsis（chip 240px 上限）；结构性样式，见 composer.input.draft-surface
+css.cursor,ui-conversation/src/client/input/editor/composer-editor.module.css,18,excluded,-,excluded：CSS 结构性属性，.openable cursor:pointer（文件类引用 chip）——纯样式钩子，ReferenceChip.tsx:29 只挂类名、未绑任何点击处理，打开动作在本包未见实现
+jsx.onwheel,ui-conversation/src/client/input/editor/view-binding.ts,68,E0,composer.input.draft-surface,草稿滚轮链：内滚到边把 delta 交给 [data-conversation-scroll]（非吸收）
+jsx.onwheel,ui-conversation/src/client/input/editor/view-binding.ts,77,E0,composer.input.draft-surface,草稿滚轮链：内滚到边把 delta 交给 [data-conversation-scroll]（非吸收）
+jsx.onwheel,ui-conversation/src/client/input/editor/view-binding.ts,78,E0,composer.input.draft-surface,草稿滚轮链：内滚到边把 delta 交给 [data-conversation-scroll]（非吸收）
+css.overflow,ui-conversation/src/client/queue/QueueDock.module.css,31,excluded,-,excluded：CSS 结构性属性，.panel overflow:hidden（圆角裁剪）；结构性样式，见 composer.queue.header
+css.cursor,ui-conversation/src/client/queue/QueueDock.module.css,76,excluded,-,excluded：CSS 结构性属性，.header cursor:pointer；结构性样式，见 composer.queue.header
+css.focus,ui-conversation/src/client/queue/QueueDock.module.css,79,excluded,-,excluded：CSS 结构性属性，.header:focus-visible 焦点环；结构性焦点样式，见 composer.queue.header
+css.overflow,ui-conversation/src/client/queue/QueueDock.module.css,115,excluded,-,excluded：CSS 结构性属性，.list overflow-y:auto + max-height:180px（内滚容器）；结构性样式，见 composer.queue.list
+css.overflow,ui-conversation/src/client/queue/QueueDock.module.css,143,excluded,-,excluded：CSS 结构性属性，.attachments overflow:hidden；结构性样式，见 composer.queue.list
+css.overflow,ui-conversation/src/client/queue/QueueDock.module.css,158,excluded,-,excluded：CSS 结构性属性，.file overflow:hidden；结构性样式，见 composer.queue.list
+css.overflow,ui-conversation/src/client/queue/QueueDock.module.css,174,excluded,-,excluded：CSS 结构性属性，.fileName overflow:hidden + ellipsis；结构性样式，见 composer.queue.list
+css.overflow,ui-conversation/src/client/queue/QueueDock.module.css,205,excluded,-,excluded：CSS 结构性属性，.preview overflow:hidden + ellipsis（单行预览）；结构性样式，见 composer.queue.list
+css.cursor,ui-conversation/src/client/queue/QueueDock.module.css,238,excluded,-,excluded：CSS 结构性属性，.action cursor:pointer（28x28 圆形动作键）；结构性样式，见 composer.queue.row.actions
+css.focus,ui-conversation/src/client/queue/QueueDock.module.css,245,excluded,-,excluded：CSS 结构性属性，.action:focus-visible 焦点环；结构性焦点样式，见 composer.queue.row.actions
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,176,E0,composer.queue.header,队列计数头：rowCount>1 才出现，aria-expanded=expanded，默认折叠
+a11y.expanded,ui-conversation/src/client/queue/QueueDock.tsx,180,E0,composer.queue.header,队列计数头：rowCount>1 才出现，aria-expanded=expanded，默认折叠
+jsx.onclick,ui-conversation/src/client/queue/QueueDock.tsx,182,E0,composer.queue.header,队列计数头：rowCount>1 才出现，aria-expanded=expanded，默认折叠
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,242,E0,composer.queue.row.save,内联编辑保存（空文本 disabled）
+jsx.onclick,ui-conversation/src/client/queue/QueueDock.tsx,247,E0,composer.queue.row.save,内联编辑保存（空文本 disabled）
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,253,E0,composer.queue.row.cancel,内联编辑取消
+jsx.onclick,ui-conversation/src/client/queue/QueueDock.tsx,258,E0,composer.queue.row.cancel,内联编辑取消
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,268,E0,composer.queue.row.edit,编辑队列项；content 非纯文本时 disabled 并用 title 解释
+jsx.onclick,ui-conversation/src/client/queue/QueueDock.tsx,276,E0,composer.queue.row.edit,编辑队列项；content 非纯文本时 disabled 并用 title 解释
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,284,E0,composer.queue.row.remove,移除队列项（失败走 notify error）
+jsx.onclick,ui-conversation/src/client/queue/QueueDock.tsx,289,E0,composer.queue.row.remove,移除队列项（失败走 notify error）
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,301,E0,composer.queue.row.steer,并入当前轮（running 为假时 disabled）
+jsx.onclick,ui-conversation/src/client/queue/QueueDock.tsx,307,E0,composer.queue.row.steer,并入当前轮（running 为假时 disabled）
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,351,E0,composer.queue.row.actions,本地待入队回显行的三条动作恒 disabled（仅占位与 title 说明）
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,360,E0,composer.queue.row.actions,本地待入队回显行的三条动作恒 disabled（仅占位与 title 说明）
+native.button,ui-conversation/src/client/queue/QueueDock.tsx,369,E0,composer.queue.row.actions,本地待入队回显行的三条动作恒 disabled（仅占位与 title 说明）
+css.cursor,ui-conversation/src/client/settings/EnterBehaviorRow.module.css,47,excluded,-,excluded：CSS 结构性属性，.selector cursor:pointer；结构性样式，见 settings.general.enter-behavior.selector
+native.button,ui-conversation/src/client/settings/EnterBehaviorRow.tsx,62,E0,settings.general.enter-behavior.selector,忙碌态 Enter 行为选择器（Menu 锚点按钮，aria-haspopup=menu）
+a11y.expanded,ui-conversation/src/client/settings/EnterBehaviorRow.tsx,66,E0,settings.general.enter-behavior.selector,忙碌态 Enter 行为选择器（Menu 锚点按钮，aria-haspopup=menu）
+jsx.onclick,ui-conversation/src/client/settings/EnterBehaviorRow.tsx,67,E0,settings.general.enter-behavior.selector,忙碌态 Enter 行为选择器（Menu 锚点按钮，aria-haspopup=menu）
+css.cursor,ui-conversation/src/client/skeleton/ContextMeter.module.css,24,excluded,-,excluded：CSS 结构性属性，.trigger cursor:pointer；结构性样式，见 composer.context-meter.trigger
+css.overflow,ui-conversation/src/client/skeleton/ContextMeter.module.css,100,excluded,-,excluded：CSS 结构性属性，.bar overflow:hidden（分段条裁剪）；结构性样式，见 composer.context-meter.panel
+jsx.onkeydown,ui-conversation/src/client/skeleton/ContextMeter.tsx,82,E0,composer.context-meter.panel,上下文明细面板：document keydown 监听 Escape 关闭（portal 渲染）
+jsx.onkeydown,ui-conversation/src/client/skeleton/ContextMeter.tsx,85,E0,composer.context-meter.panel,上下文明细面板：document keydown 监听 Escape 关闭（portal 渲染）
+jsx.onkeydown,ui-conversation/src/client/skeleton/ContextMeter.tsx,86,E0,composer.context-meter.panel,上下文明细面板：document keydown 监听 Escape 关闭（portal 渲染）
+native.button,ui-conversation/src/client/skeleton/ContextMeter.tsx,111,E0,composer.context-meter.trigger,环形占比触发键：aria-haspopup=dialog + aria-expanded
+a11y.expanded,ui-conversation/src/client/skeleton/ContextMeter.tsx,116,E0,composer.context-meter.trigger,环形占比触发键：aria-haspopup=dialog + aria-expanded
+jsx.onclick,ui-conversation/src/client/skeleton/ContextMeter.tsx,117,E0,composer.context-meter.trigger,环形占比触发键：aria-haspopup=dialog + aria-expanded
+aria.role,ui-conversation/src/client/skeleton/ContextMeter.tsx,138,E0,composer.context-meter.panel,明细浮层 role=dialog + aria-label=context.used（无焦点管理，见 md §2.5 字段 11）
+jsx.onclick,ui-conversation/src/client/skeleton/ConversationContent.tsx,116,E0,composer.workspace-chip,工作区 chip 点击切换选择器（aria-expanded=menuOpen）
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,107,excluded,-,excluded：CSS 结构性属性，.crumbs overflow:hidden；结构性样式，见 chat.header.crumb
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,128,excluded,-,excluded：CSS 结构性属性，.crumb overflow:hidden（220px 上限）；结构性样式，见 chat.header.crumb
+css.cursor,ui-conversation/src/client/skeleton/ConversationRoot.module.css,138,excluded,-,excluded：CSS 结构性属性，.crumb cursor:pointer；结构性样式，见 chat.header.crumb
+css.cursor,ui-conversation/src/client/skeleton/ConversationRoot.module.css,215,excluded,-,excluded：CSS 结构性属性，.tab cursor:pointer；结构性样式，见 chat.header.view-tab
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,364,excluded,-,excluded：CSS 结构性属性，.root[data-phase=active] overflow:hidden；结构性样式，见 chat.list.scrollport
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,394,excluded,-,excluded：CSS 结构性属性，.embeddedBody overflow:hidden；结构性样式，见 chat.list.scrollport
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,410,excluded,-,excluded：CSS 结构性属性，.scrollBody overflow-y:auto + scrollbar-gutter:stable（唯一转录滚动容器）；结构性样式，见 chat.list.scrollport
+css.sticky,ui-conversation/src/client/skeleton/ConversationRoot.module.css,432,excluded,-,excluded：CSS 结构性属性，composerSeat position:sticky bottom:0 + z-index:7 + 36px 渐隐遮罩；结构性样式，见 composer.input.seat
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,469,excluded,-,excluded：CSS 结构性属性，注释内 overflow: hidden 字样（覆盖层滚动依据）；无声明，见 chat.list.scrollport
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,473,excluded,-,excluded：CSS 结构性属性，.scrollBody:has(composer-overlay) overflow-y:auto；结构性样式，见 chat.list.scrollport
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,485,excluded,-,excluded：CSS 结构性属性，viewArea overflow:hidden（覆盖层模式）；结构性样式，见 chat.list.scrollport
+css.overflow,ui-conversation/src/client/skeleton/ConversationRoot.module.css,537,excluded,-,excluded：CSS 结构性属性，hero 相位 scrollBody overflow-y:auto；结构性样式，见 chat.list.scrollport
+native.button,ui-conversation/src/client/skeleton/ConversationSession.tsx,87,E0,chat.header.crumb,非末位面包屑=button，open(summary.id)；末位是纯文本（保留 darwin 拖拽面）
+jsx.onclick,ui-conversation/src/client/skeleton/ConversationSession.tsx,90,E0,chat.header.crumb,非末位面包屑=button，open(summary.id)；末位是纯文本（保留 darwin 拖拽面）
+aria.role,ui-conversation/src/client/skeleton/ConversationSession.tsx,143,E0,chat.header.tab-strip,视图 tab 容器 role=tablist（data-conversation-tabs）；仅 tabs.length>1 且 !hideChrome 时渲染
+native.button,ui-conversation/src/client/skeleton/ConversationSession.tsx,145,E0,chat.header.view-tab,视图 tab 按钮 role=tab + aria-selected + selectView(id)；无关闭键、无方向键处理
+aria.role,ui-conversation/src/client/skeleton/ConversationSession.tsx,148,E0,chat.header.view-tab,视图 tab 按钮 role=tab + aria-selected + selectView(id)；无关闭键、无方向键处理
+jsx.onclick,ui-conversation/src/client/skeleton/ConversationSession.tsx,151,E0,chat.header.view-tab,视图 tab 按钮 role=tab + aria-selected + selectView(id)；无关闭键、无方向键处理
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,64,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,74,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,85,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,97,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onwheel,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,105,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+container.scroll,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,113,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,121,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,122,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,123,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,124,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onpointer,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,125,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onwheel,ui-conversation/src/client/skeleton/ConversationWidthControls.tsx,126,E0,chat.list.width-handle,转录宽度拖拽条（左右各一）：pointer capture+rAF 节流，滚轮转发给 scrollport
+jsx.onclick,ui-conversation/src/client/skeleton/EmptyHero.tsx,35,excluded,-,excluded：JSDoc 注释行（`@param props.onClick`），无运行时行为；真实控件在 EmptyHero.tsx:46/53
+jsx.onclick,ui-conversation/src/client/skeleton/EmptyHero.tsx,38,excluded,-,excluded：函数签名解构行（只出现 onClick 形参名），无运行时行为；真实控件在 EmptyHero.tsx:46/53
+jsx.onclick,ui-conversation/src/client/skeleton/EmptyHero.tsx,42,excluded,-,excluded：类型声明行（`onClick?: () => void`），无运行时行为；真实控件在 EmptyHero.tsx:46/53
+native.button,ui-conversation/src/client/skeleton/EmptyHero.tsx,46,E0,composer.workspace-chip,WorkspaceChip button：aria-haspopup=menu，aria-expanded，空格/无 label 两种形态
+a11y.expanded,ui-conversation/src/client/skeleton/EmptyHero.tsx,52,E0,composer.workspace-chip,WorkspaceChip button：aria-haspopup=menu，aria-expanded，空格/无 label 两种形态
+jsx.onclick,ui-conversation/src/client/skeleton/EmptyHero.tsx,53,E0,composer.workspace-chip,WorkspaceChip button：aria-haspopup=menu，aria-expanded，空格/无 label 两种形态
+css.cursor,ui-conversation/src/client/skeleton/HeroShell.module.css,166,excluded,-,excluded：CSS 结构性属性，.workspace cursor:pointer；结构性样式，见 composer.workspace-chip
+css.overflow,ui-conversation/src/client/skeleton/HeroShell.module.css,187,excluded,-,excluded：CSS 结构性属性，.workspaceLabel overflow:hidden + ellipsis（长名降级）；结构性样式，见 composer.workspace-chip
+css.cursor,ui-conversation/src/client/skeleton/InputBar.module.css,84,excluded,-,excluded：CSS 结构性属性，.cardWorkspaceTrigger cursor:pointer；结构性样式，见 composer.input.card
+css.overflow,ui-conversation/src/client/skeleton/InputBar.module.css,130,excluded,-,excluded：CSS 结构性属性，.scroll overflow-y:auto + max-height（草稿唯一内滚盒，14 行上限）；结构性样式，见 composer.input.draft-surface
+css.overflow,ui-conversation/src/client/skeleton/InputBar.module.css,218,excluded,-,excluded：CSS 结构性属性，.placeholder overflow:hidden + ellipsis（单行）；结构性样式，见 composer.input.draft-surface
+css.cursor,ui-conversation/src/client/skeleton/InputBar.module.css,226,excluded,-,excluded：CSS 结构性属性，.inputDisabled cursor:not-allowed；结构性样式，见 composer.input.draft-surface
+css.cursor,ui-conversation/src/client/skeleton/InputBar.module.css,230,excluded,-,excluded：CSS 结构性属性，.input[aria-haspopup=menu] cursor:pointer；结构性样式，见 composer.input.draft-surface
+css.cursor,ui-conversation/src/client/skeleton/InputBar.module.css,325,excluded,-,excluded：CSS 结构性属性，.add cursor:pointer（28px 圆形「+」）；结构性样式，见 composer.input.command-menu-trigger
+css.cursor,ui-conversation/src/client/skeleton/InputBar.module.css,356,excluded,-,excluded：.select 是模式 chip 的共享样式钩子，控件占用者来自 ui-permission-presets / ui-plan / ui-model-selection（跨包槽位），本包无控件实现
+css.cursor,ui-conversation/src/client/skeleton/InputBar.module.css,385,excluded,-,excluded：CSS 结构性属性，.primary cursor:pointer（34px 圆形发送/停止）；结构性样式，见 composer.input.primary
+css.cursor,ui-conversation/src/client/skeleton/InputBar.module.css,410,excluded,-,excluded：.retry 样式类在本包 src 内无任何使用者（附件重试由 conversation.input.attachments 槽位占用者渲染），无运行时交互
+aria.role,ui-conversation/src/client/skeleton/InputBar.tsx,286,excluded,-,"excluded：DOM 选择器字符串（target.closest('button, a, input, ... [role=""button""]')），用于鼠标按下时排除可点控件，不是事件绑定"
+jsx.onclick,ui-conversation/src/client/skeleton/InputBar.tsx,399,E0,composer.input.card,无工作区时整张卡片=工作区选择触发器（onClick + onPointerDown stopPropagation）
+jsx.onpointer,ui-conversation/src/client/skeleton/InputBar.tsx,400,E0,composer.input.card,无工作区时整张卡片=工作区选择触发器（onClick + onPointerDown stopPropagation）
+native.button,ui-conversation/src/client/skeleton/InputBar.tsx,442,E0,composer.input.command-menu-trigger,「+」命令菜单触发（aria-haspopup=listbox，aria-expanded=commandMenuOpen）
+a11y.expanded,ui-conversation/src/client/skeleton/InputBar.tsx,447,E0,composer.input.command-menu-trigger,「+」命令菜单触发（aria-haspopup=listbox，aria-expanded=commandMenuOpen）
+jsx.onclick,ui-conversation/src/client/skeleton/InputBar.tsx,450,E0,composer.input.command-menu-trigger,「+」命令菜单触发（aria-haspopup=listbox，aria-expanded=commandMenuOpen）
+native.input,ui-conversation/src/client/skeleton/InputBar.tsx,455,E0,composer.input.file-picker,隐藏 file input（multiple），由 keymap 的 bindFilePicker 触发
+native.button,ui-conversation/src/client/skeleton/InputBar.tsx,483,E0,composer.input.stop,可中断子代理的独立停止键（primary 圆形按钮的同形兄弟）
+jsx.onclick,ui-conversation/src/client/skeleton/InputBar.tsx,489,E0,composer.input.stop,可中断子代理的独立停止键（primary 圆形按钮的同形兄弟）
+native.button,ui-conversation/src/client/skeleton/InputBar.tsx,498,E0,composer.input.primary,主操作键：空/禁用/忙/上传中 disabled；运行态空稿时变为 Stop（primaryStops）
+jsx.onclick,ui-conversation/src/client/skeleton/InputBar.tsx,504,E0,composer.input.primary,主操作键：空/禁用/忙/上传中 disabled；运行态空稿时变为 Stop（primaryStops）
+css.overflow,ui-conversation/src/client/skeleton/TodoPanel.module.css,4,excluded,-,excluded：CSS 结构性属性，.root overflow:hidden（面板根盒裁剪）；结构性样式，见 composer.todo.header
+css.cursor,ui-conversation/src/client/skeleton/TodoPanel.module.css,51,excluded,-,excluded：CSS 结构性属性，.header cursor:pointer；结构性样式，见 composer.todo.header
+css.overflow,ui-conversation/src/client/skeleton/TodoPanel.module.css,72,excluded,-,excluded：CSS 结构性属性，.progress overflow:hidden + ellipsis；结构性样式，见 composer.todo.header
+css.overflow,ui-conversation/src/client/skeleton/TodoPanel.module.css,96,excluded,-,excluded：CSS 结构性属性，.list overflow-y:auto + max-height:180px（内滚）；结构性样式，见 composer.todo.list
+css.overflow,ui-conversation/src/client/skeleton/TodoPanel.module.css,120,excluded,-,excluded：CSS 结构性属性，.content overflow:hidden + ellipsis（单行、无行内展开）；结构性样式，见 composer.todo.list
+native.button,ui-conversation/src/client/skeleton/TodoPanel.tsx,72,E0,composer.todo.header,计划面板头：aria-expanded={!collapsed}，默认折叠
+a11y.expanded,ui-conversation/src/client/skeleton/TodoPanel.tsx,75,E0,composer.todo.header,计划面板头：aria-expanded={!collapsed}，默认折叠
+jsx.onclick,ui-conversation/src/client/skeleton/TodoPanel.tsx,76,E0,composer.todo.header,计划面板头：aria-expanded={!collapsed}，默认折叠
+jsx.onclick,ui-conversation/tests/assembly-surfaces.client.spec.tsx,76,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-conversation/tests/assembly-surfaces.client.spec.tsx,76,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/assembly-surfaces.client.spec.tsx,124,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/context-meter.client.spec.tsx,141,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/enter-behavior-row.client.spec.tsx,62,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-conversation/tests/input-bar.client.spec.tsx,301,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.input,ui-conversation/tests/input-bar.client.spec.tsx,319,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+aria.role,ui-conversation/tests/input-bar.client.spec.tsx,320,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/input-bar.client.spec.tsx,1447,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/input-bar.client.spec.tsx,1826,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/input-bar.client.spec.tsx,1830,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-conversation/tests/input-bar.client.spec.tsx,1879,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+jsx.onclick,ui-conversation/tests/input-bar.client.spec.tsx,1881,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-conversation/tests/input-bar.client.spec.tsx,1881,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+jsx.onclick,ui-conversation/tests/input-bar.client.spec.tsx,1882,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-conversation/tests/input-bar.client.spec.tsx,1882,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+jsx.onclick,ui-conversation/tests/input-bar.client.spec.tsx,1898,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-conversation/tests/input-bar.client.spec.tsx,1898,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+jsx.onclick,ui-conversation/tests/input-bar.client.spec.tsx,1899,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-conversation/tests/input-bar.client.spec.tsx,1899,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,305,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,329,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,337,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,344,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,362,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,368,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,404,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,415,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+a11y.expanded,ui-conversation/tests/queue-dock.client.spec.tsx,433,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,768,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,770,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,774,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,777,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,780,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,782,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,783,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,786,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,792,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+container.scroll,ui-conversation/tests/skeleton.client.spec.tsx,795,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+css.cursor,ui-sidebar-browser/src/client/view/Browser.module.css,34,excluded,-,excluded：CSS 结构性属性，cursor:pointer（.tool 按钮光标）；结构性样式，交互见 base-sidebar-right.browser.history-nav/reload
+css.focus,ui-sidebar-browser/src/client/view/Browser.module.css,78,excluded,-,excluded：CSS 结构性属性，:focus-within 显隐 .addressGo；结构性样式，交互见 base-sidebar-right.browser.address-go
+css.focus,ui-sidebar-browser/src/client/view/Browser.module.css,91,excluded,-,excluded：CSS 结构性属性，.addressUnknown:focus 换色；结构性样式，交互见 base-sidebar-right.browser.address-field
+css.focus,ui-sidebar-browser/src/client/view/Browser.module.css,108,excluded,-,excluded：CSS 结构性属性，:focus-within 隐藏 addressChanged；结构性样式，交互见 base-sidebar-right.browser.address-field
+css.focus,ui-sidebar-browser/src/client/view/Browser.module.css,113,excluded,-,excluded：CSS 结构性属性，.address:focus outline 1px；结构性焦点样式，交互见 base-sidebar-right.browser.address-field
+css.overflow,ui-sidebar-browser/src/client/view/Browser.module.css,157,excluded,-,excluded：CSS 结构性属性，.restore overflow:auto（恢复卡片可滚）；结构性样式，交互见 base-sidebar-right.browser.restore
+css.overflow,ui-sidebar-browser/src/client/view/Browser.module.css,236,excluded,-,excluded：CSS 结构性属性，.limit overflow:hidden + ellipsis（unknown 提示单行）；结构性样式，交互见 base-sidebar-right.browser.address-field
+jsx.onclick,ui-sidebar-browser/src/client/view/BrowserBody.tsx,82,E0,base-sidebar-right.browser.history-nav,后退/前进：disabled 由 frame.canGoBack/canGoForward 决定
+native.button,ui-sidebar-browser/src/client/view/BrowserBody.tsx,82,E0,base-sidebar-right.browser.history-nav,后退/前进：disabled 由 frame.canGoBack/canGoForward 决定
+jsx.onclick,ui-sidebar-browser/src/client/view/BrowserBody.tsx,83,E0,base-sidebar-right.browser.history-nav,后退/前进：disabled 由 frame.canGoBack/canGoForward 决定
+native.button,ui-sidebar-browser/src/client/view/BrowserBody.tsx,83,E0,base-sidebar-right.browser.history-nav,后退/前进：disabled 由 frame.canGoBack/canGoForward 决定
+jsx.onclick,ui-sidebar-browser/src/client/view/BrowserBody.tsx,85,E0,base-sidebar-right.browser.reload,刷新：target===undefined 或 mountEpoch===0 时 disabled；aria-keyshortcuts=tab.refreshShortcut
+native.button,ui-sidebar-browser/src/client/view/BrowserBody.tsx,85,E0,base-sidebar-right.browser.reload,刷新：target===undefined 或 mountEpoch===0 时 disabled；aria-keyshortcuts=tab.refreshShortcut
+native.input,ui-sidebar-browser/src/client/view/BrowserBody.tsx,88,E0,base-sidebar-right.browser.address-field,地址输入（受控 input，aria-label=address.placeholder，spellCheck=false）
+native.button,ui-sidebar-browser/src/client/view/BrowserBody.tsx,97,E0,base-sidebar-right.browser.address-go,地址栏 submit 按钮（type=submit，仅 :focus-within 可见）
+native.button,ui-sidebar-browser/src/client/view/BrowserBody.tsx,99,E0,base-sidebar-right.browser.external,"系统浏览器打开：disabled 当 externalUrl===undefined；window.open(_blank,noopener,noreferrer)"
+jsx.onclick,ui-sidebar-browser/src/client/view/BrowserBody.tsx,100,E0,base-sidebar-right.browser.external,"系统浏览器打开：disabled 当 externalUrl===undefined；window.open(_blank,noopener,noreferrer)"
+native.button,ui-sidebar-browser/src/client/view/BrowserBody.tsx,102,E0,base-sidebar-right.browser.sandbox,"沙箱开关：aria-pressed={!sandboxed}，setSandbox(tab.id,!sandboxed)"
+jsx.onclick,ui-sidebar-browser/src/client/view/BrowserBody.tsx,108,E0,base-sidebar-right.browser.sandbox,"沙箱开关：aria-pressed={!sandboxed}，setSandbox(tab.id,!sandboxed)"
+jsx.onclick,ui-sidebar-browser/src/client/view/BrowserBody.tsx,122,E0,base-sidebar-right.browser.restore,恢复上次页面（Button size=sm，mountEpoch===0 时 disabled）
+css.cursor,ui-sidebar/src/client/HeaderLeadingControls.module.css,24,excluded,-,excluded：CSS 结构性属性，cursor:pointer（.iconButton）；结构性样式，交互见 sidebar.shell.toggle
+native.button,ui-sidebar/src/client/HeaderLeadingControls.tsx,32,E0,sidebar.shell.toggle,macOS 全隐藏侧栏时窗口 chrome 席的同义开关（同一 toggleSidebar 注入）
+jsx.onclick,ui-sidebar/src/client/HeaderLeadingControls.tsx,37,E0,sidebar.shell.toggle,macOS 全隐藏侧栏时窗口 chrome 席的同义开关（同一 toggleSidebar 注入）
+native.button,ui-sidebar/src/client/HeaderLeadingControls.tsx,43,E0,sidebar.shell.new-session,macOS 全隐藏侧栏时窗口 chrome 席的新建会话按钮
+jsx.onclick,ui-sidebar/src/client/HeaderLeadingControls.tsx,48,E0,sidebar.shell.new-session,macOS 全隐藏侧栏时窗口 chrome 席的新建会话按钮
+css.overflow,ui-sidebar/src/client/SidebarRoot.module.css,229,excluded,-,excluded：CSS 结构性属性，.logoRow overflow:hidden（裁剪，焦点环因此内收）；结构性样式，见 sidebar.shell.toggle
+css.overflow,ui-sidebar/src/client/SidebarRoot.module.css,251,excluded,-,excluded：CSS 结构性属性，.brand overflow:hidden；结构性样式，见 sidebar.shell.new-session
+css.cursor,ui-sidebar/src/client/SidebarRoot.module.css,256,excluded,-,excluded：CSS 结构性属性，.brand cursor:pointer（darwin 下为 default）；结构性样式，见 sidebar.shell.new-session
+css.cursor,ui-sidebar/src/client/SidebarRoot.module.css,329,excluded,-,excluded：CSS 结构性属性，.iconButton cursor:pointer；结构性样式，见 sidebar.shell.toggle
+css.focus,ui-sidebar/src/client/SidebarRoot.module.css,339,excluded,-,excluded：CSS 结构性属性，.iconButton.toggle:focus-visible outline-offset:-2px；结构性焦点样式，见 sidebar.shell.toggle
+css.cursor,ui-sidebar/src/client/SidebarRoot.module.css,415,excluded,-,excluded：CSS 结构性属性，.newSession cursor:pointer；结构性样式，见 sidebar.shell.new-session
+css.overflow,ui-sidebar/src/client/SidebarRoot.module.css,416,excluded,-,excluded：CSS 结构性属性，.newSession overflow:hidden；结构性样式，见 sidebar.shell.new-session
+css.overflow,ui-sidebar/src/client/SidebarRoot.module.css,459,excluded,-,excluded：CSS 结构性属性，.newSessionLabel overflow:hidden（单行截断）；结构性样式，见 sidebar.shell.new-session
+css.focus,ui-sidebar/src/client/SidebarRoot.module.css,468,excluded,-,excluded：CSS 结构性属性，:focus-visible 遮罩渐隐（标签让位快捷键）；结构性样式，见 sidebar.shell.new-session
+css.overflow,ui-sidebar/src/client/SidebarRoot.module.css,468,excluded,-,excluded：CSS 结构性属性，:focus-visible 遮罩渐隐（标签让位快捷键）；结构性样式，见 sidebar.shell.new-session
+css.focus,ui-sidebar/src/client/SidebarRoot.module.css,480,excluded,-,excluded：CSS 结构性属性，:focus-visible 显示快捷键；结构性样式，见 sidebar.shell.new-session
+css.cursor,ui-sidebar/src/client/SidebarRoot.module.css,507,excluded,-,excluded：CSS 结构性属性，.panelRow cursor:pointer；结构性样式，见 sidebar.shell.panel-row
+css.focus,ui-sidebar/src/client/SidebarRoot.module.css,519,excluded,-,excluded：CSS 结构性属性，.panelRow:focus-visible 焦点环；结构性焦点样式，见 sidebar.shell.panel-row
+css.overflow,ui-sidebar/src/client/SidebarRoot.module.css,533,excluded,-,excluded：CSS 结构性属性，.panelTitle overflow:hidden + ellipsis；结构性样式，见 sidebar.shell.panel-row
+css.overflow,ui-sidebar/src/client/SidebarRoot.module.css,563,excluded,-,excluded：CSS 结构性属性，.regionArea overflow:hidden；结构性样式，见 sidebar.shell.column
+native.button,ui-sidebar/src/client/SidebarRoot.tsx,63,E0,sidebar.shell.panel-row,全局面板图标行（nav>button，aria-current=page 表选中，aria-label=面板名）
+jsx.onclick,ui-sidebar/src/client/SidebarRoot.tsx,68,E0,sidebar.shell.panel-row,全局面板图标行（nav>button，aria-current=page 表选中，aria-label=面板名）
+native.button,ui-sidebar/src/client/SidebarRoot.tsx,180,E0,sidebar.shell.toggle,Rail/wide 折叠切换按钮（aria-label 随状态切换 toggle.open/toggle.collapse，aria-keyshortcuts=sidebar.left.toggle）
+jsx.onclick,ui-sidebar/src/client/SidebarRoot.tsx,185,E0,sidebar.shell.toggle,Rail/wide 折叠切换按钮（aria-label 随状态切换 toggle.open/toggle.collapse，aria-keyshortcuts=sidebar.left.toggle）
+native.button,ui-sidebar/src/client/SidebarRoot.tsx,244,E0,sidebar.shell.new-session,品牌行按钮=新建会话（仅非 darwin；darwin 该处是窗口拖拽面，不渲染按钮）
+jsx.onclick,ui-sidebar/src/client/SidebarRoot.tsx,249,E0,sidebar.shell.new-session,品牌行按钮=新建会话（仅非 darwin；darwin 该处是窗口拖拽面，不渲染按钮）
+native.button,ui-sidebar/src/client/SidebarRoot.tsx,260,E0,sidebar.shell.new-session,常驻「新建会话」栏按钮（wide 显示文案+快捷键，rail 只显图标）
+jsx.onclick,ui-sidebar/src/client/SidebarRoot.tsx,265,E0,sidebar.shell.new-session,常驻「新建会话」栏按钮（wide 显示文案+快捷键，rail 只显图标）
+native.input,ui-sidebar/tests/panel-list.client.spec.tsx,102,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点
+native.button,ui-sidebar/tests/panel-list.client.spec.tsx,103,excluded,-,excluded：单元/组件测试用例文件（非产品 UI，不产生运行时交互）；断言的行为证据已并入对应 src 节点

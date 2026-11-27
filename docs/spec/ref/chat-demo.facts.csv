@@ -1,0 +1,236 @@
+kind,path,line,status,node_id,note
+css.overflow,src/app/App.module.css,5,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.app.status 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/app/App.tsx,88,E0,chat.app.status,保存失败横幅（role=alert）的「重试」按钮 → retrySaveSessions
+jsx.onclick,src/app/App.tsx,109,E0,chat.app.status,加载/会话读取失败时的「重试」按钮：!ready → initChat()，会话加载失败 → selectSession(activeId)
+css.overflow,src/app/global.css,14,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.list.scroll-follow（滚动条/整页滚动） 的视觉/布局证据，不构成独立交互点
+css.overflow,src/app/global.css,51,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.list.scroll-follow（滚动条/整页滚动） 的视觉/布局证据，不构成独立交互点
+container.scroll,src/app/viewport.ts,24,E0,chat.list.scroll-follow,移动端 touchmove 拦截前的判定：从 target 向上找可滚容器，找到则不 preventDefault —— 决定内滚/整页滚的归属
+jsx.onpointer,src/components/base/anchored.ts,218,E0,base.menu,useDismiss：document pointerdown 判断点击是否落在触发元素/浮层之外 → 关闭
+jsx.onkeydown,src/components/base/anchored.ts,225,E0,base.menu,useDismiss：Esc 关闭；captureEscape 时 stopPropagation，避免连外层 Modal 一起关
+jsx.onpointer,src/components/base/anchored.ts,234,E0,base.menu,注册 pointerdown 监听（useDismiss 的生效点）
+jsx.onkeydown,src/components/base/anchored.ts,235,E0,base.menu,注册 keydown(Esc) 监听（useDismiss 的生效点）
+jsx.onpointer,src/components/base/anchored.ts,237,excluded,-,同一交互的监听注销（清理）行，非新增交互点
+jsx.onkeydown,src/components/base/anchored.ts,238,excluded,-,同一交互的监听注销（清理）行，非新增交互点
+css.cursor,src/components/base/Button.module.css,14,excluded,-,结构性 CSS（cursor 语义）；作为 base.button 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/base/Button.module.css,22,excluded,-,结构性 CSS（焦点样式）；作为 base.button 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/base/Button.module.css,28,excluded,-,结构性 CSS（cursor 语义）；作为 base.button 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/base/Button.module.css,94,excluded,-,结构性 CSS（焦点样式）；作为 base.button 的视觉/布局证据，不构成独立交互点
+native.button,src/components/base/Button.tsx,16,E0,base.button,通用按钮原语 <button type=button>；variant/size/block 由 class 组合，:focus-visible 2px ring
+css.cursor,src/components/base/IconButton.module.css,10,excluded,-,结构性 CSS（cursor 语义）；作为 base.button 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/base/IconButton.module.css,25,excluded,-,结构性 CSS（焦点样式）；作为 base.button 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/base/IconButton.module.css,30,excluded,-,结构性 CSS（cursor 语义）；作为 base.button 的视觉/布局证据，不构成独立交互点
+native.button,src/components/base/IconButton.tsx,26,E0,base.button,图标按钮原语：xs/m/xl = 28/34/44px；tooltip 同时充当 aria-label
+css.cursor,src/components/base/Menu.module.css,28,excluded,-,结构性 CSS（cursor 语义）；作为 base.menu 的视觉/布局证据，不构成独立交互点
+aria.role,src/components/base/Menu.tsx,48,E0,base.menu,role=menuitem 菜单项（会话 ⋯ 菜单的重命名/删除即此原语）
+jsx.onclick,src/components/base/Menu.tsx,50,E0,base.menu,点菜单项：先 setOpen(false) 再执行 onSelect
+jsx.onkeydown,src/components/base/Modal.tsx,39,E0,base.modal,Esc 只关最上层弹窗（模块级 openModals 栈）
+jsx.onkeydown,src/components/base/Modal.tsx,44,E0,base.modal,注册 document keydown（Esc 生效点）
+jsx.onkeydown,src/components/base/Modal.tsx,47,excluded,-,同一交互的监听注销（清理）行，非新增交互点
+jsx.onclick,src/components/base/Modal.tsx,72,E0,base.modal,closable=true 时标题栏关闭按钮（设置弹窗使用）
+css.cursor,src/components/base/Select.module.css,19,excluded,-,结构性 CSS（cursor 语义）；作为 base.menu 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/base/Select.module.css,29,excluded,-,结构性 CSS（焦点样式）；作为 base.menu 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/base/Select.module.css,39,excluded,-,结构性 CSS（溢出/滚动容器）；作为 base.menu 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/base/Select.module.css,68,excluded,-,结构性 CSS（溢出/滚动容器）；作为 base.menu 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/base/Select.module.css,93,excluded,-,结构性 CSS（cursor 语义）；作为 base.menu 的视觉/布局证据，不构成独立交互点
+native.button,src/components/base/Select.tsx,43,E0,base.menu,Select 触发器：胶囊 36px、aria-haspopup=listbox
+a11y.expanded,src/components/base/Select.tsx,49,E0,base.menu,aria-expanded 跟随开合（本仓库唯一的 aria-expanded 实例）
+jsx.onclick,src/components/base/Select.tsx,51,E0,base.menu,点触发器 toggle 下拉
+aria.role,src/components/base/Select.tsx,74,E0,base.menu,role=option + aria-selected 的选项
+jsx.onclick,src/components/base/Select.tsx,78,E0,base.menu,选中选项：关闭并 onChange（设置页语言/音色/位置共用）
+native.anchor,src/components/base/Toast.tsx,31,E0,chat.input.attach,上传配额超限 toast 内的「删除文件」外链（api-docs delete-file）；整条 toast 不拦点击
+jsx.onscroll,src/components/base/Tooltip.tsx,38,E0,base.tooltip,任意滚动容器滚动时收起提示（window scroll，capture）
+jsx.onscroll,src/components/base/Tooltip.tsx,39,E0,base.tooltip,注册 scroll capture 监听（收起生效点）
+jsx.onscroll,src/components/base/Tooltip.tsx,40,excluded,-,同一交互的监听注销（清理）行，非新增交互点
+css.cursor,src/components/chatInput/ChatInput.module.css,8,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/chatInput/ChatInput.module.css,14,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/chatInput/ChatInput.module.css,51,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/chatInput/ChatInput.module.css,106,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/chatInput/ChatInput.module.css,126,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/chatInput/ChatInput.module.css,154,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/chatInput/ChatInput.module.css,185,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/chatInput/ChatInput.module.css,275,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/chatInput/ChatInput.module.css,286,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/chatInput/ChatInput.module.css,321,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/chatInput/ChatInput.module.css,330,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.textarea / chat.input.attach 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/chatInput/ChatInput.tsx,158,E0,chat.input.textarea,点输入卡空白处聚焦 textarea（preventScroll）
+native.input,src/components/chatInput/ChatInput.tsx,166,E0,chat.input.textarea,主体 textarea：rows=2、autoFocus 仅桌面、disabled=importingHistory、placeholder「请输入消息」
+jsx.onkeydown,src/components/chatInput/ChatInput.tsx,183,E0,chat.input.textarea,Enter 发送 / Shift+Enter 换行；isComposing（输入法组字）时不拦截
+native.button,src/components/chatInput/ChatInput.tsx,206,E0,chat.input.toggles,深度思考开关 button（aria-label/aria-pressed）
+jsx.onclick,src/components/chatInput/ChatInput.tsx,211,E0,chat.input.toggles,切换 thinking 并写入 localStorage
+native.button,src/components/chatInput/ChatInput.tsx,218,E0,chat.input.toggles,智能搜索开关 button
+jsx.onclick,src/components/chatInput/ChatInput.tsx,223,E0,chat.input.toggles,切换 search 并写入 localStorage
+jsx.onclick,src/components/chatInput/ChatInput.tsx,235,E0,chat.input.voice,语音按钮点击：非 idle 或 ensureApiKey() 通过才 toggle
+jsx.onclick,src/components/chatInput/ChatInput.tsx,250,E0,chat.input.attach,上传按钮：ensureApiKey() 通过后触发隐藏 file input
+native.input,src/components/chatInput/ChatInput.tsx,252,E0,chat.input.attach,<input type=file multiple hidden accept=ACCEPT>，选完清空 value
+native.button,src/components/chatInput/ChatInput.tsx,264,E0,chat.input.send-stop,生成中：停止按钮（aria-label=停止生成）
+jsx.onclick,src/components/chatInput/ChatInput.tsx,268,E0,chat.input.send-stop,停止：stopReadAloud() + stopReply(sessionId)
+native.button,src/components/chatInput/ChatInput.tsx,276,E0,chat.input.send-stop,空闲：发送按钮；aria-disabled=!canSend（非原生 disabled）
+jsx.onclick,src/components/chatInput/ChatInput.tsx,281,E0,chat.input.send-stop,send()：三重前置守卫 + 发送后焦点（移动端 blur / 桌面 focus）
+jsx.onclick,src/components/chatInput/DraftAttachments.tsx,72,E0,chat.input.attach,图片附件上传失败且可重试：蒙层重试 button（aria-label 含原因）
+native.button,src/components/chatInput/DraftAttachments.tsx,72,E0,chat.input.attach,图片附件上传失败且可重试：蒙层重试 button（aria-label 含原因）
+native.button,src/components/chatInput/DraftAttachments.tsx,83,E0,chat.input.attach,图片附件删除 button（右上角，hover 显示）
+jsx.onclick,src/components/chatInput/DraftAttachments.tsx,87,E0,chat.input.attach,删除草稿附件（cancelUpload + 从草稿移除）
+jsx.ondrag,src/components/chatInput/DragMask.tsx,10,excluded,-,扫描误报：JSDoc 中对 onDrop 语义的描述，不是交互绑定
+jsx.ondrag,src/components/chatInput/DragMask.tsx,12,E0,chat.input.attach,useFileDrop 拖拽上传 Hook 入口；真实监听在 :16-55（document dragenter/leave/over/drop）
+jsx.ondrag,src/components/chatInput/DragMask.tsx,14,excluded,-,扫描误报：onDropRef 赋值（把回调放进 ref），不是手势绑定
+jsx.ondrag,src/components/chatInput/DragMask.tsx,15,excluded,-,扫描误报：onDropRef.current = onDrop 赋值，不是手势绑定
+css.cursor,src/components/chatInput/VoiceButton.module.css,31,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.voice 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/chatInput/VoiceButton.module.css,45,excluded,-,结构性 CSS（焦点样式）；作为 chat.input.voice 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/chatInput/VoiceButton.module.css,52,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.voice 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/chatInput/VoiceButton.tsx,18,excluded,-,扫描误报：props 解构名 onClick，不是交互绑定
+jsx.onclick,src/components/chatInput/VoiceButton.tsx,25,excluded,-,扫描误报：props 类型声明 onClick: () => void，不是交互绑定
+native.button,src/components/chatInput/VoiceButton.tsx,42,E0,chat.input.voice,语音按钮：idle=麦克风 outline / recording=双层圆+呼吸 / transcribing=loading 圈
+jsx.onclick,src/components/chatInput/VoiceButton.tsx,52,E0,chat.input.voice,aria-disabled（非 HTTPS）时不触发；否则调用 onClick
+jsx.onclick,src/components/chatInput/VoiceButton.tsx,54,excluded,-,同一 onClick 的内部调用行（重复，已由 52 行取证）
+css.cursor,src/components/files/FileCard.module.css,27,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/files/FileCard.module.css,87,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/files/FileCard.module.css,97,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.input.attach 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/files/FileCard.module.css,119,excluded,-,结构性 CSS（cursor 语义）；作为 chat.input.attach 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/files/FileCard.tsx,45,E0,chat.input.attach,status=error 时整卡可点 = 重试
+jsx.onclick,src/components/files/FileCard.tsx,53,E0,chat.input.attach,clickable 类：可点时 hover 换底色、cursor:pointer
+jsx.onclick,src/components/files/FileCard.tsx,62,E0,chat.input.attach,卡片根节点绑定 onClick（重试入口）
+native.button,src/components/files/FileCard.tsx,71,E0,chat.input.attach,删除 button（aria-label=删除）
+jsx.onclick,src/components/files/FileCard.tsx,75,E0,chat.input.attach,删除：stopPropagation 后 onRemove，避免触发整卡重试
+css.cursor,src/components/markdown/CodeBlock.module.css,30,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+native.button,src/components/markdown/CodeBlock.tsx,33,E0,chat.msg.code-block,Mermaid「图表」切换 button（aria-pressed=showDiagram）
+jsx.onclick,src/components/markdown/CodeBlock.tsx,37,E0,chat.msg.code-block,切到图表（已显示时不重复触发）
+native.button,src/components/markdown/CodeBlock.tsx,41,E0,chat.msg.code-block,Mermaid「代码」切换 button
+jsx.onclick,src/components/markdown/CodeBlock.tsx,45,E0,chat.msg.code-block,切到代码
+native.button,src/components/markdown/CodeBlock.tsx,53,E0,chat.msg.code-block,代码块复制 button（banner 右侧，含图标+文字）
+jsx.onclick,src/components/markdown/CodeBlock.tsx,56,E0,chat.msg.code-block,复制代码：copyText → 失败 toast；成功图标换勾 1500ms
+css.focus,src/components/markdown/highlight.css,156,excluded,-,结构性 CSS（焦点样式）；作为 chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/markdown/highlight.css,158,excluded,-,结构性 CSS（焦点样式）；作为 chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/markdown/highlight.css,166,excluded,-,结构性 CSS（焦点样式）；作为 chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+native.anchor,src/components/markdown/Link.tsx,42,E0,chat.msg.markdown,正文链接：target=_blank + rel=noreferrer；sanitizeUrl 仅放行 http/https/mailto
+native.anchor,src/components/markdown/Link.tsx,52,E0,chat.msg.markdown,Markdown 图片降级为「指向图片 URL 的链接」（ImageAsLink）
+css.focus,src/components/markdown/markdown.css,89,excluded,-,结构性 CSS（焦点样式）；作为 chat.msg.markdown / chat.msg.citation / chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/markdown/markdown.css,95,excluded,-,结构性 CSS（焦点样式）；作为 chat.msg.markdown / chat.msg.citation / chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/markdown/markdown.css,189,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.markdown / chat.msg.citation / chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/markdown/markdown.css,227,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.markdown / chat.msg.citation / chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/markdown/markdown.css,299,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.markdown / chat.msg.citation / chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/markdown/markdown.css,361,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.markdown / chat.msg.citation / chat.msg.code-block 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/messages/AssistantMessage.module.css,5,excluded,-,结构性 CSS（焦点样式）；作为 chat.msg.status / chat.msg.actions 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/messages/AssistantMessage.module.css,77,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.status / chat.msg.actions 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/messages/AssistantMessage.module.css,122,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.status / chat.msg.actions 的视觉/布局证据，不构成独立交互点
+native.button,src/components/messages/AssistantMessage.tsx,102,E0,chat.msg.status,错误提示内联动作「更换 API Key」按钮
+jsx.onclick,src/components/messages/AssistantMessage.tsx,105,E0,chat.msg.status,openSettings('data') 打开数据管理分组
+jsx.onclick,src/components/messages/AssistantMessage.tsx,130,E0,chat.search.panel,轮尾「N 个网页」汇总 pill：开/合右侧来源面板（entry=消息 id）
+jsx.onclick,src/components/messages/AssistantMessage.tsx,154,E0,chat.msg.actions,重新生成：stopReadAloud() + regenerateReply（同问题下新增版本，不覆盖旧回答）
+jsx.onclick,src/components/messages/AssistantMessage.tsx,166,E0,chat.msg.actions,继续生成：stopReadAloud() + continueReply（内容追加到原回复）
+jsx.onclick,src/components/messages/BranchSwitcher.tsx,43,E0,chat.msg.branch,上一个版本（index<=0 时 disabled）
+jsx.onclick,src/components/messages/BranchSwitcher.tsx,52,E0,chat.msg.branch,下一个版本（到末尾时 disabled）
+jsx.onclick,src/components/messages/CopyButton.tsx,20,E0,chat.msg.actions,复制：copyText() → 成功换勾 1000ms（期间重复点击被忽略）；失败 toast「复制失败…」
+css.overflow,src/components/messages/MessageFile.module.css,10,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.user 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/messages/MessageFile.module.css,32,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.user 的视觉/布局证据，不构成独立交互点
+native.button,src/components/messages/MessageFile.tsx,99,E0,chat.msg.user,历史图片附件补传失败且可重试：button 包住缩略图
+jsx.onclick,src/components/messages/MessageFile.tsx,103,E0,chat.msg.user,onClick=retry：补传附件并重发本回答（retryUpload）
+css.overflow,src/components/messages/MessageList.module.css,6,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.list.scroll-follow 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/messages/MessageList.module.css,17,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.list.scroll-follow 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/messages/MessageList.module.css,26,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.list.scroll-follow 的视觉/布局证据，不构成独立交互点
+jsx.onscroll,src/components/messages/MessageList.tsx,128,E0,chat.list.scroll-follow,onScroll：距底 ≤40px → sticky=true；否则仅当 scrollTop 变小 → sticky=false（只有用户上翻才停跟随）
+jsx.onscroll,src/components/messages/MessageList.tsx,138,E0,chat.list.scroll-follow,注册 scroll passive 监听（跟随判定生效点）
+jsx.onscroll,src/components/messages/MessageList.tsx,139,excluded,-,同一交互的监听注销（清理）行，非新增交互点
+jsx.onclick,src/components/messages/ReadAloudButton.tsx,21,E0,chat.msg.actions,朗读/停止：toggleReadAloud；loading/playing 时图标换成 4 根波形竖条
+css.cursor,src/components/messages/ReplyArea.module.css,11,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/messages/ReplyArea.module.css,150,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/messages/ReplyArea.module.css,195,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/messages/ReplyArea.module.css,226,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/messages/ReplyArea.module.css,246,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/messages/ReplyArea.module.css,275,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/messages/ReplyArea.module.css,294,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/messages/ReplyArea.module.css,299,excluded,-,结构性 CSS（cursor 语义）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/messages/ReplyArea.module.css,313,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.process 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/messages/ReplyArea.tsx,81,E0,chat.msg.process,过程区标题整行点开/收起（div 绑 onClick，无 role/tabindex/aria-expanded）
+jsx.onclick,src/components/messages/ReplyArea.tsx,253,E0,chat.msg.process,搜索步骤行可点（!wip 且结果数>0）→ 开/合右侧来源面板
+native.anchor,src/components/messages/ReplyArea.tsx,291,E0,chat.msg.process,浏览网页/阅读链接的页面链接（target=_blank）
+jsx.onclick,src/components/messages/ReplyArea.tsx,332,E0,chat.msg.process,「查看全部」（pages>5）→ 打开来源面板并附带对应来源
+css.focus,src/components/messages/UserMessage.module.css,64,excluded,-,结构性 CSS（焦点样式）；作为 chat.msg.user / chat.msg.edit 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/messages/UserMessage.module.css,79,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.msg.user / chat.msg.edit 的视觉/布局证据，不构成独立交互点
+native.input,src/components/messages/UserMessage.tsx,85,E0,chat.msg.edit,编辑态 textarea（rows=1、autoFocus、disabled=busy）
+jsx.onkeydown,src/components/messages/UserMessage.tsx,94,E0,chat.msg.edit,Esc 取消；Enter（非 Shift/Ctrl 且非移动端）提交；isComposing 不拦截
+jsx.onclick,src/components/messages/UserMessage.tsx,107,E0,chat.msg.edit,取消编辑
+jsx.onclick,src/components/messages/UserMessage.tsx,110,E0,chat.msg.edit,发送编辑（disabled=!canSend）
+jsx.onclick,src/components/messages/UserMessage.tsx,126,E0,chat.msg.edit,进入编辑态：draft=原内容，setEditing(true)
+jsx.onclick,src/components/search/CitationLink.tsx,17,E0,chat.msg.citation,[citation:N] 角标 span role=link：hover 300ms 出 SourceCard；点击 preventDefault + window.open
+css.overflow,src/components/search/SearchPanel.module.css,26,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.search.panel 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/search/SearchPanel.module.css,41,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.search.panel 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/search/SearchPanel.tsx,25,E0,chat.search.panel,关闭按钮
+css.overflow,src/components/search/SiteLogo.module.css,3,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.search.panel 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/search/SourceCard.module.css,8,excluded,-,结构性 CSS（cursor 语义）；作为 chat.search.panel 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/search/SourceCard.module.css,26,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.search.panel 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/search/SourceCard.module.css,48,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.search.panel 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/search/SourceCard.module.css,59,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.search.panel 的视觉/布局证据，不构成独立交互点
+native.anchor,src/components/search/SourceCard.tsx,17,E0,chat.search.panel,来源卡片整卡外链新窗口（title/snippet 各 2 行截断）
+css.overflow,src/components/session/MobileHeader.module.css,14,excluded,-,结构性 CSS（溢出/滚动容器）；作为 sider.toggle 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/session/MobileHeader.tsx,18,E0,sider.toggle,移动端顶栏左：打开侧边抽屉
+jsx.onclick,src/components/session/MobileHeader.tsx,28,E0,sider.new-chat,移动端顶栏右：开启新对话
+css.overflow,src/components/session/SessionView.module.css,21,excluded,-,结构性 CSS（溢出/滚动容器）；作为 chat.input.textarea（输入区吸底）/ chat.list.scroll-follow 的视觉/布局证据，不构成独立交互点
+css.sticky,src/components/session/SessionView.module.css,33,excluded,-,结构性 CSS（position:sticky 吸附）；作为 chat.input.textarea（输入区吸底）/ chat.list.scroll-follow 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/settings/ApiKeyField.tsx,37,E0,settings.apikey,点编辑图标进入编辑态
+native.input,src/components/settings/ApiKeyField.tsx,42,E0,settings.apikey,<input type=password>：autoFocus（桌面或已进入编辑）、受控 value
+jsx.onkeydown,src/components/settings/ApiKeyField.tsx,51,E0,settings.apikey,Enter 提交校验（isComposing 除外）
+jsx.onfocus,src/components/settings/ApiKeyField.tsx,56,E0,settings.apikey,onBlur：已有 Key 且输入为空 → 退出编辑态
+native.button,src/components/settings/ApiKeyField.tsx,66,E0,settings.apikey,桌面内联「确定」button：onMouseDown preventDefault 保持焦点；verifying 时禁用
+jsx.onclick,src/components/settings/ApiKeyField.tsx,72,E0,settings.apikey,提交 form.submit()（GET /models 校验通过才保存）
+native.button,src/components/settings/ApiKeyField.tsx,90,E0,settings.apikey,移动端整行「确定」button
+jsx.onclick,src/components/settings/ApiKeyField.tsx,95,E0,settings.apikey,提交
+css.cursor,src/components/settings/Settings.module.css,43,excluded,-,结构性 CSS（cursor 语义）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/settings/Settings.module.css,57,excluded,-,结构性 CSS（焦点样式）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/settings/Settings.module.css,70,excluded,-,结构性 CSS（溢出/滚动容器）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/settings/Settings.module.css,240,excluded,-,结构性 CSS（cursor 语义）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/settings/Settings.module.css,250,excluded,-,结构性 CSS（焦点样式）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/settings/Settings.module.css,293,excluded,-,结构性 CSS（溢出/滚动容器）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/settings/Settings.module.css,306,excluded,-,结构性 CSS（焦点样式）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/settings/Settings.module.css,343,excluded,-,结构性 CSS（cursor 语义）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/settings/Settings.module.css,462,excluded,-,结构性 CSS（cursor 语义）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/settings/Settings.module.css,481,excluded,-,结构性 CSS（溢出/滚动容器）；作为 settings.dialog / settings.apikey 的视觉/布局证据，不构成独立交互点
+aria.role,src/components/settings/SettingsDialog.tsx,87,E0,settings.dialog,role=tablist 分组导航
+native.button,src/components/settings/SettingsDialog.tsx,89,E0,settings.dialog,tab button（通用设置 / 数据管理）
+aria.role,src/components/settings/SettingsDialog.tsx,92,E0,settings.dialog,role=tab + aria-selected
+jsx.onclick,src/components/settings/SettingsDialog.tsx,95,E0,settings.dialog,切换分组（组件本地 state，不持久化）
+aria.role,src/components/settings/SettingsDialog.tsx,102,E0,settings.dialog,role=tabpanel 内容区
+jsx.onclick,src/components/settings/SettingsDialog.tsx,124,E0,settings.history,「删除所有对话」打开确认弹窗
+jsx.onclick,src/components/settings/SettingsDialog.tsx,159,E0,settings.history,删除全部：取消
+jsx.onclick,src/components/settings/SettingsDialog.tsx,166,E0,settings.history,删除全部：确认（clearHistory；busy 时禁用，aria-busy）
+jsx.onclick,src/components/settings/SettingsDialog.tsx,337,E0,settings.history,导入确认弹窗：取消
+jsx.onclick,src/components/settings/SettingsDialog.tsx,340,E0,settings.history,导入确认：确认覆盖导入
+native.button,src/components/settings/SettingsDialog.tsx,382,E0,settings.preferences,主题三选 button（role=radio + aria-checked）
+jsx.onclick,src/components/settings/SettingsDialog.tsx,391,E0,settings.preferences,setThemePreference（写 localStorage，立即生效）
+jsx.onclick,src/components/settings/SettingsDialog.tsx,515,E0,settings.history,「上传」按钮触发隐藏 file input
+native.input,src/components/settings/SettingsDialog.tsx,526,E0,settings.history,<input type=file accept=.zip hidden>，选完清空 value
+jsx.onclick,src/components/settings/SettingsDialog.tsx,602,E0,settings.history,「下载」导出全部历史为 ZIP（无会话时禁用）
+jsx.onclick,src/components/sider/CollapsedSider.tsx,19,E0,sider.toggle,收起态：展开侧栏（setSiderCollapsed(false)）
+jsx.onclick,src/components/sider/CollapsedSider.tsx,26,E0,sider.new-chat,收起态：新对话
+css.cursor,src/components/sider/SessionItem.module.css,12,excluded,-,结构性 CSS（cursor 语义）；作为 sider.session-row 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/sider/SessionItem.module.css,36,excluded,-,结构性 CSS（溢出/滚动容器）；作为 sider.session-row 的视觉/布局证据，不构成独立交互点
+native.input,src/components/sider/SessionItem.tsx,33,E0,sider.session-row,重命名输入框（autoFocus、defaultValue=当前标题）
+jsx.onfocus,src/components/sider/SessionItem.tsx,37,E0,sider.session-row,onFocus 全选文本
+jsx.onfocus,src/components/sider/SessionItem.tsx,38,E0,sider.session-row,onBlur 提交重命名（trim 后非空且不同于原标题才写）
+jsx.onkeydown,src/components/sider/SessionItem.tsx,39,E0,sider.session-row,Enter 提交 / Esc 取消；isComposing 不拦截
+jsx.onclick,src/components/sider/SessionItem.tsx,53,E0,sider.session-row,点会话行：selectSession + 关移动抽屉
+jsx.onclick,src/components/sider/SessionItem.tsx,59,E0,sider.session-row,操作区 stopPropagation：点 ⋯ 不触发选中会话
+jsx.onclick,src/components/sider/SessionItem.tsx,78,E0,sider.session-menu,⋯ 按钮 toggle 菜单（aria-label=更多）
+css.overflow,src/components/sider/Sider.module.css,28,excluded,-,结构性 CSS（溢出/滚动容器）；作为 sider.session-row / sider.toggle 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/sider/Sider.module.css,54,excluded,-,结构性 CSS（cursor 语义）；作为 sider.session-row / sider.toggle 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/sider/Sider.module.css,93,excluded,-,结构性 CSS（溢出/滚动容器）；作为 sider.session-row / sider.toggle 的视觉/布局证据，不构成独立交互点
+css.sticky,src/components/sider/Sider.module.css,108,excluded,-,结构性 CSS（position:sticky 吸附）；作为 sider.session-row / sider.toggle 的视觉/布局证据，不构成独立交互点
+css.cursor,src/components/sider/Sider.module.css,138,excluded,-,结构性 CSS（cursor 语义）；作为 sider.session-row / sider.toggle 的视觉/布局证据，不构成独立交互点
+css.focus,src/components/sider/Sider.module.css,146,excluded,-,结构性 CSS（焦点样式）；作为 sider.session-row / sider.toggle 的视觉/布局证据，不构成独立交互点
+css.overflow,src/components/sider/Sider.module.css,164,excluded,-,结构性 CSS（溢出/滚动容器）；作为 sider.session-row / sider.toggle 的视觉/布局证据，不构成独立交互点
+jsx.onclick,src/components/sider/Sider.tsx,61,E0,sider.toggle,顶栏按钮：移动端关抽屉 / 桌面 setSiderCollapsed(true)
+native.button,src/components/sider/Sider.tsx,64,E0,sider.new-chat,侧栏「开启新对话」大按钮（40px 胶囊，含 NewChatIcon）
+jsx.onclick,src/components/sider/Sider.tsx,67,E0,sider.new-chat,newChat()（activeId=null → 欢迎页）+ 关移动抽屉
+jsx.onclick,src/components/sider/Sider.tsx,95,E0,sider.settings-entry,侧栏底部设置入口：openSettings('general')
+native.button,src/components/sider/Sider.tsx,95,E0,sider.settings-entry,侧栏底部设置入口：openSettings('general')
+jsx.onclick,src/components/sider/Sider.tsx,112,E0,sider.delete-dialog,删除确认：取消
+jsx.onclick,src/components/sider/Sider.tsx,118,E0,sider.delete-dialog,删除确认：执行 removeSession；失败 toast「删除对话失败」
+jsx.onclick,src/components/sider/Sider.tsx,151,E0,sider.toggle,移动端抽屉遮罩点击关闭
+css.overscroll,src/app/global.css,52,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+css.overscroll,src/components/base/Select.module.css,69,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+css.overscroll,src/components/chatInput/ChatInput.module.css,193,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+css.overscroll,src/components/messages/MessageList.module.css,27,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+aria.role,src/components/base/Menu.tsx,43,E0,base.menu,role=menu：下拉菜单浮层容器（会话 ⋯ 菜单 / 重命名+删除菜单项），字段 11「无障碍」已描述；本次属补登记，非新节点
+aria.role,src/components/base/Modal.tsx,58,E0,base.modal,role=dialog + aria-modal + aria-labelledby：模态卡容器（删除确认/导入确认/设置弹窗共用），字段 11 已描述；补登记
+aria.role,src/components/base/Select.tsx,68,E0,base.menu,role=listbox + aria-label：Select 下拉列表框容器（设置页语言/音色/位置），字段 11 已描述；补登记
+aria.role,src/components/settings/SettingsDialog.tsx,380,E0,settings.preferences,role=radiogroup + aria-label=主题：主题三选容器（浅色/深色/跟随系统），字段 11 已描述；补登记
+aria.role,src/components/settings/SettingsDialog.tsx,385,E0,settings.preferences,role=radio + aria-checked：主题三选中的单个选项按钮（受控选中态），字段 11 已描述；补登记

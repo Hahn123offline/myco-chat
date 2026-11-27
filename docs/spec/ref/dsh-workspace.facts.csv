@@ -1,0 +1,346 @@
+kind,path,line,status,node_id,note
+css.overflow,ui-sidebar-documentpreview/src/client/TextPreview.module.css,56,excluded,-,excluded：CSS 结构性属性，文本预览 scrollport overflow:auto；见 base-sidebar-right.doc.text-preview.state
+css.overflow,ui-sidebar-documentpreview/src/client/TextPreview.module.css,77,excluded,-,excluded：CSS 结构性属性，.header/.path 裁剪；见 base-sidebar-right.doc.text-preview.header
+css.cursor,ui-sidebar-documentpreview/src/client/TextPreview.module.css,169,excluded,-,excluded：CSS 结构性属性，.tool/.viewerTool cursor:pointer；见 base-sidebar-right.doc.text-preview.header
+css.cursor,ui-sidebar-documentpreview/src/client/TextPreview.module.css,216,excluded,-,excluded：CSS 结构性属性，.action（变更条内「立即重载」）cursor:pointer；见 base-sidebar-right.doc.text-preview.state
+css.cursor,ui-sidebar-documentpreview/src/client/TextPreview.module.css,235,excluded,-,excluded：CSS 结构性属性，.retry cursor:pointer；见 base-sidebar-right.doc.text-preview.state
+css.cursor,ui-sidebar-documentpreview/src/client/TextPreview.module.css,264,excluded,-,excluded：CSS 结构性属性，.more（加载更多）cursor:pointer；见 base-sidebar-right.doc.text-preview.state
+css.overflow,ui-sidebar-documentpreview/src/client/TextPreview.module.css,286,excluded,-,excluded：CSS 结构性属性，体内容裁剪/滚动盒；见 base-sidebar-right.doc.text-preview.state
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,242,E0,base-sidebar-right.doc.text-preview.state,元数据失败条上的「立即重载」按钮（仅已有内容时出现）（TextPreview.tsx:234-250）
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,246,E0,base-sidebar-right.doc.text-preview.state,"立即重载：reload()（按当前内容模式走分页/整字节/渲染器）（TextPreview.tsx:169-174,246）"
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,255,E0,base-sidebar-right.doc.text-preview.state,"文件已变更条上的「立即重载」按钮（autoRefresh 关闭时出现）（TextPreview.tsx:252-263,166-168）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,259,E0,base-sidebar-right.doc.text-preview.state,"立即重载：reload()（TextPreview.tsx:169-174,259）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,272,E0,base-sidebar-right.doc.text-preview.header,「打开方式」查看器菜单触发器：candidates>1 才渲染，按钮文案=当前渲染器名（TextPreview.tsx:267-283）
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,272,E0,base-sidebar-right.doc.text-preview.header,同上触发器按钮（tool+viewerTool，aria-label=openWith；Menu align=end portal dense，选中项由 selectedId 反映）
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,289,E0,base-sidebar-right.doc.text-preview.header,自动换行开关：aria-pressed=state.wrap，仅当渲染器声明 wrap 支持才渲染（TextPreview.tsx:285-300）
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,295,E0,base-sidebar-right.doc.text-preview.header,切换换行：actions.toggledWrap(tab.id)（TextPreview.tsx:295；body 同步 wrap 类与 data-textpreview-wrap，:328-332）
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,304,E0,base-sidebar-right.doc.text-preview.header,自动刷新按钮：位于 <span hidden> 内，DOM 存在但视觉/命中不可达（TextPreview.tsx:302-310）—— DSH 现状，见 §4 Q-WS-06
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,306,E0,base-sidebar-right.doc.text-preview.header,自动刷新开关（aria-pressed），因外层 hidden 实际不可点（TextPreview.tsx:306）
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,314,E0,base-sidebar-right.doc.text-preview.header,"刷新按钮：aria-keyshortcuts=tab.refreshShortcut，与 bindCommands({refresh}) 同实现（TextPreview.tsx:175,313-324）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,320,E0,base-sidebar-right.doc.text-preview.header,"刷新 = reload()（TextPreview.tsx:169-174,320）"
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,357,E0,base-sidebar-right.doc.text-preview.state,已有内容但读取失败时的「重试」按钮（loadNext）（TextPreview.tsx:353-365）
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,361,E0,base-sidebar-right.doc.text-preview.state,"重试 = loadNext()：加载下一页（TextPreview.tsx:228-231,361）"
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,379,E0,base-sidebar-right.doc.text-preview.state,无内容失败态的「重试」按钮（仅 recourse==='retry' 时给；'open' 则改为交给 unpreviewable 插槽）（TextPreview.tsx:367-389）
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,383,E0,base-sidebar-right.doc.text-preview.state,"无内容失败重试 = reload()（TextPreview.tsx:169-174,383）"
+native.button,ui-sidebar-documentpreview/src/client/TextPreview.tsx,392,E0,base-sidebar-right.doc.text-preview.state,分页「加载更多」按钮：非 eof 且无失败时渲染，loading 中 disabled（TextPreview.tsx:391-401）
+jsx.onclick,ui-sidebar-documentpreview/src/client/TextPreview.tsx,397,E0,base-sidebar-right.doc.text-preview.state,"加载更多 = loadNext()；滚到底也会自动触发 loadNext（TextPreview.tsx:333-341,397）"
+css.overflow,ui-sidebar-documentpreview/src/client/code/CodeBody.module.css,9,excluded,-,excluded：CSS 结构性属性，代码渲染器外层裁剪；代码块自身工具栏（复制/换行）由 ui-primitives CodeBlock 提供，不在本包
+css.overflow,ui-sidebar-documentpreview/src/client/code/CodeBody.module.css,37,excluded,-,excluded：CSS 结构性属性，代码横向滚动容器；见 §3 说明（横向滚动属渲染器内部）
+css.overflow,ui-sidebar-documentpreview/src/client/excel/ExcelBody.module.css,6,excluded,-,excluded：CSS 结构性属性，表格外层裁剪；见 base-sidebar-right.doc.renderer
+css.overflow,ui-sidebar-documentpreview/src/client/excel/ExcelBody.module.css,50,excluded,-,excluded：CSS 结构性属性，表格工具栏纵向裁剪（只读、无工具栏 showToolbar=false）；见 base-sidebar-right.doc.renderer
+css.overflow,ui-sidebar-documentpreview/src/client/excel/ExcelBody.module.css,67,excluded,-,excluded：CSS 结构性属性，表头纵向裁剪；见 base-sidebar-right.doc.renderer
+css.focus,ui-sidebar-documentpreview/src/client/excel/ExcelBody.module.css,105,excluded,-,excluded：CSS 结构性焦点样式，.formulaWarning:hover/:focus-visible；见 base-sidebar-right.doc.renderer
+jsx.onclick,ui-sidebar-documentpreview/src/client/excel/excel.tsx,48,E0,base-sidebar-right.doc.renderer,"Excel 解析失败/超限「重试」：attempt+1 重新 parse（excel.tsx:21-24,46-49）"
+native.button,ui-sidebar-documentpreview/src/client/excel/excel.tsx,59,E0,base-sidebar-right.doc.renderer,"公式警告按钮：工作簿含公式才出现，Tooltip 说明只读展示不重算（excel.tsx:50,57-62）；Workbook 只读（allowEdit=false, showToolbar=false, cellContextMenu=['copy']）（excel.tsx:63-65）"
+css.overflow,ui-sidebar-documentpreview/src/client/office/FontNotice.module.css,23,excluded,-,excluded：CSS 结构性属性，字体列表滚动 max-height；见 base-sidebar-right.doc.font-notice
+native.button,ui-sidebar-documentpreview/src/client/office/FontNotice.tsx,42,E0,base-sidebar-right.doc.font-notice,缺字体警告按钮：aria-expanded/aria-controls/aria-haspopup=dialog（FontNotice.tsx:37-47）
+a11y.expanded,ui-sidebar-documentpreview/src/client/office/FontNotice.tsx,43,E0,base-sidebar-right.doc.font-notice,"警告按钮 aria-expanded={open}（open = fonts>0 && expanded，无缺字体时整组不渲染）（FontNotice.tsx:21-22,37,43）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/office/FontNotice.tsx,44,E0,base-sidebar-right.doc.font-notice,"单击开合详情面板（非模态，portal 到 body，anchored position）（FontNotice.tsx:44,49-64）"
+aria.role,ui-sidebar-documentpreview/src/client/office/FontNotice.tsx,49,E0,base-sidebar-right.doc.font-notice,"详情面板 role=dialog + aria-labelledby/aria-describedby + tabIndex=-1（打开后 panel.focus()）（FontNotice.tsx:33-36,49-51）"
+jsx.onkeydown,ui-sidebar-documentpreview/src/client/office/FontNotice.tsx,52,E0,base-sidebar-right.doc.font-notice,"面板内 Escape 关闭并把焦点还给警告按钮（FontNotice.tsx:28-31,52）"
+jsx.onfocus,ui-sidebar-documentpreview/src/client/office/FontNotice.tsx,53,E0,base-sidebar-right.doc.font-notice,面板 blur：焦点移出面板且不在锚点上则收起（含 relatedTarget 判定）（FontNotice.tsx:53-56）
+jsx.onclick,ui-sidebar-documentpreview/src/client/office/FontNotice.tsx,59,E0,base-sidebar-right.doc.font-notice,"详情面板关闭按钮 → closeDetails（收起 + 焦点回锚点）（FontNotice.tsx:28-31,59）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/office/OfficeBody.tsx,68,E0,base-sidebar-right.doc.renderer,"Office 转换失败「重试」：request.reload() 重新走 renderer 载入（OfficeBody.tsx:63-69,54-60）"
+css.cursor,ui-sidebar-documentpreview/src/client/pdf/PdfBody.module.css,94,excluded,-,excluded：CSS 结构性属性，PDF 文本层 cursor:text（可选中复制，非点击交互）；见 base-sidebar-right.doc.renderer
+jsx.onclick,ui-sidebar-documentpreview/src/client/pdf/pdf.tsx,89,E0,base-sidebar-right.doc.renderer,"PDF 打开失败/加密/worker 失败的「重试」：attempt+1 重新 openPdf（pdf.tsx:86-91,67-83）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/pdf/pdf.tsx,198,E0,base-sidebar-right.doc.renderer,"单页渲染失败「重试」：该页 attempt+1（IntersectionObserver 按页懒渲染）（pdf.tsx:192-199,127-191）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/zoom/ZoomControls.tsx,53,E0,base-sidebar-right.doc.zoom-controls,"缩小一档（steppedZoom -1，到 MIN 时 disabled；onMouseDown preventDefault 不抢焦点/不触发文字选择）（ZoomControls.tsx:8-11,50-58）"
+a11y.expanded,ui-sidebar-documentpreview/src/client/zoom/ZoomControls.tsx,60,E0,base-sidebar-right.doc.zoom-controls,"百分比菜单按钮 aria-expanded={open}（菜单含 fit-width 与固定档位，所选档位 selectedId）（ZoomControls.tsx:39-45,59-69）"
+jsx.onclick,ui-sidebar-documentpreview/src/client/zoom/ZoomControls.tsx,61,E0,base-sidebar-right.doc.zoom-controls,百分比按钮单击开合档位菜单（onMouseDown preventDefault 保住滚动位置/选择）（ZoomControls.tsx:60-64）
+jsx.onclick,ui-sidebar-documentpreview/src/client/zoom/ZoomControls.tsx,73,E0,base-sidebar-right.doc.zoom-controls,放大一档（到 MAX 时 disabled）（ZoomControls.tsx:70-76）
+css.overflow,ui-sidebar-documentpreview/src/client/zoom/ZoomViewport.module.css,5,excluded,-,excluded：CSS 结构性属性，.frame overflow:hidden（缩放画布裁切）；见 base-sidebar-right.doc.zoom-viewport
+css.overflow,ui-sidebar-documentpreview/src/client/zoom/ZoomViewport.module.css,10,excluded,-,excluded：CSS 结构性属性，.scrollport overflow:auto（缩放内容的双轴滚动容器）；见 base-sidebar-right.doc.zoom-viewport
+jsx.onpointer,ui-sidebar-documentpreview/src/client/zoom/ZoomViewport.tsx,205,E0,base-sidebar-right.doc.zoom-viewport,"缩放视口指针手势：pointermove 在底部 72px 揭示带显示浮动控件，离开后 420ms 收起；ctrl+wheel 以指针为锚连续缩放、120ms 静置后落固定档（ZoomViewport.tsx:8-10,69-100,178-192）"
+native.anchor,ui-sidebar-documentpreview/tests/basic-html.client.spec.ts,9,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: '<form><math><mtext></form><form><mglyph><style></math><a href=""https:"
+native.anchor,ui-sidebar-documentpreview/tests/basic-html.client.spec.ts,26,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: <a href=""https://example.invalid"">Link</a><svg><a xlink:href=""https://"
+native.anchor,ui-sidebar-documentpreview/tests/basic-html.client.spec.ts,41,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: <div><template shadowrootmode=""open""><template><a href=""https://exampl"
+native.anchor,ui-sidebar-documentpreview/tests/basic-html.client.spec.ts,42,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: <svg><a href=""https://example.invalid""><set attributeName=""href"" to=""h"
+native.button,ui-sidebar-documentpreview/tests/office-font-notice.client.spec.tsx,50,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<><FontNotice {...props()} /><button>Other action</button></>)
+a11y.expanded,ui-sidebar-documentpreview/tests/office-font-notice.client.spec.tsx,65,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(warning.getAttribute('aria-expanded')).toBe('false')
+a11y.expanded,ui-sidebar-documentpreview/tests/office-font-notice.client.spec.tsx,72,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe(
+css.overflow,ui-sidebar-files/src/client/FilesBody.module.css,44,excluded,-,excluded：CSS 结构性属性，.body overflow:auto —— 文件树唯一滚动容器（scrollbar-gutter:stable）；见 base-sidebar-right.files.tree
+css.cursor,ui-sidebar-files/src/client/FilesBody.module.css,85,excluded,-,excluded：CSS 结构性属性，.row cursor:pointer；见 base-sidebar-right.files.tree
+css.overflow,ui-sidebar-files/src/client/FilesBody.module.css,105,excluded,-,excluded：CSS 结构性属性，.name 单行 ellipsis；见 base-sidebar-right.files.tree
+css.cursor,ui-sidebar-files/src/client/FilesBody.module.css,156,excluded,-,excluded：CSS 结构性属性，.tool cursor:pointer（28×28 刷新键）；见 base-sidebar-right.files.header
+disclosure,ui-sidebar-files/src/client/FilesBody.tsx,75,excluded,-,排除：TreeContext 接口的 onToggle 类型声明，非交互点
+a11y.expanded,ui-sidebar-files/src/client/FilesBody.tsx,87,E0,base-sidebar-right.files.tree,目录行 aria-expanded={expanded}（FilesBody.tsx:87）
+disclosure,ui-sidebar-files/src/client/FilesBody.tsx,87,E0,base-sidebar-right.files.tree,"目录展开语义：onToggle(parent,path) → store 的 toggle(tabId,...)（FilesBody.tsx:87,185）"
+jsx.onclick,ui-sidebar-files/src/client/FilesBody.tsx,87,E0,base-sidebar-right.files.tree,目录行单击 = 展开/折叠该目录（state.expanded 记录路径，懒加载子级）（FilesBody.tsx:80-93）
+native.button,ui-sidebar-files/src/client/FilesBody.tsx,87,E0,base-sidebar-right.files.tree,目录行是原生 button + aria-expanded（宽度 100% 的整行命中）（FilesBody.tsx:86-90；FilesBody.module.css:70-86）
+jsx.onclick,ui-sidebar-files/src/client/FilesBody.tsx,98,E0,base-sidebar-right.files.tree,"文件行单击 = 打开：tabActions.openResource(fileAddressFor(sessionId,root,path))，交给 file: 查看器（FilesBody.tsx:95-103,186-187）"
+native.button,ui-sidebar-files/src/client/FilesBody.tsx,98,E0,base-sidebar-right.files.tree,文件行是原生 button（无 aria-expanded；图标按扩展名着色）（FilesBody.tsx:97-102）
+disclosure,ui-sidebar-files/src/client/FilesBody.tsx,185,E0,base-sidebar-right.files.tree,"父级注入的展开回调实现（toggle 带 signal，目录若已过期按 abort 丢弃）（FilesBody.tsx:185,171-173）"
+native.button,ui-sidebar-files/src/client/FilesBody.tsx,198,E0,base-sidebar-right.files.tree,自动刷新按钮：位于 <span hidden> 内 —— 在 DOM 与可访问树里存在但视觉/命中不可达（FilesBody.tsx:197-204）；这是 DSH 现状，见 §4 Q-WS-06
+jsx.onclick,ui-sidebar-files/src/client/FilesBody.tsx,201,E0,base-sidebar-right.files.tree,自动刷新开关（aria-pressed=state.autoRefresh），因外层 hidden 实际不可点（FilesBody.tsx:201）
+native.button,ui-sidebar-files/src/client/FilesBody.tsx,206,E0,base-sidebar-right.files.header,刷新按钮：28×28，aria-keyshortcuts=tab.refreshShortcut（page.refresh）（FilesBody.tsx:205-216）
+jsx.onclick,ui-sidebar-files/src/client/FilesBody.tsx,212,E0,base-sidebar-right.files.header,"刷新 = refresh(tab.id)，与命令层 bindCommands({refresh}) 同一实现（FilesBody.tsx:145,190-192,212）"
+jsx.onscroll,ui-sidebar-files/src/client/FilesBody.tsx,225,E0,base-sidebar-right.files.tree,"树体滚动：onScroll 只写 scrollTopRef，卸载时一次性存入 store；重挂载恢复位置（FilesBody.tsx:150-167,221-228）"
+a11y.expanded,ui-sidebar-files/tests/files-body.client.spec.tsx,129,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(dir.getAttribute('aria-expanded')).toBe('true')
+a11y.expanded,ui-sidebar-files/tests/files-body.client.spec.tsx,135,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(dir.getAttribute('aria-expanded')).toBe('false')
+aria.role,ui-sidebar-right/src/client/focus.ts,100,E0,base-sidebar-right.panel,焦点连续性的 tab 兜底查询：pane 内 [role=tab][aria-selected=true] 或浮动标题（focus.ts:73-107；Tab 语义本体在 ui-dockkit TabPanel.tsx:245-307）
+jsx.onclick,ui-sidebar-right/src/client/shell/ExpandButton.tsx,47,E0,base-sidebar-right.panel.expand,"折叠态唯一入口（会话头 corner 席）：setExpanded(sessionId,true)；已展开则不渲染（ExpandButton.tsx:33-52）"
+css.cursor,ui-sidebar-right/src/client/shell/SidebarRight.module.css,127,excluded,-,excluded：CSS 结构性属性，.iconButton cursor:pointer（全屏/收起两键）；见 base-sidebar-right.panel.collapse
+css.overflow,ui-sidebar-right/src/client/shell/SidebarRight.module.css,168,excluded,-,excluded：CSS 结构性属性，.tabBody overflow:hidden（页体裁定）；见 base-sidebar-right.panel
+native.button,ui-sidebar-right/src/client/shell/SidebarRight.tsx,271,E0,base-sidebar-right.panel.fullscreen,全屏/恢复按钮（28×28，data-sidebar-right-mode=next，aria-keyshortcuts=pane.fullscreen.toggle）（SidebarRight.tsx:263-281）
+jsx.onclick,ui-sidebar-right/src/client/shell/SidebarRight.tsx,277,E0,base-sidebar-right.panel.fullscreen,单击 toggleFullscreen：模式在 push↔fullscreen 间切，命令层同一实现（SidebarRight.tsx:277；index.ts:195；shortcuts.ts:43-63）
+native.button,ui-sidebar-right/src/client/shell/SidebarRight.tsx,283,E0,base-sidebar-right.panel.collapse,收起按钮（data-sidebar-right-toggle，aria-keyshortcuts=sidebar.right.toggle）（SidebarRight.tsx:282-293）
+jsx.onclick,ui-sidebar-right/src/client/shell/SidebarRight.tsx,289,E0,base-sidebar-right.panel.collapse,单击 toggleExpanded(sessionId)：折叠时整列平移出右缘、内容保持挂载（SidebarRight.tsx:289；SidebarRight.module.css:44-62）
+css.cursor,ui-sidebar-right/src/client/tabs/guide/GuideBody.module.css,62,excluded,-,excluded：CSS 结构性属性，.entry 胶囊 cursor:pointer（380px×56px min）；见 base-sidebar-right.guide.entry
+css.overflow,ui-sidebar-right/src/client/tabs/guide/GuideBody.module.css,99,excluded,-,excluded：CSS 结构性属性，.entryTitle 单行 ellipsis；见 base-sidebar-right.guide.entry
+css.overflow,ui-sidebar-right/src/client/tabs/guide/GuideBody.module.css,108,excluded,-,excluded：CSS 结构性属性，.entryDescription 单行 ellipsis（>4 个入口时整段不渲染描述）；见 base-sidebar-right.guide.entry
+native.button,ui-sidebar-right/src/client/tabs/guide/GuideBody.tsx,57,E0,base-sidebar-right.guide.entry,"指南入口胶囊按钮（kind 自定义；aria-keyshortcuts 取该类型命令）；本包默认胶囊，chain 可整块替换（GuideBody.tsx:48-75,88-112）"
+jsx.onclick,ui-sidebar-right/src/client/tabs/guide/GuideBody.tsx,62,E0,base-sidebar-right.guide.entry,"单击入口：openTab(entry.kind,{replaceTab:true}) —— 指南是门，打开后本 tab 被替换（GuideBody.tsx:62,105）"
+native.button,ui-sidebar-right/tests/guide-body.client.spec.tsx,172,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const custom = (key: string) => key === 'extension/terminal' ? <button
+native.input,ui-sidebar-right/tests/seat.client.spec.tsx,175,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: h.runtime.slots.register({ name: 'sidebar.right.pane.tab', key: 'test/"
+native.input,ui-sidebar-right/tests/seat.client.spec.tsx,218,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: return <input data-retention-parity />
+jsx.onclick,ui-sidebar-right/tests/seat.client.spec.tsx,248,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: return <button data-restored-tab onClick={() => { setCount(value => va
+native.button,ui-sidebar-right/tests/seat.client.spec.tsx,248,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: return <button data-restored-tab onClick={() => { setCount(value => va
+css.cursor,ui-sidebar-terminal/src/client/TerminalCleanup.module.css,3,excluded,-,excluded：CSS 结构性属性，.notice button 样式；其组件未注册（index.ts:102-129 注释），产品 UI 不可达
+jsx.onclick,ui-sidebar-terminal/src/client/TerminalCleanup.tsx,27,excluded,-,排除：实现存在但未接线 —— index.ts:102-129 把 TerminalCleanup 的 shell.overlay 注册整段注释，产品 UI 不可达
+native.button,ui-sidebar-terminal/src/client/TerminalCleanup.tsx,27,excluded,-,排除：同上，未注册的关闭失败重试按钮
+css.overflow,ui-sidebar-terminal/src/client/TerminalGuide.module.css,1,excluded,-,excluded：CSS 结构性属性，.entry 卡片盒（overflow 用于圆角裁剪）；见 base-sidebar-right.guide.terminal-entry
+css.focus,ui-sidebar-terminal/src/client/TerminalGuide.module.css,3,excluded,-,excluded：CSS 结构性焦点样式，.main:focus-visible（outline-offset:-2px）；见 base-sidebar-right.guide.terminal-entry
+css.overflow,ui-sidebar-terminal/src/client/TerminalGuide.module.css,7,excluded,-,excluded：CSS 结构性属性，.title 单行 ellipsis；见 base-sidebar-right.guide.terminal-entry
+css.overflow,ui-sidebar-terminal/src/client/TerminalGuide.module.css,8,excluded,-,excluded：CSS 结构性属性，.description 单行 ellipsis；见 base-sidebar-right.guide.terminal-entry
+jsx.onclick,ui-sidebar-terminal/src/client/TerminalGuide.tsx,57,E0,base-sidebar-right.guide.terminal-entry,"指南卡主按钮：整卡点击 = 用记住的 shell 开新终端（terminal.new，replaceTab）（TerminalGuide.tsx:55-57,33）"
+a11y.expanded,ui-sidebar-terminal/src/client/TerminalGuide.tsx,73,E0,base-sidebar-right.guide.terminal-entry,shell 选择菜单触发器 aria-haspopup=menu + aria-expanded={open}（TerminalGuide.tsx:73-76）
+jsx.onclick,ui-sidebar-terminal/src/client/TerminalGuide.tsx,74,E0,base-sidebar-right.guide.terminal-entry,chevron 单击：loading 后开合 shell 菜单（Menu portal autoFocus align=end，选项含 empty/error/retry）（TerminalGuide.tsx:40-76）
+jsx.onclick,ui-sidebar-terminal/src/client/TerminalRecovery.tsx,28,excluded,-,排除：实现存在但未接线 —— index.ts:102-129 把 TerminalRecovery 的会话头注册注释掉，产品 UI 不可达
+native.button,ui-sidebar-terminal/src/client/TerminalRecovery.tsx,28,excluded,-,排除：同上，未注册的恢复失败重试按钮
+css.overflow,ui-sidebar-terminal/src/client/TerminalTitle.module.css,1,excluded,-,excluded：CSS 结构性属性，.title 单行 ellipsis（tab chip 上的终端名）；见 base-sidebar-right.terminal.title-rename
+native.input,ui-sidebar-terminal/src/client/TerminalTitle.tsx,40,E0,base-sidebar-right.terminal.title-rename,就地改名输入框：maxLength=120，aria-label=rename（TerminalTitle.tsx:38-58）
+jsx.onpointer,ui-sidebar-terminal/src/client/TerminalTitle.tsx,41,E0,base-sidebar-right.terminal.title-rename,改名输入的 pointerdown stopPropagation：不把按击传给 dockkit 拖拽把手（TerminalTitle.tsx:41）
+jsx.onclick,ui-sidebar-terminal/src/client/TerminalTitle.tsx,42,E0,base-sidebar-right.terminal.title-rename,改名输入的 click stopPropagation：不选中 tab/不触发拖拽（TerminalTitle.tsx:42）
+jsx.ondoubleclick,ui-sidebar-terminal/src/client/TerminalTitle.tsx,43,E0,base-sidebar-right.terminal.title-rename,双击 stopPropagation：改名态内不再触发第二次改名（TerminalTitle.tsx:43）
+jsx.onfocus,ui-sidebar-terminal/src/client/TerminalTitle.tsx,44,E0,base-sidebar-right.terminal.title-rename,blur 提交：空名或未变则不请求 rename（TerminalTitle.tsx:44-48）
+jsx.onkeydown,ui-sidebar-terminal/src/client/TerminalTitle.tsx,49,E0,base-sidebar-right.terminal.title-rename,Escape=取消（cancelled 后 blur 不提交）；Enter=blur 提交；IME composing 忽略（TerminalTitle.tsx:49-57）
+css.overflow,ui-sidebar-terminal/src/client/terminal.module.css,2,excluded,-,excluded：CSS 结构性属性，.screen overflow:hidden（xterm 自管内部滚动）；见 base-sidebar-right.terminal.status
+css.overflow,ui-sidebar-terminal/src/client/terminal.module.css,7,excluded,-,excluded：CSS 结构性属性，.empty 空态纵向居中容器；见 base-sidebar-right.terminal.status
+jsx.onclick,ui-sidebar-terminal/src/client/terminal.tsx,33,E0,base-sidebar-right.terminal.status,"终点态/缺失终端时的「新建终端」按钮：openTab('terminal',{replaceTab:true})（terminal.tsx:31-35,36-45）"
+jsx.onclick,ui-sidebar-terminal/src/client/terminal.tsx,60,E0,base-sidebar-right.terminal.status,只读态「接管控制」：model.connect()（phase=connected 且非 writable 时出现）（terminal.tsx:55-60）
+jsx.onclick,ui-sidebar-terminal/src/client/terminal.tsx,62,E0,base-sidebar-right.terminal.status,断连/失败态「重连/重试」：无 info 时 refresh()，有 info 时 connect()（terminal.tsx:61-63）
+jsx.onclick,ui-sidebar-terminal/src/client/terminal.tsx,63,E0,base-sidebar-right.terminal.status,同上另一分支按钮（connect()），二者互斥渲染
+aria.role,ui-sidebar-terminal/tests/terminal-body.client.spec.tsx,65,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: wrap: (title: ReactNode) => <div role=""tab"" tabIndex={0} aria-selected"
+jsx.onclick,ui-sidebar-terminal/tests/terminal-body.client.spec.tsx,326,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const title = render(<div onPointerDown={outer} onClick={outer} onDoub
+jsx.ondoubleclick,ui-sidebar-terminal/tests/terminal-body.client.spec.tsx,326,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const title = render(<div onPointerDown={outer} onClick={outer} onDoub
+jsx.onkeydown,ui-sidebar-terminal/tests/terminal-body.client.spec.tsx,326,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const title = render(<div onPointerDown={outer} onClick={outer} onDoub
+jsx.onpointer,ui-sidebar-terminal/tests/terminal-body.client.spec.tsx,326,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const title = render(<div onPointerDown={outer} onClick={outer} onDoub
+jsx.ondoubleclick,ui-sidebar-terminal/tests/terminal-body.client.spec.tsx,380,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const seat = (shown: boolean) => <div onDoubleClick={outer}>
+jsx.onclick,ui-workspace/src/client/WorkspacePicker.tsx,211,E0,sidebar.workspaces.add-error-dialog,取消失败对话框：closeModal 只关本地 errorOpen，不重试拾取；对话框属外壳 Modal（WorkspacePicker.tsx:204-219）
+jsx.onclick,ui-workspace/src/client/WorkspacePicker.tsx,214,E0,sidebar.workspaces.add-error-dialog,重试：openDirectoryFlow 重开目录流；flowAvailable=false 时 disabled（WorkspacePicker.tsx:212-215）
+aria.role,ui-workspace/src/client/contract/slots.ts,142,excluded,-,排除：同上，JSDoc @example 里的 role={menuitem} 说明文字，非产品 UI
+native.button,ui-workspace/src/client/contract/slots.ts,142,excluded,-,排除：契约文档 JSDoc 中的 @example 示例（菜单行应渲染为 role=menuitem 的 button），非运行时代码
+jsx.onclick,ui-workspace/src/client/contract/slots.ts,159,excluded,-,排除：JSDoc @example 中的示例 onClick（复制会话 ID），非运行时代码
+css.contain,ui-workspace/src/client/rows/AnimatedRows.module.css,4,excluded,-,excluded：CSS 结构性属性，.exits 退场覆盖层 contain: strict（AnimatedRows.tsx:180 的 aria-hidden 覆盖层）；行移动/淡出见 sidebar.workspaces.list
+css.cursor,ui-workspace/src/client/rows/Rows.module.css,9,excluded,-,excluded：CSS 结构性属性，.projectRow/.sessionRow cursor:pointer（整行可点）；见 sidebar.workspaces.session-row
+css.cursor,ui-workspace/src/client/rows/Rows.module.css,34,excluded,-,excluded：CSS 结构性属性，.searchResultRow cursor:pointer；见 sidebar.workspaces.search-result-row
+css.overflow,ui-workspace/src/client/rows/Rows.module.css,57,excluded,-,excluded：CSS 结构性属性，.searchResultTitle overflow:hidden + ellipsis（单行标题裁剪）；见 sidebar.workspaces.search-result-row
+css.overflow,ui-workspace/src/client/rows/Rows.module.css,74,excluded,-,excluded：CSS 结构性属性，.searchResultWorkspace/.searchResultSnippet 单行 ellipsis（工作区名 ≤40% 宽）；见 sidebar.workspaces.search-result-row
+css.overflow,ui-workspace/src/client/rows/Rows.module.css,133,excluded,-,excluded：CSS 结构性属性，.visuallyHidden 的 1px 裁剪隐藏（状态文案给读屏）；见 sidebar.workspaces.session-status
+css.overflow,ui-workspace/src/client/rows/Rows.module.css,167,excluded,-,excluded：CSS 结构性属性，.title 单行 ellipsis（会话/工作区标题）；见 sidebar.workspaces.session-title
+css.overflow,ui-workspace/src/client/rows/Rows.module.css,214,excluded,-,excluded：CSS 结构性属性，.meta 单行 ellipsis；本包未渲染该类的可交互元素
+css.cursor,ui-workspace/src/client/rows/Rows.module.css,404,excluded,-,excluded：CSS 结构性属性，行内 16×16 iconButton cursor:pointer（行尾 ⋯/新建/置顶/归档）；见 sidebar.workspaces.session-actions
+container.scroll,ui-workspace/src/client/rows/Rows.tsx,68,E0,sidebar.workspaces.session-title,"标题跑马灯位移（placeTitle/restTitle 对 title 元素 scrollTo，非滚动容器）；run 由行 hover 触发（Rows.tsx:102-134,199-200）"
+container.scroll,ui-workspace/src/client/rows/Rows.tsx,70,E0,sidebar.workspaces.session-title,"标题跑马灯位移（placeTitle/restTitle 对 title 元素 scrollTo，非滚动容器）；run 由行 hover 触发（Rows.tsx:102-134,199-200）"
+container.scroll,ui-workspace/src/client/rows/Rows.tsx,84,E0,sidebar.workspaces.session-title,"标题跑马灯位移（placeTitle/restTitle 对 title 元素 scrollTo，非滚动容器）；run 由行 hover 触发（Rows.tsx:102-134,199-200）"
+disclosure,ui-workspace/src/client/rows/Rows.tsx,212,excluded,-,排除：JSDoc @param 注释里的 onToggle 说明，非运行时代码
+disclosure,ui-workspace/src/client/rows/Rows.tsx,219,E0,sidebar.workspaces.group-row,组行组件入口：ProjectRowItem 收 onToggle/onCreate/actions/drag（Rows.tsx:219-311），父级在 WorkspaceBrowser.tsx:496-527 注入
+disclosure,ui-workspace/src/client/rows/Rows.tsx,223,excluded,-,排除：Props 类型声明 onToggle: () => void，非交互点
+aria.role,ui-workspace/src/client/rows/Rows.tsx,246,E0,sidebar.workspaces.group-row,组行语义：role=treeitem + aria-expanded，外层树 role=tree 由 AnimatedRows 提供（Rows.tsx:243-258；AnimatedRows.tsx:170-177）
+a11y.expanded,ui-workspace/src/client/rows/Rows.tsx,247,E0,sidebar.workspaces.group-row,组行展开态写进 aria-expanded={row.expanded}；折叠时组内会话不渲染（tree.ts:462-465）
+disclosure,ui-workspace/src/client/rows/Rows.tsx,248,E0,sidebar.workspaces.group-row,同一行的展开语义：onToggle 由 WorkspaceBrowser 的 setGroupExpanded 落地（WorkspaceBrowser.tsx:502-507）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,248,E0,sidebar.workspaces.group-row,整行单击 = 展开/折叠组；再点折叠会把该组配额重置回 5（WorkspaceBrowser.tsx:502-507）
+jsx.ondrag,ui-workspace/src/client/rows/Rows.tsx,250,E0,sidebar.workspaces.reorder,工作区行可拖（仅真实 Workspace，未分组桶 drag=undefined 不可拖）；dragstart 写入 dataTransfer 与 start()（Rows.tsx:249-256）
+jsx.ondrag,ui-workspace/src/client/rows/Rows.tsx,257,E0,sidebar.workspaces.reorder,工作区行 dragend 提交/清除拖拽状态（Rows.tsx:257；WorkspaceBrowser.tsx:435-442）
+native.button,ui-workspace/src/client/rows/Rows.tsx,286,E0,sidebar.workspaces.group-menu,工作区 ⋯ 触发器：仅真实 Workspace 渲染（actions!==undefined），未分组桶无菜单（Rows.tsx:269-296）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,290,E0,sidebar.workspaces.group-menu,⋯ 单击切换菜单开（stopPropagation 不触发展开），Menu portal+closeOnPointerLeave（Rows.tsx:286-295）
+native.button,ui-workspace/src/client/rows/Rows.tsx,298,E0,sidebar.workspaces.group-row,组行内「新建会话」按钮：onCreate 展开组并在该工作区开会话（Rows.tsx:297-307；WorkspaceBrowser.tsx:508-513）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,303,E0,sidebar.workspaces.group-row,新建会话按钮 stopPropagation 后 onCreate()，避免同时折叠组（Rows.tsx:303）
+aria.role,ui-workspace/src/client/rows/Rows.tsx,484,E0,sidebar.workspaces.search-result-row,搜索结果行 role=treeitem + aria-selected + aria-description（归档时给 archivedNotOpenable 说明）（Rows.tsx:481-488）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,487,E0,sidebar.workspaces.search-result-row,搜索结果整行单击 = 打开该会话（Rows.tsx:487；WorkspaceBrowser.tsx:1032-1041 openSearchResult：清 query+收起搜索+open）
+native.button,ui-workspace/src/client/rows/Rows.tsx,502,E0,sidebar.workspaces.search-result-row,归档结果行内「取消归档」按钮（仅 archived 行渲染）（Rows.tsx:499-512）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,506,E0,sidebar.workspaces.search-result-row,取消归档：stopPropagation 后 onUnarchive，不打开行（Rows.tsx:506；WorkspaceBrowser.tsx:1166-1170）
+container.scroll,ui-workspace/src/client/rows/Rows.tsx,582,E0,sidebar.workspaces.session-row,搜索定位回填：reveal 时 scrollIntoView({block:'nearest'})，然后回调确认（Rows.tsx:580-584）
+aria.role,ui-workspace/src/client/rows/Rows.tsx,595,E0,sidebar.workspaces.session-row,会话行语义：role=treeitem + aria-selected + aria-description（Rows.tsx:586-597）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,598,E0,sidebar.workspaces.session-row,整行单击 = 打开会话（onOpen→WorkspaceBrowser guardedOpen，归档行改为提示不可打开）（Rows.tsx:598；WorkspaceBrowser.tsx:900-908）
+jsx.ondrag,ui-workspace/src/client/rows/Rows.tsx,602,E0,sidebar.workspaces.reorder,"会话行拖起：空白行/归档行 draggable=false；dataTransfer 写 node.id（Rows.tsx:573,601-608）"
+jsx.ondrag,ui-workspace/src/client/rows/Rows.tsx,609,E0,sidebar.workspaces.reorder,会话行 dragend 提交最后标记（Rows.tsx:609；WorkspaceBrowser.tsx:558-562）
+jsx.ondrag,ui-workspace/src/client/rows/Rows.tsx,610,E0,sidebar.workspaces.reorder,会话行 dragover：仅同组同置顶块的兼容目标才 preventDefault + 报 before/after 半区（Rows.tsx:610-617；WorkspaceBrowser.tsx:536-546）
+jsx.ondrag,ui-workspace/src/client/rows/Rows.tsx,618,E0,sidebar.workspaces.reorder,会话行 drop：提交插入位置；置顶行只与置顶行互换（Rows.tsx:618-624；sessionDragOrder WorkspaceBrowser.tsx:182-203）
+jsx.ondoubleclick,ui-workspace/src/client/rows/Rows.tsx,639,E0,sidebar.workspaces.session-title,标题双击 = 改名对话框（stopPropagation，不触发行打开）；空白行无双击（Rows.tsx:636-644）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,664,E0,sidebar.workspaces.session-actions,行尾动作条整条 stopPropagation：条内任何按钮都不顺带打开行（Rows.tsx:660-664）
+native.button,ui-workspace/src/client/rows/Rows.tsx,671,E0,sidebar.workspaces.session-actions,⋯ 触发器：aria-label 带会话标题，无 aria-haspopup/aria-expanded（Rows.tsx:670-679；无障碍缺口见 dsh-sidebar.md §1.2 E）
+jsx.onclick,ui-workspace/src/client/rows/Rows.tsx,675,E0,sidebar.workspaces.session-actions,⋯ 单击切换菜单开（Menu portal + closeOnPointerLeave + 行进入 menuOpen 悬停态）（Rows.tsx:665-687；Rows.module.css:302-307）
+css.cursor,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,28,excluded,-,excluded：CSS 结构性属性，区段头 28×28 iconButton cursor:pointer；见 sidebar.workspaces.view-options
+css.focus,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,34,excluded,-,excluded：CSS 结构性焦点样式，.iconButton:focus-visible（outline-offset:-2px，因动作簇自身裁剪）；见 sidebar.workspaces.view-options
+css.focus,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,35,excluded,-,excluded：CSS 结构性焦点样式，.searchButton:focus-visible；见 sidebar.workspaces.search
+css.focus,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,36,excluded,-,excluded：CSS 结构性焦点样式，.clearButton:focus-visible；见 sidebar.workspaces.search
+css.overflow,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,64,excluded,-,excluded：CSS 结构性属性，.sectionHeader overflow:hidden（菜单必须 portal，否则被 clip）；见 sidebar.workspaces.view-options
+css.overflow,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,77,excluded,-,excluded：CSS 结构性属性，.sectionLabel 单行裁剪 + max-width:45%；见 sidebar.workspaces.section-header
+css.overflow,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,125,excluded,-,excluded：CSS 结构性属性，.headerActions overflow:hidden（动作簇收起时裁剪）；见 sidebar.workspaces.section-header
+css.cursor,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,158,excluded,-,excluded：CSS 结构性属性，.search cursor:text（胶囊非展开态是文本光标）；见 sidebar.workspaces.search
+css.overflow,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,160,excluded,-,excluded：CSS 结构性属性，.search overflow:hidden（圆角裁剪）；见 sidebar.workspaces.search
+css.cursor,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,190,excluded,-,excluded：CSS 结构性属性，.searchButton cursor:pointer；见 sidebar.workspaces.search
+css.cursor,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,243,excluded,-,excluded：CSS 结构性属性，.clearButton cursor:pointer；见 sidebar.workspaces.search
+css.overflow,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,361,excluded,-,excluded：CSS 结构性属性，.list overflow-y:auto —— 侧栏唯一的滚动容器（scrollbar-gutter:stable，显隐滚动条不移动行）；见 sidebar.workspaces.list
+css.cursor,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,506,excluded,-,excluded：CSS 结构性属性，.sessionOverflowButton cursor:pointer；见 sidebar.workspaces.overflow
+css.cursor,ui-workspace/src/client/rows/WorkspaceBrowser.module.css,548,excluded,-,excluded：CSS 结构性属性，.emptyAction cursor:pointer；见 sidebar.workspaces.empty
+native.button,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,156,E0,sidebar.workspaces.view-options,分组/排序/归档筛选菜单触发器（28×28 图标键，aria-label=viewOptions.label，Menu align=end portal dense）（WorkspaceBrowser.tsx:105-168）
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,160,E0,sidebar.workspaces.view-options,单击开合视图选项菜单，选中项由 selectedIds 反映三组单选（groupBy/orderBy/archivedFilter）（WorkspaceBrowser.tsx:135-147）
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,272,E0,sidebar.workspaces.empty,"归档-only 空态的「查看其它」：把 archivedFilter 切回 default（WorkspaceBrowser.tsx:265-278,909）"
+native.button,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,272,E0,sidebar.workspaces.empty,空态行动按钮（仅 archivedFilter==='only' 且无归档时渲染）
+jsx.ondrag,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,468,E0,sidebar.workspaces.reorder,工作区拖拽的落下判定区：整组 section 的 dragover 决定 before/after 或拒绝（WorkspaceBrowser.tsx:456-481）
+jsx.ondrag,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,482,E0,sidebar.workspaces.reorder,"工作区拖拽 drop：commitWorkspaceDrag → insertWorkspaceBefore（WorkspaceBrowser.tsx:482-494,373-394）"
+disclosure,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,502,E0,sidebar.workspaces.group-row,"组折叠回调接线：折叠同时把该组配额重置为 COLLAPSED_SESSION_LIMIT=5（WorkspaceBrowser.tsx:502-507,55）"
+native.button,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,582,E0,sidebar.workspaces.overflow,"「展开/收起」配额按钮：每组默认只显示 5 条空闲会话（运行中/空白不占配额），隐藏数>0 才渲染（WorkspaceBrowser.tsx:57-70,581-602）"
+a11y.expanded,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,586,E0,sidebar.workspaces.overflow,"配额按钮 aria-expanded={sessionsExpanded}（= 已无隐藏行）（WorkspaceBrowser.tsx:421,586）"
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,587,E0,sidebar.workspaces.overflow,点一次 +5，剩余 ≤5 时直接 Infinity；已全展开时点回收起到 5（WorkspaceBrowser.tsx:587-596）
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1083,E0,sidebar.workspaces.search,搜索外点关闭：document click 监听，点外先 blur，query 为空才收起（WorkspaceBrowser.tsx:1076-1091）
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1089,E0,sidebar.workspaces.search,同上监听注册（document.addEventListener('click')），卸载时移除
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1090,E0,sidebar.workspaces.search,同上监听清理（removeEventListener），非独立交互
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1220,E0,sidebar.workspaces.search,搜索胶囊单击：关闭添加菜单、展开搜索、聚焦输入框（WorkspaceBrowser.tsx:1216-1225）
+native.button,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1227,E0,sidebar.workspaces.search,"搜索图标按钮：aria-expanded + aria-keyshortcuts=session.search；rail 态是独立 36px 图标（WorkspaceBrowser.tsx:1226-1239,1325-1339）"
+a11y.expanded,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1232,E0,sidebar.workspaces.search,"搜索按钮 aria-expanded={searchExpanded}（展开态同时折叠区段标题与动作簇）（WorkspaceBrowser.tsx:1232,1210-1214,1272）"
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1233,E0,sidebar.workspaces.search,"点按钮走 requestSearch()（快捷键与按钮同一请求通道）（WorkspaceBrowser.tsx:1233-1235,1061-1069；shortcuts.ts:90-91）"
+native.input,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1240,E0,sidebar.workspaces.search,"受控搜索输入框：maxLength=500 UTF-16 码元，未展开 tabIndex=-1（WorkspaceBrowser.tsx:1240-1248,53）"
+jsx.onkeydown,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1249,E0,sidebar.workspaces.search,Escape：清空 query 并收起搜索（不逐级退，直接退出搜索态）（WorkspaceBrowser.tsx:1249-1253）
+native.button,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1256,E0,sidebar.workspaces.search,清空按钮（aria-label=search.clear，仅展开态渲染，24×24）（WorkspaceBrowser.tsx:1255-1264）
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1260,E0,sidebar.workspaces.search,清空：stopPropagation + setQuery('') + 收起（WorkspaceBrowser.tsx:1260-1264）
+native.button,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1289,E0,sidebar.workspaces.add-workspace,＋ 添加工作区：无目录流占用时整个按钮不渲染（directoryFlowAvailable 门控）（WorkspaceBrowser.tsx:1287-1301）
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1295,E0,sidebar.workspaces.add-workspace,"单击 requestAddWorkspace()：打开 WorkspacePickFlow 菜单（WorkspaceBrowser.tsx:1295-1298,1305-1321）"
+native.button,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1327,E0,sidebar.workspaces.search,"rail 态独立搜索图标（36×36），点击 requestSearch → 请求展开侧栏后聚焦（WorkspaceBrowser.tsx:1325-1339,1049-1060）"
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1332,E0,sidebar.workspaces.search,rail 搜索点击走 requestSearch()，与宽屏搜索按钮同通道
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1429,E0,sidebar.workspaces.workspace-rename-dialog,"工作区改名对话框「取消」：renaming 中 disabled（WorkspaceBrowser.tsx:1422-1432,1146-1150）"
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1430,E0,sidebar.workspaces.workspace-rename-dialog,"「改名」确认：renameBlocked（空/未变/重名/进行中）时 disabled（WorkspaceBrowser.tsx:1138-1145,1151-1162）"
+native.input,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1434,E0,sidebar.workspaces.workspace-rename-dialog,改名输入框：autoFocus 席位 data-modal-autofocus，disabled=renaming（WorkspaceBrowser.tsx:1434-1450）
+jsx.onfocus,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1440,E0,sidebar.workspaces.workspace-rename-dialog,聚焦即全选（e.target.select()）（WorkspaceBrowser.tsx:1440）
+jsx.onkeydown,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1444,E0,sidebar.workspaces.workspace-rename-dialog,Enter 提交，但 IME composing 时忽略（composingRef）（WorkspaceBrowser.tsx:1442-1449）
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1467,E0,sidebar.workspaces.workspace-delete-dialog,"删除工作区对话框「取消」（deleting 中 disabled）（WorkspaceBrowser.tsx:1457-1477,1185-1189）"
+jsx.onclick,ui-workspace/src/client/rows/WorkspaceBrowser.tsx,1472,E0,sidebar.workspaces.workspace-delete-dialog,删除确认（红字 deleteAction）：确认后保持对话框直到列表投影更新，防陈旧帧（WorkspaceBrowser.tsx:1190-1205）
+native.button,ui-workspace/src/client/session-actions/ArchiveSession.tsx,62,E0,sidebar.workspaces.session-actions,行尾悬浮「归档/取消归档」按钮（order 100；归档行显示 unarchive）（ArchiveSession.tsx:56-72）
+jsx.onclick,ui-workspace/src/client/session-actions/ArchiveSession.tsx,66,E0,sidebar.workspaces.session-actions,"单击直接归档/取消归档；归档成功出 6s 带撤销的 toast（ArchiveSession.tsx:66；index.ts:186-200,RowActionToast.tsx:13,39-56）"
+jsx.onclick,ui-workspace/src/client/session-actions/ArchiveSession.tsx,131,E0,sidebar.workspaces.archive-confirm-dialog,"「停止并归档」确认框取消：不动运行中的工作（ArchiveSession.tsx:122-141,107-110）"
+jsx.onclick,ui-workspace/src/client/session-actions/ArchiveSession.tsx,136,E0,sidebar.workspaces.archive-confirm-dialog,"确认停止并归档：仅在 Host 以 workspace/session-active 拒绝时弹出（ArchiveSession.tsx:136；index.ts:186-197,202-209）"
+native.button,ui-workspace/src/client/session-actions/PinSession.tsx,59,E0,sidebar.workspaces.session-actions,行尾悬浮「置顶/取消置顶」按钮（order 200，最右；归档行不渲染）（PinSession.tsx:53-68）
+jsx.onclick,ui-workspace/src/client/session-actions/PinSession.tsx,63,E0,sidebar.workspaces.session-actions,单击置顶/取消置顶；失败出 pinFailed/unpinFailed 提示（PinSession.tsx:63；index.ts:169-179）
+jsx.onclick,ui-workspace/src/client/session-actions/RenameSession.tsx,99,E0,sidebar.workspaces.session-rename-dialog,"会话改名对话框「取消」（renaming 中 disabled）（RenameSession.tsx:91-102,75-78）"
+jsx.onclick,ui-workspace/src/client/session-actions/RenameSession.tsx,100,E0,sidebar.workspaces.session-rename-dialog,"「改名」确认：空名 blocked；会话无重名规则、未改名也不 blocked（RenameSession.tsx:73-74,79-90）"
+native.input,ui-workspace/src/client/session-actions/RenameSession.tsx,104,E0,sidebar.workspaces.session-rename-dialog,"改名输入框：draft 由请求挂载时 seed，disabled=renaming（RenameSession.tsx:68,104-120）"
+jsx.onfocus,ui-workspace/src/client/session-actions/RenameSession.tsx,110,E0,sidebar.workspaces.session-rename-dialog,聚焦全选（RenameSession.tsx:110）
+jsx.onkeydown,ui-workspace/src/client/session-actions/RenameSession.tsx,114,E0,sidebar.workspaces.session-rename-dialog,Enter 提交，IME composing 忽略（RenameSession.tsx:112-119）
+jsx.onclick,ui-workspace/src/client/session-actions/RowActionToast.tsx,33,E0,sidebar.workspaces.row-toast,fork 失败 toast 的「打开来源会话」动作：dismiss + openForkSource（归档来源则改提示不可打开）（RowActionToast.tsx:24-37；index.ts:228-240）
+jsx.onclick,ui-workspace/src/client/session-actions/RowActionToast.tsx,48,E0,sidebar.workspaces.row-toast,"归档 toast 的「撤销」动作（6s 长驻）→ undoArchive（RowActionToast.tsx:13,47-49）"
+jsx.onclick,ui-workspace/src/client/session-actions/RowActionToast.tsx,50,E0,sidebar.workspaces.row-toast,"归档 toast 的「查看归档」动作（归档行不可见时才给）→ setArchivedFilter('show')（RowActionToast.tsx:22,49-52）"
+aria.role,ui-workspace/tests/animated-rows.client.spec.tsx,57,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: {keys.map(key => <div key={key} data-row-key={key} role=""treeitem"" sty"
+aria.role,ui-workspace/tests/browser-styles.client.spec.ts,74,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(declarations("".searchTree > [role='treeitem'] + [role='treeitem"
+aria.role,ui-workspace/tests/rename-assembly.client.spec.tsx,122,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const row = (await view.findByText('Persisted title')).closest('[role=
+aria.role,ui-workspace/tests/rename-assembly.client.spec.tsx,163,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const row = (await view.findByText('旧标题')).closest('[role=""treeitem""]'"
+aria.role,ui-workspace/tests/rename-assembly.client.spec.tsx,205,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const row = (await view.findByText('旧标题')).closest('[role=""treeitem""]'"
+disclosure,ui-workspace/tests/rows.client.spec.tsx,145,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const onToggle = vi.fn()
+disclosure,ui-workspace/tests/rows.client.spec.tsx,151,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} onToggle={onToggle} onCreate={onC
+a11y.expanded,ui-workspace/tests/rows.client.spec.tsx,155,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(screen.getByRole('treeitem').getAttribute('aria-expanded')).toB
+disclosure,ui-workspace/tests/rows.client.spec.tsx,159,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(onToggle).not.toHaveBeenCalled()
+disclosure,ui-workspace/tests/rows.client.spec.tsx,161,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(onToggle).toHaveBeenCalledOnce()
+a11y.expanded,ui-workspace/tests/rows.client.spec.tsx,176,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(row.hasAttribute('aria-expanded')).toBe(false)
+jsx.onclick,ui-workspace/tests/rows.client.spec.tsx,190,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: ? <button type=""button"" onClick={pluginAction}>plugin</button>"
+native.button,ui-workspace/tests/rows.client.spec.tsx,190,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: ? <button type=""button"" onClick={pluginAction}>plugin</button>"
+container.scroll,ui-workspace/tests/rows.client.spec.tsx,313,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const scrollTo = vi.fn()
+container.scroll,ui-workspace/tests/rows.client.spec.tsx,314,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: Object.defineProperty(title, 'scrollTo', { value: scrollTo, configurab"
+container.scroll,ui-workspace/tests/rows.client.spec.tsx,321,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollTo).toHaveBeenLastCalledWith({ left: 0, behavior: 'instan"
+container.scroll,ui-workspace/tests/rows.client.spec.tsx,323,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const settled = scrollTo.mock.calls.length
+container.scroll,ui-workspace/tests/rows.client.spec.tsx,325,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollTo.mock.calls.length).toBe(settled)
+disclosure,ui-workspace/tests/rows.client.spec.tsx,433,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const onToggle = vi.fn()
+disclosure,ui-workspace/tests/rows.client.spec.tsx,439,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: group={group} onToggle={onToggle} onCreate={vi.fn()}
+disclosure,ui-workspace/tests/rows.client.spec.tsx,444,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(onToggle).not.toHaveBeenCalled()
+disclosure,ui-workspace/tests/rows.client.spec.tsx,469,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} onToggle={vi.fn()} onCreate={vi.f
+disclosure,ui-workspace/tests/rows.client.spec.tsx,492,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} onToggle={vi.fn()} onCreate={vi.f
+disclosure,ui-workspace/tests/rows.client.spec.tsx,525,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} onToggle={vi.fn()} onCreate={vi.f
+disclosure,ui-workspace/tests/rows.client.spec.tsx,551,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} home=""/home/u"" onToggle={vi.fn()}"
+disclosure,ui-workspace/tests/rows.client.spec.tsx,571,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} home=""/home/u"" onToggle={vi.fn()}"
+disclosure,ui-workspace/tests/rows.client.spec.tsx,589,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} home=""C:\\Users\\u"" onToggle={vi."
+disclosure,ui-workspace/tests/rows.client.spec.tsx,603,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<ProjectRowItem group={group} onToggle={vi.fn()} onCreate={vi.f
+aria.role,ui-workspace/tests/rows.client.spec.tsx,629,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(screen.getByText('空闲').closest('[role=""button""]')).toBeNull()"
+jsx.onclick,ui-workspace/tests/rows.client.spec.tsx,714,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: <button type=""button"" aria-label=""Quick action"" onClick={(e) => { e.st"
+native.button,ui-workspace/tests/rows.client.spec.tsx,714,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: <button type=""button"" aria-label=""Quick action"" onClick={(e) => { e.st"
+native.input,ui-workspace/tests/session-actions.client.spec.tsx,262,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: render(<textarea aria-label=""Composer"" defaultValue=""Keep this draft"" "
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,27,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const scrollIntoView = vi.fn()
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,31,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: Element.prototype.scrollIntoView = scrollIntoView
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,32,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: scrollIntoView.mockClear()
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,183,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: .filter(row => row.getAttribute('aria-expanded') === null)
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,215,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const names = () => screen.getAllByRole('treeitem').filter(row => row.
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,224,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('c').closest('[role=""treeitem""]') as H"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,225,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const target = screen.getByText('a').closest('[role=""treeitem""]') as H"
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,255,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const rows = () => screen.getAllByRole('treeitem').filter(row => row.g
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,277,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const current = screen.getByText('current').closest('[role=""treeitem""]"
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,347,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: .filter(row => row.getAttribute('aria-expanded') === null)
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,672,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const one = screen.getByText('one').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,673,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const three = screen.getByText('three').closest('[role=""treeitem""]') a"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,974,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const blankRow = screen.getByText('新会话').closest('[role=""treeitem""]') "
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,984,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const session5 = screen.getByText('session-5').closest('[role=""treeite"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1001,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('session-10').closest('[role=""treeitem"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1002,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const target = screen.getByText('session-6').closest('[role=""treeitem"""
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1119,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: .filter(row => row.getAttribute('aria-expanded') === null)
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1131,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText(sourceId).closest('[role=""treeitem""]')"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1132,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const target = screen.getByText(targetId).closest('[role=""treeitem""]')"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1185,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(screen.getByText('gone').closest('[role=""treeitem""]')?.getAttri"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1242,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(screen.getByText('child-s').closest('[role=""treeitem""]')?.getAt"
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1332,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const names = () => screen.getAllByRole('treeitem').filter(row => row.
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1351,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const blank = screen.getByText('新会话').closest('[role=""treeitem""]') as "
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1353,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const old = screen.getByText('old').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1367,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const ordinaryBlank = screen.getByText('blank').closest('[role=""treeit"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1369,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const restoredOld = screen.getByText('old').closest('[role=""treeitem""]"
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1428,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(search.getAttribute('aria-expanded')).toBe('true')
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1430,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(search.getAttribute('aria-expanded')).toBe('false')
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1436,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(search.getAttribute('aria-expanded')).toBe('false')
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1441,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(search.getAttribute('aria-expanded')).toBe('true')
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1491,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const targetRow = screen.getByText('Research notes').closest('[role=""t"
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1494,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1495,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView.mock.instances.at(-1)).toBe(targetRow)
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1516,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView).not.toHaveBeenCalled()
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1528,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const targetRow = screen.getByText('Needle session').closest('[role=""t"
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1529,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView.mock.instances.at(-1)).toBe(targetRow)
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1552,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView).not.toHaveBeenCalled()
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1561,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const targetRow = screen.getByText('Needle session').closest('[role=""t"
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1562,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView.mock.instances.at(-1)).toBe(targetRow)
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1580,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView.mock.instances.at(-1)).toBe(screen.getByText('se
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1580,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView.mock.instances.at(-1)).toBe(screen.getByText('se
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1610,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView).toHaveBeenCalledOnce()
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1626,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView).not.toHaveBeenCalled()
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1648,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const targetRow = screen.getByText('Needle session').closest('[role=""t"
+container.scroll,ui-workspace/tests/workspace-browser.client.spec.tsx,1651,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(scrollIntoView.mock.instances.at(-1)).toBe(targetRow)
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1829,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(screen.getByRole('button', { name: '搜索会话' }).getAttribute('aria"
+a11y.expanded,ui-workspace/tests/workspace-browser.client.spec.tsx,1834,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: expect(screen.getByRole('button', { name: '搜索会话' }).getAttribute('aria"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1875,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('tail').closest('[role=""treeitem""]') a"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1876,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: let targetSection = screen.getByText('beta').closest('[role=""treeitem"""
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1897,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('beta').closest('[role=""treeitem""]') a"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1898,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: let firstSection = screen.getByText('alpha').closest('[role=""treeitem"""
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1922,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('tail').closest('[role=""treeitem""]') a"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1923,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: let target = screen.getByText('beta').closest('[role=""treeitem""]')?.pa"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1989,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const one = screen.getByText('one').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,1990,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const two = screen.getByText('two').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2005,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const oneAgain = screen.getByText('one').closest('[role=""treeitem""]') "
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2006,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const twoAgain = screen.getByText('two').closest('[role=""treeitem""]') "
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2022,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const one = screen.getByText('one').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2023,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const two = screen.getByText('two').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2057,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const two = screen.getByText('two').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2065,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: let one = screen.getByText('one').closest('[role=""treeitem""]') as HTML"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2071,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: fireEvent.dragEnd(screen.getByText('one').closest('[role=""treeitem""]')"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2080,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: one = screen.getByText('one').closest('[role=""treeitem""]') as HTMLElem"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2086,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: fireEvent.dragEnd(screen.getByText('one').closest('[role=""treeitem""]')"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2099,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const one = screen.getByText('one').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2100,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const two = screen.getByText('two').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2113,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const three = screen.getByText('three').closest('[role=""treeitem""]') a"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2131,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText(sourceTitle).closest('[role=""treeitem"""
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2132,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const target = screen.getByText(targetTitle).closest('[role=""treeitem"""
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2176,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const one = screen.getByText('one').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2181,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const two = screen.getByText('two').closest('[role=""treeitem""]') as HT"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2405,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const row = screen.getByText('Needle A').closest('[role=""treeitem""]') "
+jsx.onclick,ui-workspace/tests/workspace-browser.client.spec.tsx,2425,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: ? <button onClick={() => { owner.onPicked('/projects') }}>Pick directo
+native.button,ui-workspace/tests/workspace-browser.client.spec.tsx,2425,excluded,-,排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: ? <button onClick={() => { owner.onPicked('/projects') }}>Pick directo
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2481,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('outside').closest('[role=""treeitem""]'"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2496,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('Projects').closest('[role=""treeitem""]"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2507,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const source = screen.getByText('Projects').closest('[role=""treeitem""]"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2546,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const alpha = screen.getByText('alpha').closest('[role=""treeitem""]') a"
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2547,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const beta = screen.getByText('beta').closest('[role=""treeitem""]') as "
+aria.role,ui-workspace/tests/workspace-browser.client.spec.tsx,2548,excluded,-,"排除：tests/ 测试用例（非产品 UI，无运行时交互）；对应行为已在 src 源码取证。code: const outside = screen.getByText('outside').closest('[role=""treeitem""]"
+css.overscroll,ui-sidebar-documentpreview/src/client/excel/ExcelBody.module.css,51,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）

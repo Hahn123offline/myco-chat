@@ -1,0 +1,564 @@
+kind,path,line,status,node_id,note
+disclosure,ui-tool/tests/ask-question-row.client.spec.tsx,12,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/ask-question-row.client.spec.tsx,72,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/coverage-tails.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/coverage-tails.client.spec.tsx,39,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/coverage-tails.client.spec.tsx,48,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/coverage-tails.client.spec.tsx,66,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/details-row.client.spec.tsx,12,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/details-row.client.spec.tsx,116,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/details-row.client.spec.tsx,129,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/diff-card.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/diff-card.client.spec.tsx,176,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/diff-card.client.spec.tsx,200,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/diff-card.client.spec.tsx,222,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/image-card.client.spec.tsx,15,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/image-card.client.spec.tsx,291,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/preparing-rows.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/preparing-rows.client.spec.tsx,31,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-tool/tests/preparing-rows.client.spec.tsx,62,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-tool/tests/read-card.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/read-card.client.spec.tsx,177,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/read-card.client.spec.tsx,199,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/read-card.client.spec.tsx,222,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/search-card.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/search-card.client.spec.tsx,192,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/search-card.client.spec.tsx,242,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/terminal-card.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/terminal-card.client.spec.tsx,324,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/terminal-card.client.spec.tsx,442,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,505,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,509,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,539,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,543,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,556,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,565,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,586,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/terminal-card.client.spec.tsx,591,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-tool/tests/todo-row.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/todo-row.client.spec.tsx,76,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-call-tree.client.spec.tsx,6,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-call-tree.client.spec.tsx,38,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-call-tree.client.spec.tsx,93,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-call-tree.client.spec.tsx,103,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-call-tree.client.spec.tsx,106,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-row.client.spec.tsx,3,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-row.client.spec.tsx,176,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/tool-row.client.spec.tsx,327,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,338,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,408,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,416,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,418,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,420,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,432,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,437,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,440,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,451,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-tool/tests/tool-row.client.spec.tsx,530,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-tool/tests/tool-row.client.spec.tsx,562,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+jsx.onclick,ui-tool/tests/toolview-slot.client.spec.tsx,283,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-tool/tests/toolview-slot.client.spec.tsx,283,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+disclosure,ui-tool/tests/web-card.client.spec.tsx,4,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/tests/web-card.client.spec.tsx,154,excluded,-,测试文件（ui-tool/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-tool/src/client/contract/slots.ts,61,E0,chat.tool.row,ToolView 契约要求每个 toolview 接收 useDisclosure（真实交互在 ToolRow.tsx:149）
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,21,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,22,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,37,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,39,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,62,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,63,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,78,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,93,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,111,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+disclosure,ui-tool/src/client/tool/ToolCallTree.tsx,122,E0,chat.tool.row,useDisclosure 注入链路（透传，非独立交互点）：每个 tool call 独立行，交互实现见 ToolRow.tsx:149
+css.overflow,ui-tool/src/client/tool/components/AskQuestionCard.module.css,8,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/components/QuestionToolRow.module.css,18,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-tool/src/client/tool/components/QuestionToolRow.tsx,10,E0,chat.tool.question-row,提问行只取 useDisclosure 等字段（Pick<ToolRowProps>）
+disclosure,ui-tool/src/client/tool/components/QuestionToolRow.tsx,21,E0,chat.tool.question-row,提问行只取 useDisclosure 等字段（Pick<ToolRowProps>）
+disclosure,ui-tool/src/client/tool/components/QuestionToolRow.tsx,23,E0,chat.tool.question-row,"取 {expanded, toggle}"
+disclosure,ui-tool/src/client/tool/components/QuestionToolRow.tsx,33,E0,chat.tool.question-row,行 onToggle 切换展开（keepContentWhenOpen）
+native.button,ui-tool/src/client/tool/components/QuestionToolRow.tsx,39,E0,chat.tool.question-row,「回答问题」面板入口 button（嵌在折叠 summary 内）
+jsx.onclick,ui-tool/src/client/tool/components/QuestionToolRow.tsx,40,E0,chat.tool.question-row,按钮 onClick：stopPropagation 后优先开面板，否则切展开
+jsx.onkeydown,ui-tool/src/client/tool/components/QuestionToolRow.tsx,41,E0,chat.tool.question-row,按钮 onKeyDown：Enter/Space stopPropagation，避免触发行展开
+jsx.onclick,ui-tool/src/client/tool/components/QuestionToolRow.tsx,57,E0,chat.tool.question-row,展开体内的 Inspect pill
+native.button,ui-tool/src/client/tool/components/QuestionToolRow.tsx,57,E0,chat.tool.question-row,展开体内的 Inspect pill
+css.overflow,ui-tool/src/client/tool/components/ToolDetails.module.css,8,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/components/ToolDetails.module.css,16,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/components/ToolDetails.module.css,114,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/components/ToolDetails.module.css,211,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/components/ToolDetails.module.css,232,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/components/ToolDetails.module.css,252,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-tool/src/client/tool/components/ToolDetails.module.css,256,excluded,-,结构性 CSS 属性，不构成交互点
+jsx.onclick,ui-tool/src/client/tool/components/ToolDetails.tsx,59,E0,chat.tool.details,详情行内的路径 button：点击打开文件（onOpenFile 才可点）
+native.button,ui-tool/src/client/tool/components/ToolDetails.tsx,59,E0,chat.tool.details,详情行内的路径 button：点击打开文件（onOpenFile 才可点）
+native.details,ui-tool/src/client/tool/components/ToolDetails.tsx,98,E0,chat.tool.details,分组用原生 <details>/<summary>（无自定义手势）
+native.details,ui-tool/src/client/tool/components/ToolDetails.tsx,99,E0,chat.tool.details,分组用原生 <details>/<summary>（无自定义手势）
+native.details,ui-tool/src/client/tool/components/ToolDetails.tsx,130,E0,chat.tool.details,「未变化项」用原生 <details>/<summary>
+native.details,ui-tool/src/client/tool/components/ToolDetails.tsx,131,E0,chat.tool.details,「未变化项」用原生 <details>/<summary>
+css.overflow,ui-tool/src/client/tool/components/ToolRow.module.css,38,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/components/ToolRow.module.css,87,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/components/ToolRow.module.css,103,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/components/ToolRow.module.css,142,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-tool/src/client/tool/components/ToolRow.module.css,148,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/components/ToolRow.module.css,174,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/components/ToolRow.module.css,200,excluded,-,结构性 CSS 属性，不构成交互点
+css.sticky,ui-tool/src/client/tool/components/ToolRow.module.css,223,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/components/ToolRow.module.css,317,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-tool/src/client/tool/components/ToolRow.tsx,32,E0,chat.tool.row,ToolRowProps.useDisclosure：行展开态由调用方注入
+disclosure,ui-tool/src/client/tool/components/ToolRow.tsx,147,E0,chat.tool.row,"ToolRow 取 {expanded, toggleExpand}；expandable 独立于展开态"
+disclosure,ui-tool/src/client/tool/components/ToolRow.tsx,149,E0,chat.tool.row,"ToolRow 取 {expanded, toggleExpand}；expandable 独立于展开态"
+native.button,ui-tool/src/client/tool/components/ToolRow.tsx,214,E0,chat.tool.row,摘要里的文件路径 button（点击打开文件，不触发行展开）
+jsx.onclick,ui-tool/src/client/tool/components/ToolRow.tsx,217,E0,chat.tool.row,路径 button onClick/onKeyDown：stopPropagation 保住链接自身激活
+jsx.onkeydown,ui-tool/src/client/tool/components/ToolRow.tsx,218,E0,chat.tool.row,路径 button onClick/onKeyDown：stopPropagation 保住链接自身激活
+jsx.onclick,ui-tool/src/client/tool/components/ToolRow.tsx,228,E0,chat.tool.row,摘要里的 http(s) 链接 <a>：onClick stopPropagation，键盘不冒泡到行
+jsx.onkeydown,ui-tool/src/client/tool/components/ToolRow.tsx,229,E0,chat.tool.row,摘要里的 http(s) 链接 <a>：onClick stopPropagation，键盘不冒泡到行
+native.button,ui-tool/src/client/tool/components/ToolRow.tsx,343,E0,chat.tool.row,展开体内的 Inspect pill（hover/focus 才显形，点击跳轨迹）
+jsx.onclick,ui-tool/src/client/tool/components/ToolRow.tsx,346,E0,chat.tool.row,Inspect onClick=inspect（跳转到 trajectory 中的该次调用）
+disclosure,ui-tool/src/client/tool/components/ToolRow.tsx,370,E0,chat.tool.row,整行 disclosure：expandOnRowClick + onToggle；keepContentWhenOpen
+disclosure,ui-tool/src/client/tool/components/ToolRow.tsx,372,E0,chat.tool.row,整行 disclosure：expandOnRowClick + onToggle；keepContentWhenOpen
+disclosure,ui-tool/src/client/tool/toolviews/ask-question-row.tsx,215,E0,chat.tool.question-row,ask_user_question 工具卡把 useDisclosure 与 summary 交给 QuestionToolRow（透传链路）
+disclosure,ui-tool/src/client/tool/toolviews/ask-question-row.tsx,347,E0,chat.tool.question-row,ask_user_question 工具卡把 useDisclosure 与 summary 交给 QuestionToolRow（透传链路）
+disclosure,ui-tool/src/client/tool/toolviews/ask-question-row.tsx,354,E0,chat.tool.question-row,ask_user_question 工具卡把 useDisclosure 与 summary 交给 QuestionToolRow（透传链路）
+css.overflow,ui-tool/src/client/tool/toolviews/bash-sample.module.css,43,excluded,-,结构性 CSS 属性，不构成交互点
+css.sticky,ui-tool/src/client/tool/toolviews/bash-sample.module.css,57,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/toolviews/bash-sample.module.css,88,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/toolviews/bash-sample.module.css,179,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-tool/src/client/tool/toolviews/bash-sample.module.css,219,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-tool/src/client/tool/toolviews/bash-sample.module.css,225,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-tool/src/client/tool/toolviews/bash-sample.module.css,241,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-tool/src/client/tool/toolviews/bash-sample.tsx,44,E0,chat.tool.bash-row,bash 行（toolview sample）接收 useDisclosure
+disclosure,ui-tool/src/client/tool/toolviews/bash-sample.tsx,58,E0,chat.tool.bash-row,"取 {expanded, toggleExpand}"
+a11y.expanded,ui-tool/src/client/tool/toolviews/bash-sample.tsx,104,E0,chat.tool.bash-row,aria-expanded 仅 expandable 时给出
+jsx.onclick,ui-tool/src/client/tool/toolviews/bash-sample.tsx,105,E0,chat.tool.bash-row,整行 onClick 切换展开（role=button + tabIndex=0，非 DisclosureRow）
+jsx.onkeydown,ui-tool/src/client/tool/toolviews/bash-sample.tsx,106,E0,chat.tool.bash-row,onKeyDown：Enter/Space 且 expandable 才 toggle 并 preventDefault
+jsx.onclick,ui-tool/src/client/tool/toolviews/bash-sample.tsx,157,E0,chat.tool.bash-row,展开体内的 Inspect pill（点击跳轨迹）
+native.button,ui-tool/src/client/tool/toolviews/bash-sample.tsx,157,E0,chat.tool.bash-row,展开体内的 Inspect pill（点击跳轨迹）
+disclosure,ui-tool/src/client/tool/toolviews/details-row.tsx,46,E0,chat.tool.row,详情型工具卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/details-row.tsx,56,E0,chat.tool.row,详情型工具卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/file-mutation-row.tsx,33,E0,chat.tool.row,文件变更卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/file-mutation-row.tsx,40,E0,chat.tool.row,文件变更卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/GenericToolCard.tsx,33,E0,chat.tool.row,通用工具卡把 useDisclosure 交给 ToolRow（透传链路）
+disclosure,ui-tool/src/client/tool/toolviews/GenericToolCard.tsx,51,E0,chat.tool.row,通用工具卡把 useDisclosure 交给 ToolRow（透传链路）
+disclosure,ui-tool/src/client/tool/toolviews/read-family-row.tsx,38,E0,chat.tool.row,read/read_image 卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/read-family-row.tsx,44,E0,chat.tool.row,read/read_image 卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/search-row.tsx,18,E0,chat.tool.row,搜索卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/search-row.tsx,23,E0,chat.tool.row,搜索卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/todo-row.tsx,53,E0,chat.tool.row,todo 卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/todo-row.tsx,61,E0,chat.tool.row,todo 卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/web-row.tsx,18,E0,chat.tool.row,web 卡透传 useDisclosure 给 ToolRow
+disclosure,ui-tool/src/client/tool/toolviews/web-row.tsx,24,E0,chat.tool.row,web 卡透传 useDisclosure 给 ToolRow
+jsx.onclick,ui-renderer/tests/factory-slots.client.spec.tsx,166,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-renderer/tests/factory-slots.client.spec.tsx,166,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+jsx.onclick,ui-renderer/tests/factory-slots.client.spec.tsx,225,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-renderer/tests/factory-slots.client.spec.tsx,225,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+jsx.onclick,ui-renderer/tests/factory-slots.client.spec.tsx,620,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-renderer/tests/factory-slots.client.spec.tsx,620,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+native.input,ui-renderer/tests/scoped-slots.client.spec.tsx,583,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 <input>，不构成真实交互点
+native.input,ui-renderer/tests/scoped-slots.client.spec.tsx,634,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 <input>，不构成真实交互点
+jsx.onclick,ui-renderer/tests/session-provider.client.spec.tsx,120,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-renderer/tests/session-provider.client.spec.tsx,120,excluded,-,测试文件（ui-renderer/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+css.cursor,ui-message-feedback/src/client/FeedbackDialog.module.css,26,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-message-feedback/src/client/FeedbackDialog.module.css,40,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-message-feedback/src/client/FeedbackDialog.module.css,78,excluded,-,结构性 CSS 属性，不构成交互点
+jsx.onclick,ui-message-feedback/src/client/FeedbackDialog.tsx,97,E0,chat.msg.feedback-dialog,弹窗提交按钮（submitting 时禁用并换文案）
+native.button,ui-message-feedback/src/client/FeedbackDialog.tsx,105,E0,chat.msg.feedback-dialog,分类 chip button（aria-pressed，再点取消选择）
+jsx.onclick,ui-message-feedback/src/client/FeedbackDialog.tsx,111,E0,chat.msg.feedback-dialog,chip onClick：edit({category})，可反选为 null
+native.input,ui-message-feedback/src/client/FeedbackDialog.tsx,117,E0,chat.msg.feedback-dialog,备注 textarea（受控、提交中 readOnly）
+css.cursor,ui-message-feedback/src/client/MessageFeedbackActions.module.css,15,excluded,-,结构性 CSS 属性，不构成交互点
+native.button,ui-message-feedback/src/client/MessageFeedbackActions.tsx,80,E0,chat.msg.feedback-actions,点赞按钮（aria-pressed 表示已记录，disabled 表示提交中）
+jsx.onfocus,ui-message-feedback/src/client/MessageFeedbackActions.tsx,87,E0,chat.msg.feedback-actions,onFocus=seed：懒加载该消息已有评分（挂载时不读）
+jsx.onclick,ui-message-feedback/src/client/MessageFeedbackActions.tsx,89,E0,chat.msg.feedback-actions,onClick=like/dislike：已记录则撤回，未记录则打开反馈弹窗
+native.button,ui-message-feedback/src/client/MessageFeedbackActions.tsx,95,E0,chat.msg.feedback-actions,点踩按钮（同点赞契约）
+jsx.onfocus,ui-message-feedback/src/client/MessageFeedbackActions.tsx,102,E0,chat.msg.feedback-actions,onFocus=seed：懒加载该消息已有评分（挂载时不读）
+jsx.onclick,ui-message-feedback/src/client/MessageFeedbackActions.tsx,104,E0,chat.msg.feedback-actions,onClick=like/dislike：已记录则撤回，未记录则打开反馈弹窗
+disclosure,ui-chat/tests/assistant-markdown-path-images.client.spec.tsx,6,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/assistant-markdown-path-images.client.spec.tsx,62,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/assistant-markdown-path-images.client.spec.tsx,80,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/chat-apply.client.spec.tsx,458,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/chat-apply.client.spec.tsx,462,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/chat-apply.client.spec.tsx,463,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+jsx.onclick,ui-chat/tests/chat-apply.client.spec.tsx,464,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-chat/tests/chat-apply.client.spec.tsx,464,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-apply.client.spec.tsx,464,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/chat-apply.client.spec.tsx,466,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-apply.client.spec.tsx,470,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-apply.client.spec.tsx,472,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/chat-branch-tails.client.spec.tsx,20,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,344,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,350,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,360,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,825,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,829,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,832,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,860,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-branch-tails.client.spec.tsx,863,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/chat-branch-tails.client.spec.tsx,1049,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+jsx.onclick,ui-chat/tests/chat-scroll.client.spec.tsx,33,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-chat/tests/chat-scroll.client.spec.tsx,33,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,71,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,77,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,83,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,115,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,120,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,132,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,135,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,136,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,143,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,146,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,156,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,159,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,180,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,245,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,260,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,278,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,280,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,284,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,296,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,298,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,312,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,331,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,344,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,348,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,360,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,368,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-scroll.client.spec.tsx,372,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-stats.client.spec.tsx,262,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-stats.client.spec.tsx,266,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-stats.client.spec.tsx,289,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-stats.client.spec.tsx,316,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-stats.client.spec.tsx,339,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-stats.client.spec.tsx,340,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/chat-view.client.spec.tsx,301,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+native.input,ui-chat/tests/chat-view.client.spec.tsx,755,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 <input>，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,774,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,779,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,831,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,864,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,886,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,902,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,920,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,922,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,927,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,930,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,934,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,952,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+container.scroll,ui-chat/tests/chat-view.client.spec.tsx,991,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-view.client.spec.tsx,1005,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-view.client.spec.tsx,1047,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-view.client.spec.tsx,1050,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-view.client.spec.tsx,1054,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,1582,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2385,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2399,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2406,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2410,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2416,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2442,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2498,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2521,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2601,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2606,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2656,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2660,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2675,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2682,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2689,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2730,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2735,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2739,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2761,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2791,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2821,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2827,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2844,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2851,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2859,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2900,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2906,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2915,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2942,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2945,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2964,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,2973,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,3001,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,3005,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,3043,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,3067,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,3088,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,3092,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,4266,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/chat-view.client.spec.tsx,4271,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+container.scroll,ui-chat/tests/chat-viewport.client.spec.ts,447,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-viewport.client.spec.ts,451,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/chat-viewport.client.spec.ts,459,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+disclosure,ui-chat/tests/coverage-tails.client.spec.tsx,9,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/coverage-tails.client.spec.tsx,21,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/coverage-tails.client.spec.tsx,37,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/coverage-tails.client.spec.tsx,53,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/coverage-tails.client.spec.tsx,63,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+container.scroll,ui-chat/tests/fold-follow.client.spec.ts,36,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/fold-follow.client.spec.ts,47,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+jsx.onscroll,ui-chat/tests/fold-follow.client.spec.ts,57,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里注册/断言的 scroll 处理函数，不构成真实交互点
+container.scroll,ui-chat/tests/fold-follow.client.spec.ts,69,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/fold-follow.client.spec.ts,94,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+jsx.onscroll,ui-chat/tests/fold-follow.client.spec.ts,141,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里注册/断言的 scroll 处理函数，不构成真实交互点
+jsx.onscroll,ui-chat/tests/fold-follow.client.spec.ts,149,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里注册/断言的 scroll 处理函数，不构成真实交互点
+disclosure,ui-chat/tests/gate-branch-tails.client.spec.tsx,9,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/gate-branch-tails.client.spec.tsx,27,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/gate-branch-tails.client.spec.tsx,70,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/image-labels.client.spec.tsx,11,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/image-labels.client.spec.tsx,49,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/image-labels.client.spec.tsx,65,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/image-labels.client.spec.tsx,87,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+jsx.onclick,ui-chat/tests/reasoning-content.client.spec.tsx,23,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-chat/tests/reasoning-content.client.spec.tsx,23,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,14,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,31,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,56,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,65,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,68,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,84,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,88,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,97,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,101,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,112,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,116,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,119,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,123,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,125,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,129,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,132,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,137,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,146,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,151,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,165,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,177,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,186,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,193,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,204,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/reasoning-row.client.spec.tsx,208,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,224,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,245,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,271,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,284,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,299,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/reasoning-row.client.spec.tsx,316,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,10,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,16,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,18,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,30,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,35,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,40,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,44,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,78,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,82,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,87,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,94,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,95,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,123,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,126,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,129,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,134,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,145,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,170,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,175,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,190,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,203,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,213,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/scroll-follow.client.spec.ts,223,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+a11y.expanded,ui-chat/tests/system-prompt-row.client.spec.tsx,30,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/system-prompt-row.client.spec.tsx,35,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/system-prompt-row.client.spec.tsx,41,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/tool-updates.client.spec.tsx,26,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/transcript-view-row.client.spec.tsx,65,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/transcript-view-row.client.spec.tsx,79,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/transcript-view-row.client.spec.tsx,89,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/transcript-view-row.client.spec.tsx,228,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator-fixture.ts,19,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,34,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,43,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,97,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,107,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,111,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,112,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,116,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+container.scroll,ui-chat/tests/turn-navigator.client.spec.tsx,120,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试里对 scrollTo/overscroll 的桩与断言，不构成真实交互点
+a11y.expanded,ui-chat/tests/turn-trigger.client.spec.tsx,78,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/turn-trigger.client.spec.tsx,81,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/turn-trigger.client.spec.tsx,86,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/turn-usage-panel.client.spec.tsx,32,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/turn-usage-panel.client.spec.tsx,36,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/turn-usage-panel.client.spec.tsx,89,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,7,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,11,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,12,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+jsx.onclick,ui-chat/tests/use-disclosure.client.spec.tsx,13,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-chat/tests/use-disclosure.client.spec.tsx,13,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,13,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,16,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,23,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+jsx.onclick,ui-chat/tests/use-disclosure.client.spec.tsx,26,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-chat/tests/use-disclosure.client.spec.tsx,26,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+jsx.onclick,ui-chat/tests/use-disclosure.client.spec.tsx,27,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 onClick，不构成真实交互点
+native.button,ui-chat/tests/use-disclosure.client.spec.tsx,27,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试内联夹具 JSX 的 <button>，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,51,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,53,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,58,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,60,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,71,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,74,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,75,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+disclosure,ui-chat/tests/use-disclosure.client.spec.tsx,76,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试夹具 import 或 props 中的 useDisclosure，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,82,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,83,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,88,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,89,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,90,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,92,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,94,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+a11y.expanded,ui-chat/tests/use-disclosure.client.spec.tsx,97,excluded,-,测试文件（ui-chat/tests）非产品 UI：该行是测试断言里 querySelector/aria-expanded 选择器字符串，不构成真实交互点
+css.overflow,ui-chat/src/client/chat/accessibility.module.css,5,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-chat/src/client/chat/AssistantMarkdown.tsx,34,E0,chat.msg.thinking-header,AssistantMarkdownProps.useDisclosure：reasoning 行由父注入 disclosure hook
+disclosure,ui-chat/src/client/chat/AssistantMarkdown.tsx,57,E0,chat.msg.thinking-header,从 props 解构 useDisclosure（本组件不自建状态）
+disclosure,ui-chat/src/client/chat/AssistantMarkdown.tsx,103,E0,chat.msg.thinking-header,每个 reasoning block 各渲染一个 ReasoningRow 并注入同一 hook；每行 useState 独立 → 每轮可 0..N 个思考行
+disclosure,ui-chat/src/client/chat/AssistantNodeView.tsx,11,E0,chat.msg.thinking-header,assistant-step 视图从 slot props 取 useDisclosure 传给 AssistantMarkdown
+disclosure,ui-chat/src/client/chat/AssistantNodeView.tsx,38,E0,chat.msg.thinking-header,把 useDisclosure 继续下传给 AssistantMarkdown → ReasoningRow
+css.cursor,ui-chat/src/client/chat/ChatGroupSeat.module.css,17,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/ChatGroupSeat.module.css,66,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/ChatGroupSeat.module.css,70,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ChatGroupSeat.module.css,89,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ChatGroupSeat.module.css,96,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-chat/src/client/chat/ChatGroupSeat.tsx,18,E1,chat.group.header,import 该 hook 的一行；组折叠态唯一来源（import 语句本身无行为）
+native.button,ui-chat/src/client/chat/ChatGroupSeat.tsx,116,E0,chat.group.header,过程组标题 button（aria-expanded + aria-controls 指向组 body id）
+a11y.expanded,ui-chat/src/client/chat/ChatGroupSeat.tsx,116,E0,chat.group.header,过程组标题 button（aria-expanded + aria-controls 指向组 body id）
+jsx.onclick,ui-chat/src/client/chat/ChatGroupSeat.tsx,117,E0,chat.group.header,组标题 onClick：先 focus 自身再 toggle（键盘焦点不丢）
+disclosure,ui-chat/src/client/chat/ChatGroupSeat.tsx,137,E0,chat.group.header,组展开态来自 useDisclosure()（本地状态，非存储）
+css.overflow,ui-chat/src/client/chat/ChatView.module.css,25,excluded,-,结构性 CSS 属性，不构成交互点
+css.contain,ui-chat/src/client/chat/ChatView.module.css,185,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ChatView.module.css,186,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-chat/src/client/chat/ChatView.module.css,234,excluded,-,结构性 CSS 属性，不构成交互点
+css.sticky,ui-chat/src/client/chat/ChatView.module.css,265,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-chat/src/client/chat/ChatView.module.css,288,excluded,-,结构性 CSS 属性，不构成交互点
+jsx.onclick,ui-chat/src/client/chat/ChatView.tsx,221,E0,chat.list.load-older,加载更早按钮：hasMore 时渲染，loadingOlder 时禁用，点击调用 loadEarlier
+native.button,ui-chat/src/client/chat/ChatView.tsx,221,E0,chat.list.load-older,加载更早按钮：hasMore 时渲染，loadingOlder 时禁用，点击调用 loadEarlier
+native.button,ui-chat/src/client/chat/ChatView.tsx,242,E0,chat.list.to-bottom,悬浮回到底部按钮：仅 !followingTail 时渲染，34px 圆钮 overlay
+jsx.onclick,ui-chat/src/client/chat/ChatView.tsx,246,E0,chat.list.to-bottom,onClick=scroll.returnToBottom：取消翻页+取消导航+立即贴底
+jsx.onclick,ui-chat/src/client/chat/ChatView.tsx,284,E0,chat.dialog.file-open-error,打开文件失败弹窗「取消」
+jsx.onclick,ui-chat/src/client/chat/ChatView.tsx,285,E0,chat.dialog.file-open-error,打开文件失败弹窗「重试」同路径（busy 时禁用）
+native.button,ui-chat/src/client/chat/CompactionItem.tsx,50,E0,chat.msg.compaction,压缩标记 button：summary 非 null 才可展开，disabled 时不响应
+a11y.expanded,ui-chat/src/client/chat/CompactionItem.tsx,54,E0,chat.msg.compaction,aria-expanded 仅在可展开时给出（不可展开 = 纯状态行）
+jsx.onclick,ui-chat/src/client/chat/CompactionItem.tsx,55,E0,chat.msg.compaction,onClick 切换摘要展开（本地 useState，非版本绑定）
+css.overflow,ui-chat/src/client/chat/ContextBody.module.css,98,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ContextInjectionRow.module.css,30,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ContextInjectionRow.module.css,42,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ContextInjectionRow.module.css,56,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-chat/src/client/chat/ContextInjectionRow.tsx,81,E0,chat.msg.context-injection,上下文注入行整行可点展开（expandOnRowClick）
+disclosure,ui-chat/src/client/chat/ContextInjectionRow.tsx,82,E0,chat.msg.context-injection,onToggle 切换本地展开态；单条工具增删不可展开
+css.overflow,ui-chat/src/client/chat/GenericCommandCard.module.css,25,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/GenericCommandCard.module.css,42,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-chat/src/client/chat/GenericCommandCard.tsx,66,E0,chat.msg.command-card,命令卡：仅输出含换行时 expandable；expandOnRowClick + onToggle
+disclosure,ui-chat/src/client/chat/GenericCommandCard.tsx,68,E0,chat.msg.command-card,命令卡：仅输出含换行时 expandable；expandOnRowClick + onToggle
+css.focus,ui-chat/src/client/chat/MessageIconActions.module.css,52,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/MessageIconActions.module.css,58,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-chat/src/client/chat/MessageIconActions.module.css,74,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/MessageIconActions.module.css,109,excluded,-,结构性 CSS 属性，不构成交互点
+jsx.onclick,ui-chat/src/client/chat/MessageIconActions.tsx,86,E0,chat.msg.actions,复制按钮：单击写剪贴板，成功 1s 内换勾图标；aria-label = copy/copied
+native.button,ui-chat/src/client/chat/MessageIconActions.tsx,86,E0,chat.msg.actions,复制按钮：单击写剪贴板，成功 1s 内换勾图标；aria-label = copy/copied
+native.button,ui-chat/src/client/chat/MessageIconActions.tsx,94,E0,chat.msg.actions,分支按钮：aria-disabled + data-unavailable（不可用仍可 hover/focus 以便 Tooltip 解释）
+jsx.onclick,ui-chat/src/client/chat/MessageIconActions.tsx,101,E0,chat.msg.actions,分支按钮 onClick：branchUnavailable 时为 undefined（不触发跳转）
+css.sticky,ui-chat/src/client/chat/MessageItem.module.css,88,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-chat/src/client/chat/MessageItem.module.css,113,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/MessageItem.module.css,154,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/MessageItem.module.css,159,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/MessageItem.module.css,182,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-chat/src/client/chat/MessageItem.module.css,213,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/MessageItem.module.css,244,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/MessageItem.module.css,348,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/MessageItem.module.css,358,excluded,-,结构性 CSS 属性，不构成交互点
+native.details,ui-chat/src/client/chat/MessageItem.tsx,107,E0,chat.msg.retry,重试行用原生 <details>/<summary>：展开看 delay 与失败原因，summary 即展开入口（无自定义手势）
+native.details,ui-chat/src/client/chat/MessageItem.tsx,108,E0,chat.msg.retry,重试行用原生 <details>/<summary>：展开看 delay 与失败原因，summary 即展开入口（无自定义手势）
+css.contain,ui-chat/src/client/chat/ReasoningRow.module.css,7,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ReasoningRow.module.css,12,excluded,-,结构性 CSS 属性，不构成交互点
+css.sticky,ui-chat/src/client/chat/ReasoningRow.module.css,18,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ReasoningRow.module.css,46,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/ReasoningRow.module.css,55,excluded,-,结构性 CSS 属性，不构成交互点
+disclosure,ui-chat/src/client/chat/ReasoningRow.tsx,43,E1,chat.msg.thinking-header,JSDoc 声称「independent open state with enclosing-Turn resets」（注释非实现）
+disclosure,ui-chat/src/client/chat/ReasoningRow.tsx,48,E0,chat.msg.thinking-header,"ReasoningRow 接收注入的 useDisclosure hook 并取 {expanded, toggle}"
+disclosure,ui-chat/src/client/chat/ReasoningRow.tsx,51,E0,chat.msg.thinking-header,"ReasoningRow 接收注入的 useDisclosure hook 并取 {expanded, toggle}"
+disclosure,ui-chat/src/client/chat/ReasoningRow.tsx,55,E0,chat.msg.thinking-header,"ReasoningRow 接收注入的 useDisclosure hook 并取 {expanded, toggle}"
+disclosure,ui-chat/src/client/chat/ReasoningRow.tsx,94,E0,chat.msg.thinking-header,DisclosureRow expandOnRowClick + onToggle（整行可点切展开）
+disclosure,ui-chat/src/client/chat/ReasoningRow.tsx,95,E0,chat.msg.thinking-header,DisclosureRow expandOnRowClick + onToggle（整行可点切展开）
+jsx.onkeydown,ui-chat/src/client/chat/stat-dialog.ts,57,E0,chat.stats.pill,面板打开时挂 Escape/外层 click 关闭（capture 阶段先关旧面板）
+jsx.onclick,ui-chat/src/client/chat/stat-dialog.ts,60,E0,chat.stats.pill,面板打开时挂 Escape/外层 click 关闭（capture 阶段先关旧面板）
+jsx.onkeydown,ui-chat/src/client/chat/stat-dialog.ts,67,E0,chat.stats.pill,"document.addEventListener(keydown / click, capture)"
+jsx.onclick,ui-chat/src/client/chat/stat-dialog.ts,68,E0,chat.stats.pill,"document.addEventListener(keydown / click, capture)"
+jsx.onkeydown,ui-chat/src/client/chat/stat-dialog.ts,70,E0,chat.stats.pill,面板关闭时移除上述监听
+jsx.onclick,ui-chat/src/client/chat/stat-dialog.ts,71,E0,chat.stats.pill,面板关闭时移除上述监听
+css.cursor,ui-chat/src/client/chat/StatsPills.module.css,41,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/StatsPills.module.css,52,excluded,-,结构性 CSS 属性，不构成交互点
+native.button,ui-chat/src/client/chat/StatsPills.tsx,198,E0,chat.stats.pill,统计 pill 的 button 形态（有面板行时才可点，否则渲染为静态 span）
+a11y.expanded,ui-chat/src/client/chat/StatsPills.tsx,202,E0,chat.stats.pill,aria-expanded + aria-haspopup=dialog
+jsx.onclick,ui-chat/src/client/chat/StatsPills.tsx,204,E0,chat.stats.pill,onClick 开关本 pill 自己的 portaled 面板
+disclosure,ui-chat/src/client/chat/SystemPromptRow.tsx,35,E0,chat.msg.system-prompt,系统提示词行整行可点展开
+disclosure,ui-chat/src/client/chat/SystemPromptRow.tsx,36,E0,chat.msg.system-prompt,onToggle 切换本地展开态（useState）
+css.sticky,ui-chat/src/client/chat/TurnNavigator.module.css,18,excluded,-,结构性 CSS 属性，不构成交互点
+css.contain,ui-chat/src/client/chat/TurnNavigator.module.css,42,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-chat/src/client/chat/TurnNavigator.module.css,43,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/TurnNavigator.module.css,53,excluded,-,结构性 CSS 属性，不构成交互点
+css.cursor,ui-chat/src/client/chat/TurnNavigator.module.css,94,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/TurnNavigator.module.css,134,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/TurnNavigator.module.css,139,excluded,-,结构性 CSS 属性，不构成交互点
+css.focus,ui-chat/src/client/chat/TurnNavigator.module.css,143,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/TurnNavigator.module.css,165,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/TurnNavigator.module.css,180,excluded,-,结构性 CSS 属性，不构成交互点
+native.button,ui-chat/src/client/chat/TurnNavigator.tsx,61,E0,chat.list.turn-rail,每个轮次刻度是一个 button（aria-label 含轮号，aria-current/aria-busy）
+jsx.onpointer,ui-chat/src/client/chat/TurnNavigator.tsx,73,E0,chat.list.turn-rail,onPointerMove 预览该轮（不点击也出气泡）
+jsx.onclick,ui-chat/src/client/chat/TurnNavigator.tsx,74,E0,chat.list.turn-rail,onClick 跳转到该轮（未加载轮先翻页）
+jsx.onfocus,ui-chat/src/client/chat/TurnNavigator.tsx,75,E0,chat.list.turn-rail,onFocus/onBlur 预览（键盘等价于 hover）
+jsx.onfocus,ui-chat/src/client/chat/TurnNavigator.tsx,76,E0,chat.list.turn-rail,onFocus/onBlur 预览（键盘等价于 hover）
+container.scroll,ui-chat/src/client/chat/TurnNavigator.tsx,197,E0,chat.list.turn-rail,刻度条内部滚动采用原生 scrollBy（虚拟列表按 10px 定距）
+css.cursor,ui-chat/src/client/chat/TurnProcessNodeView.module.css,15,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/TurnProcessNodeView.module.css,43,excluded,-,结构性 CSS 属性，不构成交互点
+native.button,ui-chat/src/client/chat/TurnProcessNodeView.tsx,36,E0,chat.turn.process-control,整轮过程折叠控制条：关闭轮次才渲染，按钮可点/键盘可达，aria-expanded 由 hasContent 决定
+a11y.expanded,ui-chat/src/client/chat/TurnProcessNodeView.tsx,45,E0,chat.turn.process-control,整轮过程折叠控制条：关闭轮次才渲染，按钮可点/键盘可达，aria-expanded 由 hasContent 决定
+jsx.onclick,ui-chat/src/client/chat/TurnProcessNodeView.tsx,46,E0,chat.turn.process-control,整轮过程折叠控制条：关闭轮次才渲染，按钮可点/键盘可达，aria-expanded 由 hasContent 决定
+css.cursor,ui-chat/src/client/chat/TurnTriggerNodeView.module.css,21,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/TurnTriggerNodeView.module.css,31,excluded,-,结构性 CSS 属性，不构成交互点
+jsx.onclick,ui-chat/src/client/chat/TurnTriggerNodeView.tsx,38,E0,chat.msg.trigger-notice,非人类触发通知 header button：aria-expanded/aria-controls，点击展开记录正文（本地 useState）
+native.button,ui-chat/src/client/chat/TurnTriggerNodeView.tsx,38,E0,chat.msg.trigger-notice,非人类触发通知 header button：aria-expanded/aria-controls，点击展开记录正文（本地 useState）
+a11y.expanded,ui-chat/src/client/chat/TurnTriggerNodeView.tsx,38,E0,chat.msg.trigger-notice,非人类触发通知 header button：aria-expanded/aria-controls，点击展开记录正文（本地 useState）
+css.cursor,ui-chat/src/client/chat/TurnUsagePanel.module.css,32,excluded,-,结构性 CSS 属性，不构成交互点
+css.overflow,ui-chat/src/client/chat/TurnUsagePanel.module.css,39,excluded,-,结构性 CSS 属性，不构成交互点
+native.button,ui-chat/src/client/chat/TurnUsagePanel.tsx,42,E0,chat.stats.turn-usage,轮内用量 pill button（IconActions 行内，仅 detailed 模式出现）
+a11y.expanded,ui-chat/src/client/chat/TurnUsagePanel.tsx,46,E0,chat.stats.turn-usage,aria-expanded + aria-haspopup=dialog
+jsx.onclick,ui-chat/src/client/chat/TurnUsagePanel.tsx,47,E0,chat.stats.turn-usage,onClick 开/关用量详情面板
+jsx.onscroll,ui-chat/src/client/chat/use-chat-reading.ts,134,E0,chat.list.scroll-follow,会话滚动判定入口 onScroll：跟随中且非读者移动→继续贴底；读者移动落在离底<1px→恢复跟随；否则 500ms 采样
+jsx.onscroll,ui-chat/src/client/chat/use-chat-scroll.ts,127,E0,chat.list.scroll-follow,viewport scroll 事件转交 reading.onScroll（未 opened 或折叠动画中由读者触发则忽略）
+jsx.onscroll,ui-chat/src/client/chat/use-chat-viewport.ts,78,E0,chat.list.scroll-follow,在 scroller 上绑定 passive scroll 监听
+jsx.onscroll,ui-chat/src/client/chat/use-chat-viewport.ts,99,E0,chat.list.scroll-follow,卸载时移除 scroll 监听
+jsx.onscroll,ui-chat/src/client/chat/use-chat-viewport.ts,506,E0,chat.list.scroll-follow,onScroll 实现：区分读者移动与自动跟随位移
+disclosure,ui-chat/src/client/chat/use-disclosure.ts,11,E0,chat.msg.thinking-header,useDisclosure(version) 原语：expanded = expandedVersion === version，轮次版本前进即自动折叠（G-07 依据）
+disclosure,ui-chat/src/client/chat/use-disclosure.ts,31,E0,chat.msg.thinking-header,useDisclosure(version) 原语：expanded = expandedVersion === version，轮次版本前进即自动折叠（G-07 依据）
+disclosure,ui-chat/src/client/chat/use-disclosure.ts,33,E0,chat.msg.thinking-header,useDisclosure(version) 原语：expanded = expandedVersion === version，轮次版本前进即自动折叠（G-07 依据）
+jsx.onpointer,ui-chat/src/client/chat/use-process-scroll.ts,23,E0,chat.group.body,封顶内滚 body 的事件契约：onScroll/onWheel/onTouchStart/onPointerDown/onKeyDown 五路绑定
+jsx.ontouch,ui-chat/src/client/chat/use-process-scroll.ts,23,E0,chat.group.body,封顶内滚 body 的事件契约：onScroll/onWheel/onTouchStart/onPointerDown/onKeyDown 五路绑定
+jsx.onwheel,ui-chat/src/client/chat/use-process-scroll.ts,23,E0,chat.group.body,封顶内滚 body 的事件契约：onScroll/onWheel/onTouchStart/onPointerDown/onKeyDown 五路绑定
+jsx.onscroll,ui-chat/src/client/chat/use-process-scroll.ts,23,E0,chat.group.body,封顶内滚 body 的事件契约：onScroll/onWheel/onTouchStart/onPointerDown/onKeyDown 五路绑定
+jsx.onkeydown,ui-chat/src/client/chat/use-process-scroll.ts,23,E0,chat.group.body,封顶内滚 body 的事件契约：onScroll/onWheel/onTouchStart/onPointerDown/onKeyDown 五路绑定
+jsx.onscroll,ui-chat/src/client/chat/use-process-scroll.ts,58,E0,chat.group.body,内滚 onScroll → sync 重算到边状态
+jsx.onwheel,ui-chat/src/client/chat/use-process-scroll.ts,59,E0,chat.group.body,内滚 onWheel → interrupt 掉外层跟随动画（不阻止滚动链）
+jsx.ontouch,ui-chat/src/client/chat/use-process-scroll.ts,60,E0,chat.group.body,内滚 onTouchStart → interrupt
+jsx.onpointer,ui-chat/src/client/chat/use-process-scroll.ts,61,E0,chat.group.body,内滚 onPointerDown → interrupt
+jsx.onkeydown,ui-chat/src/client/chat/use-process-scroll.ts,62,E0,chat.group.body,内滚 onKeyDown：Arrow/Page/Home/End/Space 且未 preventDefault 时 interrupt
+container.scroll,ui-chat/src/client/chat/use-scroll-follow.ts,120,E0,chat.list.scroll-follow,jump：即时落位（动画中被中断时用 instant）
+container.scroll,ui-chat/src/client/chat/use-scroll-follow.ts,145,E0,chat.list.scroll-follow,内容在动画中增长 → 重定向 smooth 目标而不是切到 floor
+container.scroll,ui-chat/src/client/chat/use-scroll-follow.ts,155,E0,chat.list.scroll-follow,距底超阈值时 smooth 追底（reduced-motion 前一行已短路为 instant）
+container.scroll,ui-chat/src/client/chat/use-scroll-follow.ts,169,E0,chat.list.scroll-follow,interrupt：读者手势前取消原生动画并停在当前位置
+css.cursor,ui-chat/src/client/settings/PreferenceRow.module.css,47,excluded,-,结构性 CSS 属性，不构成交互点
+native.button,ui-chat/src/client/settings/PreferenceRow.tsx,28,E0,chat.settings.preference-row,设置项选择器 button（aria-haspopup=menu）
+a11y.expanded,ui-chat/src/client/settings/PreferenceRow.tsx,33,E0,chat.settings.preference-row,aria-expanded 跟随 Menu 开合
+jsx.onclick,ui-chat/src/client/settings/PreferenceRow.tsx,34,E0,chat.settings.preference-row,onClick 切换 Menu；选择后先归焦再发布新值
+aria.role,ui-chat/src/client/chat/StatsPills.tsx,213,E0,chat.stats.pill,"统计面板 ARIA 语义：role=""dialog"" + aria-label（面板由 createPortal 挂到 body，非聊天布局内）"
+aria.role,ui-chat/src/client/chat/TurnUsagePanel.tsx,56,E0,chat.stats.turn-usage,"轮内用量面板 ARIA 语义：role=""dialog"" + aria-label=本轮用量（portal 浮层）"
+css.overscroll,ui-chat/src/client/chat/ChatGroupSeat.module.css,90,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）
+css.overscroll,ui-chat/src/client/chat/TurnNavigator.module.css,54,excluded,-,结构性 CSS：滚动链/溢出策略，非交互点（证据见 _conflicts.md C-01）

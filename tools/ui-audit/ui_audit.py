@@ -50,11 +50,20 @@ PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
     ("native.anchor", re.compile(r"<a\s[^>]*href"), "链接"),
     ("native.input", re.compile(r"<(input|select|textarea)\b"), "原生输入"),
     ("native.details", re.compile(r"<(details|summary)\b"), "原生折叠"),
-    ("aria.role", re.compile(r"\brole=\{?[\"']?(button|menuitem|tab|switch|option|checkbox)"), "ARIA 可交互角色"),
+    ("aria.role", re.compile(r"\brole=\{?[\"']?(button|menuitem|menuitemradio|tab|tablist|menu|menubar|switch|option|checkbox|radio|combobox|listbox|slider|treeitem|dialog)"), "ARIA 可交互角色"),
     ("disclosure", re.compile(r"\b(useDisclosure|useBoundDisclosure|expandOnRowClick|onToggle)\b"), "可展开"),
     ("pointer.events", re.compile(r"\b(pointerEvents|touchAction|userSelect)\b"), "指针事件控制"),
     ("a11y.expanded", re.compile(r"\baria-expanded\b"), "展开态语义"),
-    ("container.scroll", re.compile(r"\b(overflowY|overscrollBehavior|scrollIntoView|scrollTo|scrollBy)\b"), "滚动控制"),
+    ("container.scroll", re.compile(r"\b(overflowY|overscrollBehavior|overscroll-behavior|scrollIntoView|scrollTo|scrollBy|scroll-snap)\b"), "滚动控制"),
+    # --- Dart / Flutter（dsh-Go）---
+    ("dart.gesture", re.compile(r"\bon(Tap|TapDown|TapUp|DoubleTap|LongPress|LongPressStart|LongPressEnd|PanUpdate|PanStart|PanEnd|HorizontalDragStart|VerticalDragStart)\s*:"), "Flutter 手势回调"),
+    ("dart.widget", re.compile(r"\b(GestureDetector|InkWell|InkResponse|TextButton|IconButton|FilledButton|ElevatedButton|OutlinedButton|Dismissible|Draggable|ReorderableListView|PopupMenuButton)\s*\("), "Flutter 可交互组件"),
+    # --- Kotlin / Compose（myco 旧实现）---
+    ("kt.gesture", re.compile(r"\b(clickable|combinedClickable|pointerInput|toggleable|selectable|swipeable|detectTapGestures|detectDragGestures)\b"), "Compose 手势修饰符"),
+    ("kt.widget", re.compile(r"\b(IconButton|TextButton|OutlinedButton|FilterChip|DropdownMenuItem|ListItem|AlertDialog|ModalBottomSheet|Switch|Slider)\s*\("), "Compose 可交互组件"),
+    # --- Android 原生（dsh-mobile-android 壳层 / res 布局）---
+    ("java.listener", re.compile(r"\b(setOnClickListener|setOnLongClickListener|setOnCheckedChangeListener|setOnItemClickListener|onClick\s*=\s*View\.OnClickListener)\b"), "Android 点击监听"),
+    ("xml.onclick", re.compile(r"android:(onClick|clickable|longClickable)\s*="), "布局文件可点属性"),
 ]
 
 CSS_PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
@@ -63,6 +72,7 @@ CSS_PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
     ("css.sticky", re.compile(r"position:\s*sticky"), "吸附"),
     ("css.contain", re.compile(r"\bcontain:"), "尺寸隔离"),
     ("css.overflow", re.compile(r"overflow(-y)?:\s*(auto|scroll|hidden)"), "溢出/滚动容器"),
+    ("css.overscroll", re.compile(r"overscroll-behavior(-[xy])?\s*:"), "滚动链策略（G-04 / C-01 关键证据）"),
 ]
 
 
@@ -105,9 +115,16 @@ def scan(root: Path, exts: set[str]) -> ScanResult:
         rel = str(path.relative_to(root)).replace("\\", "/")
         is_css = path.suffix.lower() in {".css", ".scss", ".less"}
         table = CSS_PATTERNS if is_css else PATTERNS
+        sfx = path.suffix.lower()
+        drop: tuple[str, ...] = ()
+        if sfx == ".dart": drop = ("kt.",)
+        elif sfx in {".kt", ".kts"}: drop = ("dart.",)
+        elif not is_css: drop = ("dart.", "kt.")
         for lineno, raw in enumerate(text.splitlines(), start=1):
             stripped = raw.strip()
             for kind, rx, _desc in table:
+                if drop and kind.startswith(drop):
+                    continue
                 m = rx.search(raw)
                 if m is None:
                     continue
@@ -164,10 +181,16 @@ def cmd_check(args: argparse.Namespace) -> int:
         return 2
     facts = read_facts(facts_path) if facts_path.is_file() else {}
 
+    prefixes = tuple(p.strip() for p in (args.only_prefix or "").split(",") if p.strip())
+
+    def in_scope(path: str) -> bool:
+        return not prefixes or path.startswith(prefixes)
+
     rows: list[dict[str, str]] = []
     with findings_path.open(encoding="utf-8", newline="") as fh:
         for row in csv.DictReader(fh):
-            rows.append(row)
+            if in_scope(row["path"]):
+                rows.append(row)
 
     uncovered: list[dict[str, str]] = []
     covered = 0
@@ -187,7 +210,7 @@ def cmd_check(args: argparse.Namespace) -> int:
             covered += 1
         else:
             uncovered.append(row)
-    stale = [k for k in facts if k not in used]
+    stale = [k for k in facts if k not in used and in_scope(facts[k].get("path", ""))]
 
     by_kind: dict[str, int] = {}
     for row in uncovered:
@@ -243,13 +266,14 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("scan", help="扫描源码树，产出交互点清单")
     s.add_argument("--root", required=True)
     s.add_argument("--out", required=True)
-    s.add_argument("--include", default="ts,tsx,js,jsx,kts,kt,css")
+    s.add_argument("--include", default="ts,tsx,js,jsx,kt,kts,dart,java,xml,css")
     s.set_defaults(func=cmd_scan)
 
     c = sub.add_parser("check", help="与事实库对账")
     c.add_argument("--findings", required=True)
     c.add_argument("--facts", default="")
     c.add_argument("--out", required=True)
+    c.add_argument("--only-prefix", default="", help="只对账这些路径前缀（逗号分隔，相对 root），用于多路并行各认领自己的包")
     c.add_argument("--max-rows", type=int, default=200)
     c.add_argument("--fail-on-uncovered", action="store_true")
     c.set_defaults(func=cmd_check)

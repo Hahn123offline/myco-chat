@@ -11,11 +11,11 @@
 | ID | 面板 | myco 现状 | DSH 证据包 | 依赖 | 优先级 |
 |---|---|---|---|---|---|
 | `chat` | 聊天主界面（轮/消息/过程/操作） | 🟡 M5 壳有，密度远低于 DSH | `ui-chat` | — | **P0 第一优先** |
-| `sidebar` | 会话导航（列表/搜索/分组/行菜单/筛选） | 🟡 旧历史页 + 抽屉半成品 | `ui-sidebar`, `ui-sidebar-browser`, `ui-conversation`, `ui-session` | `chat` | 高 |
+| `sidebar` | 会话导航（列表/搜索/分组/行菜单/筛选） | 🟡 旧历史页 + 抽屉半成品 | `ui-sidebar`, `ui-sidebar-browser`, `ui-conversation`, `ui-session`（壳）+ `ui-workspace`（会话行/分组/搜索/多标签）+ `ui-sidebar-right/files/documentpreview/terminal` | `chat` | 高 |
 | `composer` | 输入区状态机（发送/停止/排队/附件/命令/触发词） | 🟡 有，缺排队/命令/触发词 | `ui-chat`, `ui-input-trigger`, `ui-attachment`, `ui-commands` | `chat` | 高 |
 | `model` | 模型 + 思考强度 + agent preset（合并面板） | 🟡 简易 sheet | `ui-model-selection`, `ui-agent-preset` | `composer` | 高 |
 | `settings` | 设置壳 + 子页 | 🟡 单页堆叠 | `ui-settings`, `ui-settings-shell` | — | 高 |
-| `settings.general` | 通用（语言/主题/字体/内容宽度） | ❌ | `ui-settings-general`, `ui-theme`, `ui-locale` | `settings` | 中 |
+| `settings.general` | 通用（语言/主题/字体/内容宽度） | ❌ | `ui-settings-general`, `ui-theme`, `locale`（注意：`ui-locale` 包不存在，实际是 `locale`） | `settings` | 中 |
 | `settings.models` | 模型与 provider 管理 | 🟡 有 provider 编辑 | `ui-settings-models` | `settings` | 高 |
 | `settings.agent-loop` | agent loop / 采样参数 | ❌ | `ui-settings-agent-loop` | `settings` | 中 |
 | `settings.web-search` | 搜索 provider | ❌ | `ui-settings-web-search` | `settings` | 低 |
