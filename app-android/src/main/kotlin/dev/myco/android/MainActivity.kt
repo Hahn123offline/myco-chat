@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -1236,8 +1237,10 @@ private fun ChatScreen(
                 }
             }
             if (m5Ui) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
                 dev.myco.android.ui.m5.M5Composer(
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp),
+                    modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth()
+                        .padding(horizontal = 16.dp).padding(bottom = 8.dp),
                     value = input,
                     onValueChange = { input = it },
                     onSend = { send() },
@@ -1257,6 +1260,7 @@ private fun ChatScreen(
                         chatPrefs.edit().putBoolean("webSearch", webSearch).apply()
                     },
                 )
+                }
             } else {
                 Box(Modifier.padding(MycoSpacing.m)) {
                     ChatComposer(

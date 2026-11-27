@@ -125,6 +125,14 @@ fun ChatMessagesM5(
         }
         val expandedProcess = remember { mutableStateMapOf<Long, Boolean>() }
         val expandedLines = remember { mutableStateMapOf<String, Boolean>() }
+        // 分支切换锚点：切版本前记下首个可见项，切换后恢复，避免列表轻微跳位
+        var pendingAnchor by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+        LaunchedEffect(resolved.messages) {
+            val anchor = pendingAnchor ?: return@LaunchedEffect
+            pendingAnchor = null
+            val idx = anchor.first.coerceIn(0, (resolved.messages.size - 1).coerceAtLeast(0))
+            runCatching { listState.scrollToItem(idx, anchor.second) }
+        }
         LaunchedEffect(autoExpandTurn) {
             if (autoExpandTurn != null) expandedProcess[autoExpandTurn] = true
         }
@@ -142,7 +150,10 @@ fun ChatMessagesM5(
         LazyColumn(
             state = listState,
             modifier = modifier,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            contentPadding = PaddingValues(
+                horizontal = if (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 600) 48.dp else 16.dp,
+                vertical = 10.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val renderedTurns = mutableSetOf<Long>()
@@ -159,6 +170,7 @@ fun ChatMessagesM5(
                                     onSwitch = { target ->
                                         val leaf = target.messageId?.let { deepestLeaf(it) }
                                         if (leaf != null) {
+                                            pendingAnchor = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
                                             activeLeaf = leaf
                                             onActiveLeafChanged(leaf)
                                         }
@@ -249,7 +261,29 @@ private fun UserBubbleM5(text: String, onLongPress: () -> Unit) {
             fill = p.blush,
             contentPadding = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
         ) {
-            Text(text, style = M5Type.body, color = Color(0xFF2E1A17))
+            val lines = text.lines()
+            val attachNames = lines.filter { it.startsWith("[附件] ") }.map { it.removePrefix("[附件] ") }
+            val body = lines.filterNot { it.startsWith("[附件] ") }.joinToString("\n").trim()
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (body.isNotBlank()) Text(body, style = M5Type.body, color = Color(0xFF2E1A17))
+                if (attachNames.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        attachNames.forEach { name ->
+                            NeoSurface(
+                                radius = 10.dp,
+                                material = NeoMaterial.Inset,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    M5Icon(M5Icons.copy, Modifier.size(11.dp), Color(0xFF5A3A34))
+                                    Spacer(Modifier.width(5.dp))
+                                    Text(name, style = M5Type.caption, color = Color(0xFF5A3A34), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -435,7 +469,7 @@ private fun ThinkingLineM5(entry: TimelineEntry, expanded: Boolean, onToggle: ()
                         }
                     }
                     if (entry.text.isNotBlank()) {
-                        DetailBlock("结果") { DetailText(entry.text) }
+                        DetailBlock("结果") { DetailText(entry.text, danger = entry.ok == false) }
                     }
                 } else {
                     // 思考/写入内容不包块：直接是正文式文本（旧展示习惯）
@@ -475,13 +509,13 @@ private fun DetailBlock(label: String?, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun DetailText(text: String) {
+private fun DetailText(text: String, danger: Boolean = false) {
     val p = LocalM5.current.palette
     val scroll = rememberScrollState()
     Text(
         text.take(4000),
         style = M5Type.caption.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
-        color = p.textSecondary,
+        color = if (danger) p.danger else p.textSecondary,
         modifier = Modifier.heightIn(max = 220.dp).verticalScroll(scroll),
     )
 }
