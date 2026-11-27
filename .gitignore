@@ -35,3 +35,6 @@ local.properties
 .env.*
 secrets*
 
+
+# 第三方源码/文档摘录（审计取证用，不入库）
+/scratch/
