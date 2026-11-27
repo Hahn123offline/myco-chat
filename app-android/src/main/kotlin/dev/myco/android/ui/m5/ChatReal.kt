@@ -104,6 +104,7 @@ fun ChatMessagesM5(
     onActiveLeafChanged: (leafId: String?) -> Unit = {},
     liveEntries: List<TimelineEntry> = emptyList(),
     autoExpandTurn: Long? = null,
+    onSuggestion: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -118,6 +119,10 @@ fun ChatMessagesM5(
             resolveVisibleMessages(state.messages, activeLeaf)
         }
         val userVersions = remember(state.messages) { userVersionGroups(state.messages) }
+        if (resolved.messages.isEmpty() && streamingText == null && liveEntries.isEmpty()) {
+            M5EmptyState { suggestion -> onSuggestion?.invoke(suggestion) }
+            return@M5Theme
+        }
         val expandedProcess = remember { mutableStateMapOf<Long, Boolean>() }
         val expandedLines = remember { mutableStateMapOf<String, Boolean>() }
         LaunchedEffect(autoExpandTurn) {

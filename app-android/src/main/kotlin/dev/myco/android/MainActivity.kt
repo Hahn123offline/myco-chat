@@ -1145,6 +1145,7 @@ private fun ChatScreen(
                     },
                     liveEntries = liveEntries,
                     autoExpandTurn = streamingTurn,
+                    onSuggestion = { input = it },
                     modifier = listModifier,
                 )
             } else {
@@ -1173,8 +1174,12 @@ private fun ChatScreen(
                 )
             }
             if (error != null) {
-                Box(Modifier.padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.xs)) {
-                    InlineError(error!!)
+                if (m5Ui) {
+                    dev.myco.android.ui.m5.M5ErrorBar(error!!)
+                } else {
+                    Box(Modifier.padding(horizontal = MycoSpacing.m, vertical = MycoSpacing.xs)) {
+                        InlineError(error!!)
+                    }
                 }
             }
                 if (!followBottom && (display.messages.isNotEmpty() || streaming != null)) {
@@ -1204,22 +1209,30 @@ private fun ChatScreen(
                 }
             }
             if (pending.isNotEmpty()) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m),
-                    horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
-                ) {
+                if (m5Ui) {
+                    dev.myco.android.ui.m5.M5AttachmentRow(
+                        attachments = pending,
+                        onRemove = { ref -> pending = pending - ref },
+                        onClear = { pending = emptyList() },
+                    )
+                } else {
                     Row(
-                        modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                        Modifier.fillMaxWidth().padding(horizontal = MycoSpacing.m),
                         horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
                     ) {
-                        pending.forEach { ref ->
-                            androidx.compose.material3.AssistChip(
-                                onClick = { pending = pending - ref },
-                                label = { Text(ref.name, maxLines = 1) },
-                            )
+                        Row(
+                            modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(MycoSpacing.s),
+                        ) {
+                            pending.forEach { ref ->
+                                androidx.compose.material3.AssistChip(
+                                    onClick = { pending = pending - ref },
+                                    label = { Text(ref.name, maxLines = 1) },
+                                )
+                            }
                         }
+                        TextButton(onClick = { pending = emptyList() }) { Text("清空") }
                     }
-                    TextButton(onClick = { pending = emptyList() }) { Text("清空") }
                 }
             }
             if (m5Ui) {
